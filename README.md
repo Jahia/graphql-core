@@ -6,10 +6,14 @@ This project contains a Karaf feature to integrate a GraphQL server
 1. Clone this repository : 
 
     git clone https://github.com/sergehuber/graphql-java-servlet.git
-    
+
+2. Switch to the `quick-fixes` branch:
+
+    git checkout quick-fixes
+ 
 2. Build and install the forked graphql-java-servlet project : 
 
-    ./gradlew clean install
+    ./gradlew clean install (or gradle clean install if you have installed gradle)
     
 3. Build this project (graphql-core-feature) using :
 
