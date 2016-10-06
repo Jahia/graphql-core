@@ -33,3 +33,14 @@ This project contains a Karaf feature to integrate a GraphQL server
 7. Install the feature using : 
 
     feature:install graphql-core
+
+## Deploying modifications
+
+If you want to deploy again to test modifications simply use : 
+
+1. mvn clean install
+2. ssh -p 8101 TOOLS_USER@localhost
+3. feature:repo-refresh
+4. feature:install graphql-core
+
+The feature:install command will indeed install updates.
