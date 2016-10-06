@@ -9,7 +9,7 @@ This project contains a Karaf feature to integrate a GraphQL server
     
 2. Build and install the forked graphql-java-servlet project : 
 
-    mvn clean install
+    ./gradlew clean install
     
 3. Build this project (graphql-core-feature) using :
 
