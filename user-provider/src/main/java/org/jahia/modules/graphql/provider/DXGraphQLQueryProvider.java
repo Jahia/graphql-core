@@ -5,7 +5,7 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import graphql.servlet.GraphQLQueryProvider;
-import org.osgi.service.component.annotations.Component;
+import org.jahia.services.usermanager.JahiaUserManagerService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +18,13 @@ import static graphql.schema.GraphQLObjectType.newObject;
 /**
  * A GraphQL query provider for DX
  */
-@Component(service = GraphQLQueryProvider.class)
 public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
+
+    private JahiaUserManagerService jahiaUserManagerService;
+
+    public void setJahiaUserManagerService(JahiaUserManagerService jahiaUserManagerService) {
+        this.jahiaUserManagerService = jahiaUserManagerService;
+    }
 
     @Override
     public GraphQLObjectType getQuery() {
