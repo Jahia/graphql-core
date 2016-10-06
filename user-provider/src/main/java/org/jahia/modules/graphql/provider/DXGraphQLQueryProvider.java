@@ -66,14 +66,19 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
         DataFetcher userDataFetcher = new DataFetcher() {
             @Override
             public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
-                return new User("1", null);
+                List<User> users = new ArrayList<User>();
+                Properties properties = new Properties();
+                properties.setProperty("prop1", "propvalue1");
+                properties.setProperty("prop2", "propvalue2");
+                users.add(new User("1", properties));
+                return users;
             }
         };
 
         GraphQLObjectType queryType = newObject()
                 .name("users")
                 .field(newFieldDefinition()
-                        .type(userType)
+                        .type(new GraphQLList(userType))
                         .name("user")
                         .dataFetcher(userDataFetcher)
                         .build())
