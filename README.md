@@ -11,25 +11,25 @@ This project contains a Karaf feature to integrate a GraphQL server
 
     git checkout quick-fixes
  
-2. Build and install the forked graphql-java-servlet project : 
+3. Build and install the forked graphql-java-servlet project : 
 
     ./gradlew clean install (or gradle clean install if you have installed gradle)
     
-3. Build this project (graphql-core-feature) using :
+4. Build this project (graphql-core-feature) using :
 
     mvn clean install
     
-4. Inside DX, connect to the SSH Karaf shell using :
+5. Inside DX, connect to the SSH Karaf shell using :
 
     ssh -p 8101 TOOLS_USER@localhost
     
    where TOOLS_USER and the associated password are the passwords you setup during the installation of DX for the system
    tools
    
-5. Enter the following command : 
+6. Enter the following command : 
 
     feature:repo-add mvn:org.jahia.modules/graphql-core/1.0-SNAPSHOT/xml/features
     
-6. Install the feature using : 
+7. Install the feature using : 
 
     feature:install graphql-core
