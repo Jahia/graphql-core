@@ -4,62 +4,22 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
-
-import static graphql.Scalars.GraphQLString;
-import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
-import static graphql.schema.GraphQLObjectType.newObject;
-
-import graphql.servlet.*;
+import graphql.servlet.GraphQLQueryProvider;
 import org.osgi.service.component.annotations.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import static graphql.Scalars.GraphQLString;
+import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
+import static graphql.schema.GraphQLObjectType.newObject;
+
 /**
  * A GraphQL query provider for DX
  */
-@Component(service=GraphQLQueryProvider.class)
+@Component(service = GraphQLQueryProvider.class)
 public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
-
-    public class User {
-
-        String id;
-        Properties properties = new Properties();
-
-        public User(String id, Properties properties) {
-            this.id = id;
-            if (properties != null) {
-                this.properties = properties;
-            }
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public Properties getProperties() {
-            return properties;
-        }
-    }
-
-    public class Property {
-        String key;
-        String value;
-
-        public Property(String key, String value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        public String getKey() {
-            return key;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
 
     @Override
     public GraphQLObjectType getQuery() {
@@ -124,5 +84,44 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
     @Override
     public Object context() {
         return new User("root", null);
+    }
+
+    public class User {
+
+        String id;
+        Properties properties = new Properties();
+
+        public User(String id, Properties properties) {
+            this.id = id;
+            if (properties != null) {
+                this.properties = properties;
+            }
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public Properties getProperties() {
+            return properties;
+        }
+    }
+
+    public class Property {
+        String key;
+        String value;
+
+        public Property(String key, String value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public String getValue() {
+            return value;
+        }
     }
 }

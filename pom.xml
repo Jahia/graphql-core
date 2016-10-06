@@ -32,7 +32,7 @@
     for your use, please contact the sales department at sales@jahia.com.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -47,11 +47,11 @@
     <description>This is the root project for the DX GraphQL Core integration project</description>
 
     <scm>
-      <!--
-        <connection>scm:git:git@github.com:Jahia/scriptlanguages-handlebars.git</connection>
-        <developerConnection>scm:git:git@github.com:Jahia/scriptlanguages-handlebars.git</developerConnection>
-        <url>scm:git:git@github.com:Jahia/scriptlanguages-handlebars.git</url>
-      -->
+        <!--
+          <connection>scm:git:git@github.com:Jahia/scriptlanguages-handlebars.git</connection>
+          <developerConnection>scm:git:git@github.com:Jahia/scriptlanguages-handlebars.git</developerConnection>
+          <url>scm:git:git@github.com:Jahia/scriptlanguages-handlebars.git</url>
+        -->
     </scm>
 
     <distributionManagement>
