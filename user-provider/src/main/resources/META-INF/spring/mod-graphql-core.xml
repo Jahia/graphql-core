@@ -8,6 +8,7 @@
 
     <bean id="dxUserGraphQLProvider" class="org.jahia.modules.graphql.provider.DXGraphQLQueryProvider">
         <property name="jahiaUserManagerService" ref="JahiaUserManagerService"/>
+        <property name="nodeTypeRegistry" ref="nodeTypeRegistry"/>
     </bean>
 
     <osgi:service ref="dxUserGraphQLProvider" auto-export="interfaces"/>
