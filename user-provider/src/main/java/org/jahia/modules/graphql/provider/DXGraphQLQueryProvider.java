@@ -5,13 +5,17 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import graphql.servlet.GraphQLQueryProvider;
+import org.jahia.services.content.decorator.JCRUserNode;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 
+import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import static graphql.Scalars.GraphQLString;
+import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLObjectType.newObject;
 
@@ -72,10 +76,22 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
             @Override
             public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
                 List<User> users = new ArrayList<User>();
-                Properties properties = new Properties();
-                properties.setProperty("prop1", "propvalue1");
-                properties.setProperty("prop2", "propvalue2");
-                users.add(new User("1", properties));
+                String userKey = dataFetchingEnvironment.getArgument("userKey");
+                if (userKey != null) {
+                    JCRUserNode jcrUserNode = jahiaUserManagerService.lookup(userKey);
+                    if (jcrUserNode != null) {
+                        Properties properties = new Properties();
+                        try {
+                            for (Map.Entry<String, String> propertyEntry : jcrUserNode.getPropertiesAsString().entrySet()) {
+                                properties.setProperty(propertyEntry.getKey(), propertyEntry.getValue());
+                            }
+                        } catch (RepositoryException e) {
+                            e.printStackTrace();
+                        }
+                        User user = new User(jcrUserNode.getUserKey(), properties);
+                        users.add(user);
+                    }
+                }
                 return users;
             }
         };
@@ -85,6 +101,7 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
                 .field(newFieldDefinition()
                         .type(new GraphQLList(userType))
                         .name("user")
+                        .argument(newArgument().name("userKey").type(GraphQLString).build())
                         .dataFetcher(userDataFetcher)
                         .build())
                 .build();
