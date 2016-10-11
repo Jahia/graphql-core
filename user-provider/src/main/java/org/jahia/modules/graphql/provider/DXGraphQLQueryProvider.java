@@ -1,6 +1,9 @@
 package org.jahia.modules.graphql.provider;
 
-import graphql.schema.*;
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLObjectType;
 import graphql.servlet.GraphQLQueryProvider;
 import org.jahia.services.content.decorator.JCRUserNode;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
@@ -10,14 +13,13 @@ import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static graphql.Scalars.*;
+import static graphql.Scalars.GraphQLString;
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLObjectType.newObject;
@@ -43,25 +45,15 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
     @Override
     public GraphQLObjectType getQuery() {
 
-        GraphQLObjectType propertyType = newObject()
-                .name("property")
-                .field(newFieldDefinition()
-                        .name("key")
-                        .type(GraphQLString)
-                        .build())
-                .field(newFieldDefinition()
-                        .name("value")
-                        .type(GraphQLString)
-                        .build())
-                .build();
+        GraphQLObjectType propertyType = DXGraphQLCommonTypeProvider.getPropertyType();
 
         DataFetcher propertiesFetcher = new DataFetcher() {
             @Override
             public Object get(DataFetchingEnvironment environment) {
-                User user = (User) environment.getSource();
-                List<Property> propertyList = new ArrayList<Property>();
+                DXGraphQLUser user = (DXGraphQLUser) environment.getSource();
+                List<DXGraphQLProperty> propertyList = new ArrayList<DXGraphQLProperty>();
                 for (String propertyName : user.getProperties().stringPropertyNames()) {
-                    Property property = new Property(propertyName, user.getProperties().getProperty(propertyName));
+                    DXGraphQLProperty property = new DXGraphQLProperty(propertyName, user.getProperties().getProperty(propertyName));
                     propertyList.add(property);
                 }
                 return propertyList;
@@ -85,7 +77,7 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
         DataFetcher userDataFetcher = new DataFetcher() {
             @Override
             public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
-                List<User> users = new ArrayList<User>();
+                List<DXGraphQLUser> users = new ArrayList<DXGraphQLUser>();
                 String userKey = dataFetchingEnvironment.getArgument("userKey");
                 if (userKey != null) {
                     JCRUserNode jcrUserNode = jahiaUserManagerService.lookup(userKey);
@@ -98,7 +90,7 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
                         } catch (RepositoryException e) {
                             logger.error("Error accessing user node " + jcrUserNode.getPath() + " properties", e);
                         }
-                        User user = new User(jcrUserNode.getUserKey(), properties);
+                        DXGraphQLUser user = new DXGraphQLUser(jcrUserNode.getUserKey(), properties);
                         users.add(user);
                     }
                 }
@@ -107,7 +99,7 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
         };
 
         GraphQLObjectType.Builder nodeTypesBuilder = newObject()
-                .name("nodes");
+                .name("nodeTypes");
 
         NodeTypeRegistry.JahiaNodeTypeIterator jahiaNodeTypeIterator = nodeTypeRegistry.getAllNodeTypes();
         for (ExtendedNodeType extendedNodeType : jahiaNodeTypeIterator) {
@@ -116,7 +108,7 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
             for (ExtendedPropertyDefinition extendedPropertyDefinition : extendedPropertyDefinitions) {
                 nodeTypeBuilder.field(newFieldDefinition()
                         .name(extendedPropertyDefinition.getName())
-                        .type(getGraphQLType(extendedPropertyDefinition.getRequiredType(), extendedPropertyDefinition.isMultiple()))
+                        .type(DXGraphQLCommonTypeProvider.getGraphQLType(extendedPropertyDefinition.getRequiredType(), extendedPropertyDefinition.isMultiple()))
                         .build());
             }
             GraphQLObjectType nodeType = nodeTypeBuilder.build();
@@ -137,7 +129,7 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
                         .build())
                 .field(newFieldDefinition()
                         .type(nodeTypesBuilder.build())
-                        .name("nodes")
+                        .name("nodeTypes")
                         .build()
                 )
                 .build();
@@ -147,91 +139,7 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
 
     @Override
     public Object context() {
-        return new User("root", null);
+        return new DXGraphQLUser("root", null);
     }
 
-    private GraphQLOutputType getGraphQLType(int jcrPropertyType, boolean multiValued) {
-        if (multiValued) {
-            switch (jcrPropertyType) {
-                case PropertyType.BOOLEAN:
-                    return new GraphQLList(GraphQLBoolean);
-                case PropertyType.DATE:
-                case PropertyType.DECIMAL:
-                case PropertyType.LONG:
-                    return new GraphQLList(GraphQLLong);
-                case PropertyType.DOUBLE:
-                    return new GraphQLList(GraphQLFloat);
-                case PropertyType.BINARY:
-                case PropertyType.NAME:
-                case PropertyType.PATH:
-                case PropertyType.REFERENCE:
-                case PropertyType.STRING:
-                case PropertyType.UNDEFINED:
-                case PropertyType.URI:
-                case PropertyType.WEAKREFERENCE:
-                    return new GraphQLList(GraphQLString);
-            }
-        } else {
-            switch (jcrPropertyType) {
-                case PropertyType.BOOLEAN:
-                    return GraphQLBoolean;
-                case PropertyType.DATE:
-                case PropertyType.DECIMAL:
-                case PropertyType.LONG:
-                    return GraphQLLong;
-                case PropertyType.DOUBLE:
-                    return GraphQLFloat;
-                case PropertyType.BINARY:
-                case PropertyType.NAME:
-                case PropertyType.PATH:
-                case PropertyType.REFERENCE:
-                case PropertyType.STRING:
-                case PropertyType.UNDEFINED:
-                case PropertyType.URI:
-                case PropertyType.WEAKREFERENCE:
-                    return GraphQLString;
-            }
-        }
-        logger.warn("Couldn't find equivalent GraphQL type for property type=" + jcrPropertyType + " will use string type instead !");
-        return GraphQLString;
-    }
-
-    public class User {
-
-        String id;
-        Properties properties = new Properties();
-
-        public User(String id, Properties properties) {
-            this.id = id;
-            if (properties != null) {
-                this.properties = properties;
-            }
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public Properties getProperties() {
-            return properties;
-        }
-    }
-
-    public class Property {
-        String key;
-        String value;
-
-        public Property(String key, String value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        public String getKey() {
-            return key;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
 }

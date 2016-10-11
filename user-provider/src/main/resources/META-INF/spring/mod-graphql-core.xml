@@ -6,11 +6,16 @@
 
                            http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd">
 
-    <bean id="dxUserGraphQLProvider" class="org.jahia.modules.graphql.provider.DXGraphQLQueryProvider">
+    <bean id="dxGraphQLQueryProvider" class="org.jahia.modules.graphql.provider.DXGraphQLQueryProvider">
         <property name="jahiaUserManagerService" ref="JahiaUserManagerService"/>
         <property name="nodeTypeRegistry" ref="nodeTypeRegistry"/>
     </bean>
 
-    <osgi:service ref="dxUserGraphQLProvider" auto-export="interfaces"/>
+    <osgi:service ref="dxGraphQLQueryProvider" auto-export="interfaces"/>
+
+    <bean id="dxGraphQLMutationProvider" class="org.jahia.modules.graphql.provider.DXGraphQLMutationProvider">
+    </bean>
+
+    <osgi:service ref="dxGraphQLMutationProvider" auto-export="interfaces"/>
 
 </beans>
