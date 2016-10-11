@@ -6,8 +6,6 @@ import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import graphql.servlet.GraphQLQueryProvider;
 import org.jahia.services.content.decorator.JCRUserNode;
-import org.jahia.services.content.nodetypes.ExtendedNodeType;
-import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.slf4j.Logger;
@@ -66,11 +64,13 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
                 .field(newFieldDefinition()
                         .type(GraphQLString)
                         .name("id")
+                        .description("Unique identifier for the user inside the DX instance")
                         .build())
                 .field(newFieldDefinition()
                         .type(new GraphQLList(propertyType))
                         .dataFetcher(propertiesFetcher)
                         .name("properties")
+                        .description("User properties")
                         .build())
                 .build();
 
@@ -98,16 +98,23 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
             }
         };
 
+        /*
         GraphQLObjectType.Builder nodeTypesBuilder = newObject()
                 .name("nodeTypes");
 
         NodeTypeRegistry.JahiaNodeTypeIterator jahiaNodeTypeIterator = nodeTypeRegistry.getAllNodeTypes();
         for (ExtendedNodeType extendedNodeType : jahiaNodeTypeIterator) {
-            GraphQLObjectType.Builder nodeTypeBuilder = newObject().name(extendedNodeType.getName());
+            if ("*".equals(extendedNodeType.getName())) {
+                continue;
+            }
+            GraphQLObjectType.Builder nodeTypeBuilder = newObject().name(extendedNodeType.getName().replaceAll(":", "_"));
             ExtendedPropertyDefinition[] extendedPropertyDefinitions = extendedNodeType.getDeclaredPropertyDefinitions();
             for (ExtendedPropertyDefinition extendedPropertyDefinition : extendedPropertyDefinitions) {
+                if ("*".equals(extendedPropertyDefinition.getName())) {
+                    continue;
+                }
                 nodeTypeBuilder.field(newFieldDefinition()
-                        .name(extendedPropertyDefinition.getName())
+                        .name(extendedPropertyDefinition.getName().replaceAll(":", "_"))
                         .type(DXGraphQLCommonTypeProvider.getGraphQLType(extendedPropertyDefinition.getRequiredType(), extendedPropertyDefinition.isMultiple()))
                         .build());
             }
@@ -118,20 +125,29 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
                     .build()
             );
         }
+        */
 
         GraphQLObjectType queryType = newObject()
                 .name("dx")
+                .description("GraphQL Root object to access DX objects and content")
                 .field(newFieldDefinition()
                         .type(new GraphQLList(userType))
                         .name("user")
-                        .argument(newArgument().name("userKey").type(GraphQLString).build())
+                        .description("Provides access to users inside of DX, notably by requesting them through a userKey argument.")
+                        .argument(newArgument()
+                                .name("userKey")
+                                .description("A unique string identifier for the user inside the DX instance.")
+                                .type(GraphQLString)
+                                .build())
                         .dataFetcher(userDataFetcher)
                         .build())
+                /*
                 .field(newFieldDefinition()
                         .type(nodeTypesBuilder.build())
                         .name("nodeTypes")
                         .build()
                 )
+                */
                 .build();
 
         return queryType;
