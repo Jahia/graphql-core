@@ -29,20 +29,34 @@ public class DXGraphQLMutationProvider implements GraphQLMutationProvider {
 
         GraphQLFieldDefinition newNodeMutation = newFieldDefinition()
                 .name("createNodeByPath")
+                .description("Create a new content node in DX's content repository")
                 .argument(newArgument()
                         .name("name")
-                        .type(GraphQLString).build())
+                        .description("A name for the new child node, avoid non ASCII characters or spaces")
+                        .type(GraphQLString)
+                        .build()
+                )
                 .argument(newArgument()
                         .name("parentPath")
-                        .type(GraphQLString).build())
+                        .description("A valid path for the parent node under which this child node will be created.")
+                        .type(GraphQLString)
+                        .build()
+                )
+                .argument(newArgument()
+                        .name("nodeTypeName")
+                        .description("A valid node type name for the child node that will be created under the parent node.")
+                        .type(GraphQLString)
+                        .build()
+                )
                 .type(DXGraphQLCommonTypeProvider.getDXNodeType())
                 .dataFetcher(new DataFetcher() {
                     @Override
                     public Object get(DataFetchingEnvironment environment) {
                         String name = environment.getArgument("name");
                         String parentPath = environment.getArgument("parentPath");
+                        String nodeTypeName = environment.getArgument("nodeTypeName");
                         logger.debug("Mutation createNodeByPath called with arguments name=" + name + " parentPath=" + parentPath);
-                        return new DXGraphQLNode(UUID.randomUUID().toString(), name, UUID.randomUUID().toString(), parentPath, "primaryNodeType", new ArrayList<String>(), new ArrayList<DXGraphQLProperty>());
+                        return new DXGraphQLNode(UUID.randomUUID().toString(), name, UUID.randomUUID().toString(), parentPath, nodeTypeName, new ArrayList<String>(), new ArrayList<DXGraphQLProperty>());
                     }
                 })
                 .build();
