@@ -25,6 +25,8 @@
 <template:addResources type="javascript" resources="vendor/react-dom-15.0.1.min.js"/>
 <template:addResources type="javascript" resources="graphiql.js"/>
 
+<c:set var="graphQLURL" value="${url.server}${url.context}${url.templatesPath}"/>
+
 <div id="graphiql">Loading...</div>
 <script>
 
@@ -40,6 +42,7 @@
     // Parse the search string to get url parameters.
     var search = window.location.search;
     var parameters = {};
+    var graphQLURL = '${graphQLURL}' + '/graphql';
     search.substr(1).split('&').forEach(function (entry) {
         var eq = entry.indexOf('=');
         if (eq >= 0) {
@@ -88,14 +91,14 @@
 
     // Defines a GraphQL fetcher using the fetch API.
     function graphQLFetcher(graphQLParams) {
-        return fetch('http://localhost:8080/modules/graphql', {
+        return fetch(graphQLURL, {
             method: 'post',
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(graphQLParams),
-            credentials: 'include',
+            credentials: 'include'
         }).then(function (response) {
             return response.text();
         }).then(function (responseBody) {
