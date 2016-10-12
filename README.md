@@ -11,9 +11,9 @@ This project makes it possible to build GraphQL backends to expose services and 
 
         https://github.com/sergehuber/graphql-java-servlet.git
         
-2. Switch to the `spec-updates` branch 
+2. Switch to the `operationName-support` branch 
         
-        git checkout spec-updates
+        git checkout operationName-support
         
 3. Build and install the package to your local maven repository using the command:
 
