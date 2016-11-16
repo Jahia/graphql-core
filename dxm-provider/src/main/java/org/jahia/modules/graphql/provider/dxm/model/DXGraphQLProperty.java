@@ -31,7 +31,11 @@ public class DXGraphQLProperty {
 
     public String getValue() {
         try {
-            return propertyWrapper.getValue().getString();
+            if (propertyWrapper.isMultiple()) {
+                return "[multiple]";
+            } else {
+                return propertyWrapper.getValue().getString();
+            }
         } catch (RepositoryException e) {
             logger.error(e.getMessage(), e);
         }

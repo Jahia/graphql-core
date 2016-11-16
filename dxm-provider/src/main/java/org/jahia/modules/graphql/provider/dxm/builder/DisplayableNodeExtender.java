@@ -20,7 +20,7 @@ public class DisplayableNodeExtender implements DXGraphQLExtender {
     @Override
     public GraphQLObjectType.Builder build(GraphQLObjectType.Builder builder) {
         return builder.field(newFieldDefinition()
-                .name("displayableNodePath")
+                .name("displayableNode")
                 .type(new GraphQLTypeReference("node"))
                 .dataFetcher(getDisplayableNodePathDataFetcher())
                 .build());
