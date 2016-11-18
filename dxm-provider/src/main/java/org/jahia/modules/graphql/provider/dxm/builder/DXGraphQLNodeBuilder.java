@@ -1,26 +1,22 @@
 package org.jahia.modules.graphql.provider.dxm.builder;
 
 import graphql.schema.*;
-import graphql.servlet.GraphQLContext;
+import org.apache.commons.collections4.IteratorUtils;
+import org.apache.commons.collections4.functors.AllPredicate;
 import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNode;
 import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNodeType;
 import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLProperty;
-import org.jahia.services.content.JCRContentUtils;
+import org.jahia.services.content.JCRItemWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.render.RenderContext;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static graphql.Scalars.GraphQLString;
 import static graphql.schema.GraphQLArgument.newArgument;
@@ -61,9 +57,20 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
 
     @Override
     public GraphQLObjectType.Builder build(GraphQLObjectType.Builder builder) {
+        GraphQLInputObjectType propertyFilterType = GraphQLInputObjectType.newInputObject().name("propertyFilter")
+                .field(GraphQLInputObjectField.newInputObjectField()
+                        .name("key").type(GraphQLString).build())
+                .field(GraphQLInputObjectField.newInputObjectField()
+                        .name("value").type(GraphQLString).build())
+                .build();
+
         return builder
                 .field(newFieldDefinition()
                         .name("identifier")
+                        .type(GraphQLString)
+                        .build())
+                .field(newFieldDefinition()
+                        .name("name")
                         .type(GraphQLString)
                         .build())
                 .field(newFieldDefinition()
@@ -99,7 +106,28 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
                 .field(newFieldDefinition()
                         .name("children")
                         .type(new GraphQLTypeReference("nodeList"))
+                        .argument(newArgument().name("names")
+                                .type(new GraphQLList(GraphQLString))
+                                .defaultValue(Collections.emptyList())
+                                .build())
+                        .argument(newArgument().name("anyType")
+                                .type(new GraphQLList(GraphQLString))
+                                .defaultValue(Collections.emptyList())
+                                .build())
+                        .argument(newArgument().name("properties")
+                                .type(new GraphQLList(propertyFilterType))
+                                .defaultValue(Collections.emptyList())
+                                .build())
                         .dataFetcher(getChildrenDataFetcher())
+                        .build())
+                .field(newFieldDefinition()
+                        .name("ancestors")
+                        .type(new GraphQLTypeReference("nodeList"))
+                        .argument(newArgument().name("upToPath")
+                                .type(GraphQLString)
+                                .defaultValue("")
+                                .build())
+                        .dataFetcher(getAncestorsDataFetcher())
                         .build());
     }
 
@@ -122,20 +150,98 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
     public DataFetcher getChildrenDataFetcher() {
         return new DataFetcher() {
             @Override
-            public Object get(DataFetchingEnvironment environment) {
-                DXGraphQLNode node = (DXGraphQLNode) environment.getSource();
+            public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
+                DXGraphQLNode node = (DXGraphQLNode) dataFetchingEnvironment.getSource();
                 List<DXGraphQLNode> children = new ArrayList<DXGraphQLNode>();
                 try {
-                    for (JCRNodeWrapper child : node.getNode().getNodes()) {
-                        children.add(new DXGraphQLNode(child));
+                    Iterator<JCRNodeWrapper> nodes = IteratorUtils.filteredIterator(node.getNode().getNodes().iterator(), getNodesPredicate(dataFetchingEnvironment));
+                    while (nodes.hasNext()) {
+                        children.add(new DXGraphQLNode(nodes.next()));
                     }
-
                 } catch (RepositoryException e) {
                     logger.error(e.getMessage(), e);
                 }
                 return getList(children);
             }
         };
+    }
+
+    public DataFetcher getAncestorsDataFetcher() {
+        return new DataFetcher() {
+            @Override
+            public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
+                DXGraphQLNode node = (DXGraphQLNode) dataFetchingEnvironment.getSource();
+                List<DXGraphQLNode> ancestors = new ArrayList<DXGraphQLNode>();
+
+                String upToPath = dataFetchingEnvironment.getArgument("upToPath");
+                String upToPathSlash = upToPath + "/";
+
+                try {
+                    List<JCRItemWrapper> jcrAncestors = node.getNode().getAncestors();
+                    for (JCRItemWrapper ancestor : jcrAncestors) {
+                        if (upToPath == null || ancestor.getPath().equals(upToPath) || ancestor.getPath().startsWith(upToPathSlash)) {
+                            ancestors.add(new DXGraphQLNode((JCRNodeWrapper) ancestor));
+                        }
+                    }
+                } catch (RepositoryException e) {
+                    logger.error(e.getMessage(), e);
+                }
+                return getList(ancestors);
+            }
+        };
+    }
+
+    private AllPredicate<JCRNodeWrapper> getNodesPredicate(DataFetchingEnvironment dataFetchingEnvironment) {
+        final List<String> names = dataFetchingEnvironment.getArgument("names");
+        final List<String> anyType = dataFetchingEnvironment.getArgument("anyType");
+        final List<Map> properties = dataFetchingEnvironment.getArgument("properties");
+
+        return new AllPredicate<JCRNodeWrapper>(
+                new org.apache.commons.collections4.Predicate<JCRNodeWrapper>() {
+                    @Override
+                    public boolean evaluate(JCRNodeWrapper node) {
+                        return names == null || names.isEmpty() || names.contains(node.getName());
+                    }
+                },
+                new org.apache.commons.collections4.Predicate<JCRNodeWrapper>() {
+                    @Override
+                    public boolean evaluate(JCRNodeWrapper node) {
+                        if (anyType == null || anyType.isEmpty()) {
+                            return true;
+                        }
+                        for (String type : anyType) {
+                            try {
+                                if (node.isNodeType(type)) {
+                                    return true;
+                                }
+                            } catch (RepositoryException e) {
+                                logger.error(e.getMessage(), e);
+                            }
+                        }
+                        return false;
+                    }
+                },
+                new org.apache.commons.collections4.Predicate<JCRNodeWrapper>() {
+                    @Override
+                    public boolean evaluate(JCRNodeWrapper node) {
+                        if (properties == null || properties.isEmpty()) {
+                            return true;
+                        }
+                        for (Map property : properties) {
+                            String key = (String) property.get("key");
+                            String value = (String) property.get("value");
+                            try {
+                                if (!node.hasProperty(key) || !node.getProperty(key).getString().equals(value)) {
+                                    return false;
+                                }
+                            } catch (RepositoryException e) {
+                                logger.error(e.getMessage(), e);
+                            }
+                        }
+                        return true;
+                    }
+                }
+        );
     }
 
     public DataFetcher getPropertiesDataFetcher() {

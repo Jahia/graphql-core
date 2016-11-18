@@ -13,6 +13,7 @@ public class DXGraphQLNode {
     private JCRNodeWrapper node;
 
     private String identifier;
+    private String name;
     private String path;
     private String parentIdentifier;
     private String parentPath;
@@ -21,9 +22,12 @@ public class DXGraphQLNode {
         this.node = node;
         try {
             this.identifier = node.getIdentifier();
+            this.name = node.getName();
             this.path = node.getPath();
-            this.parentPath = node.getParent().getPath();
-            this.parentIdentifier = node.getParent().getIdentifier();
+            if (!node.getPath().equals("/")) {
+                this.parentPath = node.getParent().getPath();
+                this.parentIdentifier = node.getParent().getIdentifier();
+            }
         } catch (RepositoryException e) {
             e.printStackTrace();
         }
@@ -35,6 +39,10 @@ public class DXGraphQLNode {
 
     public String getIdentifier() {
         return identifier;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getPath() {
