@@ -9,6 +9,7 @@ import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLProperty;
 import org.jahia.services.content.JCRItemWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import java.util.*;
 
+import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLString;
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
@@ -88,14 +90,25 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
                 .field(newFieldDefinition()
                         .name("primaryNodeType")
                         .type(nodeTypeBuilder.getType())
-                        .dataFetcher(getNodeTypeDataFetcher())
+                        .dataFetcher(getPrimaryNodeTypeDataFetcher())
                         .build())
                 .field(newFieldDefinition()
                         .name("mixinTypes")
                         .type(new GraphQLList(nodeTypeBuilder.getType()))
+                        .dataFetcher(getMixinNodeTypeDataFetcher())
+                        .build())
+                .field(newFieldDefinition()
+                        .name("isNodeType")
+                        .description("Boolean value indicating if the node matches the specified nodetype(s)")
+                        .type(GraphQLBoolean)
+                        .argument(newArgument().name("anyType")
+                                .type(new GraphQLList(GraphQLString))
+                                .build())
+                        .dataFetcher(getIsNodeTypeDataFetcher())
                         .build())
                 .field(newFieldDefinition()
                         .name("properties")
+                        .description("List of node properties")
                         .type(new GraphQLList(propertiesBuilder.getType()))
                         .argument(newArgument().name("names")
                                 .type(new GraphQLList(GraphQLString))
@@ -105,16 +118,20 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
                         .build())
                 .field(newFieldDefinition()
                         .name("children")
+                        .description("List of child nodes")
                         .type(new GraphQLTypeReference("nodeList"))
                         .argument(newArgument().name("names")
+                                .description("Filter the list of children on a list of names. Only these nodes will be returned.")
                                 .type(new GraphQLList(GraphQLString))
                                 .defaultValue(Collections.emptyList())
                                 .build())
                         .argument(newArgument().name("anyType")
+                                .description("Filter the list of children on the specified nodetypes. Only nodes matching at least one of these types will be returned.")
                                 .type(new GraphQLList(GraphQLString))
                                 .defaultValue(Collections.emptyList())
                                 .build())
                         .argument(newArgument().name("properties")
+                                .description("Filter the list of children based on properties value.")
                                 .type(new GraphQLList(propertyFilterType))
                                 .defaultValue(Collections.emptyList())
                                 .build())
@@ -131,7 +148,7 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
                         .build());
     }
 
-    public DataFetcher getNodeTypeDataFetcher() {
+    public DataFetcher getPrimaryNodeTypeDataFetcher() {
         return new DataFetcher() {
             @Override
             public Object get(DataFetchingEnvironment environment) {
@@ -143,6 +160,48 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
                     }
                 }
                 return null;
+            }
+        };
+    }
+
+    public DataFetcher getMixinNodeTypeDataFetcher() {
+        return new DataFetcher() {
+            @Override
+            public Object get(DataFetchingEnvironment environment) {
+                if (environment.getSource() instanceof DXGraphQLNode) {
+                    try {
+                        List<DXGraphQLNodeType> result = new ArrayList<>();
+                        ExtendedNodeType[] mixinNodeTypes = ((DXGraphQLNode) environment.getSource()).getNode().getMixinNodeTypes();
+                        for (ExtendedNodeType nodeType : mixinNodeTypes) {
+                            result.add(new DXGraphQLNodeType(nodeType));
+                        }
+                        return result;
+                    } catch (RepositoryException e) {
+                        logger.error(e.getMessage(), e);
+                    }
+                }
+                return null;
+            }
+        };
+    }
+
+    public DataFetcher getIsNodeTypeDataFetcher() {
+        return new DataFetcher() {
+            @Override
+            public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
+                if (dataFetchingEnvironment.getSource() instanceof DXGraphQLNode) {
+                    try {
+                        List<String> types = dataFetchingEnvironment.getArgument("anyType");
+                        for (String type : types) {
+                            if (((DXGraphQLNode) dataFetchingEnvironment.getSource()).getNode().isNodeType(type)) {
+                                return true;
+                            }
+                        }
+                    } catch (RepositoryException e) {
+                        logger.error(e.getMessage(), e);
+                    }
+                }
+                return false;
             }
         };
     }
