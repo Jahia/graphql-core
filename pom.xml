@@ -82,7 +82,8 @@
     </repositories>
 
     <modules>
-        <module>user-provider</module>
+        <!--<module>user-provider</module>-->
+        <module>dxm-provider</module>
         <module>graphiql</module>
         <module>features</module>
     </modules>

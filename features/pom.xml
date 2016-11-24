@@ -65,7 +65,7 @@
         </dependency>
         <dependency>
             <groupId>org.jahia.modules</groupId>
-            <artifactId>graphql-core-user-provider</artifactId>
+            <artifactId>graphql-core-dxm-provider</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
