@@ -36,60 +36,46 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>jahia-modules</artifactId>
+        <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>7.2.0.0-SNAPSHOT</version>
+        <version>1.0-SNAPSHOT</version>
     </parent>
-    <artifactId>graphql-core-root</artifactId>
-    <name>DX :: GraphQL Core integration :: Root</name>
-    <version>1.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
-    <description>This is the root project for the DX GraphQL Core integration project</description>
+    <artifactId>graphql-core-dxm-provider-baseplugin</artifactId>
+    <name>DX :: GraphQL Core integration :: DXM Provider plugin</name>
+    <packaging>bundle</packaging>
+    <description>This is the provider project for the DX GraphQL Core integration project</description>
 
-    <properties>
-        <graphql-java-servlet.version>0.7.0</graphql-java-servlet.version>
-    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java-servlet</artifactId>
+            <version>${graphql-java-servlet.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
-    <scm>
-        <connection>scm:git:git@github.com:Jahia/graphql-core-feature.git</connection>
-        <developerConnection>scm:git:git@github.com:Jahia/graphql-core-feature.git</developerConnection>
-        <url>scm:git:git@github.com:Jahia/graphql-core-feature.git</url>
-    </scm>
-
-    <distributionManagement>
-        <repository>
-            <id>jahia-releases</id>
-            <url>https://devtools.jahia.com/nexus/content/repositories/jahia-releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>jahia-snapshots</id>
-            <url>https://devtools.jahia.com/nexus/content/repositories/jahia-snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
-    <repositories>
-        <repository>
-            <id>jahia-public</id>
-            <name>Jahia Public Repository</name>
-            <url>https://devtools.jahia.com/nexus/content/groups/public</url>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
-    <modules>
-        <!--<module>user-provider</module>-->
-        <module>dxm-provider</module>
-        <module>dxm-provider-baseplugin</module>
-        <module>graphiql</module>
-        <module>features</module>
-    </modules>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>graphql-core-dxm-provider</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
     <build>
-    </build>
+        <plugins>
 
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Jahia-Depends>default</Jahia-Depends>
+                        <_dsannotations>*</_dsannotations>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+
+    </build>
 </project>

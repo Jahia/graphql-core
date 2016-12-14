@@ -45,6 +45,10 @@
     <packaging>bundle</packaging>
     <description>This is the provider project for the DX GraphQL Core integration project</description>
 
+    <properties>
+        <export-package>org.jahia.modules.graphql.provider.dxm.builder,org.jahia.modules.graphql.provider.dxm.model</export-package>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.graphql-java</groupId>

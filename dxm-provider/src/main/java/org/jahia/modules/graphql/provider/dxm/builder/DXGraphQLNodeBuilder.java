@@ -1,6 +1,7 @@
 package org.jahia.modules.graphql.provider.dxm.builder;
 
 import graphql.schema.*;
+import graphql.servlet.GraphQLServlet;
 import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.collections4.functors.AllPredicate;
 import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNode;
@@ -12,11 +13,14 @@ import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
+import javax.servlet.Servlet;
 import java.util.*;
 
 import static graphql.Scalars.GraphQLBoolean;
@@ -32,18 +36,34 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
 
     private DXGraphQLNodeTypeBuilder nodeTypeBuilder;
 
+    private GraphQLServlet graphQLServlet;
+
     @Override
     public String getName() {
         return "node";
     }
 
-    @Reference(service = DXGraphQLExtender.class, target = "(graphQLType=node)")
+    @Reference(service = Servlet.class, target = "(alias=/graphql)", bind="setGraphQLServlet", unbind = "-", cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    public void setGraphQLServlet(Servlet graphQLServlet) {
+        this.graphQLServlet = (GraphQLServlet) graphQLServlet;
+    }
+
+    private void updateSchema() {
+        this.type = null;
+        this.listType = null;
+        this.edgeType = null;
+        graphQLServlet.unbindQueryProvider(null);
+    }
+
+    @Reference(service = DXGraphQLExtender.class, target = "(graphQLType=node)", cardinality = ReferenceCardinality.MULTIPLE , policy = ReferencePolicy.DYNAMIC)
     public void bindExtender(DXGraphQLExtender extender) {
         this.extenders.add(extender);
+        updateSchema();
     }
 
     public void unbindExtender(DXGraphQLExtender extender) {
         this.extenders.remove(extender);
+        updateSchema();
     }
 
     @Reference
@@ -59,7 +79,7 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
 
     @Override
     public GraphQLObjectType.Builder build(GraphQLObjectType.Builder builder) {
-        GraphQLInputObjectType propertyFilterType = GraphQLInputObjectType.newInputObject().name("propertyFilter")
+         GraphQLInputObjectType propertyFilterType = GraphQLInputObjectType.newInputObject().name("propertyFilter")
                 .field(GraphQLInputObjectField.newInputObjectField()
                         .name("key").type(GraphQLString).build())
                 .field(GraphQLInputObjectField.newInputObjectField()
