@@ -1,6 +1,9 @@
 package org.jahia.modules.graphql.provider.dxm.extensions;
 
-import graphql.schema.*;
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLTypeReference;
 import graphql.servlet.GraphQLContext;
 import org.jahia.modules.graphql.provider.dxm.builder.DXGraphQLExtender;
 import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNode;
@@ -10,14 +13,15 @@ import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.render.RenderContext;
 import org.osgi.service.component.annotations.Component;
 
-import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
+import java.util.Arrays;
+import java.util.List;
 
 @Component(service = DXGraphQLExtender.class, immediate = true, property = { "graphQLType=node"})
 public class DisplayableNodeExtender implements DXGraphQLExtender {
 
     @Override
-    public GraphQLObjectType.Builder build(GraphQLObjectType.Builder builder) {
-        return builder.field(GraphQLFieldDefinition.newFieldDefinition()
+    public List<GraphQLFieldDefinition> getFields() {
+        return Arrays.asList(GraphQLFieldDefinition.newFieldDefinition()
                 .name("displayableNode")
                 .type(new GraphQLTypeReference("node"))
                 .dataFetcher(getDisplayableNodePathDataFetcher())

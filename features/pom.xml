@@ -57,6 +57,11 @@
             <artifactId>antlr4-runtime</artifactId>
             <version>4.5.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.21</version>
+        </dependency>
         <!-- End of missing implicit GraphQL dependencies -->
         <dependency>
             <groupId>com.graphql-java</groupId>
@@ -66,6 +71,11 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>graphql-core-dxm-provider</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>graphql-core-dxm-provider-baseplugin</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>

@@ -1,6 +1,9 @@
 package org.jahia.modules.graphql.provider.dxm.builder;
 
-import graphql.schema.*;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,9 +17,9 @@ import static graphql.schema.GraphQLObjectType.newObject;
 
 public abstract class DXGraphQLBuilder {
 
-    protected GraphQLObjectType type;
-    protected GraphQLObjectType edgeType;
-    protected GraphQLObjectType listType;
+    protected GraphQLOutputType type;
+    protected GraphQLOutputType edgeType;
+    protected GraphQLOutputType listType;
 
     protected List<DXGraphQLExtender> extenders = new ArrayList<>();
 
@@ -27,10 +30,10 @@ public abstract class DXGraphQLBuilder {
             GraphQLObjectType.Builder builder = newObject()
                     .name(getName());
 
-            builder = build(builder);
+            builder.fields(getFields());
 
             for (DXGraphQLExtender extender : extenders) {
-                builder = extender.build(builder);
+                builder.fields(extender.getFields());
             }
 
             type = builder.build();
@@ -72,7 +75,7 @@ public abstract class DXGraphQLBuilder {
         return listType;
     }
 
-    public Object getList(List nodes) {
+    public static Object getList(List nodes) {
         HashMap<String, Object> list = new HashMap<String, Object>();
         list.put("totalCount", nodes.size());
         list.put("nodes", nodes);
@@ -88,7 +91,6 @@ public abstract class DXGraphQLBuilder {
     }
 
 
-
-    protected abstract GraphQLObjectType.Builder build(GraphQLObjectType.Builder builder);
+    protected abstract List<GraphQLFieldDefinition> getFields();
 
 }

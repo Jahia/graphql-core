@@ -1,10 +1,15 @@
 package org.jahia.modules.graphql.provider.dxm.builder;
 
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static graphql.Scalars.GraphQLString;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
@@ -27,13 +32,13 @@ public class DXGraphQLPropertiesBuilder extends DXGraphQLBuilder {
     }
 
     @Override
-    protected GraphQLObjectType.Builder build(GraphQLObjectType.Builder builder) {
-        return builder
-                .field(newFieldDefinition()
+    protected List<GraphQLFieldDefinition> getFields() {
+        return Arrays.asList(
+                newFieldDefinition()
                         .name("key")
                         .type(GraphQLString)
-                        .build())
-                .field(newFieldDefinition()
+                        .build(),
+                newFieldDefinition()
                         .name("value")
                         .type(GraphQLString)
                         .build());

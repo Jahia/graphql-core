@@ -1,9 +1,6 @@
 package org.jahia.modules.graphql.provider.dxm;
 
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLList;
-import graphql.schema.GraphQLObjectType;
+import graphql.schema.*;
 import graphql.servlet.GraphQLQueryProvider;
 import org.jahia.modules.graphql.provider.dxm.builder.DXGraphQLNodeBuilder;
 import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNode;
@@ -21,6 +18,7 @@ import java.util.List;
 import static graphql.Scalars.GraphQLString;
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
+import static graphql.schema.GraphQLInterfaceType.newInterface;
 import static graphql.schema.GraphQLObjectType.newObject;
 
 @Component(service = GraphQLQueryProvider.class, immediate = true)
@@ -54,9 +52,11 @@ public class DXGraphQLNodeByPathQueryProvider implements GraphQLQueryProvider {
                         }
                     }
                 }
+                String asMixin = dataFetchingEnvironment.getArgument("asMixin");
+
                 List<DXGraphQLNode> qlnodes = new ArrayList<>();
                 for (JCRNodeWrapper jcrNodeWrapper : nodes) {
-                    qlnodes.add(new DXGraphQLNode(jcrNodeWrapper));
+                    qlnodes.add(new DXGraphQLNode(jcrNodeWrapper, asMixin));
                 }
                 return nodeBuilder.getList(qlnodes);
             }
@@ -74,6 +74,11 @@ public class DXGraphQLNodeByPathQueryProvider implements GraphQLQueryProvider {
                                 .name("paths")
                                 .description("List of paths")
                                 .type(new GraphQLList(GraphQLString))
+                                .build())
+                        .argument(newArgument()
+                                .name("asMixin")
+                                .description("Specify a mixin that will be used for the node")
+                                .type(GraphQLString)
                                 .build())
                         .dataFetcher(getNodesDataFetcher())
                         .build())

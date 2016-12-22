@@ -60,9 +60,11 @@ public class DXGraphQLNodesByQueryQueryProvider implements GraphQLQueryProvider 
                         logger.error(e.getMessage(), e);
                     }
                 }
+                String asMixin = dataFetchingEnvironment.getArgument("asMixin");
+
                 List<DXGraphQLNode> qlnodes = new ArrayList<>();
                 for (JCRNodeWrapper jcrNodeWrapper : nodes) {
-                    qlnodes.add(new DXGraphQLNode(jcrNodeWrapper));
+                    qlnodes.add(new DXGraphQLNode(jcrNodeWrapper, asMixin));
                 }
                 return nodeBuilder.getList(qlnodes);
             }
@@ -79,6 +81,11 @@ public class DXGraphQLNodesByQueryQueryProvider implements GraphQLQueryProvider 
                         .argument(newArgument()
                                 .name("q")
                                 .description("JCR-SQL2 query")
+                                .type(GraphQLString)
+                                .build())
+                        .argument(newArgument()
+                                .name("asMixin")
+                                .description("Specify a mixin that will be used for the node")
                                 .type(GraphQLString)
                                 .build())
                         .dataFetcher(getNodesDataFetcher())
