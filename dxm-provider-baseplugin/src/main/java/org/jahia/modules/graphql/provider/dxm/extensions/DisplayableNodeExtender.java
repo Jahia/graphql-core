@@ -16,26 +16,35 @@ import org.osgi.service.component.annotations.Component;
 import java.util.Arrays;
 import java.util.List;
 
-@Component(service = DXGraphQLExtender.class, immediate = true, property = { "graphQLType=node"})
+import static graphql.Scalars.GraphQLString;
+
+@Component(service = DXGraphQLExtender.class, immediate = true, property = {"graphQLType=node"})
 public class DisplayableNodeExtender implements DXGraphQLExtender {
 
     @Override
     public List<GraphQLFieldDefinition> getFields() {
-        return Arrays.asList(GraphQLFieldDefinition.newFieldDefinition()
-                .name("displayableNode")
-                .type(new GraphQLTypeReference("node"))
-                .dataFetcher(getDisplayableNodePathDataFetcher())
-                .build());
+        return Arrays.asList(
+                GraphQLFieldDefinition.newFieldDefinition()
+                        .name("displayableNode")
+                        .type(new GraphQLTypeReference("node"))
+                        .dataFetcher(getDisplayableNodePathDataFetcher())
+                        .build(),
+                GraphQLFieldDefinition.newFieldDefinition()
+                        .name("ajaxRenderUrl")
+                        .type(GraphQLString)
+                        .dataFetcher(getAjaxRenderUrl())
+                        .build()
+        );
     }
 
 
-    public DataFetcher getDisplayableNodePathDataFetcher()  {
+    public DataFetcher getDisplayableNodePathDataFetcher() {
         return new DataFetcher() {
             @Override
             public Object get(DataFetchingEnvironment environment) {
                 if (environment.getSource() instanceof DXGraphQLNode) {
-                    RenderContext context = new RenderContext(((GraphQLContext)environment.getContext()).getRequest().get(),
-                            ((GraphQLContext)environment.getContext()).getResponse().get(),
+                    RenderContext context = new RenderContext(((GraphQLContext) environment.getContext()).getRequest().get(),
+                            ((GraphQLContext) environment.getContext()).getResponse().get(),
                             JCRSessionFactory.getInstance().getCurrentUser());
                     JCRNodeWrapper node = JCRContentUtils.findDisplayableNode(((DXGraphQLNode) environment.getSource()).getNode(), context);
                     if (node != null) {
@@ -43,6 +52,19 @@ public class DisplayableNodeExtender implements DXGraphQLExtender {
                     } else {
                         return null;
                     }
+                }
+                return null;
+            }
+        };
+    }
+
+    public DataFetcher getAjaxRenderUrl() {
+        return new DataFetcher() {
+            @Override
+            public Object get(DataFetchingEnvironment environment) {
+                if (environment.getSource() instanceof DXGraphQLNode) {
+                    DXGraphQLNode node = (DXGraphQLNode) environment.getSource();
+                    return node.getNode().getUrl() + ".ajax";
                 }
                 return null;
             }

@@ -14,35 +14,24 @@ import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.List;
 
-class PropertiesDataFetcher implements DataFetcher {
+class PropertyDataFetcher implements DataFetcher {
     @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
         DXGraphQLNode node = (DXGraphQLNode) dataFetchingEnvironment.getSource();
-        List<DXGraphQLProperty> propertyList = new ArrayList<DXGraphQLProperty>();
         try {
-            List<String> names = dataFetchingEnvironment.getArgument("names");
+            String name = dataFetchingEnvironment.getArgument("name");
             String language = dataFetchingEnvironment.getArgument("language");
             JCRNodeWrapper jcrNode = node.getNode();
             if (language != null) {
                 jcrNode = JCRSessionFactory.getInstance().getCurrentUserSession(null, LanguageCodeConverters.languageCodeToLocale(language))
                         .getNodeByIdentifier(jcrNode.getIdentifier());
             }
-            if (names != null && !names.isEmpty()) {
-                for (String name : names) {
-                    if (jcrNode.hasProperty(name)) {
-                        propertyList.add(new DXGraphQLProperty(jcrNode.getProperty(name)));
-                    }
-                }
-            } else {
-                PropertyIterator pi = jcrNode.getProperties();
-                while (pi.hasNext()) {
-                    JCRPropertyWrapper property = (JCRPropertyWrapper) pi.nextProperty();
-                    propertyList.add(new DXGraphQLProperty(property));
-                }
+            if (jcrNode.hasProperty(name)) {
+                return new DXGraphQLProperty(jcrNode.getProperty(name));
             }
+            return null;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
-        return propertyList;
     }
 }

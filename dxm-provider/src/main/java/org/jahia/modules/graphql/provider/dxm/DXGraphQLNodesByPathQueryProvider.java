@@ -1,6 +1,9 @@
 package org.jahia.modules.graphql.provider.dxm;
 
-import graphql.schema.*;
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLNonNull;
+import graphql.schema.GraphQLObjectType;
 import graphql.servlet.GraphQLQueryProvider;
 import org.jahia.modules.graphql.provider.dxm.builder.DXGraphQLNodeBuilder;
 import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNode;
@@ -21,8 +24,8 @@ import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLObjectType.newObject;
 
 @Component(service = GraphQLQueryProvider.class, immediate = true)
-public class DXGraphQLNodeByIdentifierQueryProvider implements GraphQLQueryProvider {
-    private static Logger logger = LoggerFactory.getLogger(DXGraphQLNodeByPathQueryProvider.class);
+public class DXGraphQLNodesByPathQueryProvider implements GraphQLQueryProvider {
+    private static Logger logger = LoggerFactory.getLogger(DXGraphQLNodesByPathQueryProvider.class);
 
     private DXGraphQLNodeBuilder nodeBuilder;
 
@@ -36,52 +39,41 @@ public class DXGraphQLNodeByIdentifierQueryProvider implements GraphQLQueryProvi
         return "rootcontext";
     }
 
-    public DataFetcher getNodesDataFetcher() {
+    public DataFetcher getNodeDataFetcher() {
         return new DataFetcher() {
             @Override
             public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
                 List<JCRNodeWrapper> nodes = new ArrayList<>();
-                if (dataFetchingEnvironment.getArgument("ids") != null) {
-                    List<String> ids = dataFetchingEnvironment.getArgument("ids");
-                    for (String id : ids) {
-                        try {
-                            nodes.add(JCRSessionFactory.getInstance().getCurrentUserSession().getNodeByIdentifier(id));
-                        } catch (RepositoryException e) {
-                            logger.error(e.getMessage(), e);
-                        }
-                    }
-                }
                 String asMixin = dataFetchingEnvironment.getArgument("asMixin");
-
-                List<DXGraphQLNode> qlnodes = new ArrayList<>();
-                for (JCRNodeWrapper jcrNodeWrapper : nodes) {
-                    qlnodes.add(new DXGraphQLNode(jcrNodeWrapper, asMixin));
+                String path = dataFetchingEnvironment.getArgument("path");
+                try {
+                    return new DXGraphQLNode(JCRSessionFactory.getInstance().getCurrentUserSession().getNode(path), asMixin);
+                } catch (RepositoryException e) {
+                    throw new RuntimeException(e);
                 }
-                return nodeBuilder.getList(qlnodes);
             }
         };
     }
 
     @Override
     public GraphQLObjectType getQuery() {
-        return newObject().name("nodesById")
+        return newObject().name("nodeByPath")
                 .field(newFieldDefinition()
-                        .name("nodesById")
-                        .type(nodeBuilder.getListType())
-                        .description("Provides access to nodes inside of DX, notably by requesting them through a ID argument.")
+                        .name("nodeByPath")
+                        .type(nodeBuilder.getType())
+                        .description("Provides access to nodes inside of DX, notably by requesting them through a paths argument.")
                         .argument(newArgument()
-                                .name("ids")
-                                .description("List of IDs")
-                                .type(new GraphQLList(GraphQLString))
+                                .name("path")
+                                .description("Paths")
+                                .type(new GraphQLNonNull(GraphQLString))
                                 .build())
                         .argument(newArgument()
                                 .name("asMixin")
                                 .description("Specify a mixin that will be used for the node")
                                 .type(GraphQLString)
                                 .build())
-                        .dataFetcher(getNodesDataFetcher())
+                        .dataFetcher(getNodeDataFetcher())
                         .build())
                 .build();
     }
-
 }
