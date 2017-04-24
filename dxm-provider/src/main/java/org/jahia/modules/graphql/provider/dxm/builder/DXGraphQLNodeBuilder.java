@@ -285,7 +285,7 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
 
     protected List<GraphQLFieldDefinition> getFields() {
         if (fieldDefinitions == null) {
-            GraphQLInputObjectType propertyFilterType = GraphQLInputObjectType.newInputObject().name("propertyFilter")
+            GraphQLInputObjectType propertyFilterType = GraphQLInputObjectType.newInputObject().name("PropertyFilter")
                     .field(GraphQLInputObjectField.newInputObjectField()
                             .name("key").type(GraphQLString).build())
                     .field(GraphQLInputObjectField.newInputObjectField()

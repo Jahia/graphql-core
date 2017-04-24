@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-@Component(service = GraphQLTypesProvider.class, immediate = true)
+@Component(service = GraphQLTypesProvider.class)
 public class DXGraphQLTypesProvider implements GraphQLTypesProvider {
     private DXGraphQLNodeBuilder nodeBuilder;
 

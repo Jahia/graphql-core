@@ -50,7 +50,7 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
                             .build(),
                     newFieldDefinition()
                             .name("properties")
-                            .type(new GraphQLList(newObject().name("propertyDefinition")
+                            .type(new GraphQLList(newObject().name("PropertyDefinition")
                                     .field(newFieldDefinition()
                                             .name("name")
                                             .type(GraphQLString)
@@ -60,7 +60,7 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
                             .build(),
                     newFieldDefinition()
                             .name("nodes")
-                            .type(new GraphQLList(newObject().name("nodeDefinition")
+                            .type(new GraphQLList(newObject().name("NodeDefinition")
                                     .field(newFieldDefinition()
                                             .name("name")
                                             .type(GraphQLString)

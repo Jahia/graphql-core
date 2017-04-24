@@ -25,7 +25,7 @@ import static graphql.Scalars.GraphQLString;
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 
-@Component(service = GraphQLQueryProvider.class, immediate = true)
+@Component(service = GraphQLQueryProvider.class)
 public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
     public static final String ID_ARG = "id";
     public static final String PATH_ARG = "path";
@@ -190,7 +190,7 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
                         .argument(newArgument()
                                 .name(QUERY_LANGUAGE_ARG)
                                 .description("JCR-SQL2 or XPath")
-                                .type(GraphQLEnumType.newEnum().name("queryType")
+                                .type(GraphQLEnumType.newEnum().name("QueryType")
                                         .value("SQL2")
                                         .value("XPATH")
                                         .build())
