@@ -29,16 +29,7 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
 
     @Override
     public String getName() {
-        return "nodeType";
-    }
-
-    @Reference(target = "(graphQLType=nodeType)", cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.STATIC)
-    public void bindExtender(DXGraphQLExtender extender) {
-        this.extenders.add(extender);
-    }
-
-    public void unbindExtender(DXGraphQLExtender extender) {
-        this.extenders.remove(extender);
+        return "NodeType";
     }
 
     @Override
@@ -79,7 +70,7 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
                             .build(),
                     newFieldDefinition()
                             .name("subTypes")
-                            .type(new GraphQLList(new GraphQLTypeReference("nodeType")))
+                            .type(new GraphQLList(new GraphQLTypeReference("NodeType")))
                             .dataFetcher(new SubTypesDataFetcher())
                             .build());
         }

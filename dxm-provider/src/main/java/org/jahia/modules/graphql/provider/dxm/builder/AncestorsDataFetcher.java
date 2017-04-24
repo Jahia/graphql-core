@@ -29,6 +29,6 @@ class AncestorsDataFetcher implements DataFetcher {
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
-        return DXGraphQLBuilder.getList(ancestors);
+        return DXGraphQLBuilder.getList(ancestors, "Node");
     }
 }

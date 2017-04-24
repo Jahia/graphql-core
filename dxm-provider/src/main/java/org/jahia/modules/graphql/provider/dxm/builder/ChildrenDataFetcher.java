@@ -28,7 +28,7 @@ class ChildrenDataFetcher implements DataFetcher {
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
-        return DXGraphQLBuilder.getList(children);
+        return DXGraphQLBuilder.getList(children, "Node");
     }
 
     private AllPredicate<JCRNodeWrapper> getNodesPredicate(DataFetchingEnvironment dataFetchingEnvironment) {

@@ -5,7 +5,7 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLTypeReference;
 import graphql.servlet.GraphQLContext;
-import org.jahia.modules.graphql.provider.dxm.builder.DXGraphQLExtender;
+import org.jahia.modules.graphql.provider.dxm.builder.GraphQLFieldProvider;
 import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNode;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -18,23 +18,33 @@ import java.util.List;
 
 import static graphql.Scalars.GraphQLString;
 
-@Component(service = DXGraphQLExtender.class, immediate = true, property = {"graphQLType=node"})
-public class DisplayableNodeExtender implements DXGraphQLExtender {
+@Component(service = GraphQLFieldProvider.class, immediate = true)
+public class DisplayableNodeExtender implements GraphQLFieldProvider {
+
+    private List<GraphQLFieldDefinition> fieldDefinitionList;
+
+    @Override
+    public String getTypeName() {
+        return "node";
+    }
 
     @Override
     public List<GraphQLFieldDefinition> getFields() {
-        return Arrays.asList(
-                GraphQLFieldDefinition.newFieldDefinition()
-                        .name("displayableNode")
-                        .type(new GraphQLTypeReference("node"))
-                        .dataFetcher(getDisplayableNodePathDataFetcher())
-                        .build(),
-                GraphQLFieldDefinition.newFieldDefinition()
-                        .name("ajaxRenderUrl")
-                        .type(GraphQLString)
-                        .dataFetcher(getAjaxRenderUrl())
-                        .build()
-        );
+        if (fieldDefinitionList == null) {
+            fieldDefinitionList = Arrays.asList(
+                    GraphQLFieldDefinition.newFieldDefinition()
+                            .name("displayableNode")
+                            .type(new GraphQLTypeReference("Node"))
+                            .dataFetcher(getDisplayableNodePathDataFetcher())
+                            .build(),
+                    GraphQLFieldDefinition.newFieldDefinition()
+                            .name("ajaxRenderUrl")
+                            .type(GraphQLString)
+                            .dataFetcher(getAjaxRenderUrl())
+                            .build()
+            );
+        }
+        return fieldDefinitionList;
     }
 
 

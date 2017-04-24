@@ -22,6 +22,7 @@ public class DXGraphQLTypesProvider implements GraphQLTypesProvider {
     @Override
     public Collection<GraphQLType> getTypes() {
         List<GraphQLType> types = new ArrayList<>();
+        types.add(nodeBuilder.getGenericType());
         types.addAll(nodeBuilder.getKnownTypes().values());
         types.add(nodeBuilder.getListType());
         return types;

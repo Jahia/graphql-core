@@ -47,7 +47,7 @@
     <description>This is the root project for the DX GraphQL Core integration project</description>
 
     <properties>
-        <graphql-java-servlet.version>0.9.1-SNAPSHOT</graphql-java-servlet.version>
+        <graphql-java-servlet.version>3.0.0</graphql-java-servlet.version>
     </properties>
 
     <scm>

@@ -1,13 +1,13 @@
 package org.jahia.modules.graphql.provider.dxm.builder;
 
 import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLObjectType;
 
 import java.util.List;
 
+public interface GraphQLFieldProvider {
 
-public interface DXGraphQLExtender {
+    String getTypeName();
 
     List<GraphQLFieldDefinition> getFields();
+
 }

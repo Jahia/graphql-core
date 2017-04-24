@@ -2,6 +2,7 @@ package org.jahia.modules.graphql.provider.dxm.builder;
 
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInterfaceType;
+import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -19,16 +20,7 @@ import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 public class DXGraphQLPropertiesBuilder extends DXGraphQLBuilder {
     @Override
     public String getName() {
-        return "property";
-    }
-
-    @Reference(target = "(graphQLType=property)", cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.STATIC)
-    public void bindExtender(DXGraphQLExtender extender) {
-        this.extenders.add(extender);
-    }
-
-    public void unbindExtender(DXGraphQLExtender extender) {
-        this.extenders.remove(extender);
+        return "Property";
     }
 
     @Override
@@ -41,6 +33,10 @@ public class DXGraphQLPropertiesBuilder extends DXGraphQLBuilder {
                 newFieldDefinition()
                         .name("value")
                         .type(GraphQLString)
+                        .build(),
+                newFieldDefinition()
+                        .name("values")
+                        .type(new GraphQLList(GraphQLString))
                         .build());
     }
 }
