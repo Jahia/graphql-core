@@ -10,14 +10,20 @@ import org.jahia.services.content.nodetypes.ExtendedNodeType;
 public class DXGraphQLNodeType {
     private ExtendedNodeType nodeType;
     private String name;
+    private String systemId;
     private boolean isMixin;
     private boolean isAbstract;
+    private boolean hasOrderableChildNodes;
+    private boolean isQueryable;
 
     public DXGraphQLNodeType(ExtendedNodeType nodeType) {
         this.nodeType = nodeType;
         this.name = nodeType.getName();
+        this.systemId = nodeType.getSystemId();
         this.isMixin = nodeType.isMixin();
         this.isAbstract = nodeType.isAbstract();
+        this.hasOrderableChildNodes = nodeType.hasOrderableChildNodes();
+        this.isQueryable = nodeType.isQueryable();
     }
 
     public ExtendedNodeType getNodeType() {
@@ -28,6 +34,10 @@ public class DXGraphQLNodeType {
         return name;
     }
 
+    public String getSystemId() {
+        return systemId;
+    }
+
     public boolean isMixin() {
         return isMixin;
     }
@@ -36,4 +46,11 @@ public class DXGraphQLNodeType {
         return isAbstract;
     }
 
+    public boolean isHasOrderableChildNodes() {
+        return hasOrderableChildNodes;
+    }
+
+    public boolean isQueryable() {
+        return isQueryable;
+    }
 }

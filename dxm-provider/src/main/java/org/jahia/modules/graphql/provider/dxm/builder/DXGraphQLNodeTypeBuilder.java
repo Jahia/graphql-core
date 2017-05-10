@@ -6,6 +6,7 @@ import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.jahia.utils.LanguageCodeConverters;
 import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,7 @@ import java.util.List;
 
 import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLString;
+import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLObjectType.newObject;
 
@@ -49,6 +51,14 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
                             .type(GraphQLBoolean)
                             .build(),
                     newFieldDefinition()
+                            .name("displayName")
+                            .type(GraphQLString)
+                            .argument(newArgument().name("language")
+                                    .type(GraphQLString)
+                                    .build())
+                            .dataFetcher(new DisplayNameDataFetcher())
+                            .build(),
+                    newFieldDefinition()
                             .name("properties")
                             .type(new GraphQLList(newObject().name("PropertyDefinition")
                                     .field(newFieldDefinition()
@@ -70,11 +80,25 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
                             .build(),
                     newFieldDefinition()
                             .name("subTypes")
-                            .type(new GraphQLList(new GraphQLTypeReference("NodeType")))
+                            .type(new GraphQLTypeReference("NodeTypeList"))
                             .dataFetcher(new SubTypesDataFetcher())
+                            .build(),
+                    newFieldDefinition()
+                            .name("superTypes")
+                            .type(new GraphQLTypeReference("NodeTypeList"))
+                            .dataFetcher(new SuperTypesDataFetcher())
                             .build());
         }
         return fieldDefinitionList;
+    }
+
+    private static class DisplayNameDataFetcher implements  DataFetcher {
+        @Override
+        public Object get(DataFetchingEnvironment environment) {
+            DXGraphQLNodeType nodeType = (DXGraphQLNodeType) environment.getSource();
+            String lang = environment.getArgument("language");
+            return nodeType.getNodeType().getLabel(LanguageCodeConverters.languageCodeToLocale(lang));
+        }
     }
 
     private static class PropertyDefinitionsDataFetcher implements DataFetcher {
@@ -131,7 +155,25 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
             } catch (NoSuchNodeTypeException e) {
                 logger.error(e.getMessage(), e);
             }
-            return subTypes;
+            return getList(subTypes, "NodeType");
+        }
+    }
+
+    private static class SuperTypesDataFetcher implements DataFetcher {
+        @Override
+        public Object get(DataFetchingEnvironment environment) {
+            DXGraphQLNodeType nodeType = (DXGraphQLNodeType) environment.getSource();
+            List<DXGraphQLNodeType> superTypes = null;
+            try {
+                ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
+                superTypes = new ArrayList<>();
+                for (ExtendedNodeType type : ent.getSupertypeSet()) {
+                    superTypes.add(new DXGraphQLNodeType(type));
+                }
+            } catch (NoSuchNodeTypeException e) {
+                logger.error(e.getMessage(), e);
+            }
+            return getList(superTypes, "NodeType");
         }
     }
 }

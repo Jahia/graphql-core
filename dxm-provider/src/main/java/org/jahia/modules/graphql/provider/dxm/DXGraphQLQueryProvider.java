@@ -3,10 +3,13 @@ package org.jahia.modules.graphql.provider.dxm;
 import graphql.schema.*;
 import graphql.servlet.GraphQLQueryProvider;
 import org.jahia.modules.graphql.provider.dxm.builder.DXGraphQLNodeBuilder;
+import org.jahia.modules.graphql.provider.dxm.builder.DXGraphQLNodeTypeBuilder;
 import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNode;
+import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNodeType;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.services.query.QueryWrapper;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -15,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.query.Query;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +33,7 @@ import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
     public static final String ID_ARG = "id";
     public static final String PATH_ARG = "path";
+    public static final String NAME_ARG = "name";
     public static final String IDS_ARG = "ids";
     public static final String PATHS_ARG = "paths";
     public static final String QUERY_ARG = "query";
@@ -39,16 +44,24 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
 
     private DXGraphQLNodeBuilder nodeBuilder;
 
+    private DXGraphQLNodeTypeBuilder nodeTypeBuilder;
+
 
     @Reference
     public void setNodeBuilder(DXGraphQLNodeBuilder nodeBuilder) {
         this.nodeBuilder = nodeBuilder;
     }
 
+    @Reference
+    public void setNodeTypeBuilder(DXGraphQLNodeTypeBuilder nodeTypeBuilder) {
+        this.nodeTypeBuilder = nodeTypeBuilder;
+    }
+
     public DataFetcher getNodesDataFetcher() {
         return new DataFetcher() {
             @Override
             public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
+                logger.info("loading : " + dataFetchingEnvironment.getArguments());
                 String asMixin = dataFetchingEnvironment.getArgument("asMixin");
                 String workspace = dataFetchingEnvironment.getArgument("workspace");
                 if (dataFetchingEnvironment.getArgument(ID_ARG) != null) {
@@ -111,6 +124,20 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
         };
     }
 
+    public DataFetcher getNodeTypeDataFetcher() {
+        return new DataFetcher() {
+            @Override
+            public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
+                logger.info("loading : " + dataFetchingEnvironment.getArguments());
+                String name = dataFetchingEnvironment.getArgument(NAME_ARG);
+                try {
+                    return new DXGraphQLNodeType(NodeTypeRegistry.getInstance().getNodeType(name));
+                } catch (NoSuchNodeTypeException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+    }
 
     @Activate
     public void activate() {
@@ -125,6 +152,10 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
                 .type(GraphQLString)
                 .build();
 
+        DataFetcher nodesDataFetcher = getNodesDataFetcher();
+
+        DataFetcher nodeTypeDataFetcher = getNodeTypeDataFetcher();
+
         queries = Arrays.asList(
                 newFieldDefinition()
                         .name("nodeById")
@@ -137,7 +168,7 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
                                 .build())
                         .argument(asMixinArg)
                         .argument(workspaceArg)
-                        .dataFetcher(getNodesDataFetcher())
+                        .dataFetcher(nodesDataFetcher)
                         .build(),
                 newFieldDefinition()
                         .name("nodeByPath")
@@ -150,7 +181,7 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
                                 .build())
                         .argument(asMixinArg)
                         .argument(workspaceArg)
-                        .dataFetcher(getNodesDataFetcher())
+                        .dataFetcher(nodesDataFetcher)
                         .build(),
                 newFieldDefinition()
                         .name("nodesById")
@@ -163,7 +194,7 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
                                 .build())
                         .argument(asMixinArg)
                         .argument(workspaceArg)
-                        .dataFetcher(getNodesDataFetcher())
+                        .dataFetcher(nodesDataFetcher)
                         .build(),
                 newFieldDefinition()
                         .name("nodesByPath")
@@ -176,7 +207,7 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
                                 .build())
                         .argument(asMixinArg)
                         .argument(workspaceArg)
-                        .dataFetcher(getNodesDataFetcher())
+                        .dataFetcher(nodesDataFetcher)
                         .build(),
                 newFieldDefinition()
                         .name("nodesByQuery")
@@ -198,9 +229,20 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
                                 .build())
                         .argument(asMixinArg)
                         .argument(workspaceArg)
-                        .dataFetcher(getNodesDataFetcher())
+                        .dataFetcher(nodesDataFetcher)
+                        .build(),
+                newFieldDefinition()
+                        .name("nodeTypeByName")
+                        .type(nodeTypeBuilder.getType())
+                        .description("Provides access to node type.")
+                        .argument(newArgument()
+                                .name(NAME_ARG)
+                                .description("Node type name")
+                                .type(new GraphQLNonNull(GraphQLString))
+                                .build())
+                        .dataFetcher(nodeTypeDataFetcher)
                         .build()
-        );
+                );
 
     }
 
