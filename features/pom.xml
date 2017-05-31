@@ -38,7 +38,7 @@
     <parent>
         <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>graphql-core</artifactId>
     <name>DX :: GraphQL Core integration :: Features</name>
@@ -106,17 +106,17 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>graphql-core-dxm-provider</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>graphql-core-dxm-provider-baseplugin</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>graphql-core-graphiql</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

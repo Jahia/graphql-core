@@ -7,26 +7,22 @@ This project makes it possible to build GraphQL backends to expose services and 
 
 ## Building & installing
         
-1. Build and install the package to your local maven repository using the command:
-
-        ./gradlew clean install        
-    
-2. Build this project (graphql-core-feature) using :
+1. Build this project (graphql-core-feature) using :
 
         mvn clean install
     
-3. Inside DX, connect to the SSH Karaf shell using :
+2. Inside DX, connect to the SSH Karaf shell using :
 
         ssh -p 8101 TOOLS_USER@localhost
             
     where TOOLS_USER and the associated password are the passwords you setup during the installation of DX for the system
     tools
    
-4. Enter the following command : 
+3. Enter the following command : 
 
-        feature:repo-add mvn:org.jahia.modules/graphql-core/1.0-SNAPSHOT/xml/features
+        feature:repo-add mvn:org.jahia.modules/graphql-core/1.0.0-SNAPSHOT/xml/features
     
-5. Install the feature using : 
+4. Install the feature using : 
 
         feature:install graphql-core
 

@@ -31,6 +31,8 @@ import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 
 @Component(service = GraphQLQueryProvider.class)
 public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
+    private static Logger logger = LoggerFactory.getLogger(GraphQLQueryProvider.class);
+
     public static final String ID_ARG = "id";
     public static final String PATH_ARG = "path";
     public static final String NAME_ARG = "name";
@@ -38,12 +40,10 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
     public static final String PATHS_ARG = "paths";
     public static final String QUERY_ARG = "query";
     public static final String QUERY_LANGUAGE_ARG = "queryLanguage";
-    private static Logger logger = LoggerFactory.getLogger(GraphQLQueryProvider.class);
 
-    List<GraphQLFieldDefinition> queries = new ArrayList<>();
+    private List<GraphQLFieldDefinition> queries = null;
 
     private DXGraphQLNodeBuilder nodeBuilder;
-
     private DXGraphQLNodeTypeBuilder nodeTypeBuilder;
 
 
@@ -139,115 +139,112 @@ public class DXGraphQLQueryProvider implements GraphQLQueryProvider {
         };
     }
 
-    @Activate
-    public void activate() {
-        GraphQLArgument asMixinArg = newArgument()
-                .name("asMixin")
-                .description("Specify a mixin that will be used for the node")
-                .type(GraphQLString)
-                .build();
-        GraphQLArgument workspaceArg = newArgument()
-                .name("workspace")
-                .description("The workspace where to find the nodes")
-                .type(GraphQLString)
-                .build();
-
-        DataFetcher nodesDataFetcher = getNodesDataFetcher();
-
-        DataFetcher nodeTypeDataFetcher = getNodeTypeDataFetcher();
-
-        queries = Arrays.asList(
-                newFieldDefinition()
-                        .name("nodeById")
-                        .type(nodeBuilder.getType())
-                        .description("Provides access to nodes inside of DX, notably by requesting them through a ID argument.")
-                        .argument(newArgument()
-                                .name(ID_ARG)
-                                .description("List of IDs")
-                                .type(new GraphQLNonNull(GraphQLString))
-                                .build())
-                        .argument(asMixinArg)
-                        .argument(workspaceArg)
-                        .dataFetcher(nodesDataFetcher)
-                        .build(),
-                newFieldDefinition()
-                        .name("nodeByPath")
-                        .type(nodeBuilder.getType())
-                        .description("Provides access to nodes inside of DX, notably by requesting them through a paths argument.")
-                        .argument(newArgument()
-                                .name(PATH_ARG)
-                                .description("Paths")
-                                .type(new GraphQLNonNull(GraphQLString))
-                                .build())
-                        .argument(asMixinArg)
-                        .argument(workspaceArg)
-                        .dataFetcher(nodesDataFetcher)
-                        .build(),
-                newFieldDefinition()
-                        .name("nodesById")
-                        .type(nodeBuilder.getListType())
-                        .description("Provides access to nodes inside of DX, notably by requesting them through a ID argument.")
-                        .argument(newArgument()
-                                .name(IDS_ARG)
-                                .description("List of IDs")
-                                .type(new GraphQLNonNull(new GraphQLList(GraphQLString)))
-                                .build())
-                        .argument(asMixinArg)
-                        .argument(workspaceArg)
-                        .dataFetcher(nodesDataFetcher)
-                        .build(),
-                newFieldDefinition()
-                        .name("nodesByPath")
-                        .type(nodeBuilder.getListType())
-                        .description("Provides access to nodes inside of DX, notably by requesting them through a paths argument.")
-                        .argument(newArgument()
-                                .name(PATHS_ARG)
-                                .description("List of paths")
-                                .type(new GraphQLNonNull(new GraphQLList(GraphQLString)))
-                                .build())
-                        .argument(asMixinArg)
-                        .argument(workspaceArg)
-                        .dataFetcher(nodesDataFetcher)
-                        .build(),
-                newFieldDefinition()
-                        .name("nodesByQuery")
-                        .type(nodeBuilder.getListType())
-                        .description("Provides access to nodes inside of DX, notably by requesting them through a query argument.")
-                        .argument(newArgument()
-                                .name(QUERY_ARG)
-                                .description("The JCR query to execute")
-                                .type(new GraphQLNonNull(GraphQLString))
-                                .build())
-                        .argument(newArgument()
-                                .name(QUERY_LANGUAGE_ARG)
-                                .description("JCR-SQL2 or XPath")
-                                .type(GraphQLEnumType.newEnum().name("QueryType")
-                                        .value("SQL2")
-                                        .value("XPATH")
-                                        .build())
-                                .defaultValue("SQL2")
-                                .build())
-                        .argument(asMixinArg)
-                        .argument(workspaceArg)
-                        .dataFetcher(nodesDataFetcher)
-                        .build(),
-                newFieldDefinition()
-                        .name("nodeTypeByName")
-                        .type(nodeTypeBuilder.getType())
-                        .description("Provides access to node type.")
-                        .argument(newArgument()
-                                .name(NAME_ARG)
-                                .description("Node type name")
-                                .type(new GraphQLNonNull(GraphQLString))
-                                .build())
-                        .dataFetcher(nodeTypeDataFetcher)
-                        .build()
-                );
-
-    }
-
     @Override
     public Collection<GraphQLFieldDefinition> getQueries() {
+        if (queries == null) {
+            GraphQLArgument asMixinArg = newArgument()
+                    .name("asMixin")
+                    .description("Specify a mixin that will be used for the node")
+                    .type(GraphQLString)
+                    .build();
+            GraphQLArgument workspaceArg = newArgument()
+                    .name("workspace")
+                    .description("The workspace where to find the nodes")
+                    .type(GraphQLString)
+                    .build();
+
+            DataFetcher nodesDataFetcher = getNodesDataFetcher();
+
+            DataFetcher nodeTypeDataFetcher = getNodeTypeDataFetcher();
+
+            queries = Arrays.asList(
+                    newFieldDefinition()
+                            .name("nodeById")
+                            .type(nodeBuilder.getType())
+                            .description("Provides access to nodes inside of DX, notably by requesting them through a ID argument.")
+                            .argument(newArgument()
+                                    .name(ID_ARG)
+                                    .description("List of IDs")
+                                    .type(new GraphQLNonNull(GraphQLString))
+                                    .build())
+                            .argument(asMixinArg)
+                            .argument(workspaceArg)
+                            .dataFetcher(nodesDataFetcher)
+                            .build(),
+                    newFieldDefinition()
+                            .name("nodeByPath")
+                            .type(nodeBuilder.getType())
+                            .description("Provides access to nodes inside of DX, notably by requesting them through a paths argument.")
+                            .argument(newArgument()
+                                    .name(PATH_ARG)
+                                    .description("Paths")
+                                    .type(new GraphQLNonNull(GraphQLString))
+                                    .build())
+                            .argument(asMixinArg)
+                            .argument(workspaceArg)
+                            .dataFetcher(nodesDataFetcher)
+                            .build(),
+                    newFieldDefinition()
+                            .name("nodesById")
+                            .type(nodeBuilder.getListType())
+                            .description("Provides access to nodes inside of DX, notably by requesting them through a ID argument.")
+                            .argument(newArgument()
+                                    .name(IDS_ARG)
+                                    .description("List of IDs")
+                                    .type(new GraphQLNonNull(new GraphQLList(GraphQLString)))
+                                    .build())
+                            .argument(asMixinArg)
+                            .argument(workspaceArg)
+                            .dataFetcher(nodesDataFetcher)
+                            .build(),
+                    newFieldDefinition()
+                            .name("nodesByPath")
+                            .type(nodeBuilder.getListType())
+                            .description("Provides access to nodes inside of DX, notably by requesting them through a paths argument.")
+                            .argument(newArgument()
+                                    .name(PATHS_ARG)
+                                    .description("List of paths")
+                                    .type(new GraphQLNonNull(new GraphQLList(GraphQLString)))
+                                    .build())
+                            .argument(asMixinArg)
+                            .argument(workspaceArg)
+                            .dataFetcher(nodesDataFetcher)
+                            .build(),
+                    newFieldDefinition()
+                            .name("nodesByQuery")
+                            .type(nodeBuilder.getListType())
+                            .description("Provides access to nodes inside of DX, notably by requesting them through a query argument.")
+                            .argument(newArgument()
+                                    .name(QUERY_ARG)
+                                    .description("The JCR query to execute")
+                                    .type(new GraphQLNonNull(GraphQLString))
+                                    .build())
+                            .argument(newArgument()
+                                    .name(QUERY_LANGUAGE_ARG)
+                                    .description("JCR-SQL2 or XPath")
+                                    .type(GraphQLEnumType.newEnum().name("QueryType")
+                                            .value("SQL2")
+                                            .value("XPATH")
+                                            .build())
+                                    .defaultValue("SQL2")
+                                    .build())
+                            .argument(asMixinArg)
+                            .argument(workspaceArg)
+                            .dataFetcher(nodesDataFetcher)
+                            .build(),
+                    newFieldDefinition()
+                            .name("nodeTypeByName")
+                            .type(nodeTypeBuilder.getType())
+                            .description("Provides access to node type.")
+                            .argument(newArgument()
+                                    .name(NAME_ARG)
+                                    .description("Node type name")
+                                    .type(new GraphQLNonNull(GraphQLString))
+                                    .build())
+                            .dataFetcher(nodeTypeDataFetcher)
+                            .build()
+            );
+        }
         return queries;
     }
 }

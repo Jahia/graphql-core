@@ -38,7 +38,7 @@
     <parent>
         <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>graphql-core-dxm-provider-baseplugin</artifactId>
     <name>DX :: GraphQL Core integration :: DXM Provider plugin</name>
