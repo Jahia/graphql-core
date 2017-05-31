@@ -1,5 +1,6 @@
 package org.jahia.modules.graphql.provider.dxm.builder;
 
+import graphql.TypeResolutionEnvironment;
 import graphql.schema.*;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNode;
@@ -111,8 +112,8 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
                     .description("JCR Node")
                     .typeResolver(new TypeResolver() {
                         @Override
-                        public GraphQLObjectType getType(Object object) {
-                            String type = ((DXGraphQLNode) object).getType();
+                        public GraphQLObjectType getType(TypeResolutionEnvironment object) {
+                            String type = ((DXGraphQLNode) object.getObject()).getType();
                             if (specializedTypes.contains(type)) {
                                 return getKnownTypes().get(escape(type));
                             } else {
