@@ -14,6 +14,7 @@ import org.jahia.services.render.RenderContext;
 import org.osgi.service.component.annotations.Component;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static graphql.Scalars.GraphQLString;
@@ -21,30 +22,25 @@ import static graphql.Scalars.GraphQLString;
 @Component(service = GraphQLFieldProvider.class, immediate = true)
 public class DisplayableNodeExtender implements GraphQLFieldProvider {
 
-    private List<GraphQLFieldDefinition> fieldDefinitionList;
-
     @Override
     public String getTypeName() {
-        return "node";
+        return "Node";
     }
 
     @Override
-    public List<GraphQLFieldDefinition> getFields() {
-        if (fieldDefinitionList == null) {
-            fieldDefinitionList = Arrays.asList(
-                    GraphQLFieldDefinition.newFieldDefinition()
-                            .name("displayableNode")
-                            .type(new GraphQLTypeReference("Node"))
-                            .dataFetcher(getDisplayableNodePathDataFetcher())
-                            .build(),
-                    GraphQLFieldDefinition.newFieldDefinition()
-                            .name("ajaxRenderUrl")
-                            .type(GraphQLString)
-                            .dataFetcher(getAjaxRenderUrl())
-                            .build()
-            );
-        }
-        return fieldDefinitionList;
+    public Collection<GraphQLFieldDefinition> getFields() {
+        return Arrays.asList(
+                GraphQLFieldDefinition.newFieldDefinition()
+                        .name("displayableNode")
+                        .type(new GraphQLTypeReference("Node"))
+                        .dataFetcher(getDisplayableNodePathDataFetcher())
+                        .build(),
+                GraphQLFieldDefinition.newFieldDefinition()
+                        .name("ajaxRenderUrl")
+                        .type(GraphQLString)
+                        .dataFetcher(getAjaxRenderUrl())
+                        .build()
+        );
     }
 
 

@@ -4,6 +4,7 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.collections4.functors.AllPredicate;
+import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLConnection;
 import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNode;
 import org.jahia.services.content.JCRNodeWrapper;
 
@@ -13,9 +14,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-class ChildrenDataFetcher implements DataFetcher {
+class ChildrenDataFetcher implements DataFetcher<List<DXGraphQLNode>>, DXGraphQLConnection.CursorFetcher<DXGraphQLNode> {
     @Override
-    public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
+    public List<DXGraphQLNode> get(DataFetchingEnvironment dataFetchingEnvironment) {
         DXGraphQLNode node = (DXGraphQLNode) dataFetchingEnvironment.getSource();
         String asMixin = dataFetchingEnvironment.getArgument("asMixin");
 
@@ -28,7 +29,12 @@ class ChildrenDataFetcher implements DataFetcher {
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
-        return DXGraphQLBuilder.getList(children, "Node");
+        return children;
+    }
+
+    @Override
+    public String getCursor(DXGraphQLNode node) {
+        return node.getIdentifier();
     }
 
     private AllPredicate<JCRNodeWrapper> getNodesPredicate(DataFetchingEnvironment dataFetchingEnvironment) {

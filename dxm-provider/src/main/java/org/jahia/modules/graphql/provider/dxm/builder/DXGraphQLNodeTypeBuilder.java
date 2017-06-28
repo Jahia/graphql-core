@@ -1,18 +1,22 @@
 package org.jahia.modules.graphql.provider.dxm.builder;
 
 import graphql.schema.*;
-import org.jahia.modules.graphql.provider.dxm.model.*;
+import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNodeDefinition;
+import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNodeType;
+import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLPropertyDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.utils.LanguageCodeConverters;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.nodetype.NoSuchNodeTypeException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,12 +26,19 @@ import static graphql.Scalars.GraphQLString;
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLObjectType.newObject;
+import static org.jahia.modules.graphql.provider.dxm.model.DXGraphQLConnection.newConnectionFieldDefinition;
 
 @Component(service = DXGraphQLNodeTypeBuilder.class)
-public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
+public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder<DXGraphQLNodeType> {
 
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLNodeTypeBuilder.class);
+    private NodeTypeRegistry nodeTypeRegistry;
     private List<GraphQLFieldDefinition> fieldDefinitionList;
+
+    @Reference(service = NodeTypeRegistry.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    public void setNodeTypeRegistry(NodeTypeRegistry nodeTypeRegistry) {
+        this.nodeTypeRegistry = nodeTypeRegistry;
+    }
 
     @Override
     public String getName() {
@@ -78,21 +89,21 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
                                     .build()))
                             .dataFetcher(new NodeDefinitionsDataFetcher())
                             .build(),
-                    newFieldDefinition()
+                    newConnectionFieldDefinition()
                             .name("subTypes")
-                            .type(new GraphQLTypeReference("NodeTypeList"))
+                            .type(new GraphQLTypeReference("NodeType"))
                             .dataFetcher(new SubTypesDataFetcher())
                             .build(),
-                    newFieldDefinition()
+                    newConnectionFieldDefinition()
                             .name("superTypes")
-                            .type(new GraphQLTypeReference("NodeTypeList"))
+                            .type(new GraphQLTypeReference("NodeType"))
                             .dataFetcher(new SuperTypesDataFetcher())
                             .build());
         }
         return fieldDefinitionList;
     }
 
-    private static class DisplayNameDataFetcher implements  DataFetcher {
+    private class DisplayNameDataFetcher implements  DataFetcher {
         @Override
         public Object get(DataFetchingEnvironment environment) {
             DXGraphQLNodeType nodeType = (DXGraphQLNodeType) environment.getSource();
@@ -101,13 +112,13 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
         }
     }
 
-    private static class PropertyDefinitionsDataFetcher implements DataFetcher {
+    private class PropertyDefinitionsDataFetcher implements DataFetcher {
         @Override
         public Object get(DataFetchingEnvironment environment) {
             DXGraphQLNodeType nodeType = (DXGraphQLNodeType) environment.getSource();
             List<DXGraphQLPropertyDefinition> propertyList = null;
             try {
-                ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
+                ExtendedNodeType ent = nodeTypeRegistry.getNodeType(nodeType.getName());
                 propertyList = new ArrayList<>();
                 for (ExtendedPropertyDefinition definition : ent.getPropertyDefinitions()) {
                     DXGraphQLPropertyDefinition qlPropertyDefinition = new DXGraphQLPropertyDefinition();
@@ -121,13 +132,13 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
         }
     }
 
-    private static class NodeDefinitionsDataFetcher implements DataFetcher {
+    private class NodeDefinitionsDataFetcher implements DataFetcher {
         @Override
         public Object get(DataFetchingEnvironment environment) {
             DXGraphQLNodeType nodeType = (DXGraphQLNodeType) environment.getSource();
             List<DXGraphQLNodeDefinition> nodeList = null;
             try {
-                ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
+                ExtendedNodeType ent = nodeTypeRegistry.getNodeType(nodeType.getName());
                 nodeList = new ArrayList<>();
                 for (ExtendedNodeDefinition definition : ent.getChildNodeDefinitions()) {
                     DXGraphQLNodeDefinition qlNodeDefinition = new DXGraphQLNodeDefinition();
@@ -141,13 +152,13 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
         }
     }
 
-    private static class SubTypesDataFetcher implements DataFetcher {
+    private class SubTypesDataFetcher implements DataFetcher {
         @Override
         public Object get(DataFetchingEnvironment environment) {
             DXGraphQLNodeType nodeType = (DXGraphQLNodeType) environment.getSource();
             List<DXGraphQLNodeType> subTypes = null;
             try {
-                ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
+                ExtendedNodeType ent = nodeTypeRegistry.getNodeType(nodeType.getName());
                 subTypes = new ArrayList<>();
                 for (ExtendedNodeType type : ent.getSubtypesAsList()) {
                     subTypes.add(new DXGraphQLNodeType(type));
@@ -155,17 +166,17 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
             } catch (NoSuchNodeTypeException e) {
                 logger.error(e.getMessage(), e);
             }
-            return getList(subTypes, "NodeType");
+            return subTypes;
         }
     }
 
-    private static class SuperTypesDataFetcher implements DataFetcher {
+    private class SuperTypesDataFetcher implements DataFetcher {
         @Override
         public Object get(DataFetchingEnvironment environment) {
             DXGraphQLNodeType nodeType = (DXGraphQLNodeType) environment.getSource();
             List<DXGraphQLNodeType> superTypes = null;
             try {
-                ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
+                ExtendedNodeType ent = nodeTypeRegistry.getNodeType(nodeType.getName());
                 superTypes = new ArrayList<>();
                 for (ExtendedNodeType type : ent.getSupertypeSet()) {
                     superTypes.add(new DXGraphQLNodeType(type));
@@ -173,7 +184,7 @@ public class DXGraphQLNodeTypeBuilder extends DXGraphQLBuilder {
             } catch (NoSuchNodeTypeException e) {
                 logger.error(e.getMessage(), e);
             }
-            return getList(superTypes, "NodeType");
+            return superTypes;
         }
     }
 }

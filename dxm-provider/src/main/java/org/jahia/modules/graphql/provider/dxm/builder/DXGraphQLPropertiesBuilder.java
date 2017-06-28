@@ -4,10 +4,8 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
+import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLProperty;
+import org.osgi.service.component.annotations.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,7 +15,9 @@ import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 
 
 @Component(service = DXGraphQLPropertiesBuilder.class)
-public class DXGraphQLPropertiesBuilder extends DXGraphQLBuilder {
+public class DXGraphQLPropertiesBuilder extends DXGraphQLBuilder<DXGraphQLProperty> {
+
+
     @Override
     public String getName() {
         return "Property";

@@ -3,13 +3,11 @@ package org.jahia.modules.graphql.provider.dxm.builder;
 import graphql.TypeResolutionEnvironment;
 import graphql.schema.*;
 import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLConnection;
 import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNode;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,9 +24,10 @@ import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLInterfaceType.newInterface;
 import static graphql.schema.GraphQLObjectType.newObject;
+import static org.jahia.modules.graphql.provider.dxm.model.DXGraphQLConnection.newConnectionFieldDefinition;
 
 @Component(service = DXGraphQLNodeBuilder.class)
-public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
+public class DXGraphQLNodeBuilder extends DXGraphQLBuilder<DXGraphQLNode> {
     public static final String PROPERTY_PREFIX = "property_";
     public static final String UNNAMED_PROPERTY_PREFIX = "property_";
     public static final String CHILD_PREFIX = "child_";
@@ -52,6 +51,7 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
     private List<String> specializedTypes = Arrays.asList("jnt:virtualsite");
 
     private GraphQLObjectType genericType;
+
 
     @Override
     public String getName() {
@@ -363,10 +363,10 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
                                     .build())
                             .dataFetcher(new PropertyDataFetcher())
                             .build(),
-                    newFieldDefinition()
+                    newConnectionFieldDefinition()
                             .name("children")
                             .description("List of child nodes")
-                            .type(new GraphQLTypeReference("NodeList"))
+                            .type(new GraphQLTypeReference("Node"))
                             .argument(newArgument().name("names")
                                     .description("Filter the list of children on a list of names. Only these nodes will be returned.")
                                     .type(new GraphQLList(GraphQLString))
@@ -389,9 +389,9 @@ public class DXGraphQLNodeBuilder extends DXGraphQLBuilder {
                                     .build())
                             .dataFetcher(new ChildrenDataFetcher())
                             .build(),
-                    newFieldDefinition()
+                    newConnectionFieldDefinition()
                             .name("ancestors")
-                            .type(new GraphQLTypeReference("NodeList"))
+                            .type(new GraphQLTypeReference("Node"))
                             .argument(newArgument().name("upToPath")
                                     .type(GraphQLString)
                                     .defaultValue("")
