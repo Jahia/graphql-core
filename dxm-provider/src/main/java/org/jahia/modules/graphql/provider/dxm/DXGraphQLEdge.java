@@ -1,4 +1,4 @@
-package org.jahia.modules.graphql.provider.dxm.model;
+package org.jahia.modules.graphql.provider.dxm;
 
 /**
  * Created by toto on 15/06/17.

@@ -1,24 +1,25 @@
-package org.jahia.modules.graphql.provider.dxm.builder;
+package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.StringUtils;
-import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNode;
+import org.jahia.modules.graphql.provider.dxm.DXGraphQLGenericJCRNode;
+import org.jahia.modules.graphql.provider.dxm.DXGraphQLJCRNode;
 import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.RepositoryException;
 
-class NamedChildDataFetcher implements DataFetcher {
+public  class NamedChildDataFetcher implements DataFetcher {
     @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
         String name = dataFetchingEnvironment.getFields().get(0).getName();
-        name = DXGraphQLNodeBuilder.unescape(StringUtils.substringAfter(name, DXGraphQLNodeBuilder.CHILD_PREFIX));
+        name = JCRNodeTypeResolver.unescape(StringUtils.substringAfter(name, JCRNodeTypeResolver.CHILD_PREFIX));
 
         try {
-            DXGraphQLNode node = (DXGraphQLNode) dataFetchingEnvironment.getSource();
+            DXGraphQLJCRNode node = (DXGraphQLJCRNode) dataFetchingEnvironment.getSource();
             JCRNodeWrapper jcrNodeWrapper = node.getNode();
             JCRNodeWrapper child = jcrNodeWrapper.getNode(name);
-            return new DXGraphQLNode(child);
+            return new DXGraphQLGenericJCRNode(child);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }

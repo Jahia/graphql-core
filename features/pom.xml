@@ -91,12 +91,12 @@
         <dependency>
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java</artifactId>
-            <version>3.0.0</version>
+            <version>${graphql-java.version}</version>
         </dependency>
         <dependency>
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java-annotations</artifactId>
-            <version>0.13.1</version>
+            <version>${graphql-java-annotations.version}</version>
         </dependency>
         <dependency>
             <groupId>com.graphql-java</groupId>

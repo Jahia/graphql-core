@@ -1,4 +1,4 @@
-package org.jahia.modules.graphql.provider.dxm.model;
+package org.jahia.modules.graphql.provider.dxm;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -81,7 +81,7 @@ public class DXGraphQLConnection<T> {
                 public Object get(DataFetchingEnvironment environment) {
                     Object o = dataFetcher.get(environment);
                     if (o instanceof Iterable) {
-                        return new DXGraphQLConnection((Iterable<DXGraphQLNode>) o,environment, cursorFetcher);
+                        return new DXGraphQLConnection((Iterable<DXGraphQLJCRNode>) o,environment, cursorFetcher);
                     } else if (o instanceof DXGraphQLConnection) {
                         return o;
                     }
@@ -120,7 +120,7 @@ public class DXGraphQLConnection<T> {
         return newObject()
                 .name(name + "Connection")
                 .field(newFieldDefinition().name("pageInfo")
-                        .type(new GraphQLNonNull(new GraphQLTypeReference("PageInfo")))
+                        .type(new GraphQLNonNull(new GraphQLTypeReference("MyPageInfo")))
                         .description("details about this specific page"))
                 .field(newFieldDefinition().name("nodes")
                         .type(new GraphQLList(outputType))
@@ -133,7 +133,7 @@ public class DXGraphQLConnection<T> {
 
     public static GraphQLOutputType getPageInfoType() {
         if (pageInfoType == null) {
-            pageInfoType = newObject().name("PageInfo")
+            pageInfoType = newObject().name("MyPageInfo")
                     .description("Information about pagination in a connection.")
                     .field(newFieldDefinition().name("startCursor")
                             .type(GraphQLString)

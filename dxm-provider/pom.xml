@@ -46,7 +46,7 @@
     <description>This is the provider project for the DX GraphQL Core integration project</description>
 
     <properties>
-        <export-package>org.jahia.modules.graphql.provider.dxm.builder,org.jahia.modules.graphql.provider.dxm.model</export-package>
+        <export-package>org.jahia.modules.graphql.provider.dxm</export-package>
     </properties>
 
     <dependencies>
@@ -54,6 +54,12 @@
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java-servlet</artifactId>
             <version>${graphql-java-servlet.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java-annotations</artifactId>
+            <version>${graphql-java-annotations.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -73,6 +79,17 @@
                     </instructions>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${compiler.plugin.version}</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+
         </plugins>
 
     </build>

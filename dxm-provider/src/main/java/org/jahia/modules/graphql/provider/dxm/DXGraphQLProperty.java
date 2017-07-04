@@ -1,6 +1,7 @@
-package org.jahia.modules.graphql.provider.dxm.model;
+package org.jahia.modules.graphql.provider.dxm;
 
-import org.jahia.modules.graphql.provider.dxm.builder.DXGraphQLNodeBuilder;
+import graphql.annotations.GraphQLField;
+import graphql.annotations.GraphQLName;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.slf4j.Logger;
@@ -10,11 +11,7 @@ import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * TODO Comment me
- *
- * @author toto
- */
+@GraphQLName("JCRProperty")
 public class DXGraphQLProperty {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProperty.class);
     private JCRPropertyWrapper propertyWrapper;
@@ -23,6 +20,7 @@ public class DXGraphQLProperty {
         this.propertyWrapper = propertyWrapper;
     }
 
+    @GraphQLField
     public String getKey() {
         try {
             return propertyWrapper.getName();
@@ -32,6 +30,7 @@ public class DXGraphQLProperty {
         return null;
     }
 
+    @GraphQLField
     public String getValue() {
         try {
             if (propertyWrapper.isMultiple()) {
@@ -45,6 +44,7 @@ public class DXGraphQLProperty {
         return null;
     }
 
+    @GraphQLField
     public List<String> getValues() {
         try {
             List<String> values = new ArrayList<>();

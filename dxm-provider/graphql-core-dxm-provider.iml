@@ -5,7 +5,7 @@
       <configuration />
     </facet>
   </component>
-  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_7">
+  <component name="NewModuleRootManager">
     <output url="file://$MODULE_DIR$/target/classes" />
     <output-test url="file://$MODULE_DIR$/target/test-classes" />
     <content url="file://$MODULE_DIR$">
@@ -14,20 +14,21 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: com.graphql-java:graphql-java-servlet:3.0.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: com.graphql-java:graphql-java-servlet:4.0.1-jahia" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.slf4j:slf4j-api:1.7.21" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.google.guava:guava:20.0" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.projectlombok:lombok:1.16.8" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: commons-fileupload:commons-fileupload:1.3.1" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: com.graphql-java:graphql-java:2.4.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: com.graphql-java:graphql-java:3.0.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.antlr:antlr4-runtime:4.5.1" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.fasterxml.jackson.core:jackson-core:2.8.4" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.8.4" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.8.4" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.8.4" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.jahia.server:jahia-impl:7.2.0.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.jahia.server:jahia-api:7.2.0.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.jahia.server:jahia-gwt:7.2.0.0-SNAPSHOT" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: com.graphql-java:graphql-java-annotations:3.0.0-jahia" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: javax.validation:validation-api:1.1.0.Final" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.jahia.server:jahia-impl:7.2.0.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.jahia.server:jahia-api:7.2.0.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.jahia.server:jahia-gwt:7.2.0.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.extjs:gxt:2.3.1-gwt22" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.google.code.gwt-log:gwt-log:3.1.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.jahia.configuration:deployers:5.0" level="project" />
@@ -229,7 +230,6 @@
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.kie:kie-spring:6.0.0.Final-jahia" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.drools:drools-decisiontables:6.0.0.Final" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.drools:drools-templates:6.0.0.Final" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: javax.validation:validation-api:1.1.0.Final" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.outerj.daisy:daisydiff:nodeps:1.1" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.eclipse.core.runtime:eclipse-core-runtime:20070801" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: net.sourceforge.nekohtml:nekohtml:1.9.21" level="project" />
@@ -278,7 +278,7 @@
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.karaf.jaas:org.apache.karaf.jaas.boot:4.0.7" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: net.java.dev.jna:jna:4.2.2" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: net.java.dev.jna:jna-platform:4.2.2" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.jahia.server:jahia-taglib:7.2.0.0-SNAPSHOT" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.jahia.server:jahia-taglib:7.2.0.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: taglibs:taglibs-unstandard:20060829" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: javax.servlet:javax.servlet-api:3.0.1" level="project" />
   </component>

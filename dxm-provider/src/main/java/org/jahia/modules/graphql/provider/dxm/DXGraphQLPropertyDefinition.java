@@ -1,14 +1,19 @@
-package org.jahia.modules.graphql.provider.dxm.model;
+package org.jahia.modules.graphql.provider.dxm;
+
+import graphql.annotations.GraphQLField;
+import graphql.annotations.GraphQLName;
 
 /**
  * TODO Comment me
  *
  * @author toto
  */
+@GraphQLName("PropertyDefinition")
 public class DXGraphQLPropertyDefinition {
     private String name;
     private int requiredType;
 
+    @GraphQLField
     public String getName() {
         return name;
     }
@@ -17,6 +22,7 @@ public class DXGraphQLPropertyDefinition {
         this.name = name;
     }
 
+    @GraphQLField
     public int getRequiredType() {
         return requiredType;
     }

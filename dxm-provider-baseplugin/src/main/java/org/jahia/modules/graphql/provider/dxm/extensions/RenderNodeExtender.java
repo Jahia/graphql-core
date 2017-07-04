@@ -6,7 +6,7 @@
 //import org.apache.commons.collections.map.HashedMap;
 //import org.jahia.bin.Render;
 //import org.jahia.modules.graphql.provider.dxm.builder.DXGraphQLExtender;
-//import org.jahia.modules.graphql.provider.dxm.model.DXGraphQLNode;
+//import org.jahia.modules.graphql.provider.dxm.DXGraphQLJCRNode;
 //import org.jahia.services.content.JCRNodeWrapper;
 //import org.jahia.services.content.JCRSessionFactory;
 //import org.jahia.services.content.JCRSessionWrapper;
@@ -79,7 +79,7 @@
 //            @Override
 //            public Object get(DataFetchingEnvironment environment) {
 //                String language = environment.getArgument("language");
-//                DXGraphQLNode node = (DXGraphQLNode) environment.getSource();
+//                DXGraphQLJCRNode node = (DXGraphQLJCRNode) environment.getSource();
 //                Map<Resource, String> map = new HashMap<>();
 //                try {
 //                    JCRSessionWrapper locSession = JCRSessionFactory.getInstance().getCurrentUserSession(null, LanguageCodeConverters.languageCodeToLocale(language));
@@ -162,7 +162,7 @@
 //                        r.put("name", entry.getKey().getNode().getName());
 //                        r.put("type", thisType);
 //                        r.put("content", entry.getValue());
-//                        r.put("node", new DXGraphQLNode(entry.getKey().getNode()));
+//                        r.put("node", new DXGraphQLJCRNode(entry.getKey().getNode()));
 //                        result.add(r);
 //                    }
 //                }
@@ -173,15 +173,15 @@
 //    }
 //
 //    class DXArea {
-//        DXGraphQLNode node;
+//        DXGraphQLJCRNode node;
 //        Map<Resource, String> resourcesMap;
 //
-//        public DXArea(DXGraphQLNode node, Map<Resource, String> map) {
+//        public DXArea(DXGraphQLJCRNode node, Map<Resource, String> map) {
 //            this.node = node;
 //            this.resourcesMap = map;
 //        }
 //
-//        public DXGraphQLNode getNode() {
+//        public DXGraphQLJCRNode getNode() {
 //            return node;
 //        }
 //

@@ -1,4 +1,4 @@
-package org.jahia.modules.graphql.provider.dxm.model;
+package org.jahia.modules.graphql.provider.dxm;
 
 import com.google.common.collect.Iterables;
 
