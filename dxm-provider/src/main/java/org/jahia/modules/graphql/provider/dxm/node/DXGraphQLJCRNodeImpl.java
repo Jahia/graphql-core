@@ -1,4 +1,4 @@
-package org.jahia.modules.graphql.provider.dxm;
+package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.GraphQLField;
 import graphql.annotations.GraphQLName;
@@ -13,14 +13,13 @@ import org.jahia.utils.LanguageCodeConverters;
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @GraphQLName("GenericJCRNode")
-public class DXGraphQLGenericJCRNode implements DXGraphQLJCRNode {
+public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
     private JCRNodeWrapper node;
     private String type;
 
-    public DXGraphQLGenericJCRNode(JCRNodeWrapper node) {
+    public DXGraphQLJCRNodeImpl(JCRNodeWrapper node) {
         this.node = node;
         try {
             this.type = node.getPrimaryNodeTypeName();
@@ -29,7 +28,7 @@ public class DXGraphQLGenericJCRNode implements DXGraphQLJCRNode {
         }
     }
 
-    public DXGraphQLGenericJCRNode(JCRNodeWrapper node, String type) {
+    public DXGraphQLJCRNodeImpl(JCRNodeWrapper node, String type) {
         this.node = node;
         if (type != null) {
             this.type = type;
@@ -88,25 +87,7 @@ public class DXGraphQLGenericJCRNode implements DXGraphQLJCRNode {
     @Override
     public DXGraphQLJCRNode getParent() {
         try {
-            return new DXGraphQLGenericJCRNode(node.getParent());
-        } catch (RepositoryException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public DXGraphQLNodeType getPrimaryNodeType() {
-        try {
-            return new DXGraphQLNodeType(node.getPrimaryNodeType());
-        } catch (RepositoryException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public List<DXGraphQLNodeType> getMixinTypes() {
-        try {
-            return Arrays.asList(node.getMixinNodeTypes()).stream().map(DXGraphQLNodeType::new).collect(Collectors.toList());
+            return SpecializedTypesHandler.getNode(node.getParent());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -127,9 +108,9 @@ public class DXGraphQLGenericJCRNode implements DXGraphQLJCRNode {
     }
 
     @Override
-    public List<DXGraphQLProperty> getProperties(@GraphQLName("names") Collection<String> names,
-                                                 @GraphQLName("language") String language) {
-        List<DXGraphQLProperty> propertyList = new ArrayList<DXGraphQLProperty>();
+    public List<DXGraphQLJCRProperty> getProperties(@GraphQLName("names") Collection<String> names,
+                                                    @GraphQLName("language") String language) {
+        List<DXGraphQLJCRProperty> propertyList = new ArrayList<DXGraphQLJCRProperty>();
         try {
             JCRNodeWrapper node = this.node;
             if (language != null) {
@@ -139,14 +120,14 @@ public class DXGraphQLGenericJCRNode implements DXGraphQLJCRNode {
             if (names != null && !names.isEmpty()) {
                 for (String name : names) {
                     if (node.hasProperty(name)) {
-                        propertyList.add(new DXGraphQLProperty(node.getProperty(name)));
+                        propertyList.add(new DXGraphQLJCRProperty(node.getProperty(name), this));
                     }
                 }
             } else {
                 PropertyIterator pi = node.getProperties();
                 while (pi.hasNext()) {
                     JCRPropertyWrapper property = (JCRPropertyWrapper) pi.nextProperty();
-                    propertyList.add(new DXGraphQLProperty(property));
+                    propertyList.add(new DXGraphQLJCRProperty(property, this));
                 }
             }
         } catch (RepositoryException e) {
@@ -156,8 +137,8 @@ public class DXGraphQLGenericJCRNode implements DXGraphQLJCRNode {
     }
 
     @Override
-    public DXGraphQLProperty getProperty(@GraphQLName("name") String name,
-                                         @GraphQLName("language") String language) {
+    public DXGraphQLJCRProperty getProperty(@GraphQLName("name") String name,
+                                            @GraphQLName("language") String language) {
         try {
             JCRNodeWrapper node = this.node;
             if (language != null) {
@@ -165,7 +146,7 @@ public class DXGraphQLGenericJCRNode implements DXGraphQLJCRNode {
                         .getNodeByIdentifier(node.getIdentifier());
             }
             if (node.hasProperty(name)) {
-                return new DXGraphQLProperty(node.getProperty(name));
+                return new DXGraphQLJCRProperty(node.getProperty(name), this);
             }
             return null;
         } catch (RepositoryException e) {
@@ -178,13 +159,13 @@ public class DXGraphQLGenericJCRNode implements DXGraphQLJCRNode {
 //    @GraphQLConnection
     public List<DXGraphQLJCRNode> getChildren(@GraphQLName("names") Collection<String> names,
                                               @GraphQLName("anyType") Collection<String> anyType,
-                                              @GraphQLName("properties") PropertyFilterType properties,
+                                              @GraphQLName("properties") PropertyFilterTypeInput properties,
                                               @GraphQLName("asMixin") String asMixin) {
         List<DXGraphQLJCRNode> children = new ArrayList<DXGraphQLJCRNode>();
         try {
             Iterator<JCRNodeWrapper> nodes = IteratorUtils.filteredIterator(node.getNodes().iterator(), getNodesPredicate(names,anyType,properties));
             while (nodes.hasNext()) {
-                children.add(new DXGraphQLGenericJCRNode(nodes.next()));
+                children.add(SpecializedTypesHandler.getNode(nodes.next()));
             }
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
@@ -192,7 +173,8 @@ public class DXGraphQLGenericJCRNode implements DXGraphQLJCRNode {
         return children;
     }
 
-    private AllPredicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final Collection<String> anyType, final PropertyFilterType property) {
+    // List of inputs objects not correctly handled by graphql-java-annotations, to fix
+    private AllPredicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final Collection<String> anyType, final PropertyFilterTypeInput property) {
         return new AllPredicate<JCRNodeWrapper>(
                 new org.apache.commons.collections4.Predicate<JCRNodeWrapper>() {
                     @Override
@@ -227,7 +209,7 @@ public class DXGraphQLGenericJCRNode implements DXGraphQLJCRNode {
 //                        if (properties == null || properties.isEmpty()) {
 //                            return true;
 //                        }
-//                        for (PropertyFilterType property : properties) {
+//                        for (PropertyFilterTypeInput property : properties) {
                             try {
                                 if (!node.hasProperty(property.key) || !node.getProperty(property.key).getString().equals(property.value)) {
                                     return false;
@@ -252,12 +234,33 @@ public class DXGraphQLGenericJCRNode implements DXGraphQLJCRNode {
             List<JCRItemWrapper> jcrAncestors = node.getAncestors();
             for (JCRItemWrapper ancestor : jcrAncestors) {
                 if (upToPath == null || ancestor.getPath().equals(upToPath) || ancestor.getPath().startsWith(upToPathSlash)) {
-                    ancestors.add(new DXGraphQLGenericJCRNode((JCRNodeWrapper) ancestor));
+                    ancestors.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) ancestor));
                 }
             }
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
         return ancestors;
+    }
+
+    @Override
+    public DXGraphQLJCRSite getSite() {
+        try {
+            return new DXGraphQLJCRSite(node.getResolveSite());
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public DXGraphQLJCRNode asMixin(@GraphQLName("type") String type) {
+        try {
+            if (node.isNodeType(type)) {
+                return SpecializedTypesHandler.getNode(node, type);
+            }
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+        return this;
     }
 }

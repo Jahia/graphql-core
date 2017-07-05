@@ -46,7 +46,7 @@
     <description>This is the provider project for the DX GraphQL Core integration project</description>
 
     <properties>
-        <export-package>org.jahia.modules.graphql.provider.dxm</export-package>
+        <export-package>org.jahia.modules.graphql.provider.dxm,org.jahia.modules.graphql.provider.dxm.node,org.jahia.modules.graphql.provider.dxm.nodetype</export-package>
     </properties>
 
     <dependencies>

@@ -4,8 +4,8 @@ import graphql.annotations.GraphQLField;
 import graphql.annotations.GraphQLTypeExtension;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.servlet.GraphQLContext;
-import org.jahia.modules.graphql.provider.dxm.DXGraphQLGenericJCRNode;
-import org.jahia.modules.graphql.provider.dxm.DXGraphQLJCRNode;
+import org.jahia.modules.graphql.provider.dxm.node.DXGraphQLJCRNodeImpl;
+import org.jahia.modules.graphql.provider.dxm.node.DXGraphQLJCRNode;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -15,13 +15,13 @@ import org.jahia.services.render.RenderContext;
 public class DisplayableNodeExtender  {
 
     @GraphQLField
-    public static DXGraphQLGenericJCRNode getDisplayableNode(DataFetchingEnvironment environment) {
+    public static DXGraphQLJCRNodeImpl getDisplayableNode(DataFetchingEnvironment environment) {
         RenderContext context = new RenderContext(((GraphQLContext) environment.getContext()).getRequest().get(),
                 ((GraphQLContext) environment.getContext()).getResponse().get(),
                 JCRSessionFactory.getInstance().getCurrentUser());
         JCRNodeWrapper node = JCRContentUtils.findDisplayableNode(((DXGraphQLJCRNode) environment.getSource()).getNode(), context);
         if (node != null) {
-            return new DXGraphQLGenericJCRNode(node);
+            return new DXGraphQLJCRNodeImpl(node);
         } else {
             return null;
         }

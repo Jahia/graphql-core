@@ -6,7 +6,7 @@
 //import org.apache.commons.collections.map.HashedMap;
 //import org.jahia.bin.Render;
 //import org.jahia.modules.graphql.provider.dxm.builder.DXGraphQLExtender;
-//import org.jahia.modules.graphql.provider.dxm.DXGraphQLJCRNode;
+//import org.jahia.modules.graphql.provider.dxm.node.DXGraphQLJCRNode;
 //import org.jahia.services.content.JCRNodeWrapper;
 //import org.jahia.services.content.JCRSessionFactory;
 //import org.jahia.services.content.JCRSessionWrapper;

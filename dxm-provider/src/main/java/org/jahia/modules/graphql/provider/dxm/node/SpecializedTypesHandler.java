@@ -1,15 +1,19 @@
-package org.jahia.modules.graphql.provider.dxm;
+package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.TypeResolutionEnvironment;
 import graphql.annotations.GraphQLAnnotations;
 import graphql.schema.*;
 import org.jahia.api.Constants;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.PropertyType;
+import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.NodeDefinition;
 import javax.jcr.nodetype.PropertyDefinition;
@@ -20,38 +24,42 @@ import java.util.regex.Pattern;
 import static graphql.Scalars.*;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 
-public class JCRNodeTypeResolver implements TypeResolver {
+public class SpecializedTypesHandler {
 
     public static final String PROPERTY_PREFIX = "property_";
     public static final String UNNAMED_PROPERTY_PREFIX = "property_";
     public static final String CHILD_PREFIX = "child_";
     public static final String UNNAMED_CHILD_PREFIX = "child_";
 
-    private static Logger logger = LoggerFactory.getLogger(JCRNodeTypeResolver.class);
+    private static Logger logger = LoggerFactory.getLogger(SpecializedTypesHandler.class);
     private static Pattern VALID_NAME = Pattern.compile("^[_a-zA-Z][_a-zA-Z0-9]*$");
 
-    private static List<String> specializedTypes = Arrays.asList("jnt:virtualsite");
-    private static Map<String, GraphQLObjectType> knownTypes = new ConcurrentHashMap<>();
+    private List<String> specializedTypes = new ArrayList<>();
+    private Map<String, Class<? extends DXGraphQLJCRNode>> specializedTypesClass = new HashMap<>();
 
-    @Override
-    public GraphQLObjectType getType(TypeResolutionEnvironment env) {
-        String type = ((DXGraphQLJCRNode) env.getObject()).getType();
-        if (specializedTypes.contains(type)) {
-            return getKnownTypes().get(escape(type));
-        } else {
-            return GraphQLAnnotations.getInstance().getObject(DXGraphQLGenericJCRNode.class);
-        }
+    private Map<String, GraphQLObjectType> knownTypes = new ConcurrentHashMap<>();
+
+    private static SpecializedTypesHandler instance;
+
+    public static SpecializedTypesHandler getInstance() {
+        return instance;
     }
 
-    public static  Map<String, GraphQLObjectType> getKnownTypes() {
+    public SpecializedTypesHandler() {
+        instance = this;
+        specializedTypes.add("jnt:page");
+        specializedTypesClass.put("jnt:virtualsite", DXGraphQLJCRSite.class);
+    }
+
+    public Map<String, GraphQLObjectType> getKnownTypes() {
         if (knownTypes.isEmpty()) {
             GraphQLInterfaceType interfaceType = (GraphQLInterfaceType) GraphQLAnnotations.getInstance().getInterface(DXGraphQLJCRNode.class);
             for (String typeName : specializedTypes) {
                 try {
                     final ExtendedNodeType type = NodeTypeRegistry.getInstance().getNodeType(typeName);
                     final String escapedTypeName = escape(type.getName());
-                    if (!knownTypes.containsKey(escapedTypeName)) {
-                        knownTypes.put(escapedTypeName, createGraphQLType(type, escapedTypeName, interfaceType));
+                    if (!knownTypes.containsKey(typeName)) {
+                        knownTypes.put(typeName, createGraphQLType(type, escapedTypeName, interfaceType));
                     } else {
                         logger.debug("Already generated {}", escapedTypeName);
                     }
@@ -59,24 +67,25 @@ public class JCRNodeTypeResolver implements TypeResolver {
                     logger.error(e.getMessage(), e);
                 }
             }
+            for (Map.Entry<String, Class<? extends DXGraphQLJCRNode>> entry : specializedTypesClass.entrySet()) {
+                knownTypes.put(entry.getKey(), GraphQLAnnotations.getInstance().getObject(entry.getValue()));
+            }
         }
         return knownTypes;
     }
 
-    private static GraphQLObjectType createGraphQLType(ExtendedNodeType type, String typeName, GraphQLInterfaceType interfaceType) {
+    private GraphQLObjectType createGraphQLType(ExtendedNodeType type, String typeName, GraphQLInterfaceType interfaceType) {
         final String escapedTypeName = escape(typeName);
         logger.debug("Creating {}", escapedTypeName);
 
         final GraphQLObjectType.Builder builder = GraphQLObjectType.newObject()
                 .name(escapedTypeName)
                 .withInterface(interfaceType)
-                .fields(GraphQLAnnotations.getInstance().getObject(DXGraphQLGenericJCRNode.class).getFieldDefinitions());
+                .fields(GraphQLAnnotations.getInstance().getObject(DXGraphQLJCRNodeImpl.class).getFieldDefinitions());
 
         final PropertyDefinition[] properties = type.getPropertyDefinitions();
         if (properties.length > 0) {
             final Set<String> multiplePropertyTypes = new HashSet<>(properties.length);
-//            final GraphQLFieldDefinition.Builder propertiesField = newFieldDefinition().name("namedProperties").dataFetcher(identityDataFetcher);
-//            final GraphQLObjectType.Builder propertiesType = newObject().name(escapedTypeName + "Properties");
             for (PropertyDefinition property : properties) {
                 final String propName = property.getName();
                 final int propertyType = property.getRequiredType();
@@ -89,32 +98,25 @@ public class JCRNodeTypeResolver implements TypeResolver {
                             .type(getGraphQLType(propertyType, multiple))
                             .build());
                 } else {
-                    final String propertyTypeName = PropertyType.nameFromValue(propertyType);
-                    if (!multiplePropertyTypes.contains(propertyTypeName)) {
-                        builder.field(
-                                newFieldDefinition()
-                                        .name(UNNAMED_PROPERTY_PREFIX + propertyTypeName)
-                                        .type(getGraphQLType(propertyType, false))
-                                        .dataFetcher(new UnnamedPropertiesDataFetcher())
-//                                        .argument(newArgument()
-//                                                .name("name")
-//                                                .type(GraphQLString)
-//                                                .build())
-                                        .build()
-                        );
-                        multiplePropertyTypes.add(propertyTypeName);
-                    }
+                    // Unnamed properties
+//                    final String propertyTypeName = PropertyType.nameFromValue(propertyType);
+//                    if (!multiplePropertyTypes.contains(propertyTypeName)) {
+//                        builder.field(
+//                                newFieldDefinition()
+//                                        .name(UNNAMED_PROPERTY_PREFIX + propertyTypeName)
+//                                        .type(getGraphQLType(propertyType, false))
+//                                        .dataFetcher(new UnnamedPropertiesDataFetcher())
+//                                        .build()
+//                        );
+//                        multiplePropertyTypes.add(propertyTypeName);
+//                    }
                 }
             }
-//            propertiesField.type(propertiesType.build());
-//            builder.field(propertiesField);
         }
 
         final NodeDefinition[] children = type.getChildNodeDefinitions();
         if (children.length > 0) {
             final Set<String> multipleChildTypes = new HashSet<>(children.length);
-//            final GraphQLFieldDefinition.Builder childrenField = newFieldDefinition().name("namedChildren").dataFetcher(identityDataFetcher);
-//            final GraphQLObjectType.Builder childrenType = newObject().name(escapedTypeName + "Children");
             for (NodeDefinition child : children) {
                 final String childName = child.getName();
 
@@ -128,26 +130,21 @@ public class JCRNodeTypeResolver implements TypeResolver {
                             .dataFetcher(new NamedChildDataFetcher())
                             .build());
                 } else {
-                    final String childTypeName = getChildTypeName(child);
-                    if (!multipleChildTypes.contains(childTypeName)) {
-                        final String escapedChildTypeName = escape(childTypeName);
-                        builder.field(
-                                newFieldDefinition()
-                                        .name(UNNAMED_CHILD_PREFIX + escapedChildTypeName)
-                                        .type(new GraphQLList(new GraphQLTypeReference(specializedTypes.contains(childTypeName) ? escapedChildTypeName : "GenericJCRNode")))
-                                        .dataFetcher(new UnnamedChildNodesDataFetcher())
-//                                        .argument(newArgument()
-//                                                .name("name")
-//                                                .type(GraphQLString)
-//                                                .build())
-                                        .build()
-                        );
-                        multipleChildTypes.add(childTypeName);
-                    }
+                    // Unnamed children
+//                    final String childTypeName = getChildTypeName(child);
+//                    if (!multipleChildTypes.contains(childTypeName)) {
+//                        final String escapedChildTypeName = escape(childTypeName);
+//                        builder.field(
+//                                newFieldDefinition()
+//                                        .name(UNNAMED_CHILD_PREFIX + escapedChildTypeName)
+//                                        .type(new GraphQLList(new GraphQLTypeReference(specializedTypes.contains(childTypeName) ? escapedChildTypeName : "GenericJCRNode")))
+//                                        .dataFetcher(new UnnamedChildNodesDataFetcher())
+//                                        .build()
+//                        );
+//                        multipleChildTypes.add(childTypeName);
+//                    }
                 }
             }
-//            childrenField.type(childrenType.build());
-//            builder.field(childrenField);
         }
 
         builder.description(type.getDescription(Locale.ENGLISH));
@@ -156,7 +153,7 @@ public class JCRNodeTypeResolver implements TypeResolver {
     }
 
 
-    private static String getChildTypeName(NodeDefinition child) {
+    private String getChildTypeName(NodeDefinition child) {
         String childTypeName = child.getDefaultPrimaryTypeName();
         if (childTypeName == null) {
             final String[] primaryTypeNames = child.getRequiredPrimaryTypeNames();
@@ -173,8 +170,8 @@ public class JCRNodeTypeResolver implements TypeResolver {
         return childTypeName;
     }
 
-    private static GraphQLOutputType getGraphQLType(int jcrPropertyType, boolean multiValued) {
-        GraphQLScalarType type;
+    private GraphQLOutputType getGraphQLType(int jcrPropertyType, boolean multiValued) {
+        GraphQLOutputType type;
         switch (jcrPropertyType) {
             case PropertyType.BOOLEAN:
                 type = GraphQLBoolean;
@@ -187,14 +184,16 @@ public class JCRNodeTypeResolver implements TypeResolver {
             case PropertyType.DOUBLE:
                 type = GraphQLFloat;
                 break;
+            case PropertyType.REFERENCE:
+            case PropertyType.WEAKREFERENCE:
+                type = GraphQLAnnotations.getInstance().getOutputTypeOrRef(DXGraphQLJCRNode.class);
+                break;
             case PropertyType.BINARY:
             case PropertyType.NAME:
             case PropertyType.PATH:
-            case PropertyType.REFERENCE:
             case PropertyType.STRING:
             case PropertyType.UNDEFINED:
             case PropertyType.URI:
-            case PropertyType.WEAKREFERENCE:
                 type = GraphQLString;
                 break;
             default:
@@ -207,6 +206,22 @@ public class JCRNodeTypeResolver implements TypeResolver {
         return multiValued ? new GraphQLList(type) : type;
     }
 
+    public static DXGraphQLJCRNode getNode(JCRNodeWrapper node) throws RepositoryException {
+        return getNode(node, node.getPrimaryNodeTypeName());
+    }
+
+    public static DXGraphQLJCRNode getNode(JCRNodeWrapper node, String type) throws RepositoryException {
+        if (getInstance().specializedTypesClass.containsKey(type)) {
+            try {
+                return getInstance().specializedTypesClass.get(type).getConstructor(new Class[] {JCRNodeWrapper.class}).newInstance(node);
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            return new DXGraphQLJCRNodeImpl(node, type);
+        }
+    }
+
     public static String escape(String name) {
         name = name.replace(":", "__").replace(".", "___");
         if (!VALID_NAME.matcher(name).matches()) {
@@ -217,5 +232,17 @@ public class JCRNodeTypeResolver implements TypeResolver {
 
     public static String unescape(String name) {
         return name.replace("___", ".").replace("__", ":");
+    }
+
+    public static class NodeTypeResolver implements TypeResolver {
+        @Override
+        public GraphQLObjectType getType(TypeResolutionEnvironment env) {
+            String type = ((DXGraphQLJCRNode) env.getObject()).getType();
+            if (getInstance().knownTypes.containsKey(type)) {
+                return getInstance().knownTypes.get(type);
+            } else {
+                return GraphQLAnnotations.getInstance().getObject(DXGraphQLJCRNodeImpl.class);
+            }
+        }
     }
 }

@@ -1,7 +1,8 @@
-package org.jahia.modules.graphql.provider.dxm;
+package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.GraphQLField;
 import graphql.annotations.GraphQLName;
+import graphql.annotations.GraphQLNonNull;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.slf4j.Logger;
@@ -12,22 +13,32 @@ import java.util.ArrayList;
 import java.util.List;
 
 @GraphQLName("JCRProperty")
-public class DXGraphQLProperty {
-    private static Logger logger = LoggerFactory.getLogger(DXGraphQLProperty.class);
+public class DXGraphQLJCRProperty {
+    private static Logger logger = LoggerFactory.getLogger(DXGraphQLJCRProperty.class);
     private JCRPropertyWrapper propertyWrapper;
+    private DXGraphQLJCRNode node;
 
-    public DXGraphQLProperty(JCRPropertyWrapper propertyWrapper) {
+    public DXGraphQLJCRProperty(JCRPropertyWrapper propertyWrapper, DXGraphQLJCRNode node) {
         this.propertyWrapper = propertyWrapper;
+        this.node = node;
     }
 
+    @GraphQLNonNull
     @GraphQLField
-    public String getKey() {
+    public String getName() {
         try {
             return propertyWrapper.getName();
         } catch (RepositoryException e) {
-            logger.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         }
-        return null;
+    }
+
+    public DXGraphQLPropertyType getType() {
+        try {
+            return DXGraphQLPropertyType.getValue(propertyWrapper.getType());
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @GraphQLField
@@ -39,9 +50,8 @@ public class DXGraphQLProperty {
                 return propertyWrapper.getValue().getString();
             }
         } catch (RepositoryException e) {
-            logger.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         }
-        return null;
     }
 
     @GraphQLField
@@ -57,8 +67,19 @@ public class DXGraphQLProperty {
             }
             return values;
         } catch (RepositoryException e) {
-            logger.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         }
-        return null;
     }
+
+    public DXGraphQLJCRNode getParentNode() {
+        if (node == null) {
+            try {
+                node = SpecializedTypesHandler.getNode(propertyWrapper.getParent());
+            } catch (RepositoryException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return node;
+    }
+
 }

@@ -1,4 +1,4 @@
-package org.jahia.modules.graphql.provider.dxm;
+package org.jahia.modules.graphql.provider.dxm.nodetype;
 
 import graphql.annotations.GraphQLConnection;
 import graphql.annotations.GraphQLField;
