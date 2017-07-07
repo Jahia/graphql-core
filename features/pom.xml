@@ -105,12 +105,7 @@
         </dependency>
         <dependency>
             <groupId>org.jahia.modules</groupId>
-            <artifactId>graphql-core-dxm-provider</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jahia.modules</groupId>
-            <artifactId>graphql-core-dxm-provider-baseplugin</artifactId>
+            <artifactId>graphql-dxm-provider</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

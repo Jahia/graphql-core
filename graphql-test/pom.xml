@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    ==========================================================================================
+    =                            JAHIA'S ENTERPRISE DISTRIBUTION                             =
+    ==========================================================================================
+
+                                     http://www.jahia.com
+
+    JAHIA'S ENTERPRISE DISTRIBUTIONS LICENSING - IMPORTANT INFORMATION
+    ==========================================================================================
+
+        Copyright (C) 2002-2017 Jahia Solutions Group. All rights reserved.
+
+        This file is part of a Jahia's Enterprise Distribution.
+
+        Jahia's Enterprise Distributions must be used in accordance with the terms
+        contained in the Jahia Solutions Group Terms & Conditions as well as
+        the Jahia Sustainable Enterprise License (JSEL).
+
+        For questions regarding licensing, support, production usage...
+        please contact our team at sales@jahia.com or go to http://www.jahia.com/license.
+
+    ==========================================================================================
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>graphql-core-root</artifactId>
+        <groupId>org.jahia.modules</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>graphql-test</artifactId>
+    <groupId>org.jahia.test</groupId>
+    <name>DX :: GraphQL Test Module</name>
+    <packaging>bundle</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jahia.server</groupId>
+            <artifactId>jahia-impl</artifactId>
+            <version>7.2.1.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jahia.test</groupId>
+            <artifactId>jahia-test-module</artifactId>
+            <version>7.2.1.0-SNAPSHOT</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>servlet-api</artifactId>
+                    <groupId>org.mortbay.jetty</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java-servlet</artifactId>
+            <version>${graphql-java-servlet.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java-annotations</artifactId>
+            <version>${graphql-java-annotations.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

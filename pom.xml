@@ -85,13 +85,26 @@
 
     <modules>
         <!--<module>user-provider</module>-->
-        <module>dxm-provider</module>
-        <module>dxm-provider-baseplugin</module>
+        <module>graphql-dxm-provider</module>
         <module>graphiql</module>
         <module>features</module>
+        <module>graphql-extension-example</module>
+        <module>graphql-test</module>
     </modules>
 
+
     <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${compiler.plugin.version}</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
 </project>
