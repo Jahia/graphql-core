@@ -159,7 +159,7 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
 //    @GraphQLConnection
     public List<DXGraphQLJCRNode> getChildren(@GraphQLName("names") Collection<String> names,
                                               @GraphQLName("anyType") Collection<String> anyType,
-                                              @GraphQLName("properties") PropertyFilterTypeInput properties,
+                                              @GraphQLName("properties") Collection<PropertyFilterTypeInput> properties,
                                               @GraphQLName("asMixin") String asMixin) {
         List<DXGraphQLJCRNode> children = new ArrayList<DXGraphQLJCRNode>();
         try {
@@ -174,7 +174,7 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
     }
 
     // List of inputs objects not correctly handled by graphql-java-annotations, to fix
-    private AllPredicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final Collection<String> anyType, final PropertyFilterTypeInput property) {
+    private AllPredicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final Collection<String> anyType, final Collection<PropertyFilterTypeInput> properties) {
         return new AllPredicate<JCRNodeWrapper>(
                 new org.apache.commons.collections4.Predicate<JCRNodeWrapper>() {
                     @Override
@@ -203,13 +203,10 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
                 new org.apache.commons.collections4.Predicate<JCRNodeWrapper>() {
                     @Override
                     public boolean evaluate(JCRNodeWrapper node) {
-                        if (property.key == null) {
+                        if (properties == null || properties.isEmpty()) {
                             return true;
                         }
-//                        if (properties == null || properties.isEmpty()) {
-//                            return true;
-//                        }
-//                        for (PropertyFilterTypeInput property : properties) {
+                        for (PropertyFilterTypeInput property : properties) {
                             try {
                                 if (!node.hasProperty(property.key) || !node.getProperty(property.key).getString().equals(property.value)) {
                                     return false;
@@ -217,7 +214,7 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
                             } catch (RepositoryException e) {
                                 throw new RuntimeException(e);
                             }
-//                        }
+                        }
                         return true;
                     }
                 }

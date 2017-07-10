@@ -48,7 +48,7 @@ public interface DXGraphQLJCRNode {
     @GraphQLField()
     List<DXGraphQLJCRNode> getChildren(@GraphQLName("names") Collection<String> names,
                                        @GraphQLName("anyType") Collection<String> anyType,
-                                       @GraphQLName("properties") PropertyFilterTypeInput properties,
+                                       @GraphQLName("properties") Collection<PropertyFilterTypeInput> properties,
                                        @GraphQLName("asMixin") String asMixin);
 
     @GraphQLField()
