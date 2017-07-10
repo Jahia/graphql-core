@@ -111,8 +111,10 @@ public class NodeMutationExtensions {
 
     private static JCRNodeWrapper addNode(JCRNodeWrapper parent, DXGraphQLJCRNodeInput node) throws RepositoryException {
         JCRNodeWrapper n = parent.addNode(node.name, node.primaryNodeType);
-        for (DXGraphQLJCRNodeInput child : node.children) {
-            addNode(n, child);
+        if (node.children != null) {
+            for (DXGraphQLJCRNodeInput child : node.children) {
+                addNode(n, child);
+            }
         }
         return n;
     }

@@ -10,8 +10,16 @@ import java.util.List;
 @GraphQLName("JCRPropertyInput")
 public class DXGraphQLJCRPropertyInput {
 
-    public DXGraphQLJCRPropertyInput(HashMap map) {
-        name = (String) map.get("name");
+    public DXGraphQLJCRPropertyInput(@GraphQLName("name") String name,
+                                     @GraphQLName("language") String language,
+                                     @GraphQLName("type") DXGraphQLPropertyType type,
+                                     @GraphQLName("value") String value,
+                                     @GraphQLName("values") List<String> values) {
+        this.name = name;
+        this.language = language;
+        this.type = type;
+        this.value = value;
+        this.values = values;
     }
 
     @GraphQLField
