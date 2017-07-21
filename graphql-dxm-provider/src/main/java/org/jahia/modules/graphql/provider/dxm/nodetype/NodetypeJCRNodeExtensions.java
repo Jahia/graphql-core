@@ -1,13 +1,14 @@
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
 import graphql.annotations.GraphQLField;
+import graphql.annotations.GraphQLName;
 import graphql.annotations.GraphQLTypeExtension;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.node.DXGraphQLJCRNode;
-import org.jahia.modules.graphql.provider.dxm.node.DXGraphQLJCRNodeImpl;
 
 import javax.jcr.RepositoryException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,6 +23,21 @@ public class NodetypeJCRNodeExtensions {
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @GraphQLField()
+    public static boolean getIsNodeType(DataFetchingEnvironment env, @GraphQLName("anyType") Collection<String> anyType) {
+        try {
+            DXGraphQLJCRNode node = env.getSource();
+            for (String type : anyType) {
+                if (node.getNode().isNodeType(type)) {
+                    return true;
+                }
+            }
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+        return false;
     }
 
     @GraphQLField

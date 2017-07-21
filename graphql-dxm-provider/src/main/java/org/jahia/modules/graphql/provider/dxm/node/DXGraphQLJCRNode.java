@@ -34,9 +34,6 @@ public interface DXGraphQLJCRNode {
     DXGraphQLJCRNode getParent();
 
     @GraphQLField()
-    boolean isNodeType(@GraphQLName("anyType") Collection<String> anyType);
-
-    @GraphQLField()
     List<DXGraphQLJCRProperty> getProperties(@GraphQLName("names") Collection<String> names,
                                              @GraphQLName("language") String language);
 

@@ -94,20 +94,6 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
     }
 
     @Override
-    public boolean isNodeType(@GraphQLName("anyType")Collection<String> anyType) {
-        try {
-            for (String type : anyType) {
-                if (node.isNodeType(type)) {
-                    return true;
-                }
-            }
-        } catch (RepositoryException e) {
-            throw new RuntimeException(e);
-        }
-        return false;
-    }
-
-    @Override
     public List<DXGraphQLJCRProperty> getProperties(@GraphQLName("names") Collection<String> names,
                                                     @GraphQLName("language") String language) {
         List<DXGraphQLJCRProperty> propertyList = new ArrayList<DXGraphQLJCRProperty>();
