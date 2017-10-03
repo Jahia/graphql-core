@@ -1,7 +1,5 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.annotations.GraphQLField;
-import graphql.annotations.GraphQLName;
 import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.collections4.functors.AllPredicate;
 import org.jahia.services.content.JCRItemWrapper;
@@ -10,22 +8,21 @@ import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.utils.LanguageCodeConverters;
 
+import graphql.annotations.GraphQLName;
+import graphql.annotations.GraphQLNonNull;
+
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import java.util.*;
 
 @GraphQLName("GenericJCRNode")
 public class GqlJcrNodeImpl implements GqlJcrNode {
+
     private JCRNodeWrapper node;
     private String type;
 
     public GqlJcrNodeImpl(JCRNodeWrapper node) {
-        this.node = node;
-        try {
-            this.type = node.getPrimaryNodeTypeName();
-        } catch (RepositoryException e) {
-            e.printStackTrace();
-        }
+        this(node, null);
     }
 
     public GqlJcrNodeImpl(JCRNodeWrapper node, String type) {
@@ -36,7 +33,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             try {
                 this.type = node.getPrimaryNodeTypeName();
             } catch (RepositoryException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }
     }
@@ -52,6 +49,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLNonNull
     public String getUuid() {
         try {
             return node.getIdentifier();
@@ -61,11 +59,13 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLNonNull
     public String getName() {
         return node.getName();
     }
 
     @Override
+    @GraphQLNonNull
     public String getPath() {
         return node.getPath();
     }
@@ -94,7 +94,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
-    public List<GqlJcrProperty> getProperties(@GraphQLName("names") Collection<String> names,
+    @GraphQLNonNull
+    public Collection<GqlJcrProperty> getProperties(@GraphQLName("names") Collection<String> names,
                                                     @GraphQLName("language") String language) {
         List<GqlJcrProperty> propertyList = new ArrayList<GqlJcrProperty>();
         try {
@@ -106,14 +107,14 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             if (names != null && !names.isEmpty()) {
                 for (String name : names) {
                     if (node.hasProperty(name)) {
-                        propertyList.add(new GqlJcrProperty(node.getProperty(name), this));
+                        propertyList.add(new GqlJcrProperty(node.getProperty(name)));
                     }
                 }
             } else {
                 PropertyIterator pi = node.getProperties();
                 while (pi.hasNext()) {
                     JCRPropertyWrapper property = (JCRPropertyWrapper) pi.nextProperty();
-                    propertyList.add(new GqlJcrProperty(property, this));
+                    propertyList.add(new GqlJcrProperty(property));
                 }
             }
         } catch (RepositoryException e) {
@@ -124,7 +125,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     @Override
     public GqlJcrProperty getProperty(@GraphQLName("name") String name,
-                                            @GraphQLName("language") String language) {
+                                      @GraphQLName("language") String language) {
         try {
             JCRNodeWrapper node = this.node;
             if (language != null) {
@@ -132,7 +133,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                         .getNodeByIdentifier(node.getIdentifier());
             }
             if (node.hasProperty(name)) {
-                return new GqlJcrProperty(node.getProperty(name), this);
+                return new GqlJcrProperty(node.getProperty(name));
             }
             return null;
         } catch (RepositoryException e) {
@@ -141,12 +142,11 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
-    @GraphQLField
-//    @GraphQLConnection
+    @GraphQLNonNull
     public List<GqlJcrNode> getChildren(@GraphQLName("names") Collection<String> names,
-                                              @GraphQLName("anyType") Collection<String> anyType,
-                                              @GraphQLName("properties") Collection<PropertyFilterTypeInput> properties,
-                                              @GraphQLName("asMixin") String asMixin) {
+                                        @GraphQLName("anyType") Collection<String> anyType,
+                                        @GraphQLName("properties") Collection<PropertyFilterTypeInput> properties,
+                                        @GraphQLName("asMixin") String asMixin) {
         List<GqlJcrNode> children = new ArrayList<GqlJcrNode>();
         try {
             Iterator<JCRNodeWrapper> nodes = IteratorUtils.filteredIterator(node.getNodes().iterator(), getNodesPredicate(names,anyType,properties));
@@ -159,16 +159,22 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         return children;
     }
 
-    // List of inputs objects not correctly handled by graphql-java-annotations, to fix
+    @SuppressWarnings("unchecked")
+    // List of input objects is not correctly handled by graphql-java-annotations, to fix
     private AllPredicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final Collection<String> anyType, final Collection<PropertyFilterTypeInput> properties) {
+
         return new AllPredicate<JCRNodeWrapper>(
+
                 new org.apache.commons.collections4.Predicate<JCRNodeWrapper>() {
+
                     @Override
                     public boolean evaluate(JCRNodeWrapper node) {
                         return names == null || names.isEmpty() || names.contains(node.getName());
                     }
                 },
+
                 new org.apache.commons.collections4.Predicate<JCRNodeWrapper>() {
+
                     @Override
                     public boolean evaluate(JCRNodeWrapper node) {
                         if (anyType == null || anyType.isEmpty()) {
@@ -186,7 +192,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                         return false;
                     }
                 },
+
                 new org.apache.commons.collections4.Predicate<JCRNodeWrapper>() {
+
                     @Override
                     public boolean evaluate(JCRNodeWrapper node) {
                         if (properties == null || properties.isEmpty()) {
@@ -208,11 +216,10 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLNonNull
     public List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") String upToPath) {
         List<GqlJcrNode> ancestors = new ArrayList<GqlJcrNode>();
-
         String upToPathSlash = upToPath + "/";
-
         try {
             List<JCRItemWrapper> jcrAncestors = node.getAncestors();
             for (JCRItemWrapper ancestor : jcrAncestors) {
@@ -227,6 +234,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLNonNull
     public GqlJcrSite getSite() {
         try {
             return new GqlJcrSite(node.getResolveSite());
@@ -238,12 +246,12 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @Override
     public GqlJcrNode asMixin(@GraphQLName("type") String type) {
         try {
-            if (node.isNodeType(type)) {
-                return SpecializedTypesHandler.getNode(node, type);
+            if (!node.isNodeType(type)) {
+                return null;
             }
+            return SpecializedTypesHandler.getNode(node, type);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
-        return this;
     }
 }

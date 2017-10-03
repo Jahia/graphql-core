@@ -1,13 +1,15 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.annotations.*;
 import org.jahia.services.content.JCRNodeWrapper;
 
+import graphql.annotations.GraphQLField;
+import graphql.annotations.GraphQLName;
+import graphql.annotations.GraphQLNonNull;
+import graphql.annotations.GraphQLTypeResolver;
+
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 
-@GraphQLName("JCRNode")
 @GraphQLTypeResolver(SpecializedTypesHandler.NodeTypeResolver.class)
 public interface GqlJcrNode {
 
@@ -15,62 +17,62 @@ public interface GqlJcrNode {
 
     String getType();
 
-    @GraphQLField()
-    @GraphQLDescription("Unique identifier")
+    @GraphQLField
+    @GraphQLNonNull
     String getUuid();
 
-    @GraphQLField()
-    @GraphQLDescription("The name of the node")
+    @GraphQLField
+    @GraphQLNonNull
     String getName();
 
-    @GraphQLField()
-    @GraphQLDescription("The path of the node")
+    @GraphQLField
+    @GraphQLNonNull
     String getPath();
 
-    @GraphQLField()
+    @GraphQLField
     String getDisplayName(@GraphQLName("language") String language);
 
-    @GraphQLField()
+    @GraphQLField
     GqlJcrNode getParent();
 
-    @GraphQLField()
-    List<GqlJcrProperty> getProperties(@GraphQLName("names") Collection<String> names,
+    @GraphQLField
+    @GraphQLNonNull
+    Collection<GqlJcrProperty> getProperties(@GraphQLName("names") Collection<String> names,
                                              @GraphQLName("language") String language);
 
-    @GraphQLField()
+    @GraphQLField
     GqlJcrProperty getProperty(@GraphQLName("name") String name,
-                                     @GraphQLName("language") String language);
+                               @GraphQLName("language") String language);
 
-//    @GraphQLConnection()
-    @GraphQLField()
+    @GraphQLField
+    @GraphQLNonNull
     List<GqlJcrNode> getChildren(@GraphQLName("names") Collection<String> names,
-                                       @GraphQLName("anyType") Collection<String> anyType,
-                                       @GraphQLName("properties") Collection<PropertyFilterTypeInput> properties,
-                                       @GraphQLName("asMixin") String asMixin);
+                                 @GraphQLName("anyType") Collection<String> anyType,
+                                 @GraphQLName("properties") Collection<PropertyFilterTypeInput> properties,
+                                 @GraphQLName("asMixin") String asMixin);
 
-    @GraphQLField()
+    @GraphQLField
+    @GraphQLNonNull
     List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") String upToPath);
 
-    @GraphQLField()
+    @GraphQLField
+    @GraphQLNonNull
     GqlJcrSite getSite();
 
-    @GraphQLField()
+    @GraphQLField
     GqlJcrNode asMixin(@GraphQLName("type") String type);
 
-    public class PropertyFilterTypeInput {
+    public static class PropertyFilterTypeInput {
 
-        public PropertyFilterTypeInput(HashMap m) {
-            if (m != null) {
-                this.key = (String) m.get("key");
-                this.value = (String) m.get("value");
-            }
+        public PropertyFilterTypeInput(String key, String value) {
+            this.key = key;
+            this.value = value;
         }
 
-        @GraphQLField()
+        @GraphQLField
         public String key;
 
-        @GraphQLField()
+        @GraphQLField
         public String value;
     }
-
 }
