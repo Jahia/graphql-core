@@ -6,7 +6,7 @@ import graphql.annotations.GraphQLName;
 import javax.jcr.PropertyType;
 
 @GraphQLName("JCRPropertyType")
-public enum DXGraphQLPropertyType {
+public enum GqlJcrPropertyType {
     BOOLEAN,
     DATE,
     DECIMAL,
@@ -21,7 +21,7 @@ public enum DXGraphQLPropertyType {
     URI,
     WEAKREFERENCE;
 
-    public static DXGraphQLPropertyType getValue(int type) {
+    public static GqlJcrPropertyType getValue(int type) {
         switch (type) {
             case PropertyType.STRING:
                 return STRING;

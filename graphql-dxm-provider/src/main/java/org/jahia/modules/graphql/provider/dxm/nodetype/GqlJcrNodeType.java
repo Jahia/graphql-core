@@ -21,8 +21,8 @@ import java.util.List;
  * @author toto
  */
 @GraphQLName("JCRNodeType")
-public class DXGraphQLNodeType {
-    public static final Logger logger = LoggerFactory.getLogger(DXGraphQLNodeType.class);
+public class GqlJcrNodeType {
+    public static final Logger logger = LoggerFactory.getLogger(GqlJcrNodeType.class);
 
     private ExtendedNodeType nodeType;
     private String name;
@@ -32,7 +32,7 @@ public class DXGraphQLNodeType {
     private boolean hasOrderableChildNodes;
     private boolean isQueryable;
 
-    public DXGraphQLNodeType(ExtendedNodeType nodeType) {
+    public GqlJcrNodeType(ExtendedNodeType nodeType) {
         this.nodeType = nodeType;
         this.name = nodeType.getName();
         this.systemId = nodeType.getSystemId();
@@ -85,13 +85,13 @@ public class DXGraphQLNodeType {
 
     @GraphQLField
     @GraphQLConnection
-    public List<DXGraphQLPropertyDefinition> getProperties() {
-        List<DXGraphQLPropertyDefinition> propertyList = null;
+    public List<GqlJcrPropertyDefinition> getProperties() {
+        List<GqlJcrPropertyDefinition> propertyList = null;
         try {
             ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
             propertyList = new ArrayList<>();
             for (ExtendedPropertyDefinition definition : ent.getPropertyDefinitions()) {
-                DXGraphQLPropertyDefinition qlPropertyDefinition = new DXGraphQLPropertyDefinition();
+                GqlJcrPropertyDefinition qlPropertyDefinition = new GqlJcrPropertyDefinition();
                 qlPropertyDefinition.setName(definition.getName());
                 propertyList.add(qlPropertyDefinition);
             }
@@ -103,13 +103,13 @@ public class DXGraphQLNodeType {
     }
 
     @GraphQLField
-    public List<DXGraphQLNodeDefinition> getNodes() {
-        List<DXGraphQLNodeDefinition> nodeList = null;
+    public List<GqlJcrNodeDefinition> getNodes() {
+        List<GqlJcrNodeDefinition> nodeList = null;
         try {
             ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
             nodeList = new ArrayList<>();
             for (ExtendedNodeDefinition definition : ent.getChildNodeDefinitions()) {
-                DXGraphQLNodeDefinition qlNodeDefinition = new DXGraphQLNodeDefinition();
+                GqlJcrNodeDefinition qlNodeDefinition = new GqlJcrNodeDefinition();
                 qlNodeDefinition.setName(definition.getName());
                 nodeList.add(qlNodeDefinition);
             }
@@ -121,13 +121,13 @@ public class DXGraphQLNodeType {
     }
 
     @GraphQLField
-    public List<DXGraphQLNodeType> getSubTypes() {
-        List<DXGraphQLNodeType> subTypes = null;
+    public List<GqlJcrNodeType> getSubTypes() {
+        List<GqlJcrNodeType> subTypes = null;
         try {
             ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
             subTypes = new ArrayList<>();
             for (ExtendedNodeType type : ent.getSubtypesAsList()) {
-                subTypes.add(new DXGraphQLNodeType(type));
+                subTypes.add(new GqlJcrNodeType(type));
             }
         } catch (NoSuchNodeTypeException e) {
             logger.error(e.getMessage(), e);
@@ -139,13 +139,13 @@ public class DXGraphQLNodeType {
 
     @GraphQLField
     @GraphQLConnection
-    public List<DXGraphQLNodeType> getSuperTypes() {
-        List<DXGraphQLNodeType> superTypes = null;
+    public List<GqlJcrNodeType> getSuperTypes() {
+        List<GqlJcrNodeType> superTypes = null;
         try {
             ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
             superTypes = new ArrayList<>();
             for (ExtendedNodeType type : ent.getSupertypeSet()) {
-                superTypes.add(new DXGraphQLNodeType(type));
+                superTypes.add(new GqlJcrNodeType(type));
             }
         } catch (NoSuchNodeTypeException e) {
             logger.error(e.getMessage(), e);

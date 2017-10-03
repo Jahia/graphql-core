@@ -12,7 +12,7 @@ public class UnnamedPropertiesDataFetcher implements DataFetcher {
         String type = dataFetchingEnvironment.getFields().get(0).getName();
         type = StringUtils.substringAfter(type, SpecializedTypesHandler.PROPERTY_PREFIX);
         int propType = PropertyType.valueFromName(type);
-        DXGraphQLJCRNode node = (DXGraphQLJCRNode) dataFetchingEnvironment.getSource();
+        GqlJcrNode node = (GqlJcrNode) dataFetchingEnvironment.getSource();
         // todo
         return null;
     }

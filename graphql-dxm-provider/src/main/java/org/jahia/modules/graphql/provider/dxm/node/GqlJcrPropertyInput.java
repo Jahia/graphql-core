@@ -8,11 +8,11 @@ import java.util.HashMap;
 import java.util.List;
 
 @GraphQLName("JCRPropertyInput")
-public class DXGraphQLJCRPropertyInput {
+public class GqlJcrPropertyInput {
 
-    public DXGraphQLJCRPropertyInput(@GraphQLName("name") String name,
+    public GqlJcrPropertyInput(@GraphQLName("name") String name,
                                      @GraphQLName("language") String language,
-                                     @GraphQLName("type") DXGraphQLPropertyType type,
+                                     @GraphQLName("type") GqlJcrPropertyType type,
                                      @GraphQLName("value") String value,
                                      @GraphQLName("values") List<String> values) {
         this.name = name;
@@ -29,7 +29,7 @@ public class DXGraphQLJCRPropertyInput {
     public String language;
 
     @GraphQLField
-    public DXGraphQLPropertyType type;
+    public GqlJcrPropertyType type;
 
     @GraphQLField
     public String value;

@@ -37,9 +37,9 @@ public class NodeMutationExtensions {
     }
 
     @GraphQLField
-    public static GraphQLMutationNode addNode2(@GraphQLName("node") DXGraphQLJCRNodeInput node, @GraphQLName("parentPath") String parentPath, @GraphQLName("workspace") String workspace) {
+    public static GraphQLMutationNode addNode2(@GraphQLName("node") GqlJcrNodeInput node, @GraphQLName("parentPath") String parentPath, @GraphQLName("workspace") String workspace) {
         try {
-            DXGraphQLJCRNode result = SpecializedTypesHandler.getNode(addNode(JCRSessionFactory.getInstance().getCurrentUserSession(workspace).getNode(parentPath), node));
+            GqlJcrNode result = SpecializedTypesHandler.getNode(addNode(JCRSessionFactory.getInstance().getCurrentUserSession(workspace).getNode(parentPath), node));
             return new GraphQLMutationNode(result);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
@@ -55,9 +55,9 @@ public class NodeMutationExtensions {
         }
 
         @GraphQLField
-        public GraphQLMutationNode addNode2(@GraphQLName("node") DXGraphQLJCRNodeInput node, @GraphQLName("parentPath") String parentPath) {
+        public GraphQLMutationNode addNode2(@GraphQLName("node") GqlJcrNodeInput node, @GraphQLName("parentPath") String parentPath) {
             try {
-                DXGraphQLJCRNode result = SpecializedTypesHandler.getNode(addNode(this.session.getNode(parentPath), node));
+                GqlJcrNode result = SpecializedTypesHandler.getNode(addNode(this.session.getNode(parentPath), node));
                 return new GraphQLMutationNode(result);
             } catch (RepositoryException e) {
                 throw new RuntimeException(e);
@@ -70,16 +70,16 @@ public class NodeMutationExtensions {
     public static class GraphQLMutationNode extends GraphQLMutation {
 
         @GraphQLField
-        public DXGraphQLJCRNode node;
+        public GqlJcrNode node;
 
-        public GraphQLMutationNode(DXGraphQLJCRNode node) throws RepositoryException {
+        public GraphQLMutationNode(GqlJcrNode node) throws RepositoryException {
             this.node = node;
         }
 
         @GraphQLField
-        public GraphQLMutationNode addNode2(@GraphQLName("node") DXGraphQLJCRNodeInput node) {
+        public GraphQLMutationNode addNode2(@GraphQLName("node") GqlJcrNodeInput node) {
             try {
-                DXGraphQLJCRNode result = SpecializedTypesHandler.getNode(addNode(this.node.getNode(), node));
+                GqlJcrNode result = SpecializedTypesHandler.getNode(addNode(this.node.getNode(), node));
                 return new GraphQLMutationNode(result);
             } catch (RepositoryException e) {
                 throw new RuntimeException(e);
@@ -89,15 +89,15 @@ public class NodeMutationExtensions {
 
     @GraphQLField
 //    @GraphQLRelayMutation
-    public static DXGraphQLJCRNode addNode(DataFetchingEnvironment env, @GraphQLName("node") DXGraphQLJCRNodeInput node, @GraphQLName("parentPath") String parentPath, @GraphQLName("workspace") String workspace) {
+    public static GqlJcrNode addNode(DataFetchingEnvironment env, @GraphQLName("node") GqlJcrNodeInput node, @GraphQLName("parentPath") String parentPath, @GraphQLName("workspace") String workspace) {
         try {
             GraphQLContext context = env.getContext();
             if (parentPath == null && context.getRequest().isPresent()) {
-                DXGraphQLJCRNode parent = (DXGraphQLJCRNode) context.getRequest().get().getAttribute("lastNode");
+                GqlJcrNode parent = (GqlJcrNode) context.getRequest().get().getAttribute("lastNode");
                 parentPath = parent.getPath();
             }
 
-            DXGraphQLJCRNode result = SpecializedTypesHandler.getNode(addNode(JCRSessionFactory.getInstance().getCurrentUserSession(workspace).getNode(parentPath), node));
+            GqlJcrNode result = SpecializedTypesHandler.getNode(addNode(JCRSessionFactory.getInstance().getCurrentUserSession(workspace).getNode(parentPath), node));
 
             if (context.getRequest().isPresent()) {
                 context.getRequest().get().setAttribute("lastNode", result);
@@ -109,10 +109,10 @@ public class NodeMutationExtensions {
         }
     }
 
-    private static JCRNodeWrapper addNode(JCRNodeWrapper parent, DXGraphQLJCRNodeInput node) throws RepositoryException {
+    private static JCRNodeWrapper addNode(JCRNodeWrapper parent, GqlJcrNodeInput node) throws RepositoryException {
         JCRNodeWrapper n = parent.addNode(node.name, node.primaryNodeType);
         if (node.children != null) {
-            for (DXGraphQLJCRNodeInput child : node.children) {
+            for (GqlJcrNodeInput child : node.children) {
                 addNode(n, child);
             }
         }

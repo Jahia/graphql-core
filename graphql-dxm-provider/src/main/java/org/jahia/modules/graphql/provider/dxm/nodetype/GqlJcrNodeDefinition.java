@@ -9,7 +9,7 @@ import graphql.annotations.GraphQLName;
  * @author toto
  */
 @GraphQLName("NodeDefinition")
-public class DXGraphQLNodeDefinition {
+public class GqlJcrNodeDefinition {
     private String name;
 
     @GraphQLField

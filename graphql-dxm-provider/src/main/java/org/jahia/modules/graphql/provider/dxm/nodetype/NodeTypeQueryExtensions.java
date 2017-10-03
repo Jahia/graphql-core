@@ -13,9 +13,9 @@ import javax.jcr.nodetype.NoSuchNodeTypeException;
 public class NodeTypeQueryExtensions {
 
     @GraphQLField
-    public static DXGraphQLNodeType getNodeTypesByName(@GraphQLNonNull @GraphQLName("name") String name) {
+    public static GqlJcrNodeType getNodeTypesByName(@GraphQLNonNull @GraphQLName("name") String name) {
         try {
-            return new DXGraphQLNodeType(NodeTypeRegistry.getInstance().getNodeType(name));
+            return new GqlJcrNodeType(NodeTypeRegistry.getInstance().getNodeType(name));
         } catch (NoSuchNodeTypeException e) {
             throw new RuntimeException(e);
         }

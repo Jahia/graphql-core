@@ -15,11 +15,11 @@ import javax.jcr.RepositoryException;
 import java.util.*;
 
 @GraphQLName("GenericJCRNode")
-public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
+public class GqlJcrNodeImpl implements GqlJcrNode {
     private JCRNodeWrapper node;
     private String type;
 
-    public DXGraphQLJCRNodeImpl(JCRNodeWrapper node) {
+    public GqlJcrNodeImpl(JCRNodeWrapper node) {
         this.node = node;
         try {
             this.type = node.getPrimaryNodeTypeName();
@@ -28,7 +28,7 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
         }
     }
 
-    public DXGraphQLJCRNodeImpl(JCRNodeWrapper node, String type) {
+    public GqlJcrNodeImpl(JCRNodeWrapper node, String type) {
         this.node = node;
         if (type != null) {
             this.type = type;
@@ -85,7 +85,7 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
     }
 
     @Override
-    public DXGraphQLJCRNode getParent() {
+    public GqlJcrNode getParent() {
         try {
             return SpecializedTypesHandler.getNode(node.getParent());
         } catch (RepositoryException e) {
@@ -94,9 +94,9 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
     }
 
     @Override
-    public List<DXGraphQLJCRProperty> getProperties(@GraphQLName("names") Collection<String> names,
+    public List<GqlJcrProperty> getProperties(@GraphQLName("names") Collection<String> names,
                                                     @GraphQLName("language") String language) {
-        List<DXGraphQLJCRProperty> propertyList = new ArrayList<DXGraphQLJCRProperty>();
+        List<GqlJcrProperty> propertyList = new ArrayList<GqlJcrProperty>();
         try {
             JCRNodeWrapper node = this.node;
             if (language != null) {
@@ -106,14 +106,14 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
             if (names != null && !names.isEmpty()) {
                 for (String name : names) {
                     if (node.hasProperty(name)) {
-                        propertyList.add(new DXGraphQLJCRProperty(node.getProperty(name), this));
+                        propertyList.add(new GqlJcrProperty(node.getProperty(name), this));
                     }
                 }
             } else {
                 PropertyIterator pi = node.getProperties();
                 while (pi.hasNext()) {
                     JCRPropertyWrapper property = (JCRPropertyWrapper) pi.nextProperty();
-                    propertyList.add(new DXGraphQLJCRProperty(property, this));
+                    propertyList.add(new GqlJcrProperty(property, this));
                 }
             }
         } catch (RepositoryException e) {
@@ -123,7 +123,7 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
     }
 
     @Override
-    public DXGraphQLJCRProperty getProperty(@GraphQLName("name") String name,
+    public GqlJcrProperty getProperty(@GraphQLName("name") String name,
                                             @GraphQLName("language") String language) {
         try {
             JCRNodeWrapper node = this.node;
@@ -132,7 +132,7 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
                         .getNodeByIdentifier(node.getIdentifier());
             }
             if (node.hasProperty(name)) {
-                return new DXGraphQLJCRProperty(node.getProperty(name), this);
+                return new GqlJcrProperty(node.getProperty(name), this);
             }
             return null;
         } catch (RepositoryException e) {
@@ -143,11 +143,11 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
     @Override
     @GraphQLField
 //    @GraphQLConnection
-    public List<DXGraphQLJCRNode> getChildren(@GraphQLName("names") Collection<String> names,
+    public List<GqlJcrNode> getChildren(@GraphQLName("names") Collection<String> names,
                                               @GraphQLName("anyType") Collection<String> anyType,
                                               @GraphQLName("properties") Collection<PropertyFilterTypeInput> properties,
                                               @GraphQLName("asMixin") String asMixin) {
-        List<DXGraphQLJCRNode> children = new ArrayList<DXGraphQLJCRNode>();
+        List<GqlJcrNode> children = new ArrayList<GqlJcrNode>();
         try {
             Iterator<JCRNodeWrapper> nodes = IteratorUtils.filteredIterator(node.getNodes().iterator(), getNodesPredicate(names,anyType,properties));
             while (nodes.hasNext()) {
@@ -208,8 +208,8 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
     }
 
     @Override
-    public List<DXGraphQLJCRNode> getAncestors(@GraphQLName("upToPath") String upToPath) {
-        List<DXGraphQLJCRNode> ancestors = new ArrayList<DXGraphQLJCRNode>();
+    public List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") String upToPath) {
+        List<GqlJcrNode> ancestors = new ArrayList<GqlJcrNode>();
 
         String upToPathSlash = upToPath + "/";
 
@@ -227,16 +227,16 @@ public class DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
     }
 
     @Override
-    public DXGraphQLJCRSite getSite() {
+    public GqlJcrSite getSite() {
         try {
-            return new DXGraphQLJCRSite(node.getResolveSite());
+            return new GqlJcrSite(node.getResolveSite());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public DXGraphQLJCRNode asMixin(@GraphQLName("type") String type) {
+    public GqlJcrNode asMixin(@GraphQLName("type") String type) {
         try {
             if (node.isNodeType(type)) {
                 return SpecializedTypesHandler.getNode(node, type);

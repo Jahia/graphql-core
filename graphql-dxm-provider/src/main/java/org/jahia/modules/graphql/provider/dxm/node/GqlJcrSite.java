@@ -3,17 +3,17 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.GraphQLField;
 import graphql.annotations.GraphQLName;
-import org.jahia.modules.graphql.provider.dxm.node.DXGraphQLJCRNode;
-import org.jahia.modules.graphql.provider.dxm.node.DXGraphQLJCRNodeImpl;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 
 @GraphQLName("JCRSite")
-public class DXGraphQLJCRSite extends DXGraphQLJCRNodeImpl implements DXGraphQLJCRNode {
+public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode {
 
     private JCRSiteNode siteNode;
 
-    public DXGraphQLJCRSite(JCRNodeWrapper node) {
+    public GqlJcrSite(JCRNodeWrapper node) {
         super(node);
         this.siteNode = (JCRSiteNode) node;
     }

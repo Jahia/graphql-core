@@ -23,7 +23,7 @@ public class NodeQueryExtensions {
     }
 
     @GraphQLField
-    public static DXGraphQLJCRNode getNodeById(@GraphQLNonNull @GraphQLName("uuid") String uuid,
+    public static GqlJcrNode getNodeById(@GraphQLNonNull @GraphQLName("uuid") String uuid,
                                                @GraphQLName("workspace") String workspace) {
         try {
             return SpecializedTypesHandler.getNode(JCRSessionFactory.getInstance().getCurrentUserSession(workspace).getNodeByIdentifier(uuid));
@@ -33,7 +33,7 @@ public class NodeQueryExtensions {
     }
 
     @GraphQLField
-    public static DXGraphQLJCRNode getNodeByPath(@GraphQLNonNull @GraphQLName("path") String path,
+    public static GqlJcrNode getNodeByPath(@GraphQLNonNull @GraphQLName("path") String path,
                                                  @GraphQLName("workspace") String workspace) {
         try {
             return SpecializedTypesHandler.getNode(JCRSessionFactory.getInstance().getCurrentUserSession(workspace).getNode(path));
@@ -50,11 +50,11 @@ public class NodeQueryExtensions {
     }
 
     @GraphQLField
-    public static List<DXGraphQLJCRNode> getNodesByQuery(@GraphQLNonNull @GraphQLName("query") String query,
+    public static List<GqlJcrNode> getNodesByQuery(@GraphQLNonNull @GraphQLName("query") String query,
                                                           @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLName("queryLanguage") QueryLanguage queryLanguage,
                                                           @GraphQLName("workspace") String workspace) {
         try {
-            List<DXGraphQLJCRNode> nodes = new ArrayList<>();
+            List<GqlJcrNode> nodes = new ArrayList<>();
             QueryWrapper q = JCRSessionFactory.getInstance().getCurrentUserSession(workspace).getWorkspace().getQueryManager().createQuery(query, queryLanguage == SQL2 ? Query.JCR_SQL2 : Query.XPATH);
             JCRNodeIteratorWrapper ni = q.execute().getNodes();
             while (ni.hasNext()) {

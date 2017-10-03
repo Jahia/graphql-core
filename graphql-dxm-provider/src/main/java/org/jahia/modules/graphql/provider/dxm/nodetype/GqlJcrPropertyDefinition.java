@@ -9,7 +9,7 @@ import graphql.annotations.GraphQLName;
  * @author toto
  */
 @GraphQLName("PropertyDefinition")
-public class DXGraphQLPropertyDefinition {
+public class GqlJcrPropertyDefinition {
     private String name;
     private int requiredType;
 

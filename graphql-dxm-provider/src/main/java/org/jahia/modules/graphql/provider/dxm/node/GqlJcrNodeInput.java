@@ -9,12 +9,12 @@ import java.util.HashMap;
 import java.util.List;
 
 @GraphQLName("JCRNodeInput")
-public class DXGraphQLJCRNodeInput {
+public class GqlJcrNodeInput {
 
-    public DXGraphQLJCRNodeInput(@GraphQLName("name") String name,
+    public GqlJcrNodeInput(@GraphQLName("name") String name,
                                  @GraphQLName("primaryNodeType") String primaryNodeType,
-                                 @GraphQLName("properties") List<DXGraphQLJCRPropertyInput> properties,
-                                 @GraphQLName("children") List<DXGraphQLJCRNodeInput> children) {
+                                 @GraphQLName("properties") List<GqlJcrPropertyInput> properties,
+                                 @GraphQLName("children") List<GqlJcrNodeInput> children) {
         this.name = name;
         this.primaryNodeType = primaryNodeType;
         this.properties = properties;
@@ -28,9 +28,9 @@ public class DXGraphQLJCRNodeInput {
     public String primaryNodeType;
 
     @GraphQLField
-    public List<DXGraphQLJCRPropertyInput> properties;
+    public List<GqlJcrPropertyInput> properties;
 
     @GraphQLField
-    public List<DXGraphQLJCRNodeInput> children;
+    public List<GqlJcrNodeInput> children;
 
 }

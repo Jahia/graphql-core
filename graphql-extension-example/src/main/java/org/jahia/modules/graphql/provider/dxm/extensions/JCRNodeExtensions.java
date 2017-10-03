@@ -4,14 +4,14 @@ import graphql.annotations.GraphQLField;
 import graphql.annotations.GraphQLName;
 import graphql.annotations.GraphQLTypeExtension;
 import graphql.schema.DataFetchingEnvironment;
-import org.jahia.modules.graphql.provider.dxm.node.DXGraphQLJCRNode;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 
-@GraphQLTypeExtension(DXGraphQLJCRNode.class)
+@GraphQLTypeExtension(GqlJcrNode.class)
 public class JCRNodeExtensions {
 
     @GraphQLField
     public static String testExtension(DataFetchingEnvironment env, @GraphQLName("arg") String arg) {
-        DXGraphQLJCRNode n = env.getSource();
+        GqlJcrNode n = env.getSource();
         return "test " + n.getName() + " - " + arg;
     }
 

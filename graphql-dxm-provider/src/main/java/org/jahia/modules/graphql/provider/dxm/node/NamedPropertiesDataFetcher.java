@@ -19,7 +19,7 @@ public class NamedPropertiesDataFetcher implements DataFetcher {
         name = SpecializedTypesHandler.unescape(StringUtils.substringAfter(name, SpecializedTypesHandler.PROPERTY_PREFIX));
 
         try {
-            DXGraphQLJCRNode node = (DXGraphQLJCRNode) dataFetchingEnvironment.getSource();
+            GqlJcrNode node = (GqlJcrNode) dataFetchingEnvironment.getSource();
             JCRNodeWrapper jcrNodeWrapper = node.getNode();
             if (!jcrNodeWrapper.hasProperty(name)) {
                 return null;

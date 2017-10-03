@@ -38,7 +38,7 @@ public class SpecializedTypesHandler {
     private static Pattern VALID_NAME = Pattern.compile("^[_a-zA-Z][_a-zA-Z0-9]*$");
 
     private List<String> specializedTypes = new ArrayList<>();
-    private Map<String, Class<? extends DXGraphQLJCRNode>> specializedTypesClass = new HashMap<>();
+    private Map<String, Class<? extends GqlJcrNode>> specializedTypesClass = new HashMap<>();
 
     private Map<String, GraphQLObjectType> knownTypes = new ConcurrentHashMap<>();
 
@@ -52,7 +52,7 @@ public class SpecializedTypesHandler {
         instance = this;
         graphQLAnnotations = annotations;
         specializedTypes.add("jnt:page");
-        specializedTypesClass.put("jnt:virtualsite", DXGraphQLJCRSite.class);
+        specializedTypesClass.put("jnt:virtualsite", GqlJcrSite.class);
     }
 
     public Map<String, GraphQLObjectType> getKnownTypes() {
@@ -61,7 +61,7 @@ public class SpecializedTypesHandler {
 
     public void initializeTypes() {
         knownTypes = new HashMap<>();
-        GraphQLInterfaceType interfaceType = (GraphQLInterfaceType) graphQLAnnotations.getInterface(DXGraphQLJCRNode.class);
+        GraphQLInterfaceType interfaceType = (GraphQLInterfaceType) graphQLAnnotations.getInterface(GqlJcrNode.class);
         for (String typeName : specializedTypes) {
             try {
                 final ExtendedNodeType type = NodeTypeRegistry.getInstance().getNodeType(typeName);
@@ -75,7 +75,7 @@ public class SpecializedTypesHandler {
                 logger.error(e.getMessage(), e);
             }
         }
-        for (Map.Entry<String, Class<? extends DXGraphQLJCRNode>> entry : specializedTypesClass.entrySet()) {
+        for (Map.Entry<String, Class<? extends GqlJcrNode>> entry : specializedTypesClass.entrySet()) {
             knownTypes.put(entry.getKey(), graphQLAnnotations.getObject(entry.getValue()));
         }
     }
@@ -87,7 +87,7 @@ public class SpecializedTypesHandler {
         final GraphQLObjectType.Builder builder = GraphQLObjectType.newObject()
                 .name(escapedTypeName)
                 .withInterface(interfaceType)
-                .fields(graphQLAnnotations.getObject(DXGraphQLJCRNodeImpl.class).getFieldDefinitions());
+                .fields(graphQLAnnotations.getObject(GqlJcrNodeImpl.class).getFieldDefinitions());
 
         final PropertyDefinition[] properties = type.getPropertyDefinitions();
         if (properties.length > 0) {
@@ -192,7 +192,7 @@ public class SpecializedTypesHandler {
                 break;
             case PropertyType.REFERENCE:
             case PropertyType.WEAKREFERENCE:
-                type = graphQLAnnotations.getOutputTypeOrRef(DXGraphQLJCRNode.class);
+                type = graphQLAnnotations.getOutputTypeOrRef(GqlJcrNode.class);
                 break;
             case PropertyType.BINARY:
             case PropertyType.NAME:
@@ -212,11 +212,11 @@ public class SpecializedTypesHandler {
         return multiValued ? new GraphQLList(type) : type;
     }
 
-    public static DXGraphQLJCRNode getNode(JCRNodeWrapper node) throws RepositoryException {
+    public static GqlJcrNode getNode(JCRNodeWrapper node) throws RepositoryException {
         return getNode(node, node.getPrimaryNodeTypeName());
     }
 
-    public static DXGraphQLJCRNode getNode(JCRNodeWrapper node, String type) throws RepositoryException {
+    public static GqlJcrNode getNode(JCRNodeWrapper node, String type) throws RepositoryException {
         if (getInstance().specializedTypesClass.containsKey(type)) {
             try {
                 return getInstance().specializedTypesClass.get(type).getConstructor(new Class[] {JCRNodeWrapper.class}).newInstance(node);
@@ -224,7 +224,7 @@ public class SpecializedTypesHandler {
                 throw new RuntimeException(e);
             }
         } else {
-            return new DXGraphQLJCRNodeImpl(node, type);
+            return new GqlJcrNodeImpl(node, type);
         }
     }
 
@@ -243,11 +243,11 @@ public class SpecializedTypesHandler {
     public static class NodeTypeResolver implements TypeResolver {
         @Override
         public GraphQLObjectType getType(TypeResolutionEnvironment env) {
-            String type = ((DXGraphQLJCRNode) env.getObject()).getType();
+            String type = ((GqlJcrNode) env.getObject()).getType();
             if (getInstance().knownTypes.containsKey(type)) {
                 return getInstance().knownTypes.get(type);
             } else {
-                return graphQLAnnotations.getObject(DXGraphQLJCRNodeImpl.class);
+                return graphQLAnnotations.getObject(GqlJcrNodeImpl.class);
             }
         }
     }

@@ -4,7 +4,7 @@ import graphql.annotations.GraphQLField;
 import graphql.annotations.GraphQLName;
 import graphql.annotations.GraphQLTypeExtension;
 import graphql.schema.DataFetchingEnvironment;
-import org.jahia.modules.graphql.provider.dxm.node.DXGraphQLJCRNode;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 
 import javax.jcr.RepositoryException;
 import java.util.Arrays;
@@ -12,14 +12,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@GraphQLTypeExtension(DXGraphQLJCRNode.class)
+@GraphQLTypeExtension(GqlJcrNode.class)
 public class NodetypeJCRNodeExtensions {
 
     @GraphQLField
-    public static DXGraphQLNodeType getPrimaryNodeType(DataFetchingEnvironment env) {
+    public static GqlJcrNodeType getPrimaryNodeType(DataFetchingEnvironment env) {
         try {
-            DXGraphQLJCRNode node = env.getSource();
-            return new DXGraphQLNodeType(node.getNode().getPrimaryNodeType());
+            GqlJcrNode node = env.getSource();
+            return new GqlJcrNodeType(node.getNode().getPrimaryNodeType());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -28,7 +28,7 @@ public class NodetypeJCRNodeExtensions {
     @GraphQLField()
     public static boolean getIsNodeType(DataFetchingEnvironment env, @GraphQLName("anyType") Collection<String> anyType) {
         try {
-            DXGraphQLJCRNode node = env.getSource();
+            GqlJcrNode node = env.getSource();
             for (String type : anyType) {
                 if (node.getNode().isNodeType(type)) {
                     return true;
@@ -41,10 +41,10 @@ public class NodetypeJCRNodeExtensions {
     }
 
     @GraphQLField
-    public static List<DXGraphQLNodeType> getMixinTypes(DataFetchingEnvironment env) {
+    public static List<GqlJcrNodeType> getMixinTypes(DataFetchingEnvironment env) {
         try {
-            DXGraphQLJCRNode node = env.getSource();
-            return Arrays.asList(node.getNode().getMixinNodeTypes()).stream().map(DXGraphQLNodeType::new).collect(Collectors.toList());
+            GqlJcrNode node = env.getSource();
+            return Arrays.asList(node.getNode().getMixinNodeTypes()).stream().map(GqlJcrNodeType::new).collect(Collectors.toList());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }

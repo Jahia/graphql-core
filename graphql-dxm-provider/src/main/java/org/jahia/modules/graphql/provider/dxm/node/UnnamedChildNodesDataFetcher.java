@@ -16,8 +16,8 @@ public class UnnamedChildNodesDataFetcher implements DataFetcher {
         String type = dataFetchingEnvironment.getFields().get(0).getName();
         type = SpecializedTypesHandler.unescape(StringUtils.substringAfter(type, SpecializedTypesHandler.UNNAMED_CHILD_PREFIX));
 
-        DXGraphQLJCRNode node = (DXGraphQLJCRNode) dataFetchingEnvironment.getSource();
-        List<DXGraphQLJCRNode> results = new ArrayList<>();
+        GqlJcrNode node = (GqlJcrNode) dataFetchingEnvironment.getSource();
+        List<GqlJcrNode> results = new ArrayList<>();
         JCRNodeWrapper jcrNodeWrapper = node.getNode();
         for (JCRNodeWrapper n : JCRContentUtils.getChildrenOfType(jcrNodeWrapper, type)) {
             try {

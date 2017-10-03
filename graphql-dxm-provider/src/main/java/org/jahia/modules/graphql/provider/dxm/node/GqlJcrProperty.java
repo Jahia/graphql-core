@@ -13,12 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 @GraphQLName("JCRProperty")
-public class DXGraphQLJCRProperty {
-    private static Logger logger = LoggerFactory.getLogger(DXGraphQLJCRProperty.class);
+public class GqlJcrProperty {
+    private static Logger logger = LoggerFactory.getLogger(GqlJcrProperty.class);
     private JCRPropertyWrapper propertyWrapper;
-    private DXGraphQLJCRNode node;
+    private GqlJcrNode node;
 
-    public DXGraphQLJCRProperty(JCRPropertyWrapper propertyWrapper, DXGraphQLJCRNode node) {
+    public GqlJcrProperty(JCRPropertyWrapper propertyWrapper, GqlJcrNode node) {
         this.propertyWrapper = propertyWrapper;
         this.node = node;
     }
@@ -33,9 +33,9 @@ public class DXGraphQLJCRProperty {
         }
     }
 
-    public DXGraphQLPropertyType getType() {
+    public GqlJcrPropertyType getType() {
         try {
-            return DXGraphQLPropertyType.getValue(propertyWrapper.getType());
+            return GqlJcrPropertyType.getValue(propertyWrapper.getType());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -71,7 +71,7 @@ public class DXGraphQLJCRProperty {
         }
     }
 
-    public DXGraphQLJCRNode getParentNode() {
+    public GqlJcrNode getParentNode() {
         if (node == null) {
             try {
                 node = SpecializedTypesHandler.getNode(propertyWrapper.getParent());

@@ -6,7 +6,7 @@ import graphql.schema.GraphQLType;
 import graphql.servlet.*;
 import org.jahia.modules.graphql.provider.dxm.node.NodeMutationExtensions;
 import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
-import org.jahia.modules.graphql.provider.dxm.node.DXGraphQLJCRNodeImpl;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodetypeJCRNodeExtensions;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodeTypeQueryExtensions;
@@ -46,7 +46,7 @@ public class DXGraphQLProvider implements GraphQLQueryProvider, GraphQLMutationP
         specializedTypesHandler.initializeTypes();
 
         List<GraphQLType> types = new ArrayList<>();
-        types.add(graphQLAnnotationsProcessor.getOutputType(DXGraphQLJCRNodeImpl.class));
+        types.add(graphQLAnnotationsProcessor.getOutputType(GqlJcrNodeImpl.class));
         types.addAll(specializedTypesHandler.getKnownTypes().values());
         return types;
     }

@@ -9,7 +9,7 @@ import java.util.List;
 
 @GraphQLName("JCRNode")
 @GraphQLTypeResolver(SpecializedTypesHandler.NodeTypeResolver.class)
-public interface DXGraphQLJCRNode {
+public interface GqlJcrNode {
 
     JCRNodeWrapper getNode();
 
@@ -31,31 +31,31 @@ public interface DXGraphQLJCRNode {
     String getDisplayName(@GraphQLName("language") String language);
 
     @GraphQLField()
-    DXGraphQLJCRNode getParent();
+    GqlJcrNode getParent();
 
     @GraphQLField()
-    List<DXGraphQLJCRProperty> getProperties(@GraphQLName("names") Collection<String> names,
+    List<GqlJcrProperty> getProperties(@GraphQLName("names") Collection<String> names,
                                              @GraphQLName("language") String language);
 
     @GraphQLField()
-    DXGraphQLJCRProperty getProperty(@GraphQLName("name") String name,
+    GqlJcrProperty getProperty(@GraphQLName("name") String name,
                                      @GraphQLName("language") String language);
 
 //    @GraphQLConnection()
     @GraphQLField()
-    List<DXGraphQLJCRNode> getChildren(@GraphQLName("names") Collection<String> names,
+    List<GqlJcrNode> getChildren(@GraphQLName("names") Collection<String> names,
                                        @GraphQLName("anyType") Collection<String> anyType,
                                        @GraphQLName("properties") Collection<PropertyFilterTypeInput> properties,
                                        @GraphQLName("asMixin") String asMixin);
 
     @GraphQLField()
-    List<DXGraphQLJCRNode> getAncestors(@GraphQLName("upToPath") String upToPath);
+    List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") String upToPath);
 
     @GraphQLField()
-    DXGraphQLJCRSite getSite();
+    GqlJcrSite getSite();
 
     @GraphQLField()
-    DXGraphQLJCRNode asMixin(@GraphQLName("type") String type);
+    GqlJcrNode asMixin(@GraphQLName("type") String type);
 
     public class PropertyFilterTypeInput {
 
