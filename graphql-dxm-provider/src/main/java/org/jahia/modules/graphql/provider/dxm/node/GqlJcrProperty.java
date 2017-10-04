@@ -5,8 +5,13 @@ import graphql.annotations.GraphQLName;
 import graphql.annotations.GraphQLNonNull;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRValueWrapper;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
+import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 
 import javax.jcr.RepositoryException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +56,37 @@ public class GqlJcrProperty {
     public GqlJcrPropertyType getType() {
         try {
             return GqlJcrPropertyType.getValue(property.getType());
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return Whether the property is internationalized
+     */
+    @GraphQLField
+    @GraphQLNonNull
+    public boolean isInternationalized() {
+        ExtendedNodeType nodeType;
+        try {
+            nodeType = NodeTypeRegistry.getInstance().getNodeType(parentNode.getType());
+        } catch (NoSuchNodeTypeException e) {
+            throw new RuntimeException(e);
+        }
+        ExtendedPropertyDefinition propertyDefinition = nodeType.getPropertyDefinition(getName());
+        if (propertyDefinition == null) {
+            return false;
+        }
+        return propertyDefinition.isInternationalized();
+    }
+
+    /**
+     * @return The language the property value was obtained in for internationalized properties; null for non-internationalized ones
+     */
+    @GraphQLField
+    public String getLanguage() {
+        try {
+            return property.getLocale();
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
