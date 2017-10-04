@@ -143,11 +143,17 @@ public interface GqlJcrNode {
             this.value = value;
         }
 
+        /**
+         * @return The name of the property
+         */
         @GraphQLField
         public String getName() {
             return name;
         }
 
+        /**
+         * @return The value of the property as a String
+         */
         @GraphQLField
         public String getValue() {
             return value;
