@@ -90,8 +90,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         try {
             JCRNodeWrapper node = this.node;
             if (language != null) {
-                node = JCRSessionFactory.getInstance().getCurrentUserSession(null, LanguageCodeConverters.languageCodeToLocale(language))
-                        .getNodeByIdentifier(node.getIdentifier());
+                node = JCRSessionFactory.getInstance().getCurrentUserSession(node.getSession().getWorkspace().getName(), LanguageCodeConverters.languageCodeToLocale(language)).getNodeByIdentifier(node.getIdentifier());
             }
             return node.getDisplayableName();
         } catch (RepositoryException e) {

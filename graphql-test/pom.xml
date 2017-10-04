@@ -84,6 +84,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
+                        <Import-Package>${jahia.plugin.projectPackageImport},javax.jcr,*</Import-Package>
                     </instructions>
                 </configuration>
             </plugin>
