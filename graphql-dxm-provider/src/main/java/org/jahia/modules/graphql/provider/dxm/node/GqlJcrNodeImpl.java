@@ -121,14 +121,14 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             if (names != null && !names.isEmpty()) {
                 for (String name : names) {
                     if (node.hasProperty(name)) {
-                        propertyList.add(new GqlJcrProperty(node.getProperty(name)));
+                        propertyList.add(new GqlJcrProperty(node.getProperty(name), this));
                     }
                 }
             } else {
                 PropertyIterator pi = node.getProperties();
                 while (pi.hasNext()) {
                     JCRPropertyWrapper property = (JCRPropertyWrapper) pi.nextProperty();
-                    propertyList.add(new GqlJcrProperty(property));
+                    propertyList.add(new GqlJcrProperty(property, this));
                 }
             }
         } catch (RepositoryException e) {
@@ -147,7 +147,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                         .getNodeByIdentifier(node.getIdentifier());
             }
             if (node.hasProperty(name)) {
-                return new GqlJcrProperty(node.getProperty(name));
+                return new GqlJcrProperty(node.getProperty(name), this);
             }
             return null;
         } catch (RepositoryException e) {

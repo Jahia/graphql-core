@@ -16,15 +16,18 @@ import java.util.List;
 @GraphQLName("JCRProperty")
 public class GqlJcrProperty {
 
-    private JCRPropertyWrapper propertyWrapper;
+    private JCRPropertyWrapper property;
+    private GqlJcrNode parentNode;
 
     /**
      * Create an instance that represents a JCR property to GraphQL.
      *
-     * @param propertyWrapper The JCR property to represent
+     * @param property The JCR property to represent
+     * @param parentNode The GraphQL representation of the JCR node the property belongs to
      */
-    public GqlJcrProperty(JCRPropertyWrapper propertyWrapper) {
-        this.propertyWrapper = propertyWrapper;
+    public GqlJcrProperty(JCRPropertyWrapper property, GqlJcrNode parentNode) {
+        this.property = property;
+        this.parentNode = parentNode;
     }
 
     /**
@@ -34,7 +37,20 @@ public class GqlJcrProperty {
     @GraphQLNonNull
     public String getName() {
         try {
-            return propertyWrapper.getName();
+            return property.getName();
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return The type of the JCR property
+     */
+    @GraphQLField
+    @GraphQLNonNull
+    public GqlJcrPropertyType getType() {
+        try {
+            return GqlJcrPropertyType.getValue(property.getType());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -46,10 +62,10 @@ public class GqlJcrProperty {
     @GraphQLField
     public String getValue() {
         try {
-            if (propertyWrapper.isMultiple()) {
+            if (property.isMultiple()) {
                 return null;
             }
-            return propertyWrapper.getValue().getString();
+            return property.getValue().getString();
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -61,16 +77,25 @@ public class GqlJcrProperty {
     @GraphQLField
     public List<String> getValues() {
         try {
-            if (!propertyWrapper.isMultiple()) {
+            if (!property.isMultiple()) {
                 return null;
             }
             List<String> values = new ArrayList<>();
-            for (JCRValueWrapper wrapper : propertyWrapper.getValues()) {
+            for (JCRValueWrapper wrapper : property.getValues()) {
                 values.add(wrapper.getString());
             }
             return values;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * @return The GraphQL representation of the JCR node the property belongs to.
+     */
+    @GraphQLField
+    @GraphQLNonNull
+    public GqlJcrNode getParentNode() {
+        return parentNode;
     }
 }
