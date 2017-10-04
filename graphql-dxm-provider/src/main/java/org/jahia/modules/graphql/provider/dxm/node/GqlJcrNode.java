@@ -49,7 +49,7 @@ public interface GqlJcrNode {
     String getPath();
 
     /**
-     * @param language The language to obtain the display name in; must be a valid language code
+     * @param language The language to obtain the display name in
      * @return The display name of the JCR node this object represents in the requested language
      */
     @GraphQLField
@@ -77,7 +77,7 @@ public interface GqlJcrNode {
      * Get a GraphQL representation of a single property of the JCR node.
      *
      * @param name The name of the JCR property
-     * @param language The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones
+     * @param language The language to obtain the property in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones
      * @return The GraphQL representation of the property, in either the requested or the default language
      */
     @GraphQLField

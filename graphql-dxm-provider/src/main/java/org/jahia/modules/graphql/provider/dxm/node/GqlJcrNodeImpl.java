@@ -6,6 +6,7 @@ import org.jahia.services.content.JCRItemWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.LanguageCodeConverters;
 
 import graphql.annotations.GraphQLName;
@@ -111,48 +112,48 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLNonNull
     public Collection<GqlJcrProperty> getProperties(@GraphQLName("names") Collection<String> names,
                                                     @GraphQLName("language") String language) {
-        List<GqlJcrProperty> propertyList = new ArrayList<GqlJcrProperty>();
+        List<GqlJcrProperty> properties = new ArrayList<GqlJcrProperty>();
         try {
-            JCRNodeWrapper node = this.node;
-            if (language != null) {
-                node = JCRSessionFactory.getInstance().getCurrentUserSession(null, LanguageCodeConverters.languageCodeToLocale(language))
-                        .getNodeByIdentifier(node.getIdentifier());
-            }
+            JCRNodeWrapper node = getNode(language);
             if (names != null && !names.isEmpty()) {
                 for (String name : names) {
                     if (node.hasProperty(name)) {
-                        propertyList.add(new GqlJcrProperty(node.getProperty(name), this));
+                        properties.add(new GqlJcrProperty(node.getProperty(name), this));
                     }
                 }
             } else {
-                PropertyIterator pi = node.getProperties();
-                while (pi.hasNext()) {
-                    JCRPropertyWrapper property = (JCRPropertyWrapper) pi.nextProperty();
-                    propertyList.add(new GqlJcrProperty(property, this));
+                for (PropertyIterator it = node.getProperties(); it.hasNext(); ) {
+                    JCRPropertyWrapper property = (JCRPropertyWrapper) it.nextProperty();
+                    properties.add(new GqlJcrProperty(property, this));
                 }
             }
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
-        return propertyList;
+        return properties;
     }
 
     @Override
     public GqlJcrProperty getProperty(@GraphQLName("name") String name,
                                       @GraphQLName("language") String language) {
         try {
-            JCRNodeWrapper node = this.node;
-            if (language != null) {
-                node = JCRSessionFactory.getInstance().getCurrentUserSession(null, LanguageCodeConverters.languageCodeToLocale(language))
-                        .getNodeByIdentifier(node.getIdentifier());
+            JCRNodeWrapper node = getNode(language);
+            if (!node.hasProperty(name)) {
+                return null;
             }
-            if (node.hasProperty(name)) {
-                return new GqlJcrProperty(node.getProperty(name), this);
-            }
-            return null;
+            return new GqlJcrProperty(node.getProperty(name), this);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private JCRNodeWrapper getNode(String language) throws RepositoryException {
+        if (language == null) {
+            return node;
+        }
+        Locale locale = LanguageCodeConverters.languageCodeToLocale(language);
+        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(null, locale);
+        return session.getNodeByIdentifier(node.getIdentifier());
     }
 
     @Override
