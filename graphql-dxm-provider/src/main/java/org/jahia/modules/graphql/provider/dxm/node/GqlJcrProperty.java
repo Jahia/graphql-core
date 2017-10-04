@@ -10,15 +10,26 @@ import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * GraphQL representation of a JCR property.
+ */
 @GraphQLName("JCRProperty")
 public class GqlJcrProperty {
 
     private JCRPropertyWrapper propertyWrapper;
 
+    /**
+     * Create an instance that represents a JCR property to GraphQL.
+     *
+     * @param propertyWrapper The JCR property to represent
+     */
     public GqlJcrProperty(JCRPropertyWrapper propertyWrapper) {
         this.propertyWrapper = propertyWrapper;
     }
 
+    /**
+     * @return The name of the JCR property
+     */
     @GraphQLField
     @GraphQLNonNull
     public String getName() {
@@ -29,6 +40,9 @@ public class GqlJcrProperty {
         }
     }
 
+    /**
+     * @return The value of the JCR property as a String in case the property is single-valued, null otherwise
+     */
     @GraphQLField
     public String getValue() {
         try {
@@ -41,6 +55,9 @@ public class GqlJcrProperty {
         }
     }
 
+    /**
+     * @return The values of the JCR property as a Strings in case the property is multiple-valued, null otherwise
+     */
     @GraphQLField
     public List<String> getValues() {
         try {

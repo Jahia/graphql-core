@@ -15,16 +15,30 @@ import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import java.util.*;
 
+/**
+ * GraphQL representation of a JCR node - generic implementation.
+ */
 @GraphQLName("GenericJCRNode")
 public class GqlJcrNodeImpl implements GqlJcrNode {
 
     private JCRNodeWrapper node;
     private String type;
 
+    /**
+     * Create an instance that represents a JCR node to GraphQL.
+     *
+     * @param node The JCR node to represent
+     */
     public GqlJcrNodeImpl(JCRNodeWrapper node) {
         this(node, null);
     }
 
+    /**
+     * Create an instance that represents a JCR node to GraphQL as a given node type.
+     *
+     * @param node The JCR node to represent
+     * @param type The type name to represent the node as, or null to represent as node's primary type
+     */
     public GqlJcrNodeImpl(JCRNodeWrapper node, String type) {
         this.node = node;
         if (type != null) {
@@ -145,11 +159,10 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLNonNull
     public List<GqlJcrNode> getChildren(@GraphQLName("names") Collection<String> names,
                                         @GraphQLName("anyType") Collection<String> anyType,
-                                        @GraphQLName("properties") Collection<PropertyFilterTypeInput> properties,
-                                        @GraphQLName("asMixin") String asMixin) {
+                                        @GraphQLName("properties") Collection<PropertyFilterTypeInput> properties) {
         List<GqlJcrNode> children = new ArrayList<GqlJcrNode>();
         try {
-            Iterator<JCRNodeWrapper> nodes = IteratorUtils.filteredIterator(node.getNodes().iterator(), getNodesPredicate(names,anyType,properties));
+            Iterator<JCRNodeWrapper> nodes = IteratorUtils.filteredIterator(node.getNodes().iterator(), getNodesPredicate(names, anyType, properties));
             while (nodes.hasNext()) {
                 children.add(SpecializedTypesHandler.getNode(nodes.next()));
             }
@@ -202,7 +215,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                         }
                         for (PropertyFilterTypeInput property : properties) {
                             try {
-                                if (!node.hasProperty(property.key) || !node.getProperty(property.key).getString().equals(property.value)) {
+                                if (!node.hasProperty(property.name) || !node.getProperty(property.name).getString().equals(property.value)) {
                                     return false;
                                 }
                             } catch (RepositoryException e) {
