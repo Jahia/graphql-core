@@ -160,7 +160,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLNonNull
     public List<GqlJcrNode> getChildren(@GraphQLName("names") Collection<String> names,
                                         @GraphQLName("anyType") Collection<String> anyType,
-                                        @GraphQLName("properties") Collection<PropertyFilterTypeInput> properties) {
+                                        @GraphQLName("properties") Collection<PropertyFilterInput> properties) {
         List<GqlJcrNode> children = new ArrayList<GqlJcrNode>();
         try {
             Iterator<JCRNodeWrapper> nodes = IteratorUtils.filteredIterator(node.getNodes().iterator(), getNodesPredicate(names, anyType, properties));
@@ -175,7 +175,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     @SuppressWarnings("unchecked")
     // List of input objects is not correctly handled by graphql-java-annotations, to fix
-    private AllPredicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final Collection<String> anyType, final Collection<PropertyFilterTypeInput> properties) {
+    private AllPredicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final Collection<String> anyType, final Collection<PropertyFilterInput> properties) {
 
         return new AllPredicate<JCRNodeWrapper>(
 
@@ -214,9 +214,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                         if (properties == null || properties.isEmpty()) {
                             return true;
                         }
-                        for (PropertyFilterTypeInput property : properties) {
+                        for (PropertyFilterInput property : properties) {
                             try {
-                                if (!node.hasProperty(property.name) || !node.getProperty(property.name).getString().equals(property.value)) {
+                                if (!node.hasProperty(property.getName()) || !node.getProperty(property.getName()).getString().equals(property.getValue())) {
                                     return false;
                                 }
                             } catch (RepositoryException e) {

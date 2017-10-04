@@ -96,7 +96,7 @@ public interface GqlJcrNode {
     @GraphQLNonNull
     List<GqlJcrNode> getChildren(@GraphQLName("names") Collection<String> names,
                                  @GraphQLName("anyType") Collection<String> anyType,
-                                 @GraphQLName("properties") Collection<PropertyFilterTypeInput> properties);
+                                 @GraphQLName("properties") Collection<PropertyFilterInput> properties);
 
     /**
      * Get GraphQL representations of the ancestor nodes of the JCR node.
@@ -127,7 +127,10 @@ public interface GqlJcrNode {
     /**
      * Property name/value pair used to filter JCR nodes by their properties.
      */
-    public static class PropertyFilterTypeInput {
+    public static class PropertyFilterInput {
+
+        private String name;
+        private String value;
 
         /**
          * Create a JCR property name/value pair.
@@ -135,21 +138,19 @@ public interface GqlJcrNode {
          * @param name The name of the property
          * @param value The value of the property as a String
          */
-        public PropertyFilterTypeInput(String name, String value) {
+        public PropertyFilterInput(@GraphQLName("name") String name, @GraphQLName("value") String value) {
             this.name = name;
             this.value = value;
         }
 
-        /**
-         * The name of the property.
-         */
         @GraphQLField
-        public String name;
+        public String getName() {
+            return name;
+        }
 
-        /**
-         * The value of the property as a String.
-         */
         @GraphQLField
-        public String value;
+        public String getValue() {
+            return value;
+        }
     }
 }
