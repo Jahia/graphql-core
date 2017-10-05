@@ -88,10 +88,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @Override
     public String getDisplayName(@GraphQLName("language") String language) {
         try {
-            JCRNodeWrapper node = this.node;
-            if (language != null) {
-                node = JCRSessionFactory.getInstance().getCurrentUserSession(node.getSession().getWorkspace().getName(), LanguageCodeConverters.languageCodeToLocale(language)).getNodeByIdentifier(node.getIdentifier());
-            }
+            JCRNodeWrapper node = getNode(language);
             return node.getDisplayableName();
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
@@ -150,8 +147,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         if (language == null) {
             return node;
         }
+        String workspace = node.getSession().getWorkspace().getName();
         Locale locale = LanguageCodeConverters.languageCodeToLocale(language);
-        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(null, locale);
+        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(workspace, locale);
         return session.getNodeByIdentifier(node.getIdentifier());
     }
 
