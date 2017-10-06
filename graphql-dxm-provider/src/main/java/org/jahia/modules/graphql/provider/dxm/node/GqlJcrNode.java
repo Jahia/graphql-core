@@ -220,7 +220,7 @@ public interface GqlJcrNode {
          * @param propertyFilters Individual property filters
          */
         public NodePropertiesInput(@GraphQLName("multi") MulticriteriaEvaluation multicriteriaEvaluation,
-                                   @GraphQLName("propertyFilters") @GraphQLNonNull Collection<NodePropertyInput> propertyFilters) {
+                                   @GraphQLName("filters") @GraphQLNonNull Collection<NodePropertyInput> propertyFilters) {
             this.multicriteriaEvaluation = multicriteriaEvaluation;
             this.propertyFilters = propertyFilters;
         }
@@ -238,6 +238,7 @@ public interface GqlJcrNode {
          * @return Individual property filters
          */
         @GraphQLField
+        @GraphQLName("filters")
         @GraphQLNonNull
         public Collection<NodePropertyInput> getPropertyFilters() {
             return propertyFilters;
@@ -263,9 +264,9 @@ public interface GqlJcrNode {
          * @param propertyValue The value to evaluate the property against; only required for EQUAL and DIFFERENT evaluation, does not matter for PRESENT and ABSENT
          */
         public NodePropertyInput(@GraphQLName("language") String language,
-                                  @GraphQLName("propertyEvaluation") PropertyEvaluation propertyEvaluation,
-                                  @GraphQLName("propertyName") @GraphQLNonNull String propertyName,
-                                  @GraphQLName("propertyValue") String propertyValue) {
+                                  @GraphQLName("evaluation") PropertyEvaluation propertyEvaluation,
+                                  @GraphQLName("property") @GraphQLNonNull String propertyName,
+                                  @GraphQLName("value") String propertyValue) {
             this.language = language;
             this.propertyEvaluation = propertyEvaluation;
             this.propertyName = propertyName;
@@ -284,6 +285,7 @@ public interface GqlJcrNode {
          * @return The way to evaluate the property; null indicates default (EQUAL)
          */
         @GraphQLField
+        @GraphQLName("evaluation")
         public PropertyEvaluation getPropertyEvaluation() {
             return propertyEvaluation;
         }
@@ -292,6 +294,7 @@ public interface GqlJcrNode {
          * @return The name of the property to filter by
          */
         @GraphQLField
+        @GraphQLName("property")
         @GraphQLNonNull
         public String getPropertyName() {
             return propertyName;
@@ -301,6 +304,7 @@ public interface GqlJcrNode {
          * @return The value to evaluate the property against
          */
         @GraphQLField
+        @GraphQLName("value")
         public String getPropertyValue() {
             return propertyValue;
         }
