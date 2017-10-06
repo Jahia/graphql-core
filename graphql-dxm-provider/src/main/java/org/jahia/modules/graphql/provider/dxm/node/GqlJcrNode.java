@@ -85,18 +85,18 @@ public interface GqlJcrNode {
                                @GraphQLName("language") String language);
 
     /**
-     * Get GraphQL representations of child nodes of the JCR node.
+     * Get GraphQL representations of child nodes of the JCR node, according to filters specified. A child node must pass through all non-null filters in order to be included in the result.
      *
-     * @param names The names of the child nodes; null or empty collection to obtain all children
-     * @param anyType Type names (either immediate or super) of child nodes to include in the result; null or empty collection to include children of any types
-     * @param properties Property names/value pairs child nodes must have to be included in the result; null or empty collection to avoid filtering children by their properties
+     * @param names Filter of child nodes by their names; null to avoid such filtering
+     * @param typesFilter Filter of child nodes by their types; null to avoid such filtering
+     * @param propertiesFilter Filter of child nodes by their property values; null to avoid such filtering
      * @return GraphQL representations of the child nodes, according to parameters passed
      */
     @GraphQLField
     @GraphQLNonNull
     List<GqlJcrNode> getChildren(@GraphQLName("names") Collection<String> names,
-                                 @GraphQLName("anyType") Collection<String> anyType,
-                                 @GraphQLName("properties") Collection<PropertyFilterInput> properties);
+                                 @GraphQLName("typesFilter") NodeTypesInput typesFilter,
+                                 @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter);
 
     /**
      * Get GraphQL representations of the ancestor nodes of the JCR node.
@@ -125,38 +125,184 @@ public interface GqlJcrNode {
     GqlJcrNode asMixin(@GraphQLName("type") String type);
 
     /**
-     * Property name/value pair used to filter JCR nodes by their properties.
+     * A way to evaluate a criteria consisting of multiple sub-criteria.
      */
-    public static class PropertyFilterInput {
-
-        private String name;
-        private String value;
+    enum MulticriteriaEvaluation {
 
         /**
-         * Create a JCR property name/value pair.
+         * The result criteria evaluates positive iff all sub-criteria evaluate positive.
+         */
+        ALL,
+
+        /**
+         * The result criteria evaluates positive if any sub-criteria evaluates positive.
+         */
+        ANY
+    }
+
+    /**
+     * Nodes filter based on their types.
+     */
+    static class NodeTypesInput {
+
+        private MulticriteriaEvaluation multicriteriaEvaluation;
+        private Collection<String> types;
+
+        /**
+         * Create a filter instance.
          *
-         * @param name The name of the property
-         * @param value The value of the property as a String
+         * @param multicriteriaEvaluation The way to combine multiple type criteria; null to use ANY by default
+         * @param types Node type names required for a node to pass the filter
          */
-        public PropertyFilterInput(@GraphQLName("name") String name, @GraphQLName("value") String value) {
-            this.name = name;
-            this.value = value;
+        public NodeTypesInput(@GraphQLName("multi") MulticriteriaEvaluation multicriteriaEvaluation,
+                              @GraphQLName("types") @GraphQLNonNull Collection<String> types) {
+            this.multicriteriaEvaluation = multicriteriaEvaluation;
+            this.types = types;
         }
 
         /**
-         * @return The name of the property
+         * @return The way to combine multiple type criteria; null indicates default (ANY)
          */
         @GraphQLField
-        public String getName() {
-            return name;
+        @GraphQLName("multi")
+        public MulticriteriaEvaluation getMulticriteriaEvaluation() {
+            return multicriteriaEvaluation;
         }
 
         /**
-         * @return The value of the property as a String
+         * @return Node type names required for a node to pass the filter
          */
         @GraphQLField
-        public String getValue() {
-            return value;
+        @GraphQLNonNull
+        public Collection<String> getTypes() {
+            return types;
+        }
+    }
+
+    /**
+     * The way to evaluate a node property.
+     */
+    enum PropertyEvaluation {
+
+        /**
+         * The property is present.
+         */
+        PRESENT,
+
+        /**
+         * The property is absent.
+         */
+        ABSENT,
+
+        /**
+         * The property value is equal to given one.
+         */
+        EQUAL,
+
+        /**
+         * The property value is different from given one.
+         */
+        DIFFERENT
+    }
+
+    /**
+     * Nodes filter based on their properties.
+     */
+    static class NodePropertiesInput {
+
+        private MulticriteriaEvaluation multicriteriaEvaluation;
+        private Collection<NodePropertyInput> propertyFilters;
+
+        /**
+         * Create a filter instance.
+         *
+         * @param multicriteriaEvaluation The way to combine multiple individual property filters; null to use ALL by default
+         * @param propertyFilters Individual property filters
+         */
+        public NodePropertiesInput(@GraphQLName("multi") MulticriteriaEvaluation multicriteriaEvaluation,
+                                   @GraphQLName("propertyFilters") @GraphQLNonNull Collection<NodePropertyInput> propertyFilters) {
+            this.multicriteriaEvaluation = multicriteriaEvaluation;
+            this.propertyFilters = propertyFilters;
+        }
+
+        /**
+         * @return The way to combine multiple individual property filters; null indicates default (ALL)
+         */
+        @GraphQLField
+        @GraphQLName("multi")
+        public MulticriteriaEvaluation getMulticriteriaEvaluation() {
+            return multicriteriaEvaluation;
+        }
+
+        /**
+         * @return Individual property filters
+         */
+        @GraphQLField
+        @GraphQLNonNull
+        public Collection<NodePropertyInput> getPropertyFilters() {
+            return propertyFilters;
+        }
+    }
+
+    /**
+     * Nodes filter based on a single property.
+     */
+    static class NodePropertyInput {
+
+        private String language;
+        private PropertyEvaluation propertyEvaluation;
+        private String propertyName;
+        private String propertyValue;
+
+        /**
+         * Create a filter instance.
+         *
+         * @param language Language to use when evaluating the property; must be a valid language code for internationalized properties, does not matter for non-internationalized ones
+         * @param propertyEvaluation The way to evaluate the property; null to use EQUAL by default
+         * @param propertyName The name of the property to filter by
+         * @param propertyValue The value to evaluate the property against; only required for EQUAL and DIFFERENT evaluation, does not matter for PRESENT and ABSENT
+         */
+        public NodePropertyInput(@GraphQLName("language") String language,
+                                  @GraphQLName("propertyEvaluation") PropertyEvaluation propertyEvaluation,
+                                  @GraphQLName("propertyName") @GraphQLNonNull String propertyName,
+                                  @GraphQLName("propertyValue") String propertyValue) {
+            this.language = language;
+            this.propertyEvaluation = propertyEvaluation;
+            this.propertyName = propertyName;
+            this.propertyValue = propertyValue;
+        }
+
+        /**
+         * @return Language to use when evaluating the property
+         */
+        @GraphQLField
+        public String getLanguage() {
+            return language;
+        }
+
+        /**
+         * @return The way to evaluate the property; null indicates default (EQUAL)
+         */
+        @GraphQLField
+        public PropertyEvaluation getPropertyEvaluation() {
+            return propertyEvaluation;
+        }
+
+        /**
+         * @return The name of the property to filter by
+         */
+        @GraphQLField
+        @GraphQLNonNull
+        public String getPropertyName() {
+            return propertyName;
+        }
+
+        /**
+         * @return The value to evaluate the property against
+         */
+        @GraphQLField
+        public String getPropertyValue() {
+            return propertyValue;
         }
     }
 }
