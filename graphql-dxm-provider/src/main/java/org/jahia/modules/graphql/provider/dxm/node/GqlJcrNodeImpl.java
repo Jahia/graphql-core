@@ -25,10 +25,10 @@ import java.util.*;
 @GraphQLName("GenericJCRNode")
 public class GqlJcrNodeImpl implements GqlJcrNode {
 
-    private static HashMap<PropertyEvaluation, PropertyEvaluationAlgorithm> ALGORITHM_BY_PROVERTY_EVALUATION = new HashMap<>();
+    private static HashMap<PropertyEvaluation, PropertyEvaluationAlgorithm> ALGORITHM_BY_EVALUATION = new HashMap<>();
     static {
 
-        ALGORITHM_BY_PROVERTY_EVALUATION.put(PropertyEvaluation.PRESENT, new PropertyEvaluationAlgorithm() {
+        ALGORITHM_BY_EVALUATION.put(PropertyEvaluation.PRESENT, new PropertyEvaluationAlgorithm() {
 
             @Override
             public boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
@@ -36,7 +36,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             }
         });
 
-        ALGORITHM_BY_PROVERTY_EVALUATION.put(PropertyEvaluation.ABSENT, new PropertyEvaluationAlgorithm() {
+        ALGORITHM_BY_EVALUATION.put(PropertyEvaluation.ABSENT, new PropertyEvaluationAlgorithm() {
 
             @Override
             public boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
@@ -44,7 +44,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             }
         });
 
-        ALGORITHM_BY_PROVERTY_EVALUATION.put(PropertyEvaluation.EQUAL, new PropertyEvaluationAlgorithm() {
+        ALGORITHM_BY_EVALUATION.put(PropertyEvaluation.EQUAL, new PropertyEvaluationAlgorithm() {
 
             @Override
             public boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
@@ -52,7 +52,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             }
         });
 
-        ALGORITHM_BY_PROVERTY_EVALUATION.put(PropertyEvaluation.DIFFERENT, new PropertyEvaluationAlgorithm() {
+        ALGORITHM_BY_EVALUATION.put(PropertyEvaluation.DIFFERENT, new PropertyEvaluationAlgorithm() {
 
             @Override
             public boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
@@ -245,7 +245,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                 if (propertyEvaluation == null) {
                     propertyEvaluation = PropertyEvaluation.EQUAL;
                 }
-                PropertyEvaluationAlgorithm evaluationAlgorithm = ALGORITHM_BY_PROVERTY_EVALUATION.get(propertyEvaluation);
+                PropertyEvaluationAlgorithm evaluationAlgorithm = ALGORITHM_BY_EVALUATION.get(propertyEvaluation);
                 if (evaluationAlgorithm == null) {
                     throw new IllegalArgumentException("Unknown property evaluation: " + propertyEvaluation);
                 }

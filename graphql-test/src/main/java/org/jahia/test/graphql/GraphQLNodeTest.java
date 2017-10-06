@@ -24,6 +24,8 @@
 package org.jahia.test.graphql;
 
 import graphql.servlet.OsgiGraphQLServlet;
+
+import org.jahia.api.Constants;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
@@ -47,14 +49,13 @@ public class GraphQLNodeTest extends JahiaTestCase {
     private static OsgiGraphQLServlet servlet;
 
     private static String testedNodeUUID = null;
-    private static String testedNodeDisplayName = null;
     private static String testedNodeTitleFR = "text FR";
     private static String testedNodeTitleEN = "text EN";
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
         servlet = (OsgiGraphQLServlet) BundleUtils.getOsgiService(Servlet.class, "(component.name=graphql.servlet.OsgiGraphQLServlet)");
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, "default", Locale.ENGLISH,
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH,
                 session -> {
                     if (session.getNode("/").hasNode("testList")) {
                         session.getNode("/testList").remove();
@@ -64,11 +65,10 @@ public class GraphQLNodeTest extends JahiaTestCase {
                     testedNode.setProperty("jcr:title", testedNodeTitleEN);
                     testedNodeUUID = testedNode.getIdentifier();
                     session.save();
-                    testedNodeDisplayName = testedNode.getDisplayableName();
                     return null;
                 });
 
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, "default", Locale.FRENCH,
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRENCH,
                 session -> {
                     JCRNodeWrapper testedNode = session.getNode("/testList");
                     testedNode.setProperty("jcr:title", testedNodeTitleFR);
@@ -80,7 +80,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
 
     @AfterClass
     public static void oneTimeTearDown() throws Exception {
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, "default", Locale.FRENCH,
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRENCH,
                 session -> {
                     if (session.getNode("/").hasNode("testList")) {
                         session.getNode("/testList").remove();
