@@ -150,7 +150,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrProperty> properties = new ArrayList<GqlJcrProperty>();
         try {
             JCRNodeWrapper node = getNode(this.node, language);
-            if (names != null && !names.isEmpty()) {
+            if (names != null) {
                 for (String name : names) {
                     if (node.hasProperty(name)) {
                         properties.add(new GqlJcrProperty(node.getProperty(name), this));
@@ -169,7 +169,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
-    public GqlJcrProperty getProperty(@GraphQLName("name") String name,
+    public GqlJcrProperty getProperty(@GraphQLName("name") @GraphQLNonNull String name,
                                       @GraphQLName("language") String language) {
         try {
             JCRNodeWrapper node = getNode(this.node, language);

@@ -64,9 +64,9 @@ public interface GqlJcrNode {
     /**
      * Get GraphQL representations of multiple of properties of the JCR node.
      *
-     * @param names The names of the JCR properties; null or empty collection to obtain all properties
+     * @param names The names of the JCR properties; null to obtain all properties
      * @param language The language to obtain the properties in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones
-     * @return GraphQL representations of the properties, in either the requested or the default language
+     * @return GraphQL representations of the properties in the requested language
      */
     @GraphQLField
     @GraphQLNonNull
@@ -78,10 +78,10 @@ public interface GqlJcrNode {
      *
      * @param name The name of the JCR property
      * @param language The language to obtain the property in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones
-     * @return The GraphQL representation of the property, in either the requested or the default language
+     * @return The GraphQL representation of the property in the requested language; null if the property does not exist
      */
     @GraphQLField
-    GqlJcrProperty getProperty(@GraphQLName("name") String name,
+    GqlJcrProperty getProperty(@GraphQLName("name") @GraphQLNonNull String name,
                                @GraphQLName("language") String language);
 
     /**
@@ -264,9 +264,9 @@ public interface GqlJcrNode {
          * @param propertyValue The value to evaluate the property against; only required for EQUAL and DIFFERENT evaluation, does not matter for PRESENT and ABSENT
          */
         public NodePropertyInput(@GraphQLName("language") String language,
-                                  @GraphQLName("evaluation") PropertyEvaluation propertyEvaluation,
-                                  @GraphQLName("property") @GraphQLNonNull String propertyName,
-                                  @GraphQLName("value") String propertyValue) {
+                                 @GraphQLName("evaluation") PropertyEvaluation propertyEvaluation,
+                                 @GraphQLName("property") @GraphQLNonNull String propertyName,
+                                 @GraphQLName("value") String propertyValue) {
             this.language = language;
             this.propertyEvaluation = propertyEvaluation;
             this.propertyName = propertyName;
