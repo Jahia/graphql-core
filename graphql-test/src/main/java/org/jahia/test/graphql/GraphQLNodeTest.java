@@ -26,6 +26,7 @@ package org.jahia.test.graphql;
 import graphql.servlet.OsgiGraphQLServlet;
 
 import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrPropertyType;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
@@ -39,13 +40,10 @@ import org.junit.Test;
 import javax.servlet.Servlet;
 import java.util.Locale;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Assert;
 
-/**
- * ¡
- * Unit test for remote publishing
- */
 public class GraphQLNodeTest extends JahiaTestCase {
+
     private static OsgiGraphQLServlet servlet;
 
     private static String testedNodeUUID = null;
@@ -103,17 +101,57 @@ public class GraphQLNodeTest extends JahiaTestCase {
                 "    } }");
         JSONObject nodeByPath = result.getJSONObject("data").getJSONObject("nodeByPath");
 
-        assertEquals("/testList", nodeByPath.getString("path"));
-        assertEquals("testList", nodeByPath.getString("name"));
-        assertEquals(testedNodeUUID, nodeByPath.getString("uuid"));
-        assertEquals("testList", nodeByPath.getString("displayName"));
-        assertEquals(testedNodeTitleFR, nodeByPath.getJSONObject("titlefr").getString("value"));
-        assertEquals(testedNodeTitleEN, nodeByPath.getJSONObject("titleen").getString("value"));
+        Assert.assertEquals("/testList", nodeByPath.getString("path"));
+        Assert.assertEquals("testList", nodeByPath.getString("name"));
+        Assert.assertEquals(testedNodeUUID, nodeByPath.getString("uuid"));
+        Assert.assertEquals("testList", nodeByPath.getString("displayName"));
+        Assert.assertEquals(testedNodeTitleFR, nodeByPath.getJSONObject("titlefr").getString("value"));
+        Assert.assertEquals(testedNodeTitleEN, nodeByPath.getJSONObject("titleen").getString("value"));
+    }
 
+    @Test
+    public void shouldRetrievePropertyWithBasicFileds() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        property(name: \"jcr:uuid\") {"
+                                       + "            name"
+                                       + "            type"
+                                       + "            parentNode {"
+                                       + "                path"
+                                       + "            }"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
+
+        Assert.assertEquals("jcr:uuid", property.getString("name"));
+        Assert.assertEquals(GqlJcrPropertyType.STRING.name(), property.getString("type"));
+        Assert.assertEquals("/testList", property.getJSONObject("parentNode").getString("path"));
+    }
+
+    @Test
+    public void shouldRetrieveNonInternationalizedPropertyNotPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        property(name: \"jcr:uuid\") {"
+                                       + "            internationalized"
+                                       + "            language"
+                                       + "            value"
+                                       + "            values"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
+
+        Assert.assertFalse(property.getBoolean("internationalized"));
+        Assert.assertEquals(JSONObject.NULL, property.get("language"));
+        Assert.assertEquals(testedNodeUUID, property.getString("value"));
+        Assert.assertEquals(JSONObject.NULL, property.get("values"));
     }
 
     private JSONObject executeQuery(String query) throws JSONException {
         return new JSONObject(servlet.executeQuery(query));
     }
-
 }
