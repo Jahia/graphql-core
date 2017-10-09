@@ -51,9 +51,12 @@ public class GraphQLNodeTest extends JahiaTestCase {
 
     private static OsgiGraphQLServlet servlet;
 
-    private static String testedNodeUUID = null;
-    private static String testedNodeTitleFR = "text FR";
-    private static String testedNodeTitleEN = "text EN";
+    private static String nodeUuid;
+    private static String nodeTitleFr = "text FR";
+    private static String nodeTitleEn = "text EN";
+    private static String subNodeUuid1;
+    private static String subNodeUuid2;
+    private static String subNodeUuid3;
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
@@ -62,15 +65,29 @@ public class GraphQLNodeTest extends JahiaTestCase {
 
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH,
                 session -> {
+
                     if (session.getNode("/").hasNode("testList")) {
                         session.getNode("/testList").remove();
                         session.save();
                     }
-                    JCRNodeWrapper testedNode = session.getNode("/").addNode("testList", "jnt:contentList");
-                    testedNode.addMixin("jmix:liveProperties");
-                    testedNode.setProperty("jcr:title", testedNodeTitleEN);
-                    testedNode.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
-                    testedNodeUUID = testedNode.getIdentifier();
+
+                    JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
+                    node.addMixin("jmix:liveProperties");
+                    node.setProperty("jcr:title", nodeTitleEn);
+                    node.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
+                    nodeUuid = node.getIdentifier();
+
+                    JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
+                    subNode1.addMixin("jmix:liveProperties");
+                    subNode1.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
+                    subNodeUuid1 = subNode1.getIdentifier();
+
+                    JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
+                    subNodeUuid2 = subNode2.getIdentifier();
+
+                    JCRNodeWrapper subNode3 = node.addNode("testSubList3", "jnt:contentList");
+                    subNodeUuid3 = subNode3.getIdentifier();
+
                     session.save();
                     return null;
                 });
@@ -78,7 +95,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRENCH,
                 session -> {
                     JCRNodeWrapper testedNode = session.getNode("/testList");
-                    testedNode.setProperty("jcr:title", testedNodeTitleFR);
+                    testedNode.setProperty("jcr:title", nodeTitleFr);
                     session.save();
                     return null;
                 }
@@ -112,10 +129,10 @@ public class GraphQLNodeTest extends JahiaTestCase {
 
         Assert.assertEquals("/testList", nodeByPath.getString("path"));
         Assert.assertEquals("testList", nodeByPath.getString("name"));
-        Assert.assertEquals(testedNodeUUID, nodeByPath.getString("uuid"));
+        Assert.assertEquals(nodeUuid, nodeByPath.getString("uuid"));
         Assert.assertEquals("testList", nodeByPath.getString("displayName"));
-        Assert.assertEquals(testedNodeTitleFR, nodeByPath.getJSONObject("titlefr").getString("value"));
-        Assert.assertEquals(testedNodeTitleEN, nodeByPath.getJSONObject("titleen").getString("value"));
+        Assert.assertEquals(nodeTitleFr, nodeByPath.getJSONObject("titlefr").getString("value"));
+        Assert.assertEquals(nodeTitleEn, nodeByPath.getJSONObject("titleen").getString("value"));
     }
 
     @Test
@@ -152,7 +169,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
                                        + "    }"
                                        + "}");
         JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
-        validateSingleValuedProperty(property, false, JSONObject.NULL, testedNodeUUID);
+        validateSingleValuedProperty(property, false, JSONObject.NULL, nodeUuid);
     }
 
     @Test
@@ -168,7 +185,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
                                        + "    }"
                                        + "}");
         JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
-        validateSingleValuedProperty(property, false, JSONObject.NULL, testedNodeUUID);
+        validateSingleValuedProperty(property, false, JSONObject.NULL, nodeUuid);
     }
 
     @Test
@@ -200,7 +217,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
                                        + "    }"
                                        + "}");
         JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
-        validateSingleValuedProperty(property, true, "fr", testedNodeTitleFR);
+        validateSingleValuedProperty(property, true, "fr", nodeTitleFr);
     }
 
     @Test
@@ -249,7 +266,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
 
         Assert.assertEquals(1, properties.length());
         JSONObject property = properties.getJSONObject(0);
-        validateSingleValuedProperty(property, "jcr:uuid", GqlJcrPropertyType.STRING, false, JSONObject.NULL, testedNodeUUID);
+        validateSingleValuedProperty(property, "jcr:uuid", GqlJcrPropertyType.STRING, "/testList", false, JSONObject.NULL, nodeUuid);
     }
 
     @Test
@@ -271,11 +288,11 @@ public class GraphQLNodeTest extends JahiaTestCase {
                                        + "    }"
                                        + "}");
         JSONArray properties = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("properties");
-        Map<String, JSONObject> propertyByName = toPropertyByNameMap(properties);
+        Map<String, JSONObject> propertyByName = toItemByNameMap(properties);
 
         Assert.assertEquals(2, propertyByName.size());
-        validateSingleValuedProperty(propertyByName.get("jcr:uuid"), "jcr:uuid", GqlJcrPropertyType.STRING, false, JSONObject.NULL, testedNodeUUID);
-        validateSingleValuedProperty(propertyByName.get("jcr:title"), "jcr:title", GqlJcrPropertyType.STRING, true, "en", testedNodeTitleEN);
+        validateSingleValuedProperty(propertyByName.get("jcr:uuid"), "jcr:uuid", GqlJcrPropertyType.STRING, "/testList", false, JSONObject.NULL, nodeUuid);
+        validateSingleValuedProperty(propertyByName.get("jcr:title"), "jcr:title", GqlJcrPropertyType.STRING, "/testList", true, "en", nodeTitleEn);
     }
 
     @Test
@@ -289,7 +306,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
                                        + "    }"
                                        + "}");
         JSONArray properties = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("properties");
-        Map<String, JSONObject> propertyByName = toPropertyByNameMap(properties);
+        Map<String, JSONObject> propertyByName = toItemByNameMap(properties);
 
         Assert.assertEquals(15, propertyByName.size());
         Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("j:liveProperties"));
@@ -309,13 +326,92 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:title"));
     }
 
-    private static Map<String, JSONObject> toPropertyByNameMap(JSONArray properties) throws JSONException {
-        HashMap<String, JSONObject> propertyByName = new HashMap<>(properties.length());
-        for (int i = 0; i < properties.length(); i++) {
-            JSONObject property = properties.getJSONObject(i);
-            propertyByName.put(property.getString("name"), property);
+    @Test
+    public void shouldRetrieveAllChildNodes() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children {"
+                                       + "            uuid"
+                                       + "            name"
+                                       + "            path"
+                                       + "            parent {"
+                                       + "                path"
+                                       + "            }"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        // Three sub-list nodes plus two translation nodes.
+        Assert.assertEquals(5, childByName.size());
+        validateNode(childByName.get("testSubList1"), subNodeUuid1, "testSubList1", "/testList/testSubList1", "/testList");
+        validateNode(childByName.get("testSubList2"), subNodeUuid2, "testSubList2", "/testList/testSubList2", "/testList");
+        validateNode(childByName.get("testSubList3"), subNodeUuid3, "testSubList3", "/testList/testSubList3", "/testList");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByNames() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(names: [\"testSubList1\", \"testSubList2\"]) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(2, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
+        validateNode(childByName.get("testSubList2"), "testSubList2");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByAnyType() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(typesFilter: {types: [\"jnt:contentList\", \"nonExistingType\"]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(3, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
+        validateNode(childByName.get("testSubList2"), "testSubList2");
+        validateNode(childByName.get("testSubList3"), "testSubList3");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByAllTypes() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(typesFilter: {multi: ALL types: [\"jnt:contentList\", \"jmix:liveProperties\"]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(1, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
+    }
+
+    private static Map<String, JSONObject> toItemByNameMap(JSONArray items) throws JSONException {
+        HashMap<String, JSONObject> itemByName = new HashMap<>(items.length());
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.getJSONObject(i);
+            itemByName.put(item.getString("name"), item);
         }
-        return propertyByName;
+        return itemByName;
     }
 
     private static void validateSingleValuedProperty(JSONObject property, boolean expectedInternationalized, Object expectedLanguage, String expectedValue) throws JSONException {
@@ -325,11 +421,22 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Assert.assertEquals(JSONObject.NULL, property.get("values"));
     }
 
-    private static void validateSingleValuedProperty(JSONObject property, String expectedName, GqlJcrPropertyType expectedType, boolean expectedInternationalized, Object expectedLanguage, String expectedValue) throws JSONException {
+    private static void validateSingleValuedProperty(JSONObject property, String expectedName, GqlJcrPropertyType expectedType, String expectedParentNodePath, boolean expectedInternationalized, Object expectedLanguage, String expectedValue) throws JSONException {
         Assert.assertEquals(expectedName, property.getString("name"));
         Assert.assertEquals(expectedType.name(), property.getString("type"));
-        Assert.assertEquals("/testList", property.getJSONObject("parentNode").getString("path"));
+        Assert.assertEquals(expectedParentNodePath, property.getJSONObject("parentNode").getString("path"));
         validateSingleValuedProperty(property, expectedInternationalized, expectedLanguage, expectedValue);
+    }
+
+    private static void validateNode(JSONObject node, String expectedName) throws JSONException {
+        Assert.assertEquals(expectedName, node.getString("name"));
+    }
+
+    private static void validateNode(JSONObject node, String expectedUuid, String expectedName, String expectedPath, String expectedParentNodePath) throws JSONException {
+        validateNode(node, expectedName);
+        Assert.assertEquals(expectedUuid, node.getString("uuid"));
+        Assert.assertEquals(expectedPath, node.getString("path"));
+        Assert.assertEquals(expectedParentNodePath, node.getJSONObject("parent").getString("path"));
     }
 
     private JSONObject executeQuery(String query) throws JSONException {
