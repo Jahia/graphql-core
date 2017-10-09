@@ -4,20 +4,27 @@ import graphql.execution.ExecutionStrategy;
 import graphql.servlet.ExecutionStrategyProvider;
 import org.osgi.service.component.annotations.Component;
 
-@Component
+@Component(immediate = true)
 public class JCRExecutionStrategyProvider implements ExecutionStrategyProvider {
+
+    private final JCRExecutionStrategy executionStrategy;
+
+    public JCRExecutionStrategyProvider() {
+        executionStrategy = new JCRExecutionStrategy();
+    }
+
     @Override
     public ExecutionStrategy getQueryExecutionStrategy() {
-        return new JCRExecutionStrategy();
+        return executionStrategy;
     }
 
     @Override
     public ExecutionStrategy getMutationExecutionStrategy() {
-        return new JCRExecutionStrategy();
+        return executionStrategy;
     }
 
     @Override
     public ExecutionStrategy getSubscriptionExecutionStrategy() {
-        return new JCRExecutionStrategy();
+        return executionStrategy;
     }
 }

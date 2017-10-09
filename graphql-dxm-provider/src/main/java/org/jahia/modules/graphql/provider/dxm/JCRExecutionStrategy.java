@@ -1,26 +1,28 @@
 package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.ExecutionResult;
-import graphql.annotations.EnhancedExecutionStrategy;
+import graphql.execution.AsyncExecutionStrategy;
 import graphql.execution.ExecutionContext;
-import graphql.execution.ExecutionParameters;
-import graphql.language.Field;
-import org.jahia.modules.graphql.provider.dxm.node.NodeMutationExtensions;
+import graphql.execution.ExecutionStrategyParameters;
+import graphql.execution.NonNullableFieldWasNullException;
 
-import javax.jcr.RepositoryException;
-import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-public class JCRExecutionStrategy extends EnhancedExecutionStrategy {
-    @Override
-    protected ExecutionResult completeValue(ExecutionContext executionContext, ExecutionParameters parameters, List<Field> fields) {
-        ExecutionResult executionResult = super.completeValue(executionContext, parameters, fields);
-        if (parameters.source() instanceof NodeMutationExtensions.GraphQLMutationJCR) {
-            try {
-                ((NodeMutationExtensions.GraphQLMutationJCR)parameters.source()).session.save();
-            } catch (RepositoryException e) {
-                e.printStackTrace();
-            }
-        }
-        return executionResult;
+/**
+ * Custom Execution Strategy
+ */
+public class JCRExecutionStrategy extends AsyncExecutionStrategy {
+
+
+    public JCRExecutionStrategy() {
+        super (new JCRDataFetchingExceptionHandler());
     }
+
+    @Override
+    protected CompletableFuture<ExecutionResult> completeValue(ExecutionContext executionContext, ExecutionStrategyParameters parameters) throws NonNullableFieldWasNullException {
+        return super.completeValue(executionContext, parameters);
+    }
+
+
+
 }

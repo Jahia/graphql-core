@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 @Component(service = GraphQLProvider.class, immediate = true)
-public class DXGraphQLProvider implements GraphQLQueryProvider, GraphQLMutationProvider, GraphQLTypesProvider, GraphQLAnnotatedClassProvider {
+public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLAnnotatedClassProvider {
     private static Logger logger = LoggerFactory.getLogger(GraphQLQueryProvider.class);
 
     private SpecializedTypesHandler specializedTypesHandler;
@@ -29,16 +29,6 @@ public class DXGraphQLProvider implements GraphQLQueryProvider, GraphQLMutationP
     public void setGraphQLAnnotationsProcessor(GraphQLAnnotationsProcessor graphQLAnnotationsProcessor) {
         this.graphQLAnnotationsProcessor = graphQLAnnotationsProcessor;
         this.specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotationsProcessor);
-    }
-
-    @Override
-    public Collection<GraphQLFieldDefinition> getMutations() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public Collection<GraphQLFieldDefinition> getQueries() {
-        return Collections.emptyList();
     }
 
     @Override
