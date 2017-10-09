@@ -1,5 +1,7 @@
 package org.jahia.modules.graphql.provider.dxm;
 
+import graphql.execution.AsyncExecutionStrategy;
+import graphql.execution.AsyncSerialExecutionStrategy;
 import graphql.execution.ExecutionStrategy;
 import graphql.servlet.ExecutionStrategyProvider;
 import org.osgi.service.component.annotations.Component;
@@ -7,24 +9,28 @@ import org.osgi.service.component.annotations.Component;
 @Component(immediate = true)
 public class JCRExecutionStrategyProvider implements ExecutionStrategyProvider {
 
-    private final JCRExecutionStrategy executionStrategy;
+    private final ExecutionStrategy queryStrategy;
+    private final ExecutionStrategy mutationStrategy;
+    private final ExecutionStrategy subscriptionExecutionStrategy;
 
     public JCRExecutionStrategyProvider() {
-        executionStrategy = new JCRExecutionStrategy();
+        queryStrategy = new AsyncExecutionStrategy(new JCRDataFetchingExceptionHandler());
+        mutationStrategy = new AsyncSerialExecutionStrategy(new JCRDataFetchingExceptionHandler());
+        subscriptionExecutionStrategy = queryStrategy;
     }
 
     @Override
     public ExecutionStrategy getQueryExecutionStrategy() {
-        return executionStrategy;
+        return queryStrategy;
     }
 
     @Override
     public ExecutionStrategy getMutationExecutionStrategy() {
-        return executionStrategy;
+        return mutationStrategy;
     }
 
     @Override
     public ExecutionStrategy getSubscriptionExecutionStrategy() {
-        return executionStrategy;
+        return subscriptionExecutionStrategy;
     }
 }
