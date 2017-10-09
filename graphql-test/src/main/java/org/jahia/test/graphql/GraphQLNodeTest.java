@@ -79,10 +79,12 @@ public class GraphQLNodeTest extends JahiaTestCase {
 
                     JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
                     subNode1.addMixin("jmix:liveProperties");
+                    subNode1.setProperty("jcr:title", nodeTitleEn + " - subList1");
                     subNode1.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
                     subNodeUuid1 = subNode1.getIdentifier();
 
                     JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
+                    subNode2.setProperty("jcr:title", nodeTitleEn + " - subList2");
                     subNodeUuid2 = subNode2.getIdentifier();
 
                     JCRNodeWrapper subNode3 = node.addNode("testSubList3", "jnt:contentList");
@@ -94,8 +96,10 @@ public class GraphQLNodeTest extends JahiaTestCase {
 
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRENCH,
                 session -> {
-                    JCRNodeWrapper testedNode = session.getNode("/testList");
-                    testedNode.setProperty("jcr:title", nodeTitleFr);
+                    JCRNodeWrapper node = session.getNode("/testList");
+                    node.setProperty("jcr:title", nodeTitleFr);
+                    node.getNode("testSubList1").setProperty("jcr:title", nodeTitleFr + " - subList1");
+                    node.getNode("testSubList2").setProperty("jcr:title", nodeTitleFr + " - subList2");
                     session.save();
                     return null;
                 }
@@ -344,7 +348,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
         Map<String, JSONObject> childByName = toItemByNameMap(children);
 
-        // Three sub-list nodes plus two translation nodes.
+        // Three sub-list nodes, plus two translation nodes.
         Assert.assertEquals(5, childByName.size());
         validateNode(childByName.get("testSubList1"), subNodeUuid1, "testSubList1", "/testList/testSubList1", "/testList");
         validateNode(childByName.get("testSubList2"), subNodeUuid2, "testSubList2", "/testList/testSubList2", "/testList");
@@ -403,6 +407,306 @@ public class GraphQLNodeTest extends JahiaTestCase {
 
         Assert.assertEquals(1, childByName.size());
         validateNode(childByName.get("testSubList1"), "testSubList1");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByPresentNonIternationalizedPropertyNotPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"j:liveProperties\" evaluation: PRESENT}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(1, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByPresentNonIternationalizedPropertyPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"j:liveProperties\" evaluation: PRESENT language:\"en\"}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(1, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
+    }
+
+    @Test
+    public void shouldNotRetrieveChildNodesByPresentIternationalizedPropertyNotPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:title\" evaluation: PRESENT}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        // Just two translation nodes, no sub-list nodes.
+        Assert.assertEquals(2, childByName.size());
+        Assert.assertFalse(childByName.containsKey("testSubList1"));
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByPresentIternationalizedPropertyPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:title\" evaluation: PRESENT language:\"en\"}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        // Two sub-list node, plus two translation nodes.
+        Assert.assertEquals(4, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
+        validateNode(childByName.get("testSubList2"), "testSubList2");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByAbsentNonIternationalizedProperty() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"j:liveProperties\" evaluation: ABSENT}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        // Two sub-list nodes, plus two translation nodes.
+        Assert.assertEquals(4, childByName.size());
+        validateNode(childByName.get("testSubList2"), "testSubList2");
+        validateNode(childByName.get("testSubList3"), "testSubList3");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByAbsentIternationalizedPropertyNotPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:title\" evaluation: ABSENT}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(3, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
+        validateNode(childByName.get("testSubList2"), "testSubList2");
+        validateNode(childByName.get("testSubList3"), "testSubList3");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByAbsentIternationalizedPropertyPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:title\" evaluation: ABSENT language:\"fr\"}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(1, childByName.size());
+        validateNode(childByName.get("testSubList3"), "testSubList3");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByEqualNonIternationalizedPropertyValueNotPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:uuid\" value: \"" + subNodeUuid1 + "\"}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(1, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByEqualNonIternationalizedPropertyValuePassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:uuid\" value: \"" + subNodeUuid1 + "\" language: \"en\"}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(1, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
+    }
+
+    @Test
+    public void shouldNotRetrieveChildNodesByEqualInternationalizedPropertyValueNotPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:title\" value: \"" + nodeTitleEn + " - subList1\"}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(0, childByName.size());
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByEqualternationalizedPropertyValuePassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:title\" value: \"" + nodeTitleEn + " - subList1\" language: \"en\"}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(1, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByDifferentNonIternationalizedPropertyValueNotPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:uuid\" value: \"" + subNodeUuid1 + "\" evaluation: DIFFERENT}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        // Two sub-list nodes, plus two translation nodes.
+        Assert.assertEquals(4, childByName.size());
+        validateNode(childByName.get("testSubList2"), "testSubList2");
+        validateNode(childByName.get("testSubList3"), "testSubList3");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByDifferentNonIternationalizedPropertyValuePassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:uuid\" value: \"" + subNodeUuid1 + "\" evaluation: DIFFERENT language: \"en\"}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        // Two sub-list nodes, plus two translation nodes.
+        Assert.assertEquals(4, childByName.size());
+        validateNode(childByName.get("testSubList2"), "testSubList2");
+        validateNode(childByName.get("testSubList3"), "testSubList3");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByDifferentInternationalizedPropertyValueNotPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:title\" value: \"" + nodeTitleEn + " - subList1\" evaluation: DIFFERENT}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        // Three sub-list nodes, plus two translation nodes.
+        Assert.assertEquals(5, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
+        validateNode(childByName.get("testSubList2"), "testSubList2");
+        validateNode(childByName.get("testSubList3"), "testSubList3");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByDifferentInternationalizedPropertyValuePassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:title\" value: \"" + nodeTitleEn + " - subList1\" evaluation: DIFFERENT language: \"en\"}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        // Two sub-list nodes, plus two translation nodes.
+        Assert.assertEquals(4, childByName.size());
+        validateNode(childByName.get("testSubList2"), "testSubList2");
+        validateNode(childByName.get("testSubList3"), "testSubList3");
     }
 
     private static Map<String, JSONObject> toItemByNameMap(JSONArray items) throws JSONException {

@@ -11,7 +11,7 @@ import java.util.List;
  */
 @GraphQLName("JCRNode")
 @GraphQLTypeResolver(SpecializedTypesHandler.NodeTypeResolver.class)
-@GraphQLDescription("GraphQL representation of a JCR node.")
+@GraphQLDescription("GraphQL representation of a JCR node")
 public interface GqlJcrNode {
 
     /**
@@ -140,13 +140,13 @@ public interface GqlJcrNode {
         /**
          * The result criteria evaluates positive iff all sub-criteria evaluate positive.
          */
-        @GraphQLDescription("The result criteria evaluates positive iff all sub-criteria evaluate positive.")
+        @GraphQLDescription("The result criteria evaluates positive iff all sub-criteria evaluate positive")
         ALL,
 
         /**
          * The result criteria evaluates positive if any sub-criteria evaluates positive.
          */
-        @GraphQLDescription("The result criteria evaluates positive if any sub-criteria evaluates positive.")
+        @GraphQLDescription("The result criteria evaluates positive if any sub-criteria evaluates positive")
         ANY
     }
 
@@ -199,25 +199,25 @@ public interface GqlJcrNode {
         /**
          * The property is present.
          */
-        @GraphQLDescription("The property is present.")
+        @GraphQLDescription("The property is present")
         PRESENT,
 
         /**
          * The property is absent.
          */
-        @GraphQLDescription("The property is absent.")
+        @GraphQLDescription("The property is absent")
         ABSENT,
 
         /**
          * The property value is equal to given one.
          */
-        @GraphQLDescription("The property value is equal to given one.")
+        @GraphQLDescription("The property value is equal to given one")
         EQUAL,
 
         /**
          * The property value is different from given one.
          */
-        @GraphQLDescription("The property value is different from given one.")
+        @GraphQLDescription("The property value is different from given one")
         DIFFERENT
     }
 
