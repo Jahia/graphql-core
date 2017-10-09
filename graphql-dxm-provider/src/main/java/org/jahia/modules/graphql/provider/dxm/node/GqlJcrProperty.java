@@ -1,5 +1,6 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.annotations.GraphQLDescription;
 import graphql.annotations.GraphQLField;
 import graphql.annotations.GraphQLName;
 import graphql.annotations.GraphQLNonNull;
@@ -16,6 +17,7 @@ import java.util.List;
  * GraphQL representation of a JCR property.
  */
 @GraphQLName("JCRProperty")
+@GraphQLDescription("GraphQL representation of a JCR property.")
 public class GqlJcrProperty {
 
     private JCRPropertyWrapper property;
@@ -37,6 +39,7 @@ public class GqlJcrProperty {
      */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLDescription("The name of the JCR property")
     public String getName() {
         try {
             return property.getName();
@@ -50,6 +53,7 @@ public class GqlJcrProperty {
      */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLDescription("The type of the JCR property")
     public GqlJcrPropertyType getType() {
         try {
             return GqlJcrPropertyType.getValue(property.getType());
@@ -63,6 +67,7 @@ public class GqlJcrProperty {
      */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLDescription("Whether the property is internationalized")
     public boolean isInternationalized() {
         ExtendedPropertyDefinition propertyDefinition;
         try {
@@ -77,6 +82,7 @@ public class GqlJcrProperty {
      * @return The language the property value was obtained in for internationalized properties; null for non-internationalized ones
      */
     @GraphQLField
+    @GraphQLDescription("The language the property value was obtained in for internationalized properties; null for non-internationalized ones")
     public String getLanguage() {
         try {
             return property.getLocale();
@@ -89,6 +95,7 @@ public class GqlJcrProperty {
      * @return The value of the JCR property as a String in case the property is single-valued, null otherwise
      */
     @GraphQLField
+    @GraphQLDescription("The value of the JCR property as a String in case the property is single-valued, null otherwise")
     public String getValue() {
         try {
             if (property.isMultiple()) {
@@ -104,6 +111,7 @@ public class GqlJcrProperty {
      * @return The values of the JCR property as a Strings in case the property is multiple-valued, null otherwise
      */
     @GraphQLField
+    @GraphQLDescription("The values of the JCR property as a Strings in case the property is multiple-valued, null otherwise")
     public List<String> getValues() {
         try {
             if (!property.isMultiple()) {
@@ -124,6 +132,7 @@ public class GqlJcrProperty {
      */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLDescription("The GraphQL representation of the JCR node the property belongs to.")
     public GqlJcrNode getParentNode() {
         return parentNode;
     }

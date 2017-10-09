@@ -1,11 +1,7 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.annotations.*;
 import org.jahia.services.content.JCRNodeWrapper;
-
-import graphql.annotations.GraphQLField;
-import graphql.annotations.GraphQLName;
-import graphql.annotations.GraphQLNonNull;
-import graphql.annotations.GraphQLTypeResolver;
 
 import java.util.Collection;
 import java.util.List;
@@ -15,6 +11,7 @@ import java.util.List;
  */
 @GraphQLName("JCRNode")
 @GraphQLTypeResolver(SpecializedTypesHandler.NodeTypeResolver.class)
+@GraphQLDescription("GraphQL representation of a JCR node.")
 public interface GqlJcrNode {
 
     /**
@@ -32,6 +29,7 @@ public interface GqlJcrNode {
      */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLDescription("The UUID of the JCR node this object represents")
     String getUuid();
 
     /**
@@ -39,6 +37,7 @@ public interface GqlJcrNode {
      */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLDescription("The name of the JCR node this object represents")
     String getName();
 
     /**
@@ -46,6 +45,7 @@ public interface GqlJcrNode {
      */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLDescription("The path of the JCR node this object represents")
     String getPath();
 
     /**
@@ -53,12 +53,14 @@ public interface GqlJcrNode {
      * @return The display name of the JCR node this object represents in the requested language
      */
     @GraphQLField
-    String getDisplayName(@GraphQLName("language") String language);
+    @GraphQLDescription("The display name of the JCR node this object represents in the requested language")
+    String getDisplayName(@GraphQLName("language") @GraphQLDescription("The language to obtain the display name in") String language);
 
     /**
      * @return GraphQL representation of the parent JCR node
      */
     @GraphQLField
+    @GraphQLDescription("GraphQL representation of the parent JCR node")
     GqlJcrNode getParent();
 
     /**
@@ -70,8 +72,9 @@ public interface GqlJcrNode {
      */
     @GraphQLField
     @GraphQLNonNull
-    Collection<GqlJcrProperty> getProperties(@GraphQLName("names") Collection<String> names,
-                                             @GraphQLName("language") String language);
+    @GraphQLDescription("GraphQL representations of the properties in the requested language")
+    Collection<GqlJcrProperty> getProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names,
+                                             @GraphQLName("language") @GraphQLDescription("The language to obtain the properties in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones") String language);
 
     /**
      * Get a GraphQL representation of a single property of the JCR node.
@@ -81,8 +84,9 @@ public interface GqlJcrNode {
      * @return The GraphQL representation of the property in the requested language; null if the property does not exist
      */
     @GraphQLField
-    GqlJcrProperty getProperty(@GraphQLName("name") @GraphQLNonNull String name,
-                               @GraphQLName("language") String language);
+    @GraphQLDescription("The GraphQL representation of the property in the requested language; null if the property does not exist")
+    GqlJcrProperty getProperty(@GraphQLName("name") @GraphQLDescription("The name of the JCR property") @GraphQLNonNull String name,
+                               @GraphQLName("language") @GraphQLDescription("The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones") String language);
 
     /**
      * Get GraphQL representations of child nodes of the JCR node, according to filters specified. A child node must pass through all non-null filters in order to be included in the result.
@@ -94,9 +98,10 @@ public interface GqlJcrNode {
      */
     @GraphQLField
     @GraphQLNonNull
-    List<GqlJcrNode> getChildren(@GraphQLName("names") Collection<String> names,
-                                 @GraphQLName("typesFilter") NodeTypesInput typesFilter,
-                                 @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter);
+    @GraphQLDescription("GraphQL representations of the child nodes, according to parameters passed")
+    List<GqlJcrNode> getChildren(@GraphQLName("names") @GraphQLDescription("Filter of child nodes by their names; null to avoid such filtering") Collection<String> names,
+                                 @GraphQLName("typesFilter") @GraphQLDescription("Filter of child nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
+                                 @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter);
 
     /**
      * Get GraphQL representations of the ancestor nodes of the JCR node.
@@ -106,13 +111,15 @@ public interface GqlJcrNode {
      */
     @GraphQLField
     @GraphQLNonNull
-    List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") String upToPath);
+    @GraphQLDescription("GraphQL representations of the ancestor nodes of the JCR node, top down direction")
+    List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") @GraphQLDescription("The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes") String upToPath);
 
     /**
      * @return GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site
      */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLDescription("GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site")
     GqlJcrSite getSite();
 
     /**
@@ -122,7 +129,8 @@ public interface GqlJcrNode {
      * @return GraphQL representation of the JCR node as the mixin type, or null in case the node does not actually has the mixin type
      */
     @GraphQLField
-    GqlJcrNode asMixin(@GraphQLName("type") String type);
+    @GraphQLDescription("GraphQL representation of the JCR node as the mixin type, or null in case the node does not actually has the mixin type")
+    GqlJcrNode asMixin(@GraphQLName("type") @GraphQLDescription("The mixin type name") String type);
 
     /**
      * A way to evaluate a criteria consisting of multiple sub-criteria.
@@ -132,11 +140,13 @@ public interface GqlJcrNode {
         /**
          * The result criteria evaluates positive iff all sub-criteria evaluate positive.
          */
+        @GraphQLDescription("The result criteria evaluates positive iff all sub-criteria evaluate positive.")
         ALL,
 
         /**
          * The result criteria evaluates positive if any sub-criteria evaluates positive.
          */
+        @GraphQLDescription("The result criteria evaluates positive if any sub-criteria evaluates positive.")
         ANY
     }
 
@@ -165,6 +175,7 @@ public interface GqlJcrNode {
          */
         @GraphQLField
         @GraphQLName("multi")
+        @GraphQLDescription("The way to combine multiple type criteria; null indicates default (ANY)")
         public MulticriteriaEvaluation getMulticriteriaEvaluation() {
             return multicriteriaEvaluation;
         }
@@ -174,6 +185,7 @@ public interface GqlJcrNode {
          */
         @GraphQLField
         @GraphQLNonNull
+        @GraphQLDescription("Node type names required for a node to pass the filter")
         public Collection<String> getTypes() {
             return types;
         }
@@ -187,21 +199,25 @@ public interface GqlJcrNode {
         /**
          * The property is present.
          */
+        @GraphQLDescription("The property is present.")
         PRESENT,
 
         /**
          * The property is absent.
          */
+        @GraphQLDescription("The property is absent.")
         ABSENT,
 
         /**
          * The property value is equal to given one.
          */
+        @GraphQLDescription("The property value is equal to given one.")
         EQUAL,
 
         /**
          * The property value is different from given one.
          */
+        @GraphQLDescription("The property value is different from given one.")
         DIFFERENT
     }
 
@@ -230,6 +246,7 @@ public interface GqlJcrNode {
          */
         @GraphQLField
         @GraphQLName("multi")
+        @GraphQLDescription("The way to combine multiple individual property filters; null indicates default (ALL)")
         public MulticriteriaEvaluation getMulticriteriaEvaluation() {
             return multicriteriaEvaluation;
         }
@@ -240,6 +257,7 @@ public interface GqlJcrNode {
         @GraphQLField
         @GraphQLName("filters")
         @GraphQLNonNull
+        @GraphQLDescription("Individual property filters")
         public Collection<NodePropertyInput> getPropertyFilters() {
             return propertyFilters;
         }
@@ -277,6 +295,7 @@ public interface GqlJcrNode {
          * @return Language to use when evaluating the property
          */
         @GraphQLField
+        @GraphQLDescription("Language to use when evaluating the property")
         public String getLanguage() {
             return language;
         }
@@ -286,6 +305,7 @@ public interface GqlJcrNode {
          */
         @GraphQLField
         @GraphQLName("evaluation")
+        @GraphQLDescription("The way to evaluate the property; null indicates default (EQUAL)")
         public PropertyEvaluation getPropertyEvaluation() {
             return propertyEvaluation;
         }
@@ -296,6 +316,7 @@ public interface GqlJcrNode {
         @GraphQLField
         @GraphQLName("property")
         @GraphQLNonNull
+        @GraphQLDescription("The name of the property to filter by")
         public String getPropertyName() {
             return propertyName;
         }
@@ -305,6 +326,7 @@ public interface GqlJcrNode {
          */
         @GraphQLField
         @GraphQLName("value")
+        @GraphQLDescription("The value to evaluate the property against")
         public String getPropertyValue() {
             return propertyValue;
         }
