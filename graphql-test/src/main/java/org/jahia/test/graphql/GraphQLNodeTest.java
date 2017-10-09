@@ -31,6 +31,7 @@ import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
 import org.jahia.test.JahiaTestCase;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.AfterClass;
@@ -38,6 +39,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import javax.servlet.Servlet;
+
+import java.util.HashSet;
 import java.util.Locale;
 
 import org.junit.Assert;
@@ -52,7 +55,9 @@ public class GraphQLNodeTest extends JahiaTestCase {
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
+
         servlet = (OsgiGraphQLServlet) BundleUtils.getOsgiService(Servlet.class, "(component.name=graphql.servlet.OsgiGraphQLServlet)");
+
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH,
                 session -> {
                     if (session.getNode("/").hasNode("testList")) {
@@ -60,7 +65,9 @@ public class GraphQLNodeTest extends JahiaTestCase {
                         session.save();
                     }
                     JCRNodeWrapper testedNode = session.getNode("/").addNode("testList", "jnt:contentList");
+                    testedNode.addMixin("jmix:liveProperties");
                     testedNode.setProperty("jcr:title", testedNodeTitleEN);
+                    testedNode.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
                     testedNodeUUID = testedNode.getIdentifier();
                     session.save();
                     return null;
@@ -143,7 +150,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
                                        + "    }"
                                        + "}");
         JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
-        validateUuidProperty(property);
+        validateSingleValuedProperty(property, false, JSONObject.NULL, testedNodeUUID);
     }
 
     @Test
@@ -159,7 +166,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
                                        + "    }"
                                        + "}");
         JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
-        validateUuidProperty(property);
+        validateSingleValuedProperty(property, false, JSONObject.NULL, testedNodeUUID);
     }
 
     @Test
@@ -180,7 +187,6 @@ public class GraphQLNodeTest extends JahiaTestCase {
 
     @Test
     public void shouldRetrieveInternationalizedPropertyPassingLanguage() throws Exception {
-
         JSONObject result = executeQuery("{"
                                        + "    nodeByPath(path: \"/testList\") {"
                                        + "        property(name: \"jcr:title\" language: \"fr\") {"
@@ -192,18 +198,42 @@ public class GraphQLNodeTest extends JahiaTestCase {
                                        + "    }"
                                        + "}");
         JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
-
-        Assert.assertTrue(property.getBoolean("internationalized"));
-        Assert.assertEquals("fr", property.getString("language"));
-        Assert.assertEquals(testedNodeTitleFR, property.getString("value"));
-        Assert.assertEquals(JSONObject.NULL, property.get("values"));
+        validateSingleValuedProperty(property, true, "fr", testedNodeTitleFR);
     }
 
-    private static void validateUuidProperty(JSONObject uuidProperty) throws JSONException {
-        Assert.assertFalse(uuidProperty.getBoolean("internationalized"));
-        Assert.assertEquals(JSONObject.NULL, uuidProperty.get("language"));
-        Assert.assertEquals(testedNodeUUID, uuidProperty.getString("value"));
-        Assert.assertEquals(JSONObject.NULL, uuidProperty.get("values"));
+    @Test
+    public void shouldRetrieveMultivaluedProperty() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        property(name: \"j:liveProperties\") {"
+                                       + "            internationalized"
+                                       + "            language"
+                                       + "            value"
+                                       + "            values"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
+
+        Assert.assertFalse(property.getBoolean("internationalized"));
+        Assert.assertEquals(JSONObject.NULL, property.get("language"));
+        Assert.assertEquals(JSONObject.NULL, property.get("value"));
+        JSONArray values = property.getJSONArray("values");
+        HashSet<String> vals = new HashSet<>(values.length());
+        for (int i = 0; i < values.length(); i++) {
+            vals.add(values.getString(i));
+        }
+        Assert.assertEquals(2, vals.size());
+        Assert.assertTrue(vals.contains("liveProperty1"));
+        Assert.assertTrue(vals.contains("liveProperty2"));
+    }
+
+    private static void validateSingleValuedProperty(JSONObject property, boolean expectedInternationalized, Object expectedLanguage, String expectedValue) throws JSONException {
+        Assert.assertEquals(expectedInternationalized, property.getBoolean("internationalized"));
+        Assert.assertEquals(expectedLanguage, property.get("language"));
+        Assert.assertEquals(expectedValue, property.getString("value"));
+        Assert.assertEquals(JSONObject.NULL, property.get("values"));
     }
 
     private JSONObject executeQuery(String query) throws JSONException {
