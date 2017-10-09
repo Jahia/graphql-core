@@ -42,6 +42,34 @@ public class NodeQueryExtensions {
         }
     }
 
+    @GraphQLField
+    public static List<GqlJcrNode> getNodesById(@GraphQLNonNull @GraphQLName("uuids") List<@GraphQLNonNull String> uuids,
+                                               @GraphQLName("workspace") String workspace) {
+        try {
+            List<GqlJcrNode> nodes = new ArrayList<>();
+            for (String uuid : uuids) {
+                nodes.add(SpecializedTypesHandler.getNode(JCRSessionFactory.getInstance().getCurrentUserSession(workspace).getNodeByIdentifier(uuid)));
+            }
+            return nodes;
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @GraphQLField
+    public static List<GqlJcrNode> getNodesByPath(@GraphQLNonNull @GraphQLName("paths") List<@GraphQLNonNull String> paths,
+                                                 @GraphQLName("workspace") String workspace) {
+        try {
+            List<GqlJcrNode> nodes = new ArrayList<>();
+            for (String path : paths) {
+                nodes.add(SpecializedTypesHandler.getNode(JCRSessionFactory.getInstance().getCurrentUserSession(workspace).getNode(path)));
+            }
+            return nodes;
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static class QueryLanguageDefaultValue implements Supplier<Object> {
         @Override
         public NodeQueryExtensions.QueryLanguage get() {
