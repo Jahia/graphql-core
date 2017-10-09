@@ -5,12 +5,9 @@ import graphql.annotations.GraphQLName;
 import graphql.annotations.GraphQLNonNull;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRValueWrapper;
-import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
-import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 
 import javax.jcr.RepositoryException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,15 +64,11 @@ public class GqlJcrProperty {
     @GraphQLField
     @GraphQLNonNull
     public boolean isInternationalized() {
-        ExtendedNodeType nodeType;
+        ExtendedPropertyDefinition propertyDefinition;
         try {
-            nodeType = NodeTypeRegistry.getInstance().getNodeType(parentNode.getType());
-        } catch (NoSuchNodeTypeException e) {
+            propertyDefinition = parentNode.getNode().getApplicablePropertyDefinition(getName(), property.getType(), property.isMultiple());
+        } catch (RepositoryException e) {
             throw new RuntimeException(e);
-        }
-        ExtendedPropertyDefinition propertyDefinition = nodeType.getPropertyDefinition(getName());
-        if (propertyDefinition == null) {
-            return false;
         }
         return propertyDefinition.isInternationalized();
     }
