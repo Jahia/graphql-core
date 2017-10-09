@@ -127,7 +127,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @Override
     public String getDisplayName(@GraphQLName("language") String language) {
         try {
-            JCRNodeWrapper node = getNode(this.node, language);
+            JCRNodeWrapper node = getNodeInLanguage(this.node, language);
             return node.getDisplayableName();
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
@@ -149,7 +149,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                     @GraphQLName("language") String language) {
         List<GqlJcrProperty> properties = new ArrayList<GqlJcrProperty>();
         try {
-            JCRNodeWrapper node = getNode(this.node, language);
+            JCRNodeWrapper node = getNodeInLanguage(this.node, language);
             if (names != null) {
                 for (String name : names) {
                     if (node.hasProperty(name)) {
@@ -172,7 +172,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     public GqlJcrProperty getProperty(@GraphQLName("name") @GraphQLNonNull String name,
                                       @GraphQLName("language") String language) {
         try {
-            JCRNodeWrapper node = getNode(this.node, language);
+            JCRNodeWrapper node = getNodeInLanguage(this.node, language);
             if (!node.hasProperty(name)) {
                 return null;
             }
@@ -304,18 +304,18 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         }
     }
 
-    public static boolean hasProperty(JCRNodeWrapper node, String language, String propertyName) {
+    private static boolean hasProperty(JCRNodeWrapper node, String language, String propertyName) {
         try {
-            node = getNode(node, language);
+            node = getNodeInLanguage(node, language);
             return node.hasProperty(propertyName);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static boolean hasPropertyValue(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
+    private static boolean hasPropertyValue(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
         try {
-            node = getNode(node, language);
+            node = getNodeInLanguage(node, language);
             if (!node.hasProperty(propertyName)) {
                 return false;
             }
@@ -325,7 +325,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         }
     }
 
-    private static JCRNodeWrapper getNode(JCRNodeWrapper node, String language) throws RepositoryException {
+    private static JCRNodeWrapper getNodeInLanguage(JCRNodeWrapper node, String language) throws RepositoryException {
         if (language == null) {
             return node;
         }
