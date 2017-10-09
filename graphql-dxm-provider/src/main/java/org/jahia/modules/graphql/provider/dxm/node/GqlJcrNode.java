@@ -65,7 +65,7 @@ public interface GqlJcrNode {
      * Get GraphQL representations of multiple of properties of the JCR node.
      *
      * @param names The names of the JCR properties; null to obtain all properties
-     * @param language The language to obtain the properties in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones
+     * @param language The language to obtain the properties in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones
      * @return GraphQL representations of the properties in the requested language
      */
     @GraphQLField
@@ -77,7 +77,7 @@ public interface GqlJcrNode {
      * Get a GraphQL representation of a single property of the JCR node.
      *
      * @param name The name of the JCR property
-     * @param language The language to obtain the property in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones
+     * @param language The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones
      * @return The GraphQL representation of the property in the requested language; null if the property does not exist
      */
     @GraphQLField

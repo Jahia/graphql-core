@@ -40,8 +40,10 @@ import org.junit.Test;
 
 import javax.servlet.Servlet;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 
 import org.junit.Assert;
 
@@ -207,26 +209,113 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONObject result = executeQuery("{"
                                        + "    nodeByPath(path: \"/testList\") {"
                                        + "        property(name: \"j:liveProperties\") {"
-                                       + "            internationalized"
-                                       + "            language"
                                        + "            value"
                                        + "            values"
                                        + "		  }"
                                        + "    }"
                                        + "}");
         JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
-
-        Assert.assertFalse(property.getBoolean("internationalized"));
-        Assert.assertEquals(JSONObject.NULL, property.get("language"));
-        Assert.assertEquals(JSONObject.NULL, property.get("value"));
         JSONArray values = property.getJSONArray("values");
         HashSet<String> vals = new HashSet<>(values.length());
         for (int i = 0; i < values.length(); i++) {
             vals.add(values.getString(i));
         }
+
+        Assert.assertEquals(JSONObject.NULL, property.get("value"));
         Assert.assertEquals(2, vals.size());
         Assert.assertTrue(vals.contains("liveProperty1"));
         Assert.assertTrue(vals.contains("liveProperty2"));
+    }
+
+    @Test
+    public void shouldRetrieveNonInternationalizedPropertiesNotPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        properties(names: [\"jcr:uuid\", \"jcr:title\"]) {"
+                                       + "            name"
+                                       + "            type"
+                                       + "            internationalized"
+                                       + "            language"
+                                       + "            value"
+                                       + "            values"
+                                       + "            parentNode {"
+                                       + "                path"
+                                       + "            }"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray properties = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("properties");
+
+        Assert.assertEquals(1, properties.length());
+        JSONObject property = properties.getJSONObject(0);
+        validateSingleValuedProperty(property, "jcr:uuid", GqlJcrPropertyType.STRING, false, JSONObject.NULL, testedNodeUUID);
+    }
+
+    @Test
+    public void shouldRetrieveInternationalizedAndNonInternationalizedPropertiesPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        properties(names: [\"jcr:uuid\", \"jcr:title\"] language: \"en\") {"
+                                       + "            name"
+                                       + "            type"
+                                       + "            internationalized"
+                                       + "            language"
+                                       + "            value"
+                                       + "            values"
+                                       + "            parentNode {"
+                                       + "                path"
+                                       + "            }"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray properties = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("properties");
+        Map<String, JSONObject> propertyByName = toPropertyByNameMap(properties);
+
+        Assert.assertEquals(2, propertyByName.size());
+        validateSingleValuedProperty(propertyByName.get("jcr:uuid"), "jcr:uuid", GqlJcrPropertyType.STRING, false, JSONObject.NULL, testedNodeUUID);
+        validateSingleValuedProperty(propertyByName.get("jcr:title"), "jcr:title", GqlJcrPropertyType.STRING, true, "en", testedNodeTitleEN);
+    }
+
+    @Test
+    public void shouldRetrieveAllPropertiesPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        properties(language: \"fr\") {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray properties = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("properties");
+        Map<String, JSONObject> propertyByName = toPropertyByNameMap(properties);
+
+        Assert.assertEquals(15, propertyByName.size());
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("j:liveProperties"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("j:nodename"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("j:originWS"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:baseVersion"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:created"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:createdBy"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:isCheckedOut"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:lastModified"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:lastModifiedBy"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:mixinTypes"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:predecessors"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:primaryType"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:uuid"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:versionHistory"));
+        Assert.assertNotEquals(JSONObject.NULL, propertyByName.get("jcr:title"));
+    }
+
+    private static Map<String, JSONObject> toPropertyByNameMap(JSONArray properties) throws JSONException {
+        HashMap<String, JSONObject> propertyByName = new HashMap<>(properties.length());
+        for (int i = 0; i < properties.length(); i++) {
+            JSONObject property = properties.getJSONObject(i);
+            propertyByName.put(property.getString("name"), property);
+        }
+        return propertyByName;
     }
 
     private static void validateSingleValuedProperty(JSONObject property, boolean expectedInternationalized, Object expectedLanguage, String expectedValue) throws JSONException {
@@ -234,6 +323,13 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Assert.assertEquals(expectedLanguage, property.get("language"));
         Assert.assertEquals(expectedValue, property.getString("value"));
         Assert.assertEquals(JSONObject.NULL, property.get("values"));
+    }
+
+    private static void validateSingleValuedProperty(JSONObject property, String expectedName, GqlJcrPropertyType expectedType, boolean expectedInternationalized, Object expectedLanguage, String expectedValue) throws JSONException {
+        Assert.assertEquals(expectedName, property.getString("name"));
+        Assert.assertEquals(expectedType.name(), property.getString("type"));
+        Assert.assertEquals("/testList", property.getJSONObject("parentNode").getString("path"));
+        validateSingleValuedProperty(property, expectedInternationalized, expectedLanguage, expectedValue);
     }
 
     private JSONObject executeQuery(String query) throws JSONException {
