@@ -33,8 +33,4 @@ public class JCRDataFetchingExceptionHandler implements DataFetcherExceptionHand
         log.warn(error.getMessage(), exception);
     }
 
-    public class ValidationError {
-
-    }
-
 }
