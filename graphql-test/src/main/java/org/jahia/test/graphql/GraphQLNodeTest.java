@@ -57,6 +57,10 @@ public class GraphQLNodeTest extends JahiaTestCase {
     private static String subNodeUuid1;
     private static String subNodeUuid2;
     private static String subNodeUuid3;
+    private static String subnodeTitleFr1 = "text FR - subList1";
+    private static String subnodeTitleEn1 = "text EN - subList1";
+    private static String subnodeTitleFr2 = "text FR - subList2";
+    private static String subnodeTitleEn2 = "text EN - subList2";
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
@@ -79,12 +83,12 @@ public class GraphQLNodeTest extends JahiaTestCase {
 
                     JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
                     subNode1.addMixin("jmix:liveProperties");
-                    subNode1.setProperty("jcr:title", nodeTitleEn + " - subList1");
+                    subNode1.setProperty("jcr:title", subnodeTitleEn1);
                     subNode1.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
                     subNodeUuid1 = subNode1.getIdentifier();
 
                     JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
-                    subNode2.setProperty("jcr:title", nodeTitleEn + " - subList2");
+                    subNode2.setProperty("jcr:title", subnodeTitleEn2);
                     subNodeUuid2 = subNode2.getIdentifier();
 
                     JCRNodeWrapper subNode3 = node.addNode("testSubList3", "jnt:contentList");
@@ -98,8 +102,8 @@ public class GraphQLNodeTest extends JahiaTestCase {
                 session -> {
                     JCRNodeWrapper node = session.getNode("/testList");
                     node.setProperty("jcr:title", nodeTitleFr);
-                    node.getNode("testSubList1").setProperty("jcr:title", nodeTitleFr + " - subList1");
-                    node.getNode("testSubList2").setProperty("jcr:title", nodeTitleFr + " - subList2");
+                    node.getNode("testSubList1").setProperty("jcr:title", subnodeTitleFr1);
+                    node.getNode("testSubList2").setProperty("jcr:title", subnodeTitleFr2);
                     session.save();
                     return null;
                 }
@@ -593,7 +597,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONObject result = executeQuery("{"
                                        + "    nodeByPath(path: \"/testList\") {"
                                        + "        children(propertiesFilter: {filters: ["
-                                       + "            {property: \"jcr:title\" value: \"" + nodeTitleEn + " - subList1\"}"
+                                       + "            {property: \"jcr:title\" value: \"" + subnodeTitleEn1 + "\"}"
                                        + "        ]}) {"
                                        + "            name"
                                        + "		  }"
@@ -611,7 +615,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONObject result = executeQuery("{"
                                        + "    nodeByPath(path: \"/testList\") {"
                                        + "        children(propertiesFilter: {filters: ["
-                                       + "            {property: \"jcr:title\" value: \"" + nodeTitleEn + " - subList1\" language: \"en\"}"
+                                       + "            {property: \"jcr:title\" value: \"" + subnodeTitleEn1 + "\" language: \"en\"}"
                                        + "        ]}) {"
                                        + "            name"
                                        + "		  }"
@@ -672,7 +676,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONObject result = executeQuery("{"
                                        + "    nodeByPath(path: \"/testList\") {"
                                        + "        children(propertiesFilter: {filters: ["
-                                       + "            {property: \"jcr:title\" value: \"" + nodeTitleEn + " - subList1\" evaluation: DIFFERENT}"
+                                       + "            {property: \"jcr:title\" value: \"" + subnodeTitleEn1 + "\" evaluation: DIFFERENT}"
                                        + "        ]}) {"
                                        + "            name"
                                        + "		  }"
@@ -694,7 +698,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONObject result = executeQuery("{"
                                        + "    nodeByPath(path: \"/testList\") {"
                                        + "        children(propertiesFilter: {filters: ["
-                                       + "            {property: \"jcr:title\" value: \"" + nodeTitleEn + " - subList1\" evaluation: DIFFERENT language: \"en\"}"
+                                       + "            {property: \"jcr:title\" value: \"" + subnodeTitleEn1 + "\" evaluation: DIFFERENT language: \"en\"}"
                                        + "        ]}) {"
                                        + "            name"
                                        + "		  }"
@@ -707,6 +711,71 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Assert.assertEquals(4, childByName.size());
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByAllPropertyValues() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {filters: ["
+                                       + "            {property: \"jcr:primaryType\" value: \"jnt:contentList\"}"
+                                       + "            {property: \"jcr:title\" value: \"" + subnodeTitleEn2 + "\" language: \"en\"}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(1, childByName.size());
+        validateNode(childByName.get("testSubList2"), "testSubList2");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByAnyPropertyValue() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children(propertiesFilter: {multi: ANY filters: ["
+                                       + "            {property: \"jcr:primaryType\" value: \"jnt:contentList\"}"
+                                       + "            {property: \"jcr:title\" value: \"" + subnodeTitleEn2 + "\" language: \"en\"}"
+                                       + "        ]}) {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(3, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
+        validateNode(childByName.get("testSubList2"), "testSubList2");
+        validateNode(childByName.get("testSubList3"), "testSubList3");
+    }
+
+    @Test
+    public void shouldRetrieveChildNodesByNameTypeAndPropertyValue() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        children("
+                                       + "            names: [\"testSubList1\", \"testSubList2\", \"testSubList3\"]"
+                                       + "            typesFilter: {types: [\"jmix:liveProperties\"]}"
+                                       + "            propertiesFilter: {filters: ["
+                                       + "                {property: \"jcr:title\" value: \"" + subnodeTitleFr1 + "\" language: \"fr\"}"
+                                       + "            ]})"
+                                       + "        {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        Map<String, JSONObject> childByName = toItemByNameMap(children);
+
+        Assert.assertEquals(1, childByName.size());
+        validateNode(childByName.get("testSubList1"), "testSubList1");
     }
 
     private static Map<String, JSONObject> toItemByNameMap(JSONArray items) throws JSONException {
