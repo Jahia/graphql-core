@@ -274,7 +274,18 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLNonNull
     public List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") String upToPath) {
         List<GqlJcrNode> ancestors = new ArrayList<GqlJcrNode>();
-        String upToPathSlash = upToPath + "/";
+
+        String upToPathSlash;
+        if (upToPath != null) {
+            upToPathSlash = upToPath.endsWith("/") ? upToPath : upToPath + "/";
+        } else {
+            upToPathSlash = "/";
+        }
+
+        if (!node.getPath().startsWith(upToPathSlash)) {
+            throw new IllegalArgumentException("Invalid parameter [upToPath]: " + upToPathSlash);
+        }
+
         try {
             List<JCRItemWrapper> jcrAncestors = node.getAncestors();
             for (JCRItemWrapper ancestor : jcrAncestors) {
