@@ -755,6 +755,9 @@ public class GraphQLNodeTest extends JahiaTestCase {
         validateNode(childByName.get("testSubList3"), "testSubList3");
     }
 
+    // TODO: Add tests to verify that a validation exception is thrown in case null property value is passed in combination with EQUAL or DIFFERENT evaluation type.
+    // Note, currently exceptions handling/reporting is broken in the graphql-java causing StackOverflowError.
+
     @Test
     public void shouldRetrieveChildNodesByNameTypeAndPropertyValue() throws Exception {
 

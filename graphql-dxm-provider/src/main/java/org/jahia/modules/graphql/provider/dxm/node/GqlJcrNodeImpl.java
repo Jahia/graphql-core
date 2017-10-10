@@ -48,6 +48,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
             @Override
             public boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
+                if (propertyValue == null) {
+                    throw new GqlJcrWrongInputException("Property value is required for " + PropertyEvaluation.EQUAL + " evaluation");
+                }
                 return hasPropertyValue(node, language, propertyName, propertyValue);
             }
         });
@@ -56,6 +59,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
             @Override
             public boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
+                if (propertyValue == null) {
+                    throw new GqlJcrWrongInputException("Property value is required for " + PropertyEvaluation.DIFFERENT + " evaluation");
+                }
                 return !hasPropertyValue(node, language, propertyName, propertyValue);
             }
         });
