@@ -103,6 +103,20 @@ public interface GqlJcrNode {
                                  @GraphQLName("typesFilter") @GraphQLDescription("Filter of child nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
                                  @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter);
 
+
+    /**
+     * Get GraphQL representations of descendant nodes of the JCR node, according to filters specified. A descendant node must pass through all non-null filters in order to be included in the result.
+     *
+     * @param typesFilter Filter of descendant nodes by their types; null to avoid such filtering
+     * @param propertiesFilter Filter of descendant nodes by their property values; null to avoid such filtering
+     * @return GraphQL representations of the descendant nodes, according to parameters passed
+     */
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("GraphQL representations of the descendant nodes, according to parameters passed")
+    List<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
+                                    @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter);
+
     /**
      * Get GraphQL representations of the ancestor nodes of the JCR node.
      *

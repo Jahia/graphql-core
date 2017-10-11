@@ -195,14 +195,35 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                         @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter) {
         List<GqlJcrNode> children = new ArrayList<GqlJcrNode>();
         try {
-            Iterator<JCRNodeWrapper> nodes = IteratorUtils.filteredIterator(node.getNodes().iterator(), getChildNodesPredicate(names, typesFilter, propertiesFilter));
-            while (nodes.hasNext()) {
-                children.add(SpecializedTypesHandler.getNode(nodes.next()));
-            }
+            getDescendants(node, children, getChildNodesPredicate(names, typesFilter, propertiesFilter), false);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
         return children;
+    }
+
+    @Override
+    @GraphQLNonNull
+    public List<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") NodeTypesInput typesFilter,
+                                           @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter) {
+        List<GqlJcrNode> descendants = new ArrayList<GqlJcrNode>();
+        try {
+            getDescendants(node, descendants, getChildNodesPredicate(null, typesFilter, propertiesFilter), true);
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+        return descendants;
+    }
+
+    private void getDescendants(JCRNodeWrapper node, List<GqlJcrNode> nodes, Predicate<JCRNodeWrapper> predicate, boolean recurse) throws RepositoryException {
+        Iterator<JCRNodeWrapper> nodesIterator = IteratorUtils.filteredIterator(node.getNodes().iterator(), predicate);
+        while (nodesIterator.hasNext()) {
+            JCRNodeWrapper subNode = nodesIterator.next();
+            nodes.add(SpecializedTypesHandler.getNode(subNode));
+            if (recurse) {
+                getDescendants(subNode, nodes, predicate, true);
+            }
+        }
     }
 
     private Predicate<JCRNodeWrapper> getChildNodesPredicate(final Collection<String> names, final NodeTypesInput typesFilter, final NodePropertiesInput propertiesFilter) {
