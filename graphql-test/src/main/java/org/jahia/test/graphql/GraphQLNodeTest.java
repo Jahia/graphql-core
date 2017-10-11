@@ -196,6 +196,60 @@ public class GraphQLNodeTest extends JahiaTestCase {
     }
 
     @Test
+    public void shouldRetrieveNodesByPath() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  nodesByPath(paths: [\"/testList/testSubList2\", \"/testList/testSubList1\"]) {\n" +
+                "    name\n" +
+                "    path\n" +
+                "    uuid\n" +
+                "    parent {\n" +
+                "       path\n" +
+                "    }\n" +
+                "  }\n" +
+                "}");
+        JSONArray nodes = result.getJSONObject("data").getJSONArray("nodesByPath");
+        Map<String, JSONObject> nodesByName = toItemByKeyMap("name", nodes);
+
+        validateNode(nodesByName.get("testSubList2"), subNodeUuid2, "testSubList2","/testList/testSubList2", "/testList");
+        validateNode(nodesByName.get("testSubList1"), subNodeUuid1, "testSubList1","/testList/testSubList1", "/testList");
+    }
+
+    @Test
+    public void shouldNotRetrieveNodesByPathWhenAPathIsWrong() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  nodesByPath(paths: [\"/testList/testSubList2\", \"/testList/wrongPath\"]) {\n" +
+                "    name\n" +
+                "    path\n" +
+                "    uuid\n" +
+                "    parent {\n" +
+                "       path\n" +
+                "    }\n" +
+                "  }\n" +
+                "}");
+        JSONArray errors = result.getJSONArray("errors");
+        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.PathNotFoundException: /testList/wrongPath");
+    }
+
+    @Test
+    public void shouldNotRetrieveNodesByPathInLive() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  nodesByPath(paths: [\"/testList/testSubList2\", \"/testList/testSubList1\"], workspace: \"live\") {\n" +
+                "    name\n" +
+                "    path\n" +
+                "    uuid\n" +
+                "    parent {\n" +
+                "       path\n" +
+                "    }\n" +
+                "  }\n" +
+                "}");
+        JSONArray errors = result.getJSONArray("errors");
+        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.PathNotFoundException: /testList/testSubList2");
+    }
+
+    @Test
     public void shouldRetrieveNodeById() throws Exception {
 
         JSONObject result = executeQuery("{\n" +
@@ -234,6 +288,60 @@ public class GraphQLNodeTest extends JahiaTestCase {
                 "    name\n" +
                 "    path\n" +
                 "    uuid\n" +
+                "  }\n" +
+                "}");
+        JSONArray errors = result.getJSONArray("errors");
+        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.ItemNotFoundException: " + subNodeUuid2);
+    }
+
+    @Test
+    public void shouldRetrieveNodesById() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  nodesById(uuids: [\"" + subNodeUuid2 + "\", \"" + subNodeUuid1 + "\"]) {\n" +
+                "    name\n" +
+                "    path\n" +
+                "    uuid\n" +
+                "    parent {\n" +
+                "       path\n" +
+                "    }\n" +
+                "  }\n" +
+                "}");
+        JSONArray nodes = result.getJSONObject("data").getJSONArray("nodesById");
+        Map<String, JSONObject> nodesByName = toItemByKeyMap("name", nodes);
+
+        validateNode(nodesByName.get("testSubList2"), subNodeUuid2, "testSubList2","/testList/testSubList2", "/testList");
+        validateNode(nodesByName.get("testSubList1"), subNodeUuid1, "testSubList1","/testList/testSubList1", "/testList");
+    }
+
+    @Test
+    public void shouldNotRetrieveNodesByIdWhenAnIdIsWrong() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  nodesById(uuids: [\"" + subNodeUuid2 + "\", \"wrongId\"]) {\n" +
+                "    name\n" +
+                "    path\n" +
+                "    uuid\n" +
+                "    parent {\n" +
+                "       path\n" +
+                "    }\n" +
+                "  }\n" +
+                "}");
+        JSONArray errors = result.getJSONArray("errors");
+        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.ItemNotFoundException: wrongId");
+    }
+
+    @Test
+    public void shouldNotRetrieveNodesByIdInLive() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  nodesById(uuids: [\"" + subNodeUuid2 + "\", \"" + subNodeUuid1 + "\"], workspace: \"live\") {\n" +
+                "    name\n" +
+                "    path\n" +
+                "    uuid\n" +
+                "    parent {\n" +
+                "       path\n" +
+                "    }\n" +
                 "  }\n" +
                 "}");
         JSONArray errors = result.getJSONArray("errors");

@@ -54,7 +54,7 @@ public class NodeQueryExtensions {
             }
             return nodes;
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
     }
 
@@ -68,7 +68,7 @@ public class NodeQueryExtensions {
             }
             return nodes;
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
     }
 
