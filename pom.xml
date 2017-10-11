@@ -47,7 +47,7 @@
     <description>This is the root project for the DX GraphQL Core integration project</description>
 
     <properties>
-        <graphql-java.version>4.2</graphql-java.version>
+        <graphql-java.version>4.3-SNAPSHOT</graphql-java.version>
         <graphql-java-annotations.version>4.0.0-jahia1-SNAPSHOT</graphql-java-annotations.version>
         <graphql-java-servlet.version>4.4.0-jahia1-SNAPSHOT</graphql-java-servlet.version>
     </properties>
