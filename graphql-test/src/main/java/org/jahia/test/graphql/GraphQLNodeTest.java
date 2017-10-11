@@ -151,6 +151,96 @@ public class GraphQLNodeTest extends JahiaTestCase {
     }
 
     @Test
+    public void shouldRetrieveNodeByPath() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  nodeByPath(path: \"/testList/testSubList2\") {\n" +
+                "    name\n" +
+                "    path\n" +
+                "    uuid\n" +
+                "  }\n" +
+                "}");
+        JSONObject nodeByPath = result.getJSONObject("data").getJSONObject("nodeByPath");
+
+        Assert.assertEquals("/testList/testSubList2", nodeByPath.getString("path"));
+        Assert.assertEquals("testSubList2", nodeByPath.getString("name"));
+        Assert.assertEquals(subNodeUuid2, nodeByPath.getString("uuid"));
+    }
+
+    @Test
+    public void shouldNotRetrieveNodeByPathWhenPathIsWrong() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  nodeByPath(path: \"/testList/wrongPath\") {\n" +
+                "    name\n" +
+                "    path\n" +
+                "    uuid\n" +
+                "  }\n" +
+                "}");
+        JSONArray errors = result.getJSONArray("errors");
+        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.PathNotFoundException: /testList/wrongPath");
+    }
+
+    @Test
+    public void shouldNotRetrieveNodeByPathInLive() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  nodeByPath(path: \"/testList/testSubList2\", workspace: \"live\") {\n" +
+                "    name\n" +
+                "    path\n" +
+                "    uuid\n" +
+                "  }\n" +
+                "}");
+        JSONArray errors = result.getJSONArray("errors");
+        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.PathNotFoundException: /testList/testSubList2");
+    }
+
+    @Test
+    public void shouldRetrieveNodeById() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  nodeById(uuid: \"" + subNodeUuid2 + "\") {\n" +
+                "    name\n" +
+                "    path\n" +
+                "    uuid\n" +
+                "  }\n" +
+                "}");
+        JSONObject nodeByPath = result.getJSONObject("data").getJSONObject("nodeById");
+
+        Assert.assertEquals("/testList/testSubList2", nodeByPath.getString("path"));
+        Assert.assertEquals("testSubList2", nodeByPath.getString("name"));
+        Assert.assertEquals(subNodeUuid2, nodeByPath.getString("uuid"));
+    }
+
+    @Test
+    public void shouldNotRetrieveNodeByIdWhenWhenIdIsWrong() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  nodeById(uuid: \"badId\") {\n" +
+                "    name\n" +
+                "    path\n" +
+                "    uuid\n" +
+                "  }\n" +
+                "}");
+        JSONArray errors = result.getJSONArray("errors");
+        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.ItemNotFoundException: badId");
+    }
+
+    @Test
+    public void shouldNotRetrieveNodeByIdInLive() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  nodeById(uuid: \"" + subNodeUuid2 + "\", workspace: \"live\") {\n" +
+                "    name\n" +
+                "    path\n" +
+                "    uuid\n" +
+                "  }\n" +
+                "}");
+        JSONArray errors = result.getJSONArray("errors");
+        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.ItemNotFoundException: " + subNodeUuid2);
+    }
+
+    @Test
     public void shouldRetrievePropertyWithBasicFileds() throws Exception {
 
         JSONObject result = executeQuery("{"
@@ -552,7 +642,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         // Two sub-list nodes, plus two translation nodes.
-        Assert.assertEquals(4, childByName.size());
+        Assert.assertEquals(5, childByName.size());
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
     }
@@ -572,7 +662,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
-        Assert.assertEquals(3, childByName.size());
+        Assert.assertEquals(4, childByName.size());
         validateNode(childByName.get("testSubList1"), "testSubList1");
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
@@ -593,7 +683,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
-        Assert.assertEquals(1, childByName.size());
+        Assert.assertEquals(2, childByName.size());
         validateNode(childByName.get("testSubList3"), "testSubList3");
     }
 
@@ -688,7 +778,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         // Two sub-list nodes, plus two translation nodes.
-        Assert.assertEquals(4, childByName.size());
+        Assert.assertEquals(5, childByName.size());
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
     }
@@ -709,7 +799,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         // Two sub-list nodes, plus two translation nodes.
-        Assert.assertEquals(4, childByName.size());
+        Assert.assertEquals(5, childByName.size());
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
     }
@@ -730,7 +820,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         // Three sub-list nodes, plus two translation nodes.
-        Assert.assertEquals(5, childByName.size());
+        Assert.assertEquals(6, childByName.size());
         validateNode(childByName.get("testSubList1"), "testSubList1");
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
@@ -752,7 +842,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         // Two sub-list nodes, plus two translation nodes.
-        Assert.assertEquals(4, childByName.size());
+        Assert.assertEquals(5, childByName.size());
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
     }
@@ -793,7 +883,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
-        Assert.assertEquals(3, childByName.size());
+        Assert.assertEquals(4, childByName.size());
         validateNode(childByName.get("testSubList1"), "testSubList1");
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
@@ -808,7 +898,6 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONObject result = executeQuery("{"
                                        + "    nodeByPath(path: \"/testList\") {"
                                        + "        children("
-                                       + "            names: [\"testSubList1\", \"testSubList2\", \"testSubList3\"]"
                                        + "            typesFilter: {types: [\"jmix:liveProperties\"]}"
                                        + "            propertiesFilter: {filters: ["
                                        + "                {property: \"jcr:title\" value: \"" + subnodeTitleFr1 + "\" language: \"fr\"}"

@@ -1,7 +1,9 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.ErrorType;
 import graphql.annotations.*;
 import graphql.servlet.GraphQLQuery;
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -24,21 +26,21 @@ public class NodeQueryExtensions {
 
     @GraphQLField
     public static GqlJcrNode getNodeById(@GraphQLNonNull @GraphQLName("uuid") String uuid,
-                                               @GraphQLName("workspace") String workspace) {
+                                               @GraphQLName("workspace") String workspace) throws BaseGqlClientException {
         try {
             return SpecializedTypesHandler.getNode(JCRSessionFactory.getInstance().getCurrentUserSession(workspace).getNodeByIdentifier(uuid));
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
     }
 
     @GraphQLField
     public static GqlJcrNode getNodeByPath(@GraphQLNonNull @GraphQLName("path") String path,
-                                                 @GraphQLName("workspace") String workspace) {
+                                                 @GraphQLName("workspace") String workspace) throws BaseGqlClientException {
         try {
             return SpecializedTypesHandler.getNode(JCRSessionFactory.getInstance().getCurrentUserSession(workspace).getNode(path));
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
     }
 
