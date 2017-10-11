@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
 
 /**
  * Custom DataFetchingExceptionHandler
@@ -28,9 +29,13 @@ public class JCRDataFetchingExceptionHandler implements DataFetcherExceptionHand
         SourceLocation sourceLocation = handlerParameters.getField().getSourceLocation();
         ExecutionPath path = handlerParameters.getPath();
 
-        ExceptionWhileDataFetching error = new ExceptionWhileDataFetching(path, exception, sourceLocation);
-        handlerParameters.getExecutionContext().addError(error, handlerParameters.getPath());
-        log.warn(error.getMessage(), exception);
+        if (exception instanceof BaseGqlClientException) {
+            handlerParameters.getExecutionContext().addError(new SimpleGraphQLError(exception.getMessage(), path.toList(), Collections.singletonList(sourceLocation), ((BaseGqlClientException) exception).getErrorType()), path);
+        } else {
+            ExceptionWhileDataFetching error = new ExceptionWhileDataFetching(path, exception, sourceLocation);
+            handlerParameters.getExecutionContext().addError(error, handlerParameters.getPath());
+            log.warn(error.getMessage(), exception);
+        }
     }
 
 }
