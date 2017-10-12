@@ -1,5 +1,6 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.annotations.GraphQLConnection;
 import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.collections4.functors.AllPredicate;
@@ -328,6 +329,26 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    @GraphQLConnection
+    @GraphQLNonNull
+    public List<GqlJcrProperty> getReferences() {
+        List<GqlJcrProperty> references = new ArrayList<GqlJcrProperty>();
+        try {
+            for (PropertyIterator it = node.getReferences(); it.hasNext(); ) {
+                JCRPropertyWrapper reference = (JCRPropertyWrapper) it.nextProperty();
+                references.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) reference.getParent()).getProperty(reference.getName(), reference.getLocale()));
+            }
+            for (PropertyIterator it = node.getWeakReferences(); it.hasNext(); ) {
+                JCRPropertyWrapper reference = (JCRPropertyWrapper) it.nextProperty();
+                references.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) reference.getParent()).getProperty(reference.getName(), reference.getLocale()));
+            }
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+        return references;
     }
 
     @Override

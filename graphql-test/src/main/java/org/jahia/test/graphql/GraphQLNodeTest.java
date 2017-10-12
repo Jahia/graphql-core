@@ -25,6 +25,7 @@ package org.jahia.test.graphql;
 
 import graphql.servlet.OsgiGraphQLServlet;
 
+import org.drools.core.command.assertion.AssertEquals;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrPropertyType;
 import org.jahia.osgi.BundleUtils;
@@ -100,6 +101,15 @@ public class GraphQLNodeTest extends JahiaTestCase {
                     subNode4.addNode("testSubList4_1", "jnt:contentList");
                     subNode4.addNode("testSubList4_2", "jnt:contentList");
                     subNode4.addNode("testSubList4_3", "jnt:contentList");
+
+                    // Add references to subNode4
+                    JCRNodeWrapper ref1 = node.addNode("reference1", "jnt:contentReference");
+                    ref1.setProperty("j:node", subNode1);
+                    JCRNodeWrapper ref2 = node.addNode("reference2", "jnt:contentReference");
+                    ref2.setProperty("j:node", subNode1);
+                    JCRNodeWrapper ref3 = node.addNode("reference3", "jnt:contentReference");
+                    ref3.setProperty("j:node", subNode1);
+
 
                     session.save();
                     return null;
@@ -558,7 +568,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         // Three sub-list nodes plus two translation nodes.
-        Assert.assertEquals(6, childByName.size());
+        Assert.assertEquals(9, childByName.size());
         validateNode(childByName.get("testSubList1"), subNodeUuid1, "testSubList1", "/testList/testSubList1", "/testList");
         validateNode(childByName.get("testSubList2"), subNodeUuid2, "testSubList2", "/testList/testSubList2", "/testList");
         validateNode(childByName.get("testSubList3"), subNodeUuid3, "testSubList3", "/testList/testSubList3", "/testList");
@@ -584,7 +594,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> descendantsByPath = toItemByKeyMap("path", descendants);
 
         // Three sub-list nodes plus two translation nodes.
-        Assert.assertEquals(13, descendantsByPath.size());
+        Assert.assertEquals(16, descendantsByPath.size());
         Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList2/j:translation_en"));
         Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList2/j:translation_fr"));
         Assert.assertTrue(descendantsByPath.containsKey("/testList/j:translation_fr"));
@@ -750,7 +760,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         // Two sub-list nodes, plus two translation nodes.
-        Assert.assertEquals(5, childByName.size());
+        Assert.assertEquals(8, childByName.size());
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
     }
@@ -770,7 +780,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
-        Assert.assertEquals(4, childByName.size());
+        Assert.assertEquals(7, childByName.size());
         validateNode(childByName.get("testSubList1"), "testSubList1");
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
@@ -791,7 +801,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
-        Assert.assertEquals(2, childByName.size());
+        Assert.assertEquals(5, childByName.size());
         validateNode(childByName.get("testSubList3"), "testSubList3");
     }
 
@@ -886,7 +896,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         // Two sub-list nodes, plus two translation nodes.
-        Assert.assertEquals(5, childByName.size());
+        Assert.assertEquals(8, childByName.size());
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
     }
@@ -907,7 +917,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         // Two sub-list nodes, plus two translation nodes.
-        Assert.assertEquals(5, childByName.size());
+        Assert.assertEquals(8, childByName.size());
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
     }
@@ -928,7 +938,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         // Three sub-list nodes, plus two translation nodes.
-        Assert.assertEquals(6, childByName.size());
+        Assert.assertEquals(9, childByName.size());
         validateNode(childByName.get("testSubList1"), "testSubList1");
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
@@ -950,7 +960,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         // Two sub-list nodes, plus two translation nodes.
-        Assert.assertEquals(5, childByName.size());
+        Assert.assertEquals(8, childByName.size());
         validateNode(childByName.get("testSubList2"), "testSubList2");
         validateNode(childByName.get("testSubList3"), "testSubList3");
     }
@@ -1053,6 +1063,27 @@ public class GraphQLNodeTest extends JahiaTestCase {
         validateNode(ancestorsByName.get(""), "");
         validateNode(ancestorsByName.get("testList"), "testList");
         validateNode(ancestorsByName.get("testSubList4"), "testSubList4");
+    }
+
+    @Test
+    public void shouldRetrieveReferences() throws Exception {
+
+        JSONObject result = executeQuery("{ \n" +
+                "  nodeByPath(path: \"/testList/testSubList1\" ) {" +
+                "    references {" +
+                "     parentNode {" +
+                "        name" +
+                "      }" +
+                "    }" +
+                "  }" +
+                "}");
+        JSONArray referencesByName = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("references");
+        Map<String, JSONObject> referenceByName = toItemByKeyMap("parentNode", referencesByName);
+
+        Assert.assertEquals(3, referenceByName.size());
+        Assert.assertEquals(referenceByName.get("{\"name\":\"reference1\"}").getJSONObject("parentNode").getString("name"), "reference1");
+        Assert.assertEquals(referenceByName.get("{\"name\":\"reference2\"}").getJSONObject("parentNode").getString("name"), "reference2");
+        Assert.assertEquals(referenceByName.get("{\"name\":\"reference3\"}").getJSONObject("parentNode").getString("name"), "reference3");
     }
 
     @Test

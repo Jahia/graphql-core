@@ -137,6 +137,15 @@ public interface GqlJcrNode {
     GqlJcrSite getSite();
 
     /**
+     * @return GraphQL representation of the reference properties that target the JCR Node
+     */
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLConnection
+    @GraphQLDescription("GraphQL representation of the reference properties that target the current JCR Node")
+    List<GqlJcrProperty> getReferences();
+
+    /**
      * Get GraphQL representation of the JCR node as a mixin type it has.
      *
      * @param type The mixin type name
