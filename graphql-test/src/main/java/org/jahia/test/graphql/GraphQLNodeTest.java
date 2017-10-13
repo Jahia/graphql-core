@@ -578,12 +578,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
         JSONObject result = executeQuery("{"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        descendants {"
-                + "            uuid"
-                + "            name"
                 + "            path"
-                + "            parent {"
-                + "                path"
-                + "            }"
                 + "		  }"
                 + "    }"
                 + "}");
@@ -591,19 +586,13 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Map<String, JSONObject> descendantsByPath = toItemByKeyMap("path", descendants);
 
         Assert.assertEquals(16, descendantsByPath.size());
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList2/j:translation_en"));
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList2/j:translation_fr"));
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/j:translation_fr"));
         Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4"));
         Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4/testSubList4_1"));
         Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4/testSubList4_2"));
         Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4/testSubList4_3"));
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList1/j:translation_en"));
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/j:translation_en"));
         Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList2"));
         Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList3"));
         Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList1"));
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList1/j:translation_fr"));
     }
 
     @Test

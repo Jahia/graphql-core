@@ -114,7 +114,7 @@ public interface GqlJcrNode {
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the descendant nodes, according to parameters passed")
-    List<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
+    Collection<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
                                     @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter);
 
     /**

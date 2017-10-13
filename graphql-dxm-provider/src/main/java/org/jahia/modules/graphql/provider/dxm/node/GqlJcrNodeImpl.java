@@ -154,7 +154,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLNonNull
     public Collection<GqlJcrProperty> getProperties(@GraphQLName("names") Collection<String> names,
                                                     @GraphQLName("language") String language) {
-        List<GqlJcrProperty> properties = new ArrayList<GqlJcrProperty>();
+        List<GqlJcrProperty> properties = new LinkedList<GqlJcrProperty>();
         try {
             JCRNodeWrapper node = getNodeInLanguage(this.node, language);
             if (names != null) {
@@ -194,9 +194,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     public List<GqlJcrNode> getChildren(@GraphQLName("names") Collection<String> names,
                                         @GraphQLName("typesFilter") NodeTypesInput typesFilter,
                                         @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter) {
-        List<GqlJcrNode> children = new ArrayList<GqlJcrNode>();
+        List<GqlJcrNode> children = new LinkedList<GqlJcrNode>();
         try {
-            getDescendants(node, children, getChildNodesPredicate(names, typesFilter, propertiesFilter), false);
+            collectDescendants(node, getNodesPredicate(names, typesFilter, propertiesFilter), false, children);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -205,29 +205,29 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     @Override
     @GraphQLNonNull
-    public List<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") NodeTypesInput typesFilter,
+    public Collection<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") NodeTypesInput typesFilter,
                                            @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter) {
-        List<GqlJcrNode> descendants = new ArrayList<GqlJcrNode>();
+        List<GqlJcrNode> descendants = new LinkedList<GqlJcrNode>();
         try {
-            getDescendants(node, descendants, getChildNodesPredicate(null, typesFilter, propertiesFilter), true);
+            collectDescendants(node, getNodesPredicate(null, typesFilter, propertiesFilter), true, descendants);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
         return descendants;
     }
 
-    private void getDescendants(JCRNodeWrapper node, List<GqlJcrNode> nodes, Predicate<JCRNodeWrapper> predicate, boolean recurse) throws RepositoryException {
+    private void collectDescendants(JCRNodeWrapper node, Predicate<JCRNodeWrapper> predicate, boolean recurse, Collection<GqlJcrNode> descendants) throws RepositoryException {
         Iterator<JCRNodeWrapper> nodesIterator = IteratorUtils.filteredIterator(node.getNodes().iterator(), predicate);
         while (nodesIterator.hasNext()) {
-            JCRNodeWrapper subNode = nodesIterator.next();
-            nodes.add(SpecializedTypesHandler.getNode(subNode));
+            JCRNodeWrapper child = nodesIterator.next();
+            descendants.add(SpecializedTypesHandler.getNode(child));
             if (recurse) {
-                getDescendants(subNode, nodes, predicate, true);
+                collectDescendants(child, predicate, true, descendants);
             }
         }
     }
 
-    private Predicate<JCRNodeWrapper> getChildNodesPredicate(final Collection<String> names, final NodeTypesInput typesFilter, final NodePropertiesInput propertiesFilter) {
+    private Predicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final NodeTypesInput typesFilter, final NodePropertiesInput propertiesFilter) {
 
         Predicate<JCRNodeWrapper> namesPredicate;
         if (names == null) {
@@ -236,8 +236,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             namesPredicate = new Predicate<JCRNodeWrapper>() {
 
                 @Override
-                public boolean evaluate(JCRNodeWrapper child) {
-                    return names.contains(child.getName());
+                public boolean evaluate(JCRNodeWrapper node) {
+                    return names.contains(node.getName());
                 }
             };
         }
@@ -251,9 +251,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                 typePredicates.add(new Predicate<JCRNodeWrapper>() {
 
                     @Override
-                    public boolean evaluate(JCRNodeWrapper child) {
+                    public boolean evaluate(JCRNodeWrapper node) {
                         try {
-                            return child.isNodeType(typeFilter);
+                            return node.isNodeType(typeFilter);
                         } catch (RepositoryException e) {
                             throw new RuntimeException(e);
                         }
@@ -280,8 +280,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                 propertyPredicates.add(new Predicate<JCRNodeWrapper>() {
 
                     @Override
-                    public boolean evaluate(JCRNodeWrapper child) {
-                        return evaluationAlgorithm.evaluate(child, propertyFilter.getLanguage(), propertyFilter.getPropertyName(), propertyFilter.getPropertyValue());
+                    public boolean evaluate(JCRNodeWrapper node) {
+                        return evaluationAlgorithm.evaluate(node, propertyFilter.getLanguage(), propertyFilter.getPropertyName(), propertyFilter.getPropertyValue());
                     }
                 });
             }
@@ -295,7 +295,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @Override
     @GraphQLNonNull
     public List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") String upToPath) {
-        List<GqlJcrNode> ancestors = new ArrayList<GqlJcrNode>();
+        List<GqlJcrNode> ancestors = new LinkedList<GqlJcrNode>();
 
         String upToPathSlash;
         if (upToPath != null) {
