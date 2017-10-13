@@ -1036,12 +1036,26 @@ public class GraphQLNodeTest extends JahiaTestCase {
                 + "    }"
                 + "}");
         JSONArray ancestors = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("ancestors");
-        Map<String, JSONObject> ancestorsByName = toItemByKeyMap("name", ancestors);
 
-        Assert.assertEquals(3, ancestorsByName.size());
-        validateNode(ancestorsByName.get(""), "");
-        validateNode(ancestorsByName.get("testList"), "testList");
-        validateNode(ancestorsByName.get("testSubList4"), "testSubList4");
+        Assert.assertEquals(3, ancestors.length());
+        validateNode(ancestors.getJSONObject(0), "");
+        validateNode(ancestors.getJSONObject(1), "testList");
+        validateNode(ancestors.getJSONObject(2), "testSubList4");
+    }
+
+    @Test
+    public void shouldNotRetrieveAncestorsWhenUpToPathIsNotValid() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    nodeByPath(path: \"/\") {"
+                + "        ancestors(upToPath: \"/\") {"
+                + "            name"
+                + "		  }"
+                + "    }"
+                + "}");
+
+        JSONArray errors = result.getJSONArray("errors");
+        Assert.assertEquals(errors.getJSONObject(0).getString("message"),"Invalid parameter [upToPath]: /");
     }
 
     @Test
@@ -1076,11 +1090,10 @@ public class GraphQLNodeTest extends JahiaTestCase {
                 + "    }"
                 + "}");
         JSONArray ancestors = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("ancestors");
-        Map<String, JSONObject> ancestorsByName = toItemByKeyMap("name", ancestors);
 
-        Assert.assertEquals(2, ancestorsByName.size());
-        validateNode(ancestorsByName.get("testList"), "testList");
-        validateNode(ancestorsByName.get("testSubList4"), "testSubList4");
+        Assert.assertEquals(2, ancestors.length());
+        validateNode(ancestors.getJSONObject(0), "testList");
+        validateNode(ancestors.getJSONObject(1), "testSubList4");
     }
 
     @Test

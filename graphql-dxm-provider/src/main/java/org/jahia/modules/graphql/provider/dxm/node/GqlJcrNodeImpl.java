@@ -304,8 +304,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             upToPathSlash = "/";
         }
 
-        if (!node.getPath().startsWith(upToPathSlash)) {
-            throw new IllegalArgumentException("Invalid parameter [upToPath]: " + upToPathSlash);
+        if (node.getPath().equals(upToPath) || !node.getPath().startsWith(upToPathSlash)) {
+            throw new GqlJcrWrongInputException("Invalid parameter [upToPath]: " + upToPathSlash);
         }
 
         try {
