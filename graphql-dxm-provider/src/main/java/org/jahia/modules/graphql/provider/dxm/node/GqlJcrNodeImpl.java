@@ -310,9 +310,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
         try {
             List<JCRItemWrapper> jcrAncestors = node.getAncestors();
-            for (JCRItemWrapper ancestor : jcrAncestors) {
-                if (upToPath == null || ancestor.getPath().equals(upToPath) || ancestor.getPath().startsWith(upToPathSlash)) {
-                    ancestors.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) ancestor));
+            for (JCRItemWrapper jcrAncestor : jcrAncestors) {
+                if (upToPath == null || jcrAncestor.getPath().equals(upToPath) || jcrAncestor.getPath().startsWith(upToPathSlash)) {
+                    ancestors.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) jcrAncestor));
                 }
             }
         } catch (RepositoryException e) {
