@@ -61,7 +61,7 @@ public class SpecializedTypesHandler {
 
     public void initializeTypes() {
         knownTypes = new HashMap<>();
-        GraphQLInterfaceType interfaceType = (GraphQLInterfaceType) graphQLAnnotations.getInterface(GqlJcrNode.class);
+        GraphQLInterfaceType interfaceType = (GraphQLInterfaceType) graphQLAnnotations.getOutputType(GqlJcrNode.class);
         for (String typeName : specializedTypes) {
             try {
                 final ExtendedNodeType type = NodeTypeRegistry.getInstance().getNodeType(typeName);

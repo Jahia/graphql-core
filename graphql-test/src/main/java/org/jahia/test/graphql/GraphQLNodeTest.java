@@ -1103,8 +1103,32 @@ public class GraphQLNodeTest extends JahiaTestCase {
         validateNode(ancestorsByName.get("testList"), "testList");
         validateNode(ancestorsByName.get("testSubList4"), "testSubList4");
     }
-    
-    
+
+    @Test
+    public void shouldRetrieveNodesUsingSQL2Query() throws Exception {
+        testQuery("select * from [jnt:contentList] where isdescendantnode('/testList')", "SQL2", 7);
+    }
+
+    @Test
+    public void shouldRetrieveNodesUsingXPATHQuery() throws Exception {
+        testQuery("/jcr:root/testList//element(*, jnt:contentList)", "XPATH", 13);
+    }
+
+    private void testQuery(String query, String language, long expectedNumber) throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    nodesByQuery(query: \"" + query + "\", queryLanguage: " + language + ") {"
+                + "        edges {"
+                + "            node {"
+                + "                name"
+                + "                path"
+                + "            }"
+                + "		  }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("nodesByQuery").getJSONArray("edges");
+        Assert.assertEquals(expectedNumber, nodes.length());
+    }
 
     private static Map<String, JSONObject> toItemByKeyMap(String key, JSONArray items) throws JSONException {
         HashMap<String, JSONObject> itemByName = new HashMap<>(items.length());

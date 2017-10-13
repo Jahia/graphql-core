@@ -80,6 +80,7 @@ public class NodeQueryExtensions {
     }
 
     @GraphQLField
+    @GraphQLConnection
     public static List<GqlJcrNode> getNodesByQuery(@GraphQLNonNull @GraphQLName("query") String query,
                                                           @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLName("queryLanguage") QueryLanguage queryLanguage,
                                                           @GraphQLName("workspace") String workspace) {
@@ -93,7 +94,7 @@ public class NodeQueryExtensions {
             }
             return nodes;
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
 
     }
