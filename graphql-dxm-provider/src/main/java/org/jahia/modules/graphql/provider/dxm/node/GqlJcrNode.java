@@ -137,11 +137,11 @@ public interface GqlJcrNode {
     GqlJcrSite getSite();
 
     /**
-     * @return GraphQL representation of the reference properties that target the JCR Node
+     * @return GraphQL representations of the reference properties that target the JCR Node
      */
     @GraphQLField
     @GraphQLNonNull
-    @GraphQLDescription("GraphQL representation of the reference properties that target the current JCR Node")
+    @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
     List<GqlJcrProperty> getReferences();
 
     /**

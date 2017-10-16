@@ -101,7 +101,6 @@ public class GraphQLNodeTest extends JahiaTestCase {
                     subNode4.addNode("testSubList4_2", "jnt:contentList");
                     subNode4.addNode("testSubList4_3", "jnt:contentList");
 
-                    // Add references to subNode4
                     JCRNodeWrapper ref1 = node.addNode("reference1", "jnt:contentReference");
                     ref1.setProperty("j:node", subNode1);
                     JCRNodeWrapper ref2 = node.addNode("reference2", "jnt:contentReference");
@@ -576,12 +575,12 @@ public class GraphQLNodeTest extends JahiaTestCase {
     public void shouldRetrieveAllDescendantNodes() throws Exception {
 
         JSONObject result = executeQuery("{"
-                + "    nodeByPath(path: \"/testList\") {"
-                + "        descendants {"
-                + "            path"
-                + "		  }"
-                + "    }"
-                + "}");
+                                       + "    nodeByPath(path: \"/testList\") {"
+                                       + "        descendants {"
+                                       + "            path"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
         JSONArray descendants = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("descendants");
         Map<String, JSONObject> descendantsByPath = toItemByKeyMap("path", descendants);
 
@@ -1015,12 +1014,12 @@ public class GraphQLNodeTest extends JahiaTestCase {
     public void shouldRetrieveParent() throws Exception {
 
         JSONObject result = executeQuery("{"
-                + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
-                + "        parent {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "}");
+                                       + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
+                                       + "        parent {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
         JSONObject parent = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("parent");
         validateNode(parent, "testSubList4");
     }
@@ -1029,12 +1028,12 @@ public class GraphQLNodeTest extends JahiaTestCase {
     public void shouldRetrieveAllAncestors() throws Exception {
 
         JSONObject result = executeQuery("{"
-                + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
-                + "        ancestors {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "}");
+                                       + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
+                                       + "        ancestors {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
         JSONArray ancestors = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("ancestors");
 
         Assert.assertEquals(3, ancestors.length());
@@ -1047,12 +1046,12 @@ public class GraphQLNodeTest extends JahiaTestCase {
     public void shouldRetrieveAncestorsUpToPath() throws Exception {
 
         JSONObject result = executeQuery("{"
-                + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
-                + "        ancestors(upToPath: \"/testList\") {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "}");
+                                       + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
+                                       + "        ancestors(upToPath: \"/testList\") {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
         JSONArray ancestors = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("ancestors");
 
         Assert.assertEquals(2, ancestors.length());
@@ -1064,12 +1063,12 @@ public class GraphQLNodeTest extends JahiaTestCase {
     public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsEmpty() throws Exception {
 
         JSONObject result = executeQuery("{"
-                + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
-                + "        ancestors(upToPath: \"\") {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "}");
+                                       + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
+                                       + "        ancestors(upToPath: \"\") {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
 
         JSONArray errors = result.getJSONArray("errors");
         Assert.assertEquals(1, errors.length());
@@ -1080,12 +1079,12 @@ public class GraphQLNodeTest extends JahiaTestCase {
     public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsNotAncestorPath() throws Exception {
 
         JSONObject result = executeQuery("{"
-                + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
-                + "        ancestors(upToPath: \"/nonExistingPath\") {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "}");
+                                       + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
+                                       + "        ancestors(upToPath: \"/nonExistingPath\") {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
 
         JSONArray errors = result.getJSONArray("errors");
         Assert.assertEquals(1, errors.length());
@@ -1096,12 +1095,12 @@ public class GraphQLNodeTest extends JahiaTestCase {
     public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsThisNodePath() throws Exception {
 
         JSONObject result = executeQuery("{"
-                + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
-                + "        ancestors(upToPath: \"/testList/testSubList4/testSubList4_1\") {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "}");
+                                       + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
+                                       + "        ancestors(upToPath: \"/testList/testSubList4/testSubList4_1\") {"
+                                       + "            name"
+                                       + "		  }"
+                                       + "    }"
+                                       + "}");
 
         JSONArray errors = result.getJSONArray("errors");
         Assert.assertEquals(1, errors.length());
@@ -1111,22 +1110,22 @@ public class GraphQLNodeTest extends JahiaTestCase {
     @Test
     public void shouldRetrieveReferences() throws Exception {
 
-        JSONObject result = executeQuery("{ \n" +
-                "  nodeByPath(path: \"/testList/testSubList1\" ) {" +
-                "    references {" +
-                "     parentNode {" +
-                "        name" +
-                "      }" +
-                "    }" +
-                "  }" +
-                "}");
-        JSONArray referencesByName = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("references");
-        Map<String, JSONObject> referenceByName = toItemByKeyMap("parentNode", referencesByName);
+        JSONObject result = executeQuery("{"
+                                       + "    nodeByPath(path: \"/testList/testSubList1\") {"
+                                       + "        references {"
+                                       + "            parentNode {"
+                                       + "                name"
+                                       + "            }"
+                                       + "        }"
+                                       + "    }"
+                                       + "}");
+        JSONArray references = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("references");
+        Map<String, JSONObject> referenceByNodeName = toItemByKeyMap("parentNode", references);
 
-        Assert.assertEquals(3, referenceByName.size());
-        Assert.assertEquals(referenceByName.get("{\"name\":\"reference1\"}").getJSONObject("parentNode").getString("name"), "reference1");
-        Assert.assertEquals(referenceByName.get("{\"name\":\"reference2\"}").getJSONObject("parentNode").getString("name"), "reference2");
-        Assert.assertEquals(referenceByName.get("{\"name\":\"reference3\"}").getJSONObject("parentNode").getString("name"), "reference3");
+        Assert.assertEquals(3, referenceByNodeName.size());
+        validateNode(referenceByNodeName.get("{\"name\":\"reference1\"}").getJSONObject("parentNode"), "reference1");
+        validateNode(referenceByNodeName.get("{\"name\":\"reference2\"}").getJSONObject("parentNode"), "reference2");
+        validateNode(referenceByNodeName.get("{\"name\":\"reference3\"}").getJSONObject("parentNode"), "reference3");
     }
 
     @Test
