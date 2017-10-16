@@ -339,7 +339,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLConnection
     @GraphQLNonNull
     public List<GqlJcrProperty> getReferences() {
-        List<GqlJcrProperty> references = new ArrayList<GqlJcrProperty>();
+        List<GqlJcrProperty> references = new LinkedList<GqlJcrProperty>();
         try {
             for (PropertyIterator it = node.getReferences(); it.hasNext(); ) {
                 JCRPropertyWrapper reference = (JCRPropertyWrapper) it.nextProperty();
