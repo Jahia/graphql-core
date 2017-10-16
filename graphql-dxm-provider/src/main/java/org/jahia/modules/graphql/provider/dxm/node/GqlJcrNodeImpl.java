@@ -295,23 +295,27 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @Override
     @GraphQLNonNull
     public List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") String upToPath) {
-        List<GqlJcrNode> ancestors = new LinkedList<GqlJcrNode>();
 
-        String upToPathSlash;
+        String upToPathNormalized;
         if (upToPath != null) {
-            upToPathSlash = upToPath.endsWith("/") ? upToPath : upToPath + "/";
+            if (upToPath.isEmpty()) {
+                throw new GqlJcrWrongInputException("'" + upToPath + "' is not a valid node path");
+            }
+            String nodePath = node.getPath();
+            String nodePathNormalized = normalizePath(nodePath);
+            upToPathNormalized = normalizePath(upToPath);
+            if (nodePathNormalized.equals(upToPathNormalized) || !nodePathNormalized.startsWith(upToPathNormalized)) {
+                throw new GqlJcrWrongInputException("'" + upToPath + "' does not reference an ancestor node of '" + nodePath + "'");
+            }
         } else {
-            upToPathSlash = "/";
+            upToPathNormalized = "/";
         }
 
-        if (node.getPath().equals(upToPath) || !node.getPath().startsWith(upToPathSlash)) {
-            throw new GqlJcrWrongInputException("Invalid parameter [upToPath]: " + upToPathSlash);
-        }
-
+        List<GqlJcrNode> ancestors = new LinkedList<GqlJcrNode>();
         try {
-            List<JCRItemWrapper> jcrAncestors = node.getAncestors();
-            for (JCRItemWrapper jcrAncestor : jcrAncestors) {
-                if (upToPath == null || jcrAncestor.getPath().equals(upToPath) || jcrAncestor.getPath().startsWith(upToPathSlash)) {
+            for (JCRItemWrapper jcrAncestor : node.getAncestors()) {
+                String ancestorPathNormalized = normalizePath(jcrAncestor.getPath());
+                if (ancestorPathNormalized.startsWith(upToPathNormalized)) {
                     ancestors.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) jcrAncestor));
                 }
             }
@@ -361,6 +365,10 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static String normalizePath(String path) {
+        return (path.endsWith("/") ? path : path + "/");
     }
 
     private static boolean hasProperty(JCRNodeWrapper node, String language, String propertyName) {

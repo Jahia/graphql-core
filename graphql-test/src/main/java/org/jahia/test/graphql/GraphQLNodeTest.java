@@ -1026,7 +1026,7 @@ public class GraphQLNodeTest extends JahiaTestCase {
     }
 
     @Test
-    public void shouldRetrieveAncestors() throws Exception {
+    public void shouldRetrieveAllAncestors() throws Exception {
 
         JSONObject result = executeQuery("{"
                 + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
@@ -1044,18 +1044,68 @@ public class GraphQLNodeTest extends JahiaTestCase {
     }
 
     @Test
-    public void shouldNotRetrieveAncestorsWhenUpToPathIsNotValid() throws Exception {
+    public void shouldRetrieveAncestorsUpToPath() throws Exception {
 
         JSONObject result = executeQuery("{"
-                + "    nodeByPath(path: \"/\") {"
-                + "        ancestors(upToPath: \"/\") {"
+                + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
+                + "        ancestors(upToPath: \"/testList\") {"
+                + "            name"
+                + "		  }"
+                + "    }"
+                + "}");
+        JSONArray ancestors = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("ancestors");
+
+        Assert.assertEquals(2, ancestors.length());
+        validateNode(ancestors.getJSONObject(0), "testList");
+        validateNode(ancestors.getJSONObject(1), "testSubList4");
+    }
+
+    @Test
+    public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsEmpty() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
+                + "        ancestors(upToPath: \"\") {"
                 + "            name"
                 + "		  }"
                 + "    }"
                 + "}");
 
         JSONArray errors = result.getJSONArray("errors");
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"),"Invalid parameter [upToPath]: /");
+        Assert.assertEquals(1, errors.length());
+        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "'' is not a valid node path");
+    }
+
+    @Test
+    public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsNotAncestorPath() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
+                + "        ancestors(upToPath: \"/nonExistingPath\") {"
+                + "            name"
+                + "		  }"
+                + "    }"
+                + "}");
+
+        JSONArray errors = result.getJSONArray("errors");
+        Assert.assertEquals(1, errors.length());
+        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "'/nonExistingPath' does not reference an ancestor node of '/testList/testSubList4/testSubList4_1'");
+    }
+
+    @Test
+    public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsThisNodePath() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
+                + "        ancestors(upToPath: \"/testList/testSubList4/testSubList4_1\") {"
+                + "            name"
+                + "		  }"
+                + "    }"
+                + "}");
+
+        JSONArray errors = result.getJSONArray("errors");
+        Assert.assertEquals(1, errors.length());
+        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "'/testList/testSubList4/testSubList4_1' does not reference an ancestor node of '/testList/testSubList4/testSubList4_1'");
     }
 
     @Test
@@ -1077,23 +1127,6 @@ public class GraphQLNodeTest extends JahiaTestCase {
         Assert.assertEquals(referenceByName.get("{\"name\":\"reference1\"}").getJSONObject("parentNode").getString("name"), "reference1");
         Assert.assertEquals(referenceByName.get("{\"name\":\"reference2\"}").getJSONObject("parentNode").getString("name"), "reference2");
         Assert.assertEquals(referenceByName.get("{\"name\":\"reference3\"}").getJSONObject("parentNode").getString("name"), "reference3");
-    }
-
-    @Test
-    public void shouldRetrieveAncestorsUpToPath() throws Exception {
-
-        JSONObject result = executeQuery("{"
-                + "    nodeByPath(path: \"/testList/testSubList4/testSubList4_1\") {"
-                + "        ancestors(upToPath: \"/testList\") {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "}");
-        JSONArray ancestors = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("ancestors");
-
-        Assert.assertEquals(2, ancestors.length());
-        validateNode(ancestors.getJSONObject(0), "testList");
-        validateNode(ancestors.getJSONObject(1), "testSubList4");
     }
 
     @Test
