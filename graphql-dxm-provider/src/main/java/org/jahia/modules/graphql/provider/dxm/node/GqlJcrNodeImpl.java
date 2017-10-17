@@ -16,6 +16,7 @@ import org.jahia.utils.LanguageCodeConverters;
 import graphql.annotations.GraphQLName;
 import graphql.annotations.GraphQLNonNull;
 
+import javax.jcr.Property;
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import java.util.*;
@@ -336,23 +337,24 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
-    @GraphQLConnection
     @GraphQLNonNull
-    public List<GqlJcrProperty> getReferences() {
+    public Collection<GqlJcrProperty> getReferences() {
         List<GqlJcrProperty> references = new LinkedList<GqlJcrProperty>();
         try {
             for (PropertyIterator it = node.getReferences(); it.hasNext(); ) {
-                JCRPropertyWrapper reference = (JCRPropertyWrapper) it.nextProperty();
-                references.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) reference.getParent()).getProperty(reference.getName(), reference.getLocale()));
+                references.add(getPropertyReference((JCRPropertyWrapper) it.nextProperty()));
             }
             for (PropertyIterator it = node.getWeakReferences(); it.hasNext(); ) {
-                JCRPropertyWrapper reference = (JCRPropertyWrapper) it.nextProperty();
-                references.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) reference.getParent()).getProperty(reference.getName(), reference.getLocale()));
+                references.add(getPropertyReference((JCRPropertyWrapper) it.nextProperty()));
             }
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
         return references;
+    }
+
+    private GqlJcrProperty getPropertyReference(JCRPropertyWrapper reference) throws RepositoryException {
+        return SpecializedTypesHandler.getNode((JCRNodeWrapper) reference.getParent()).getProperty(reference.getName(), reference.getLocale());
     }
 
     @Override

@@ -148,7 +148,7 @@ public interface GqlJcrNode {
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
-    List<GqlJcrProperty> getReferences();
+    Collection<GqlJcrProperty> getReferences();
 
     /**
      * Get GraphQL representation of the JCR node as a mixin type it has.
