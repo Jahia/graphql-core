@@ -95,13 +95,15 @@ public interface GqlJcrNode {
      * @param typesFilter Filter of child nodes by their types; null to avoid such filtering
      * @param propertiesFilter Filter of child nodes by their property values; null to avoid such filtering
      * @return GraphQL representations of the child nodes, according to parameters passed
+     * @throws GqlJcrWrongInputException In case any of the property filters passed as a part of the propertiesFilter is inconsistent (for example missing a property value to be used for comparison)
      */
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the child nodes, according to parameters passed")
     List<GqlJcrNode> getChildren(@GraphQLName("names") @GraphQLDescription("Filter of child nodes by their names; null to avoid such filtering") Collection<String> names,
                                  @GraphQLName("typesFilter") @GraphQLDescription("Filter of child nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
-                                 @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter);
+                                 @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter)
+    throws GqlJcrWrongInputException;
 
 
     /**
@@ -110,23 +112,27 @@ public interface GqlJcrNode {
      * @param typesFilter Filter of descendant nodes by their types; null to avoid such filtering
      * @param propertiesFilter Filter of descendant nodes by their property values; null to avoid such filtering
      * @return GraphQL representations of the descendant nodes, according to parameters passed
+     * @throws GqlJcrWrongInputException In case any of the property filters passed as a part of the propertiesFilter is inconsistent (for example missing a property value to be used for comparison)
      */
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the descendant nodes, according to parameters passed")
     Collection<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
-                                    @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter);
+                                    @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter)
+    throws GqlJcrWrongInputException;
 
     /**
      * Get GraphQL representations of the ancestor nodes of the JCR node.
      *
      * @param upToPath The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes
      * @return GraphQL representations of the ancestor nodes of the JCR node, top down direction
+     * @throws GqlJcrWrongInputException In case the upToPath parameter value is not a valid path of an ancestor node of this node
      */
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the ancestor nodes of the JCR node, top down direction")
-    List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") @GraphQLDescription("The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes") String upToPath);
+    List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") @GraphQLDescription("The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes") String upToPath)
+    throws GqlJcrWrongInputException;
 
     /**
      * @return GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site

@@ -4,11 +4,14 @@ import graphql.annotations.GraphQLDescription;
 import graphql.annotations.GraphQLField;
 import graphql.annotations.GraphQLName;
 import graphql.annotations.GraphQLNonNull;
+
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 
 import javax.jcr.RepositoryException;
+import javax.jcr.ValueFormatException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,11 +120,51 @@ public class GqlJcrProperty {
             if (!property.isMultiple()) {
                 return null;
             }
-            List<String> values = new ArrayList<>();
-            for (JCRValueWrapper wrapper : property.getValues()) {
-                values.add(wrapper.getString());
+            JCRValueWrapper[] values = property.getValues();
+            List<String> result = new ArrayList<>(values.length);
+            for (JCRValueWrapper value : values) {
+                result.add(value.getString());
             }
-            return values;
+            return result;
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return GraphQL representation of the node this property references in case the property is single-valued, null otherwise
+     * @throws GqlJcrUnresolvedNodeReferenceException In case either the type (must be REFEENCE, WEAKREFERENCE or STRING) or the actual value of the property do not allow to resolve the node reference
+     */
+    @GraphQLField
+    @GraphQLDescription("GraphQL representation of the node this property references in case the property is single-valued, null otherwise")
+    public GqlJcrNode getRefNode() throws GqlJcrUnresolvedNodeReferenceException {
+        try {
+            if (property.isMultiple()) {
+                return null;
+            }
+            return getRefNode(property.getValue());
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return GraphQL representations of the nodes this property references in case the property is multiple-valued, null otherwise
+     * @throws GqlJcrUnresolvedNodeReferenceException In case either the type (must be REFEENCE, WEAKREFERENCE or STRING) or any of the actual values of the property do not allow to resolve the node reference
+     */
+    @GraphQLField
+    @GraphQLDescription("GraphQL representations of the nodes this property references in case the property is multiple-valued, null otherwise")
+    public List<GqlJcrNode> getRefNodes() throws GqlJcrUnresolvedNodeReferenceException {
+        try {
+            if (!property.isMultiple()) {
+                return null;
+            }
+            JCRValueWrapper[] values = property.getValues();
+            List<GqlJcrNode> result = new ArrayList<>(values.length);
+            for (JCRValueWrapper value : values) {
+                result.add(getRefNode(value));
+            }
+            return result;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -135,5 +178,18 @@ public class GqlJcrProperty {
     @GraphQLDescription("The GraphQL representation of the JCR node the property belongs to.")
     public GqlJcrNode getParentNode() {
         return parentNode;
+    }
+
+    private GqlJcrNode getRefNode(JCRValueWrapper value) throws RepositoryException {
+        JCRNodeWrapper refNode;
+        try {
+            refNode = value.getNode();
+        } catch (ValueFormatException e) {
+            throw new GqlJcrUnresolvedNodeReferenceException("The '" + property.getName() + "' property is not of a reference type", e);
+        }
+        if (refNode == null) {
+            throw new GqlJcrUnresolvedNodeReferenceException("'" + value.getString() + "' value of the '" + property.getName() + "' property does not reference an existing node");
+        }
+        return SpecializedTypesHandler.getNode(refNode);
     }
 }
