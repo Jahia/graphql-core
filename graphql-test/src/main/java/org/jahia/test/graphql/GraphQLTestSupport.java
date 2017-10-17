@@ -103,8 +103,10 @@ public class GraphQLTestSupport extends JahiaTestCase {
                     ref1.setProperty("j:node", subNode1);
                     JCRNodeWrapper ref2 = node.addNode("reference2", "jnt:contentReference");
                     ref2.setProperty("j:node", subNode1);
-                    JCRNodeWrapper ref3 = node.addNode("reference3", "jnt:contentReference");
-                    ref3.setProperty("j:node", subNode1);
+                    JCRNodeWrapper unstructuredList = node.addNode("list", "jnt:contentList");
+                    unstructuredList.addMixin("jmix:unstructured");
+                    JCRNodeWrapper ref3 = unstructuredList.addNode("reference3", "nt:linkedFile");
+                    ref3.setProperty("jcr:content", subNode1);
 
                     session.save();
                     return null;
