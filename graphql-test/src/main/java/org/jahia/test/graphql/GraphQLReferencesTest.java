@@ -23,30 +23,33 @@
  */
 package org.jahia.test.graphql;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class GraphQLNodeTest extends GraphQLAbstractTest {
+import java.util.Map;
+
+public class GraphQLReferencesTest extends GraphQLAbstractTest {
 
     @Test
-    public void testGetNode() throws Exception {
+    public void shouldRetrieveReferences() throws Exception {
 
-        JSONObject result = executeQuery("{ nodeByPath(path: \"/testList\") { name path uuid displayName \t titleen:property(name: \"jcr:title\", " +
-                "language:\"en\") {\n" +
-                "        value\n" +
-                "      } \n" +
-                "    \t titlefr:property(name: \"jcr:title\", language:\"fr\") {\n" +
-                "        value\n" +
-                "      } \n" +
-                "    } }");
-        JSONObject nodeByPath = result.getJSONObject("data").getJSONObject("nodeByPath");
+        JSONObject result = executeQuery("{"
+                + "    nodeByPath(path: \"/testList/testSubList1\") {"
+                + "        references {"
+                + "            parentNode {"
+                + "                name"
+                + "            }"
+                + "        }"
+                + "    }"
+                + "}");
+        JSONArray references = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("references");
+        Map<String, JSONObject> referenceByNodeName = toItemByKeyMap("parentNode", references);
 
-        Assert.assertEquals("/testList", nodeByPath.getString("path"));
-        Assert.assertEquals("testList", nodeByPath.getString("name"));
-        Assert.assertEquals(nodeUuid, nodeByPath.getString("uuid"));
-        Assert.assertEquals("testList", nodeByPath.getString("displayName"));
-        Assert.assertEquals(nodeTitleFr, nodeByPath.getJSONObject("titlefr").getString("value"));
-        Assert.assertEquals(nodeTitleEn, nodeByPath.getJSONObject("titleen").getString("value"));
+        Assert.assertEquals(3, referenceByNodeName.size());
+        validateNode(referenceByNodeName.get("{\"name\":\"reference1\"}").getJSONObject("parentNode"), "reference1");
+        validateNode(referenceByNodeName.get("{\"name\":\"reference2\"}").getJSONObject("parentNode"), "reference2");
+        validateNode(referenceByNodeName.get("{\"name\":\"reference3\"}").getJSONObject("parentNode"), "reference3");
     }
 }

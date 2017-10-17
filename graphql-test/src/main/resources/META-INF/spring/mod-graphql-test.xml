@@ -8,6 +8,13 @@
         <property name="testCases">
             <list>
                 <value>org.jahia.test.graphql.GraphQLNodeTest</value>
+                <value>org.jahia.test.graphql.GraphQLAncestorsTest</value>
+                <value>org.jahia.test.graphql.GraphQLBasicPropertiesTest</value>
+                <value>org.jahia.test.graphql.GraphQLChildrenNodesTest</value>
+                <value>org.jahia.test.graphql.GraphQLI18nPropertiesTest</value>
+                <value>org.jahia.test.graphql.GraphQLNodePathTest</value>
+                <value>org.jahia.test.graphql.GraphQLQueryTest</value>
+                <value>org.jahia.test.graphql.GraphQLReferencesTest</value>
             </list>
         </property>
     </bean>
