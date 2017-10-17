@@ -1,7 +1,5 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.annotations.GraphQLConnection;
-import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.collections4.functors.AllPredicate;
 import org.apache.commons.collections4.functors.AnyPredicate;
@@ -16,7 +14,6 @@ import org.jahia.utils.LanguageCodeConverters;
 import graphql.annotations.GraphQLName;
 import graphql.annotations.GraphQLNonNull;
 
-import javax.jcr.Property;
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import java.util.*;
