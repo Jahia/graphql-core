@@ -23,14 +23,45 @@
  */
 package org.jahia.test.graphql;
 
+import org.jahia.api.Constants;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRTemplate;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Locale;
 import java.util.Map;
 
 public class GraphQLReferencesTest extends GraphQLTestSupport {
+
+    @BeforeClass
+    public static void oneTimeSetup() throws Exception {
+
+        GraphQLTestSupport.init();
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+
+            JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
+            JCRNodeWrapper subNode = node.addNode("testSubList1", "jnt:contentList");
+
+            JCRNodeWrapper ref1 = node.addNode("reference1", "jnt:contentReference");
+            ref1.setProperty("j:node", subNode);
+            JCRNodeWrapper ref2 = node.addNode("reference2", "jnt:contentReference");
+            ref2.setProperty("j:node", subNode);
+
+            session.save();
+            return null;
+        });
+    }
+
+    @AfterClass
+    public static void oneTimeTearDown() throws Exception {
+        GraphQLTestSupport.removeTestNodes();
+    }
 
     @Test
     public void shouldRetrieveReferences() throws Exception {
@@ -47,9 +78,8 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
         JSONArray references = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("references");
         Map<String, JSONObject> referenceByNodeName = toItemByKeyMap("parentNode", references);
 
-        Assert.assertEquals(3, referenceByNodeName.size());
+        Assert.assertEquals(2, referenceByNodeName.size());
         validateNode(referenceByNodeName.get("{\"name\":\"reference1\"}").getJSONObject("parentNode"), "reference1");
         validateNode(referenceByNodeName.get("{\"name\":\"reference2\"}").getJSONObject("parentNode"), "reference2");
-        validateNode(referenceByNodeName.get("{\"name\":\"reference3\"}").getJSONObject("parentNode"), "reference3");
     }
 }

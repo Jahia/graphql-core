@@ -71,7 +71,7 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
 
             JCRNodeWrapper subNode4 = node.addNode("testSubList4", "jnt:contentList");
             subNodeUuid4 = subNode4.getIdentifier();
-            subNode4.addNode("testSubList4_1", "jnt:contentList");
+            subNode4.addNode("testSubList4_1", "jnt:contentList").addMixin("jmix:tagged");
             subNode4.addNode("testSubList4_2", "jnt:contentList");
             subNode4.addNode("testSubList4_3", "jnt:contentList");
 
