@@ -188,7 +188,7 @@ public class GqlJcrProperty {
             throw new GqlJcrUnresolvedNodeReferenceException("The '" + property.getName() + "' property is not of a reference type", e);
         }
         if (refNode == null) {
-            throw new GqlJcrUnresolvedNodeReferenceException("'" + value.getString() + "' value of the '" + property.getName() + "' property does not reference an existing node");
+            throw new GqlJcrUnresolvedNodeReferenceException("The value of the '" + property.getName() + "' property does not reference an existing node");
         }
         return SpecializedTypesHandler.getNode(refNode);
     }
