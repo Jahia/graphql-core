@@ -218,10 +218,10 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     private void collectDescendants(JCRNodeWrapper node, Predicate<JCRNodeWrapper> predicate, boolean recurse, Collection<GqlJcrNode> descendants) throws RepositoryException {
-        Iterator<JCRNodeWrapper> nodesIterator = IteratorUtils.filteredIterator(node.getNodes().iterator(), predicate);
-        while (nodesIterator.hasNext()) {
-            JCRNodeWrapper child = nodesIterator.next();
-            descendants.add(SpecializedTypesHandler.getNode(child));
+        for (JCRNodeWrapper child : node.getNodes()) {
+            if (predicate.evaluate(child)) {
+                descendants.add(SpecializedTypesHandler.getNode(child));
+            }
             if (recurse) {
                 collectDescendants(child, predicate, true, descendants);
             }
