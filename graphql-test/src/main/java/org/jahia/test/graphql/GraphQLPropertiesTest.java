@@ -23,16 +23,57 @@
  */
 package org.jahia.test.graphql;
 
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrPropertyType;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRTemplate;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 
 public class GraphQLPropertiesTest extends GraphQLTestSupport {
+
+    private static String nodeUuid;
+    private static String nodeTitleFr = "text FR";
+    private static String nodeTitleEn = "text EN";
+
+    @BeforeClass
+    public static void oneTimeSetup() throws Exception {
+
+        GraphQLTestSupport.init();
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+
+            JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
+            node.addMixin("jmix:liveProperties");
+            node.setProperty("jcr:title", nodeTitleEn);
+            node.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
+            nodeUuid = node.getIdentifier();
+
+            session.save();
+            return null;
+        });
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRENCH, session -> {
+            JCRNodeWrapper node = session.getNode("/testList");
+            node.setProperty("jcr:title", nodeTitleFr);
+            session.save();
+            return null;
+        });
+    }
+
+    @AfterClass
+    public static void oneTimeTearDown() throws Exception {
+        GraphQLTestSupport.removeTestNodes();
+    }
 
     @Test
     public void shouldRetrievePropertyWithBasicFileds() throws Exception {
@@ -223,5 +264,19 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
         Assert.assertEquals(2, vals.size());
         Assert.assertTrue(vals.contains("liveProperty1"));
         Assert.assertTrue(vals.contains("liveProperty2"));
+    }
+
+    protected static void validateSingleValuedProperty(JSONObject property, String expectedName, GqlJcrPropertyType expectedType, String expectedParentNodePath, boolean expectedInternationalized, Object expectedLanguage, String expectedValue) throws JSONException {
+        Assert.assertEquals(expectedName, property.getString("name"));
+        Assert.assertEquals(expectedType.name(), property.getString("type"));
+        Assert.assertEquals(expectedParentNodePath, property.getJSONObject("parentNode").getString("path"));
+        validateSingleValuedProperty(property, expectedInternationalized, expectedLanguage, expectedValue);
+    }
+
+    protected static void validateSingleValuedProperty(JSONObject property, boolean expectedInternationalized, Object expectedLanguage, String expectedValue) throws JSONException {
+        Assert.assertEquals(expectedInternationalized, property.getBoolean("internationalized"));
+        Assert.assertEquals(expectedLanguage, property.get("language"));
+        Assert.assertEquals(expectedValue, property.getString("value"));
+        Assert.assertEquals(JSONObject.NULL, property.get("values"));
     }
 }

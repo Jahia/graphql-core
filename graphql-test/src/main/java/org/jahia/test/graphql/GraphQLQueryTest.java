@@ -23,12 +23,47 @@
  */
 package org.jahia.test.graphql;
 
+import java.util.Locale;
+
+import org.jahia.api.Constants;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRTemplate;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 
 public class GraphQLQueryTest extends GraphQLTestSupport {
+
+    @BeforeClass
+    public static void oneTimeSetup() throws Exception {
+
+        GraphQLTestSupport.init();
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+
+            JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
+
+            node.addNode("testSubList1", "jnt:contentList");
+            node.addNode("testSubList2", "jnt:contentList");
+            node.addNode("testSubList3", "jnt:contentList");
+
+            JCRNodeWrapper subNode4 = node.addNode("testSubList4", "jnt:contentList");
+            subNode4.addNode("testSubList4_1", "jnt:contentList");
+            subNode4.addNode("testSubList4_2", "jnt:contentList");
+            subNode4.addNode("testSubList4_3", "jnt:contentList");
+
+            session.save();
+            return null;
+        });
+    }
+
+    @AfterClass
+    public static void oneTimeTearDown() throws Exception {
+        GraphQLTestSupport.removeTestNodes();
+    }
 
     @Test
     public void shouldRetrieveNodesUsingSQL2Query() throws Exception {
@@ -37,16 +72,16 @@ public class GraphQLQueryTest extends GraphQLTestSupport {
 
     @Test
     public void shouldRetrieveNodesUsingXPATHQuery() throws Exception {
-        testQuery("/jcr:root/testList//element(*, jnt:contentList)", "XPATH", 13);
+        testQuery("/jcr:root/testList//element(*, jnt:contentList)", "XPATH", 7);
     }
 
-    protected void testQuery(String query, String language, long expectedNumber) throws Exception {
+    private void testQuery(String query, String language, long expectedNumber) throws Exception {
+
         JSONObject result = executeQuery("{"
                 + "    nodesByQuery(query: \"" + query + "\", queryLanguage: " + language + ") {"
                 + "        edges {"
                 + "            node {"
                 + "                name"
-                + "                path"
                 + "            }"
                 + "		  }"
                 + "    }"
