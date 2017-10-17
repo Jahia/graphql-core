@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import java.util.Map;
 
-public class GraphQLChildrenNodesTest extends GraphQLAbstractTest {
+public class GraphQLDescendantsTest extends GraphQLTestSupport {
 
     @Test
     public void shouldRetrieveAllChildNodes() throws Exception {
@@ -55,29 +55,6 @@ public class GraphQLChildrenNodesTest extends GraphQLAbstractTest {
         validateNode(childByName.get("testSubList2"), subNodeUuid2, "testSubList2", "/testList/testSubList2", "/testList");
         validateNode(childByName.get("testSubList3"), subNodeUuid3, "testSubList3", "/testList/testSubList3", "/testList");
         validateNode(childByName.get("testSubList4"), subNodeUuid4, "testSubList4", "/testList/testSubList4", "/testList");
-    }
-
-    @Test
-    public void shouldRetrieveAllDescendantNodes() throws Exception {
-
-        JSONObject result = executeQuery("{"
-                + "    nodeByPath(path: \"/testList\") {"
-                + "        descendants {"
-                + "            path"
-                + "		  }"
-                + "    }"
-                + "}");
-        JSONArray descendants = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("descendants");
-        Map<String, JSONObject> descendantsByPath = toItemByKeyMap("path", descendants);
-
-        Assert.assertEquals(16, descendantsByPath.size());
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4"));
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4/testSubList4_1"));
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4/testSubList4_2"));
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4/testSubList4_3"));
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList2"));
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList3"));
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList1"));
     }
 
     @Test
@@ -496,4 +473,26 @@ public class GraphQLChildrenNodesTest extends GraphQLAbstractTest {
         validateNode(childByName.get("testSubList1"), "testSubList1");
     }
 
+    @Test
+    public void shouldRetrieveAllDescendantNodes() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    nodeByPath(path: \"/testList\") {"
+                + "        descendants {"
+                + "            path"
+                + "		  }"
+                + "    }"
+                + "}");
+        JSONArray descendants = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("descendants");
+        Map<String, JSONObject> descendantsByPath = toItemByKeyMap("path", descendants);
+
+        Assert.assertEquals(16, descendantsByPath.size());
+        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4"));
+        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4/testSubList4_1"));
+        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4/testSubList4_2"));
+        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4/testSubList4_3"));
+        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList2"));
+        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList3"));
+        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList1"));
+    }
 }

@@ -36,18 +36,16 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 import javax.servlet.Servlet;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 
 import org.junit.Assert;
 
-public class GraphQLAbstractTest extends JahiaTestCase {
+public class GraphQLTestSupport extends JahiaTestCase {
 
     private static OsgiGraphQLServlet servlet;
 
@@ -136,23 +134,11 @@ public class GraphQLAbstractTest extends JahiaTestCase {
                 });
     }
 
-    protected void testQuery(String query, String language, long expectedNumber) throws Exception {
-        JSONObject result = executeQuery("{"
-                + "    nodesByQuery(query: \"" + query + "\", queryLanguage: " + language + ") {"
-                + "        edges {"
-                + "            node {"
-                + "                name"
-                + "                path"
-                + "            }"
-                + "		  }"
-                + "    }"
-                + "}");
-
-        JSONArray nodes = result.getJSONObject("data").getJSONObject("nodesByQuery").getJSONArray("edges");
-        Assert.assertEquals(expectedNumber, nodes.length());
+    protected JSONObject executeQuery(String query) throws JSONException {
+        return new JSONObject(servlet.executeQuery(query));
     }
 
-    static Map<String, JSONObject> toItemByKeyMap(String key, JSONArray items) throws JSONException {
+    protected static Map<String, JSONObject> toItemByKeyMap(String key, JSONArray items) throws JSONException {
         HashMap<String, JSONObject> itemByName = new HashMap<>(items.length());
         for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.getJSONObject(i);
@@ -161,29 +147,25 @@ public class GraphQLAbstractTest extends JahiaTestCase {
         return itemByName;
     }
 
-    static void validateSingleValuedProperty(JSONObject property, String expectedName, GqlJcrPropertyType expectedType, String expectedParentNodePath, boolean expectedInternationalized, Object expectedLanguage, String expectedValue) throws JSONException {
+    protected static void validateSingleValuedProperty(JSONObject property, String expectedName, GqlJcrPropertyType expectedType, String expectedParentNodePath, boolean expectedInternationalized, Object expectedLanguage, String expectedValue) throws JSONException {
         Assert.assertEquals(expectedName, property.getString("name"));
         Assert.assertEquals(expectedType.name(), property.getString("type"));
         Assert.assertEquals(expectedParentNodePath, property.getJSONObject("parentNode").getString("path"));
         validateSingleValuedProperty(property, expectedInternationalized, expectedLanguage, expectedValue);
     }
 
-    static void validateNode(JSONObject node, String expectedName) throws JSONException {
+    protected static void validateNode(JSONObject node, String expectedName) throws JSONException {
         Assert.assertEquals(expectedName, node.getString("name"));
     }
 
-    static void validateNode(JSONObject node, String expectedUuid, String expectedName, String expectedPath, String expectedParentNodePath) throws JSONException {
+    protected static void validateNode(JSONObject node, String expectedUuid, String expectedName, String expectedPath, String expectedParentNodePath) throws JSONException {
         validateNode(node, expectedName);
         Assert.assertEquals(expectedUuid, node.getString("uuid"));
         Assert.assertEquals(expectedPath, node.getString("path"));
         Assert.assertEquals(expectedParentNodePath, node.getJSONObject("parent").getString("path"));
     }
 
-    JSONObject executeQuery(String query) throws JSONException {
-        return new JSONObject(servlet.executeQuery(query));
-    }
-
-    static void validateSingleValuedProperty(JSONObject property, boolean expectedInternationalized, Object expectedLanguage, String expectedValue)
+    protected static void validateSingleValuedProperty(JSONObject property, boolean expectedInternationalized, Object expectedLanguage, String expectedValue)
             throws JSONException {
         Assert.assertEquals(expectedInternationalized, property.getBoolean("internationalized"));
         Assert.assertEquals(expectedLanguage, property.get("language"));

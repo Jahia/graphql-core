@@ -28,7 +28,7 @@ import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class GraphQLAncestorsTest extends GraphQLAbstractTest {
+public class GraphQLAncestorsTest extends GraphQLTestSupport {
 
     @Test
     public void shouldRetrieveParent() throws Exception {

@@ -23,9 +23,12 @@
  */
 package org.jahia.test.graphql;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.Test;
+import org.junit.Assert;
 
-public class GraphQLQueryTest extends GraphQLAbstractTest {
+public class GraphQLQueryTest extends GraphQLTestSupport {
 
     @Test
     public void shouldRetrieveNodesUsingSQL2Query() throws Exception {
@@ -35,5 +38,21 @@ public class GraphQLQueryTest extends GraphQLAbstractTest {
     @Test
     public void shouldRetrieveNodesUsingXPATHQuery() throws Exception {
         testQuery("/jcr:root/testList//element(*, jnt:contentList)", "XPATH", 13);
+    }
+
+    protected void testQuery(String query, String language, long expectedNumber) throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    nodesByQuery(query: \"" + query + "\", queryLanguage: " + language + ") {"
+                + "        edges {"
+                + "            node {"
+                + "                name"
+                + "                path"
+                + "            }"
+                + "		  }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("nodesByQuery").getJSONArray("edges");
+        Assert.assertEquals(expectedNumber, nodes.length());
     }
 }

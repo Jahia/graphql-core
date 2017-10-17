@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import java.util.Map;
 
-public class GraphQLReferencesTest extends GraphQLAbstractTest {
+public class GraphQLReferencesTest extends GraphQLTestSupport {
 
     @Test
     public void shouldRetrieveReferences() throws Exception {

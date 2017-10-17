@@ -30,7 +30,28 @@ import org.junit.Test;
 
 import java.util.Map;
 
-public class GraphQLNodePathTest extends GraphQLAbstractTest {
+public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
+
+    @Test
+    public void testGetNode() throws Exception {
+
+        JSONObject result = executeQuery("{ nodeByPath(path: \"/testList\") { name path uuid displayName \t titleen:property(name: \"jcr:title\", " +
+                "language:\"en\") {\n" +
+                "        value\n" +
+                "      } \n" +
+                "    \t titlefr:property(name: \"jcr:title\", language:\"fr\") {\n" +
+                "        value\n" +
+                "      } \n" +
+                "    } }");
+        JSONObject nodeByPath = result.getJSONObject("data").getJSONObject("nodeByPath");
+
+        Assert.assertEquals("/testList", nodeByPath.getString("path"));
+        Assert.assertEquals("testList", nodeByPath.getString("name"));
+        Assert.assertEquals(nodeUuid, nodeByPath.getString("uuid"));
+        Assert.assertEquals("testList", nodeByPath.getString("displayName"));
+        Assert.assertEquals(nodeTitleFr, nodeByPath.getJSONObject("titlefr").getString("value"));
+        Assert.assertEquals(nodeTitleEn, nodeByPath.getJSONObject("titleen").getString("value"));
+    }
 
     @Test
     public void shouldRetrieveNodeByPath() throws Exception {
