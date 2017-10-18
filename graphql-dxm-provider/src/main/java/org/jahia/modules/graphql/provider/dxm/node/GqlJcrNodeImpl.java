@@ -346,7 +346,6 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         return references;
     }
 
-
     private void collectReferences(PropertyIterator references, Collection<GqlJcrProperty> gqlReferences) throws RepositoryException {
         while (references.hasNext()) {
             JCRPropertyWrapper reference = (JCRPropertyWrapper) references.nextProperty();
