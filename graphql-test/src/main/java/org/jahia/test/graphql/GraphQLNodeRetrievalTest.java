@@ -126,9 +126,8 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
                                        + "        name"
                                        + "    }"
                                        + "}");
-        JSONArray errors = result.getJSONArray("errors");
 
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.PathNotFoundException: /testList/wrongPath");
+        validateError(result, "javax.jcr.PathNotFoundException: /testList/wrongPath");
     }
 
     @Test
@@ -139,9 +138,8 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
                                        + "        name"
                                        + "    }"
                                        + "}");
-        JSONArray errors = result.getJSONArray("errors");
 
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.PathNotFoundException: /testList/testSubList2");
+        validateError(result, "javax.jcr.PathNotFoundException: /testList/testSubList2");
     }
 
     @Test
@@ -168,9 +166,8 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
                                        + "        name"
                                        + "    }"
                                        + "}");
-        JSONArray errors = result.getJSONArray("errors");
 
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.PathNotFoundException: /testList/wrongPath");
+        validateError(result, "javax.jcr.PathNotFoundException: /testList/wrongPath");
     }
 
     @Test
@@ -181,9 +178,8 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
                                        + "        name"
                                        + "    }"
                                        + "}");
-        JSONArray errors = result.getJSONArray("errors");
 
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.PathNotFoundException: /testList/testSubList2");
+        validateError(result, "javax.jcr.PathNotFoundException: /testList/testSubList2");
     }
 
     @Test
@@ -207,9 +203,8 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
                                        + "        name"
                                        + "    }"
                                        + "}");
-        JSONArray errors = result.getJSONArray("errors");
 
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.ItemNotFoundException: badId");
+        validateError(result, "javax.jcr.ItemNotFoundException: badId");
     }
 
     @Test
@@ -220,9 +215,8 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
                                         + "        name"
                                         + "    }"
                                         + "}");
-        JSONArray errors = result.getJSONArray("errors");
 
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.ItemNotFoundException: " + subNodeUuid2);
+        validateError(result, "javax.jcr.ItemNotFoundException: " + subNodeUuid2);
     }
 
     @Test
@@ -249,9 +243,8 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
                                        + "        name"
                                        + "    }"
                                        + "}");
-        JSONArray errors = result.getJSONArray("errors");
 
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.ItemNotFoundException: wrongId");
+        validateError(result, "javax.jcr.ItemNotFoundException: wrongId");
     }
 
     @Test
@@ -262,8 +255,7 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
                                        + "        name"
                                        + "    }"
                                        + "}");
-        JSONArray errors = result.getJSONArray("errors");
 
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "javax.jcr.ItemNotFoundException: " + subNodeUuid2);
+        validateError(result, "javax.jcr.ItemNotFoundException: " + subNodeUuid2);
     }
 }

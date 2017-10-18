@@ -117,9 +117,7 @@ public class GraphQLAncestorsTest extends GraphQLTestSupport {
                 + "    }"
                 + "}");
 
-        JSONArray errors = result.getJSONArray("errors");
-        Assert.assertEquals(1, errors.length());
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "'' is not a valid node path");
+        validateError(result, "'' is not a valid node path");
     }
 
     @Test
@@ -133,9 +131,7 @@ public class GraphQLAncestorsTest extends GraphQLTestSupport {
                 + "    }"
                 + "}");
 
-        JSONArray errors = result.getJSONArray("errors");
-        Assert.assertEquals(1, errors.length());
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "'/nonExistingPath' does not reference an ancestor node of '/testList/testSubList/testSubSubList'");
+        validateError(result, "'/nonExistingPath' does not reference an ancestor node of '/testList/testSubList/testSubSubList'");
     }
 
     @Test
@@ -149,8 +145,6 @@ public class GraphQLAncestorsTest extends GraphQLTestSupport {
                 + "    }"
                 + "}");
 
-        JSONArray errors = result.getJSONArray("errors");
-        Assert.assertEquals(1, errors.length());
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "'/testList/testSubList/testSubSubList' does not reference an ancestor node of '/testList/testSubList/testSubSubList'");
+        validateError(result, "'/testList/testSubList/testSubSubList' does not reference an ancestor node of '/testList/testSubList/testSubSubList'");
     }
 }

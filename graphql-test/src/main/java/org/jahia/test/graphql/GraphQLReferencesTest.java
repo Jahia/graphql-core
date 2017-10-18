@@ -46,11 +46,14 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
 
             JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
-            node.setProperty("jcr:title", "/nonExistingPath");
+            node.addMixin("jmix:liveProperties");
+            node.setProperty("j:liveProperties", new String[] {"/testList/testSubList1", "/testList/testSubList2"});
 
             JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
+            subNode1.setProperty("jcr:title", "/testList/testSubList2");
 
             JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
+            subNode2.setProperty("jcr:title", "/nonExistingPath");
             subNode2.addMixin("jmix:unstructured");
 
             JCRNodeWrapper ref1 = node.addNode("reference1", "jnt:contentReference");
@@ -109,7 +112,7 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldRetrieveReferencedNodeByString() throws Exception {
+    public void shouldRetrieveReferencedNodeByUuidString() throws Exception {
 
         JSONObject result = executeQuery("{"
                 + "    nodeByPath(path: \"/testList/reference2\") {"
@@ -126,6 +129,23 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
     }
 
     @Test
+    public void shouldRetrieveReferencedNodeByPathString() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    nodeByPath(path: \"/testList/testSubList1\") {"
+                + "        property(name: \"jcr:title\" language: \"en\") {"
+                + "            refNode {"
+                + "                name"
+                + "            }"
+                + "        }"
+                + "    }"
+                + "}");
+        JSONObject refNode = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property").getJSONObject("refNode");
+
+        validateNode(refNode, "testSubList2");
+    }
+
+    @Test
     public void shouldGetErrorNotRetrieveReferencedNodeFromPropertyOfWrongType() throws Exception {
 
         JSONObject result = executeQuery("{"
@@ -137,17 +157,15 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
                 + "        }"
                 + "    }"
                 + "}");
-        JSONArray errors = result.getJSONArray("errors");
 
-        Assert.assertEquals(1, errors.length());
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "The 'jcr:lastModified' property is not of a reference type");
+        validateError(result, "The 'jcr:lastModified' property is not of a reference type");
     }
 
     @Test
-    public void shouldGetErrorNotRetrieveReferencedNodeByWrongString() throws Exception {
+    public void shouldGetErrorNotRetrieveReferencedNodeByWrongPathString() throws Exception {
 
         JSONObject result = executeQuery("{"
-                + "    nodeByPath(path: \"/testList\") {"
+                + "    nodeByPath(path: \"/testList/testSubList2\") {"
                 + "        property(name: \"jcr:title\" language: \"en\") {"
                 + "            refNode {"
                 + "                name"
@@ -155,9 +173,61 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
                 + "        }"
                 + "    }"
                 + "}");
-        JSONArray errors = result.getJSONArray("errors");
 
-        Assert.assertEquals(1, errors.length());
-        Assert.assertEquals(errors.getJSONObject(0).getString("message"), "The value of the 'jcr:title' property does not reference an existing node");
+        validateError(result, "The value of the 'jcr:title' property does not reference an existing node");
+    }
+
+    @Test
+    public void shouldNotRetrieveReferencedNodeFromMultipleValuedProperty() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    nodeByPath(path: \"/testList\") {"
+                + "        property(name: \"j:liveProperties\") {"
+                + "            refNode {"
+                + "                name"
+                + "            }"
+                + "        }"
+                + "    }"
+                + "}");
+        Object refNode = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property").get("refNode");
+
+        Assert.assertEquals(JSONObject.NULL, refNode);
+    }
+
+    @Test
+    public void shouldRetrieveReferencedNodes() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    nodeByPath(path: \"/testList\") {"
+                + "        property(name: \"j:liveProperties\") {"
+                + "            refNodes {"
+                + "                name"
+                + "            }"
+                + "        }"
+                + "    }"
+                + "}");
+        JSONArray refNodes = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property").getJSONArray("refNodes");
+        Map<String, JSONObject> refNodeByName = toItemByKeyMap("name", refNodes);
+
+        Assert.assertEquals(2, refNodeByName.size());
+        validateNode(refNodeByName.get("testSubList1"), "testSubList1");
+        validateNode(refNodeByName.get("testSubList2"), "testSubList2");
+    }
+
+    @Test
+    public void shouldNotRetrieveReferencedNodesFromSingleValuedProperty() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    nodeByPath(path: \"/testList/reference1\") {"
+                + "        property(name: \"j:node\") {"
+                + "            refNodes {"
+                + "                name"
+                + "            }"
+                + "        }"
+                + "    }"
+                + "}");
+        Object refNodes = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property").get("refNodes");
+
+        Assert.assertEquals(JSONObject.NULL, refNodes);
     }
 }
