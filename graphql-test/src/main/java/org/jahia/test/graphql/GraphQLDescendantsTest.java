@@ -562,19 +562,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldRetrieveDescendantNodeUsingTypesFilter() throws Exception {
+    public void shouldRetrieveDescendantNodesByAllTypes() throws Exception {
 
         JSONObject result = executeQuery("{"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        descendants(typesFilter: {multi: ALL, types: [\"jnt:contentList\", \"jmix:tagged\"]}) {"
-                + "            path"
+                + "            name"
                 + "		  }"
                 + "    }"
                 + "}");
         JSONArray descendants = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("descendants");
-        Map<String, JSONObject> descendantsByPath = toItemByKeyMap("path", descendants);
+        Map<String, JSONObject> descendantsByName = toItemByKeyMap("name", descendants);
 
-        Assert.assertEquals(1, descendantsByPath.size());
-        Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList4/testSubList4_1"));
+        Assert.assertEquals(1, descendantsByName.size());
+        validateNode(descendantsByName.get("testSubList4_1"), "testSubList4_1");
     }
 }
