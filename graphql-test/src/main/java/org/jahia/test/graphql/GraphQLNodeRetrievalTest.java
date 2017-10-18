@@ -95,14 +95,14 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
                                        + "        }"
                                        + "    }"
                                        + "}");
-        JSONObject nodeByPath = result.getJSONObject("data").getJSONObject("nodeByPath");
+        JSONObject node = result.getJSONObject("data").getJSONObject("nodeByPath");
 
-        Assert.assertEquals("/testList", nodeByPath.getString("path"));
-        Assert.assertEquals("testList", nodeByPath.getString("name"));
-        Assert.assertEquals(nodeUuid, nodeByPath.getString("uuid"));
-        Assert.assertEquals("testList", nodeByPath.getString("displayName"));
-        Assert.assertEquals(nodeTitleFr, nodeByPath.getJSONObject("titlefr").getString("value"));
-        Assert.assertEquals(nodeTitleEn, nodeByPath.getJSONObject("titleen").getString("value"));
+        Assert.assertEquals("/testList", node.getString("path"));
+        Assert.assertEquals("testList", node.getString("name"));
+        Assert.assertEquals(nodeUuid, node.getString("uuid"));
+        Assert.assertEquals("testList", node.getString("displayName"));
+        Assert.assertEquals(nodeTitleFr, node.getJSONObject("titlefr").getString("value"));
+        Assert.assertEquals(nodeTitleEn, node.getJSONObject("titleen").getString("value"));
     }
 
     @Test
@@ -119,7 +119,7 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldNotRetrieveNodeByWrongPath() throws Exception {
+    public void shouldGetErrorNotRetrieveNodeByWrongPath() throws Exception {
 
         JSONObject result = executeQuery("{"
                                        + "    nodeByPath(path: \"/testList/wrongPath\") {"
@@ -131,7 +131,7 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldNotRetrieveNodeByPathInLive() throws Exception {
+    public void shouldGetErrorNotRetrieveNodeByPathInLive() throws Exception {
 
         JSONObject result = executeQuery("{"
                                        + "    nodeByPath(path: \"/testList/testSubList2\", workspace: \"live\") {"
@@ -159,7 +159,7 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldNotRetrieveNodesByWrongPath() throws Exception {
+    public void shouldGetErrorNotRetrieveNodesByWrongPath() throws Exception {
 
         JSONObject result = executeQuery("{"
                                        + "    nodesByPath(paths: [\"/testList/testSubList2\", \"/testList/wrongPath\"]) {"
@@ -171,7 +171,7 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldNotRetrieveNodesByPathInLive() throws Exception {
+    public void shouldGetErrorNotRetrieveNodesByPathInLive() throws Exception {
 
         JSONObject result = executeQuery("{"
                                        + "    nodesByPath(paths: [\"/testList/testSubList2\", \"/testList/testSubList1\"], workspace: \"live\") {"
@@ -196,7 +196,7 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldNotRetrieveNodeByWrongId() throws Exception {
+    public void shouldGetErrorNotRetrieveNodeByWrongId() throws Exception {
 
         JSONObject result = executeQuery("{"
                                        + "    nodeById(uuid: \"badId\") {"
@@ -208,7 +208,7 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldNotRetrieveNodeByIdInLive() throws Exception {
+    public void shouldGetErrorNotRetrieveNodeByIdInLive() throws Exception {
 
         JSONObject result = executeQuery("{"
                                         + "    nodeById(uuid: \"" + subNodeUuid2 + "\", workspace: \"live\") {"
@@ -236,7 +236,7 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldNotRetrieveNodesByWrongId() throws Exception {
+    public void shouldGetErrorNotRetrieveNodesByWrongId() throws Exception {
 
         JSONObject result = executeQuery("{"
                                        + "    nodesById(uuids: [\"" + subNodeUuid2 + "\", \"wrongId\"]) {"
@@ -248,7 +248,7 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldNotRetrieveNodesByIdInLive() throws Exception {
+    public void shouldGetErrorNotRetrieveNodesByIdInLive() throws Exception {
 
         JSONObject result = executeQuery("{"
                                        + "    nodesById(uuids: [\"" + subNodeUuid2 + "\", \"" + subNodeUuid1 + "\"], workspace: \"live\") {"
