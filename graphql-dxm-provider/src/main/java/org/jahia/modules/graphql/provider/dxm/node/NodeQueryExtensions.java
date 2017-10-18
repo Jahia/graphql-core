@@ -8,6 +8,7 @@ import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.QueryManagerWrapper;
 import org.jahia.services.query.QueryWrapper;
 
 import javax.jcr.RepositoryException;
@@ -99,20 +100,20 @@ public class NodeQueryExtensions {
     }
 
     @GraphQLField
-    @GraphQLNonNull
     @GraphQLConnection
     public static List<GqlJcrNode> getNodesByQuery(@GraphQLName("query") @GraphQLNonNull String query,
                                                    @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) QueryLanguage queryLanguage,
                                                    @GraphQLName("workspace") String workspace) throws BaseGqlClientException {
         try {
-            List<GqlJcrNode> nodes = new ArrayList<>();
-            QueryWrapper q = JCRSessionFactory.getInstance().getCurrentUserSession(workspace).getWorkspace().getQueryManager().createQuery(query, queryLanguage == SQL2 ? Query.JCR_SQL2 : Query.XPATH);
-            JCRNodeIteratorWrapper ni = q.execute().getNodes();
-            while (ni.hasNext()) {
-                JCRNodeWrapper next = (JCRNodeWrapper) ni.next();
-                nodes.add(SpecializedTypesHandler.getNode(next));
+            List<GqlJcrNode> result = new ArrayList<>();
+            QueryManagerWrapper queryManager = getSession(workspace).getWorkspace().getQueryManager();
+            QueryWrapper q = queryManager.createQuery(query, queryLanguage == SQL2 ? Query.JCR_SQL2 : Query.XPATH);
+            JCRNodeIteratorWrapper nodes = q.execute().getNodes();
+            while (nodes.hasNext()) {
+                JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();
+                result.add(SpecializedTypesHandler.getNode(node));
             }
-            return nodes;
+            return result;
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
