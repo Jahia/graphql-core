@@ -26,9 +26,11 @@ package org.jahia.test.graphql;
 import java.util.Locale;
 
 import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.AfterClass;
@@ -66,28 +68,36 @@ public class GraphQLQueryTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldRetrieveNodesUsingSQL2Query() throws Exception {
-        testQuery("select * from [jnt:contentList] where isdescendantnode('/testList')", "SQL2", 7);
+    public void shouldRetrieveNodesBySql2Query() throws Exception {
+        testQuery("select * from [jnt:contentList] where isdescendantnode('/testList')", NodeQueryExtensions.QueryLanguage.SQL2, 7);
     }
 
     @Test
-    public void shouldRetrieveNodesUsingXPATHQuery() throws Exception {
-        testQuery("/jcr:root/testList//element(*, jnt:contentList)", "XPATH", 7);
+    public void shouldRetrieveNodesByXpathQuery() throws Exception {
+        testQuery("/jcr:root/testList//element(*, jnt:contentList)", NodeQueryExtensions.QueryLanguage.XPATH, 7);
     }
 
-    private void testQuery(String query, String language, long expectedNumber) throws Exception {
+    @Test
+    public void shouldGetErrorNotRetrieveNodesByWrongQuery() throws Exception {
+        JSONObject result = runQuery("slct from [jnt:contentList]", NodeQueryExtensions.QueryLanguage.SQL2);
+        validateError(result, "javax.jcr.query.InvalidQueryException: Query:\nslct(*)from [jnt:contentList]; expected: SELECT");
+    }
 
-        JSONObject result = executeQuery("{"
-                + "    nodesByQuery(query: \"" + query + "\", queryLanguage: " + language + ") {"
-                + "        edges {"
-                + "            node {"
-                + "                name"
-                + "            }"
-                + "		  }"
-                + "    }"
-                + "}");
+    private static JSONObject runQuery(String query, NodeQueryExtensions.QueryLanguage language) throws JSONException {
+        return executeQuery("{"
+                          + "    nodesByQuery(query: \"" + query + "\", queryLanguage: " + language.name() + ") {"
+                          + "        edges {"
+                          + "            node {"
+                          + "                name"
+                          + "            }"
+                          + "		  }"
+                          + "    }"
+                          + "}");
+    }
 
+    private static void testQuery(String query, NodeQueryExtensions.QueryLanguage language, long expectedNodesNumber) throws JSONException {
+        JSONObject result = runQuery(query, language);
         JSONArray nodes = result.getJSONObject("data").getJSONObject("nodesByQuery").getJSONArray("edges");
-        Assert.assertEquals(expectedNumber, nodes.length());
+        Assert.assertEquals(expectedNodesNumber, nodes.length());
     }
 }
