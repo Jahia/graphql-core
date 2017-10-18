@@ -24,17 +24,17 @@ import java.util.List;
 public class GqlJcrProperty {
 
     private JCRPropertyWrapper property;
-    private GqlJcrNode parentNode;
+    private GqlJcrNode node;
 
     /**
      * Create an instance that represents a JCR property to GraphQL.
      *
      * @param property The JCR property to represent
-     * @param parentNode The GraphQL representation of the JCR node the property belongs to
+     * @param node The GraphQL representation of the JCR node the property belongs to
      */
-    public GqlJcrProperty(JCRPropertyWrapper property, GqlJcrNode parentNode) {
+    public GqlJcrProperty(JCRPropertyWrapper property, GqlJcrNode node) {
         this.property = property;
-        this.parentNode = parentNode;
+        this.node = node;
     }
 
     /**
@@ -74,7 +74,7 @@ public class GqlJcrProperty {
     public boolean isInternationalized() {
         ExtendedPropertyDefinition propertyDefinition;
         try {
-            propertyDefinition = parentNode.getNode().getApplicablePropertyDefinition(getName(), property.getType(), property.isMultiple());
+            propertyDefinition = node.getNode().getApplicablePropertyDefinition(getName(), property.getType(), property.isMultiple());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -176,8 +176,8 @@ public class GqlJcrProperty {
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("The GraphQL representation of the JCR node the property belongs to.")
-    public GqlJcrNode getParentNode() {
-        return parentNode;
+    public GqlJcrNode getNode() {
+        return node;
     }
 
     private GqlJcrNode getRefNode(JCRValueWrapper value) throws RepositoryException {

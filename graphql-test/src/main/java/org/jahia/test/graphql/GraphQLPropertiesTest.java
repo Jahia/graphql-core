@@ -83,7 +83,7 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
                 + "        property(name: \"jcr:uuid\") {"
                 + "            name"
                 + "            type"
-                + "            parentNode {"
+                + "            node {"
                 + "                path"
                 + "            }"
                 + "		  }"
@@ -93,7 +93,7 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
 
         Assert.assertEquals("jcr:uuid", property.getString("name"));
         Assert.assertEquals(GqlJcrPropertyType.STRING.name(), property.getString("type"));
-        Assert.assertEquals("/testList", property.getJSONObject("parentNode").getString("path"));
+        Assert.assertEquals("/testList", property.getJSONObject("node").getString("path"));
     }
 
     @Test
@@ -172,7 +172,7 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
                 + "            language"
                 + "            value"
                 + "            values"
-                + "            parentNode {"
+                + "            node {"
                 + "                path"
                 + "            }"
                 + "		  }"
@@ -197,7 +197,7 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
                 + "            language"
                 + "            value"
                 + "            values"
-                + "            parentNode {"
+                + "            node {"
                 + "                path"
                 + "            }"
                 + "		  }"
@@ -266,10 +266,10 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
         Assert.assertTrue(vals.contains("liveProperty2"));
     }
 
-    protected static void validateSingleValuedProperty(JSONObject property, String expectedName, GqlJcrPropertyType expectedType, String expectedParentNodePath, boolean expectedInternationalized, Object expectedLanguage, String expectedValue) throws JSONException {
+    protected static void validateSingleValuedProperty(JSONObject property, String expectedName, GqlJcrPropertyType expectedType, String expectedNodePath, boolean expectedInternationalized, Object expectedLanguage, String expectedValue) throws JSONException {
         Assert.assertEquals(expectedName, property.getString("name"));
         Assert.assertEquals(expectedType.name(), property.getString("type"));
-        Assert.assertEquals(expectedParentNodePath, property.getJSONObject("parentNode").getString("path"));
+        Assert.assertEquals(expectedNodePath, property.getJSONObject("node").getString("path"));
         validateSingleValuedProperty(property, expectedInternationalized, expectedLanguage, expectedValue);
     }
 

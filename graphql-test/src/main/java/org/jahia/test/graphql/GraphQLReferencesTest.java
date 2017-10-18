@@ -79,19 +79,19 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    nodeByPath(path: \"/testList/testSubList1\") {"
                 + "        references {"
-                + "            parentNode {"
+                + "            node {"
                 + "                name"
                 + "            }"
                 + "        }"
                 + "    }"
                 + "}");
         JSONArray references = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("references");
-        Map<String, JSONObject> referenceByNodeName = toItemByKeyMap("parentNode", references);
+        Map<String, JSONObject> referenceByNodeName = toItemByKeyMap("node", references);
 
         Assert.assertEquals(3, referenceByNodeName.size());
-        validateNode(referenceByNodeName.get("{\"name\":\"reference1\"}").getJSONObject("parentNode"), "reference1");
-        validateNode(referenceByNodeName.get("{\"name\":\"reference2\"}").getJSONObject("parentNode"), "reference2");
-        validateNode(referenceByNodeName.get("{\"name\":\"reference3\"}").getJSONObject("parentNode"), "reference3");
+        validateNode(referenceByNodeName.get("{\"name\":\"reference1\"}").getJSONObject("node"), "reference1");
+        validateNode(referenceByNodeName.get("{\"name\":\"reference2\"}").getJSONObject("node"), "reference2");
+        validateNode(referenceByNodeName.get("{\"name\":\"reference3\"}").getJSONObject("node"), "reference3");
     }
 
     @Test
