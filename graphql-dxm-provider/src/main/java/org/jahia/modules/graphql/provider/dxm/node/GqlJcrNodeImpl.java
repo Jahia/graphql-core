@@ -338,20 +338,23 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     public Collection<GqlJcrProperty> getReferences() {
         List<GqlJcrProperty> references = new LinkedList<GqlJcrProperty>();
         try {
-            for (PropertyIterator it = node.getReferences(); it.hasNext(); ) {
-                references.add(getPropertyReference((JCRPropertyWrapper) it.nextProperty()));
-            }
-            for (PropertyIterator it = node.getWeakReferences(); it.hasNext(); ) {
-                references.add(getPropertyReference((JCRPropertyWrapper) it.nextProperty()));
-            }
+            collectReferences(node.getReferences(), references);
+            collectReferences(node.getWeakReferences(), references);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
         return references;
     }
 
-    private GqlJcrProperty getPropertyReference(JCRPropertyWrapper reference) throws RepositoryException {
-        return SpecializedTypesHandler.getNode((JCRNodeWrapper) reference.getParent()).getProperty(reference.getName(), reference.getLocale());
+
+    private void collectReferences(PropertyIterator references, Collection<GqlJcrProperty> gqlReferences) throws RepositoryException {
+        while (references.hasNext()) {
+            JCRPropertyWrapper reference = (JCRPropertyWrapper) references.nextProperty();
+            JCRNodeWrapper referencingNode = (JCRNodeWrapper) reference.getParent();
+            GqlJcrNode gqlReferencingNode = SpecializedTypesHandler.getNode(referencingNode);
+            GqlJcrProperty gqlReference = gqlReferencingNode.getProperty(reference.getName(), reference.getLocale());
+            gqlReferences.add(gqlReference);
+        }
     }
 
     @Override
