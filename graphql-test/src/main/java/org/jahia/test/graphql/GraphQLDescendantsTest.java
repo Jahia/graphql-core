@@ -514,7 +514,37 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
         validateNode(childByName.get("testSubList3"), "testSubList3");
     }
 
-    // TODO: Add tests to verify that a validation exception is thrown in case null property value is passed in combination with EQUAL or DIFFERENT evaluation type.
+    @Test
+    public void shouldGetErrorNotRetrieveChildNodesByInconsistentEqualPropertyFilter() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    nodeByPath(path: \"/testList\") {"
+                + "        children(propertiesFilter: {filters: ["
+                + "            {property: \"jcr:primaryType\"}"
+                + "        ]}) {"
+                + "            name"
+                + "		  }"
+                + "    }"
+                + "}");
+
+        validateError(result, "Property value is required for EQUAL evaluation");
+    }
+
+    @Test
+    public void shouldGetErrorNotRetrieveChildNodesByInconsistentDifferentPropertyFilter() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    nodeByPath(path: \"/testList\") {"
+                + "        children(propertiesFilter: {filters: ["
+                + "            {property: \"jcr:primaryType\" evaluation: DIFFERENT}"
+                + "        ]}) {"
+                + "            name"
+                + "		  }"
+                + "    }"
+                + "}");
+
+        validateError(result, "Property value is required for DIFFERENT evaluation");
+    }
 
     @Test
     public void shouldRetrieveChildNodesByNameTypeAndPropertyValue() throws Exception {
