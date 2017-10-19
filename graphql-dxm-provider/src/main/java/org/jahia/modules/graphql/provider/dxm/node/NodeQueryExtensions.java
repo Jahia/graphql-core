@@ -14,12 +14,16 @@ import org.jahia.services.query.QueryWrapper;
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Supplier;
 
 import static org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions.QueryLanguage.SQL2;
 
+/**
+ * A query extension that adds a possibility to fetch nodes by their UUIDs, paths, or via an SQL2/Xpath query.
+ */
 @GraphQLTypeExtension(GraphQLQuery.class)
 public class NodeQueryExtensions {
 
@@ -52,10 +56,19 @@ public class NodeQueryExtensions {
         }
     }
 
+    /**
+     * Get GraphQL representation of a node by its UUID.
+     *
+     * @param uuid The UUID of the node
+     * @param workspace The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default
+     * @return GraphQL representation of the node
+     * @throws BaseGqlClientException In case of issues fetching the node
+     */
     @GraphQLField
     @GraphQLNonNull
-    public static GqlJcrNode getNodeById(@GraphQLName("uuid") @GraphQLNonNull String uuid,
-                                         @GraphQLName("workspace") String workspace)
+    @GraphQLDescription("Get GraphQL representation of a node by its UUID")
+    public static GqlJcrNode getNodeById(@GraphQLName("uuid") @GraphQLNonNull @GraphQLDescription("The UUID of the node") String uuid,
+                                         @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace)
     throws BaseGqlClientException {
         try {
             return getGqlNodeById(uuid, workspace);
@@ -64,10 +77,19 @@ public class NodeQueryExtensions {
         }
     }
 
+    /**
+     * Get GraphQL representation of a node by its path.
+     *
+     * @param path The path of the node
+     * @param workspace The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default
+     * @return GraphQL representation of the node
+     * @throws BaseGqlClientException In case of issues fetching the node
+     */
     @GraphQLField
     @GraphQLNonNull
-    public static GqlJcrNode getNodeByPath(@GraphQLName("path") @GraphQLNonNull String path,
-                                           @GraphQLName("workspace") String workspace)
+    @GraphQLDescription("Get GraphQL representation of a node by its path")
+    public static GqlJcrNode getNodeByPath(@GraphQLName("path") @GraphQLNonNull @GraphQLDescription("The path of the node") String path,
+                                           @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace)
     throws BaseGqlClientException {
         try {
             return getGqlNodeByPath(path, workspace);
@@ -76,10 +98,19 @@ public class NodeQueryExtensions {
         }
     }
 
+    /**
+     * Get GraphQL representations of multiple nodes by their UUIDs.
+     *
+     * @param uuids The UUIDs of the nodes
+     * @param workspace The name of the workspace to fetch the nodes from; either 'default', 'live', or null to use 'default' by default
+     * @return GraphQL representations of the nodes
+     * @throws BaseGqlClientException In case of issues fetching the nodes
+     */
     @GraphQLField
     @GraphQLNonNull
-    public static List<GqlJcrNode> getNodesById(@GraphQLName("uuids") @GraphQLNonNull List<@GraphQLNonNull String> uuids,
-                                                @GraphQLName("workspace") String workspace)
+    @GraphQLDescription("Get GraphQL representations of multiple nodes by their UUIDs")
+    public static Collection<GqlJcrNode> getNodesById(@GraphQLName("uuids") @GraphQLNonNull @GraphQLDescription("The UUIDs of the nodes") Collection<@GraphQLNonNull String> uuids,
+                                                      @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the nodes from; either 'default', 'live', or null to use 'default' by default") String workspace)
     throws BaseGqlClientException {
         try {
             List<GqlJcrNode> nodes = new ArrayList<>(uuids.size());
@@ -92,10 +123,19 @@ public class NodeQueryExtensions {
         }
     }
 
+    /**
+     * Get GraphQL representations of multiple nodes by their paths.
+     *
+     * @param paths The paths of the nodes
+     * @param workspace The name of the workspace to fetch the nodes from; either 'default', 'live', or null to use 'default' by default
+     * @return GraphQL representations of the nodes
+     * @throws BaseGqlClientException In case of issues fetching the nodes
+     */
     @GraphQLField
     @GraphQLNonNull
-    public static List<GqlJcrNode> getNodesByPath(@GraphQLName("paths") @GraphQLNonNull List<@GraphQLNonNull String> paths,
-                                                  @GraphQLName("workspace") String workspace)
+    @GraphQLDescription("Get GraphQL representations of multiple nodes by their paths")
+    public static Collection<GqlJcrNode> getNodesByPath(@GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("The paths of the nodes") Collection<@GraphQLNonNull String> paths,
+                                                        @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the nodes from; either 'default', 'live', or null to use 'default' by default") String workspace)
     throws BaseGqlClientException {
         try {
             List<GqlJcrNode> nodes = new ArrayList<>(paths.size());
