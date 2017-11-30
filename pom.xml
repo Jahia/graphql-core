@@ -48,7 +48,7 @@
 
     <properties>
         <graphql-java.version>6.0</graphql-java.version>
-        <graphql-java-annotations.version>5.0.1-jahia-SNAPSHOT</graphql-java-annotations.version>
+        <graphql-java-annotations.version>6.0.0-jahia-SNAPSHOT</graphql-java-annotations.version>
         <graphql-java-servlet.version>4.6.1-jahia-SNAPSHOT</graphql-java-servlet.version>
     </properties>
 
