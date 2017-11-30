@@ -1,19 +1,20 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.annotations.GraphQLField;
-import graphql.annotations.GraphQLName;
-import graphql.annotations.GraphQLRelayMutation;
-import graphql.annotations.GraphQLTypeExtension;
+
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLRelayMutation;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.servlet.GraphQLContext;
-import graphql.servlet.GraphQLMutation;
+import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 
 import javax.jcr.RepositoryException;
 
-@GraphQLTypeExtension(GraphQLMutation.class)
+@GraphQLTypeExtension(DXGraphQLProvider.Mutation.class)
 public class NodeMutationExtensions {
 
     @GraphQLField
@@ -47,7 +48,7 @@ public class NodeMutationExtensions {
     }
 
 
-    public static class GraphQLMutationJCR extends GraphQLMutation {
+    public static class GraphQLMutationJCR extends DXGraphQLProvider.Mutation {
         public JCRSessionWrapper session;
 
         public GraphQLMutationJCR(JCRSessionWrapper session) {
@@ -67,7 +68,7 @@ public class NodeMutationExtensions {
 
     }
 
-    public static class GraphQLMutationNode extends GraphQLMutation {
+    public static class GraphQLMutationNode extends DXGraphQLProvider.Mutation {
 
         @GraphQLField
         public GqlJcrNode node;

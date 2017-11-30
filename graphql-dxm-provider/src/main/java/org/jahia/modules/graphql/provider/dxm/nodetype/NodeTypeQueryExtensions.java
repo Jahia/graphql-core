@@ -1,15 +1,15 @@
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
-import graphql.annotations.GraphQLField;
-import graphql.annotations.GraphQLName;
-import graphql.annotations.GraphQLNonNull;
-import graphql.annotations.GraphQLTypeExtension;
-import graphql.servlet.GraphQLQuery;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 
-@GraphQLTypeExtension(GraphQLQuery.class)
+@GraphQLTypeExtension(DXGraphQLProvider.Query.class)
 public class NodeTypeQueryExtensions {
 
     @GraphQLField

@@ -1,11 +1,12 @@
 package org.jahia.modules.graphql.provider.dxm.extensions;
 
-import graphql.annotations.GraphQLField;
-import graphql.annotations.GraphQLName;
-import graphql.annotations.GraphQLTypeExtension;
-import graphql.servlet.GraphQLQuery;
 
-@GraphQLTypeExtension(GraphQLQuery.class)
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+
+@GraphQLTypeExtension(DXGraphQLProvider.Query.class)
 public class QueryExtensions {
 
     @GraphQLField

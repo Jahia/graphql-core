@@ -1,8 +1,7 @@
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
-import graphql.annotations.GraphQLConnection;
-import graphql.annotations.GraphQLField;
-import graphql.annotations.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -84,7 +83,6 @@ public class GqlJcrNodeType {
 
 
     @GraphQLField
-    @GraphQLConnection
     public List<GqlJcrPropertyDefinition> getProperties() {
         List<GqlJcrPropertyDefinition> propertyList = null;
         try {
@@ -138,7 +136,6 @@ public class GqlJcrNodeType {
     }
 
     @GraphQLField
-    @GraphQLConnection
     public List<GqlJcrNodeType> getSuperTypes() {
         List<GqlJcrNodeType> superTypes = null;
         try {

@@ -1,8 +1,9 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 
-import graphql.annotations.GraphQLField;
-import graphql.annotations.GraphQLName;
+
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
 
 import java.util.ArrayList;
 import java.util.HashMap;

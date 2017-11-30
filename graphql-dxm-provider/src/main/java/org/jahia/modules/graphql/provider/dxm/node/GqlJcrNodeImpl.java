@@ -11,8 +11,8 @@ import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.LanguageCodeConverters;
 
-import graphql.annotations.GraphQLName;
-import graphql.annotations.GraphQLNonNull;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;

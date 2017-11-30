@@ -1,7 +1,8 @@
 package org.jahia.modules.graphql.provider.dxm.render;
 
-import graphql.annotations.GraphQLField;
-import graphql.annotations.GraphQLTypeExtension;
+
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.servlet.GraphQLContext;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;

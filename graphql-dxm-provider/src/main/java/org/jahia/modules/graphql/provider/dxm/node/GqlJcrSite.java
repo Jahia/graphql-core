@@ -1,10 +1,8 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 
-import graphql.annotations.GraphQLField;
-import graphql.annotations.GraphQLName;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 

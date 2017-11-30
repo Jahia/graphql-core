@@ -1,15 +1,14 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.TypeResolutionEnvironment;
-import graphql.annotations.GraphQLAnnotations;
-import graphql.annotations.GraphQLAnnotationsProcessor;
+import graphql.annotations.processor.GraphQLAnnotationsComponent;
+import graphql.annotations.processor.ProcessingElementsContainer;
+import graphql.annotations.processor.retrievers.GraphQLObjectHandler;
 import graphql.schema.*;
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +31,8 @@ public class SpecializedTypesHandler {
     public static final String CHILD_PREFIX = "child_";
     public static final String UNNAMED_CHILD_PREFIX = "child_";
 
-    private static GraphQLAnnotationsProcessor graphQLAnnotations;
+    private static GraphQLAnnotationsComponent graphQLAnnotations;
+    private static ProcessingElementsContainer container;
 
     private static Logger logger = LoggerFactory.getLogger(SpecializedTypesHandler.class);
     private static Pattern VALID_NAME = Pattern.compile("^[_a-zA-Z][_a-zA-Z0-9]*$");
@@ -48,9 +48,10 @@ public class SpecializedTypesHandler {
         return instance;
     }
 
-    public SpecializedTypesHandler(GraphQLAnnotationsProcessor annotations) {
+    public SpecializedTypesHandler(GraphQLAnnotationsComponent annotations, ProcessingElementsContainer container) {
         instance = this;
-        graphQLAnnotations = annotations;
+        SpecializedTypesHandler.graphQLAnnotations = annotations;
+        SpecializedTypesHandler.container = container;
         specializedTypes.add("jnt:page");
         specializedTypesClass.put("jnt:virtualsite", GqlJcrSite.class);
     }
@@ -61,7 +62,7 @@ public class SpecializedTypesHandler {
 
     public void initializeTypes() {
         knownTypes = new HashMap<>();
-        GraphQLInterfaceType interfaceType = (GraphQLInterfaceType) graphQLAnnotations.getOutputType(GqlJcrNode.class);
+        GraphQLInterfaceType interfaceType = (GraphQLInterfaceType) graphQLAnnotations.getOutputTypeProcessor().getOutputType(GqlJcrNode.class, container);
         for (String typeName : specializedTypes) {
             try {
                 final ExtendedNodeType type = NodeTypeRegistry.getInstance().getNodeType(typeName);
@@ -76,7 +77,7 @@ public class SpecializedTypesHandler {
             }
         }
         for (Map.Entry<String, Class<? extends GqlJcrNode>> entry : specializedTypesClass.entrySet()) {
-            knownTypes.put(entry.getKey(), graphQLAnnotations.getObject(entry.getValue()));
+            knownTypes.put(entry.getKey(), (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputType(entry.getValue(), container));
         }
     }
 
@@ -87,7 +88,7 @@ public class SpecializedTypesHandler {
         final GraphQLObjectType.Builder builder = GraphQLObjectType.newObject()
                 .name(escapedTypeName)
                 .withInterface(interfaceType)
-                .fields(graphQLAnnotations.getObject(GqlJcrNodeImpl.class).getFieldDefinitions());
+                .fields(((GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputType(GqlJcrNodeImpl.class, container)).getFieldDefinitions());
 
         final PropertyDefinition[] properties = type.getPropertyDefinitions();
         if (properties.length > 0) {
@@ -192,7 +193,7 @@ public class SpecializedTypesHandler {
                 break;
             case PropertyType.REFERENCE:
             case PropertyType.WEAKREFERENCE:
-                type = graphQLAnnotations.getOutputTypeOrRef(GqlJcrNode.class);
+                type = graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNode.class, container);
                 break;
             case PropertyType.BINARY:
             case PropertyType.NAME:
@@ -247,7 +248,7 @@ public class SpecializedTypesHandler {
             if (getInstance().knownTypes.containsKey(type)) {
                 return getInstance().knownTypes.get(type);
             } else {
-                return graphQLAnnotations.getObject(GqlJcrNodeImpl.class);
+                return (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputType(GqlJcrNodeImpl.class, container);
             }
         }
     }

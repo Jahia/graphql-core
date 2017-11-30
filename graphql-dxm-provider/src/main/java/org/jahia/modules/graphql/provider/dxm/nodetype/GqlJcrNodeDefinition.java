@@ -1,7 +1,7 @@
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
-import graphql.annotations.GraphQLField;
-import graphql.annotations.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
 
 /**
  * TODO Comment me

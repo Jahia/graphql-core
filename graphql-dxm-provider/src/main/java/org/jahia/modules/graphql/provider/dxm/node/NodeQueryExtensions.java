@@ -1,14 +1,10 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.ErrorType;
-import graphql.annotations.*;
-import graphql.servlet.GraphQLQuery;
+import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
-import org.jahia.services.content.JCRNodeIteratorWrapper;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.QueryManagerWrapper;
+import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
 
 import javax.jcr.RepositoryException;
@@ -24,7 +20,7 @@ import static org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions.Qu
 /**
  * A query extension that adds a possibility to fetch nodes by their UUIDs, paths, or via an SQL2/Xpath query.
  */
-@GraphQLTypeExtension(GraphQLQuery.class)
+@GraphQLTypeExtension(DXGraphQLProvider.Query.class)
 public class NodeQueryExtensions {
 
     /**
@@ -158,7 +154,6 @@ public class NodeQueryExtensions {
      * @throws BaseGqlClientException In case of issues executing the query
      */
     @GraphQLField
-    @GraphQLConnection
     @GraphQLDescription("Get GraphQL representations of nodes using a query language supported by JCR")
     public static List<GqlJcrNode> getNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
                                                    @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage,

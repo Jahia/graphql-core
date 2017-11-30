@@ -1,6 +1,6 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.annotations.*;
+import graphql.annotations.annotationTypes.*;
 import org.jahia.services.content.JCRNodeWrapper;
 
 import java.util.Collection;
