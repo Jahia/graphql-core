@@ -2,8 +2,13 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.ErrorType;
 import graphql.annotations.annotationTypes.*;
+import graphql.annotations.connection.GraphQLConnection;
+import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
+import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
 
@@ -154,10 +159,11 @@ public class NodeQueryExtensions {
      * @throws BaseGqlClientException In case of issues executing the query
      */
     @GraphQLField
+    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("Get GraphQL representations of nodes using a query language supported by JCR")
-    public static List<GqlJcrNode> getNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
-                                                   @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage,
-                                                   @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to select nodes from; either 'default', 'live', or null to use 'default' by default") String workspace)
+    public static DXPaginatedData<GqlJcrNode> getNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
+                                                              @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage,
+                                                              @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to select nodes from; either 'default', 'live', or null to use 'default' by default") String workspace, DataFetchingEnvironment environment)
     throws BaseGqlClientException {
         try {
             List<GqlJcrNode> result = new LinkedList<>();
@@ -168,7 +174,8 @@ public class NodeQueryExtensions {
                 JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();
                 result.add(SpecializedTypesHandler.getNode(node));
             }
-            return result;
+            // todo: naive implementation of the pagination, could be improved in some cases by setting limit/offset in query
+            return PaginationHelper.paginate(result, NodeCursor.getInstance(), environment);
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }

@@ -17,6 +17,7 @@ import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodeTypeQueryExtensions;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodetypeJCRNodeExtensions;
+import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.render.RenderNodeExtensions;
 import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
@@ -58,6 +59,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         container = graphQLAnnotations.createContainer();
 
         GraphQLExtensionsHandler extensionsHandler = graphQLAnnotations.getExtensionsHandler();
+
+        container.setRelay(new DXRelay());
 
         extensionsProviders.add(this);
 
