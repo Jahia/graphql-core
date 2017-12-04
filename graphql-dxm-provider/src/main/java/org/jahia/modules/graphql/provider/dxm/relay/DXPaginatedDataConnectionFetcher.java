@@ -44,7 +44,7 @@ public class DXPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T>
         List<Edge<T>> edges = new ArrayList<>();
         for (; data.hasNext(); ) {
             T entity = data.next();
-            edges.add(new DefaultEdge<>(entity, new DefaultConnectionCursor(paginatedData.getCursor(entity))));
+            edges.add(new DXEdge<>(entity, paginatedData.getIndex(entity), new DefaultConnectionCursor(paginatedData.getCursor(entity))));
         }
         return edges;
     }

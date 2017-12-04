@@ -8,4 +8,6 @@ public interface DXPaginatedData<T> extends PaginatedData<T> {
 
     int getNodesCount();
 
+    int getIndex(T entity);
+
 }
