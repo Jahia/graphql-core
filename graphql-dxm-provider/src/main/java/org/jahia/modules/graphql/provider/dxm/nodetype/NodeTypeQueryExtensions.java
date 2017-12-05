@@ -13,7 +13,7 @@ import javax.jcr.nodetype.NoSuchNodeTypeException;
 public class NodeTypeQueryExtensions {
 
     @GraphQLField
-    public static GqlJcrNodeType getNodeTypesByName(@GraphQLNonNull @GraphQLName("name") String name) {
+    public static GqlJcrNodeType getNodeTypeByName(@GraphQLNonNull @GraphQLName("name") String name) {
         try {
             return new GqlJcrNodeType(NodeTypeRegistry.getInstance().getNodeType(name));
         } catch (NoSuchNodeTypeException e) {

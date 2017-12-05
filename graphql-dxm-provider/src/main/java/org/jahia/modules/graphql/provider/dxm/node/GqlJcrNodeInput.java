@@ -13,9 +13,9 @@ import java.util.List;
 public class GqlJcrNodeInput {
 
     public GqlJcrNodeInput(@GraphQLName("name") String name,
-                                 @GraphQLName("primaryNodeType") String primaryNodeType,
-                                 @GraphQLName("properties") List<GqlJcrPropertyInput> properties,
-                                 @GraphQLName("children") List<GqlJcrNodeInput> children) {
+                           @GraphQLName("primaryNodeType") String primaryNodeType,
+                           @GraphQLName("properties") List<GqlJcrPropertyInput> properties,
+                           @GraphQLName("children") List<GqlJcrNodeInput> children) {
         this.name = name;
         this.primaryNodeType = primaryNodeType;
         this.properties = properties;

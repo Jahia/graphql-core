@@ -11,7 +11,7 @@ import static java.util.Base64.getEncoder;
 public class PaginationHelper {
 
     public static <T> DXPaginatedData<T> paginate(List<T> source, DataFetchingEnvironment environment) {
-        return paginate(source, obj -> getEncoder().encodeToString(("index:" + source.indexOf(obj)).getBytes(StandardCharsets.UTF_8)), environment);
+        return paginate(source, obj -> encodeCursor("index:" + source.indexOf(obj)), environment);
     }
 
     public static <T> DXPaginatedData<T> paginate(List<T> source, CursorSupport<T> cursorSupport, DataFetchingEnvironment environment) {
@@ -71,6 +71,10 @@ public class PaginationHelper {
                 environment.getArgument("last"),
                 environment.getArgument("offset"),
                 environment.getArgument("limit"));
+    }
+
+    public static String encodeCursor(String s) {
+        return getEncoder().encodeToString(s.getBytes(StandardCharsets.UTF_8));
     }
 
     public static class Arguments {

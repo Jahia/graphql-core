@@ -2,6 +2,11 @@ package org.jahia.modules.graphql.provider.dxm.nodetype;
 
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.connection.GraphQLConnection;
+import graphql.annotations.connection.PaginatedData;
+import graphql.schema.DataFetchingEnvironment;
+import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -119,7 +124,8 @@ public class GqlJcrNodeType {
     }
 
     @GraphQLField
-    public List<GqlJcrNodeType> getSubTypes() {
+    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    public PaginatedData<GqlJcrNodeType> getSubTypes(DataFetchingEnvironment environment) {
         List<GqlJcrNodeType> subTypes = null;
         try {
             ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
@@ -130,7 +136,7 @@ public class GqlJcrNodeType {
         } catch (NoSuchNodeTypeException e) {
             logger.error(e.getMessage(), e);
         }
-        return subTypes;
+        return PaginationHelper.paginate(subTypes, t -> PaginationHelper.encodeCursor(t.name), environment);
 
 
     }

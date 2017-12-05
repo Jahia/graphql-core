@@ -175,7 +175,7 @@ public class NodeQueryExtensions {
                 result.add(SpecializedTypesHandler.getNode(node));
             }
             // todo: naive implementation of the pagination, could be improved in some cases by setting limit/offset in query
-            return PaginationHelper.paginate(result, NodeCursor.getInstance(), environment);
+            return PaginationHelper.paginate(result, n -> PaginationHelper.encodeCursor(n.getUuid()), environment);
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }

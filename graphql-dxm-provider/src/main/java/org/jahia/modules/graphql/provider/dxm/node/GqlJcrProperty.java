@@ -51,6 +51,20 @@ public class GqlJcrProperty {
     }
 
     /**
+     * @return The path of the JCR property
+     */
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("The path of the JCR property")
+    public String getPath() {
+        try {
+            return property.getPath();
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * @return The type of the JCR property
      */
     @GraphQLField
@@ -58,7 +72,7 @@ public class GqlJcrProperty {
     @GraphQLDescription("The type of the JCR property")
     public GqlJcrPropertyType getType() {
         try {
-            return GqlJcrPropertyType.getValue(property.getType());
+            return GqlJcrPropertyType.fromValue(property.getType());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
