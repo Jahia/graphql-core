@@ -86,7 +86,6 @@
     <modules>
         <!--<module>user-provider</module>-->
         <module>graphql-dxm-provider</module>
-        <module>graphiql</module>
         <module>features</module>
         <module>graphql-extension-example</module>
         <module>graphql-test</module>

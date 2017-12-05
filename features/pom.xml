@@ -123,11 +123,6 @@
             <artifactId>graphql-dxm-provider</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.jahia.modules</groupId>
-            <artifactId>graphql-core-graphiql</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
 
     <build>

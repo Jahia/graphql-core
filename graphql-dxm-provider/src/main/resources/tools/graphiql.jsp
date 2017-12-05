@@ -18,7 +18,7 @@
 
 <html>
 <head>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/modules/graphql-core-graphiql/css/graphiql.css" type="text/css" />
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/modules/graphql-dxm-provider/css/graphiql.css" type="text/css" />
 </head>
 <body>
 <style>
@@ -28,10 +28,10 @@
 </style>
 
 <div id="graphiql">Loading...</div>
-<script src="${pageContext.request.contextPath}/modules/graphql-core-graphiql/javascript/vendor/fetch.min.js" ></script>
-<script src="${pageContext.request.contextPath}/modules/graphql-core-graphiql/javascript/vendor/react-15.0.1.min.js" ></script>
-<script src="${pageContext.request.contextPath}/modules/graphql-core-graphiql/javascript/vendor/react-dom-15.0.1.min.js"></script>
-<script src="${pageContext.request.contextPath}/modules/graphql-core-graphiql/javascript/graphiql.js" ></script>
+<script src="${pageContext.request.contextPath}/modules/graphql-dxm-provider/javascript/vendor/fetch.min.js" ></script>
+<script src="${pageContext.request.contextPath}/modules/graphql-dxm-provider/javascript/vendor/react-15.0.1.min.js" ></script>
+<script src="${pageContext.request.contextPath}/modules/graphql-dxm-provider/javascript/vendor/react-dom-15.0.1.min.js"></script>
+<script src="${pageContext.request.contextPath}/modules/graphql-dxm-provider/javascript/graphiql.js" ></script>
 <script>
 
     /**

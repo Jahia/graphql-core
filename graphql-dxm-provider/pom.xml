@@ -47,6 +47,7 @@
 
     <properties>
         <export-package>org.jahia.modules.graphql.provider.dxm,org.jahia.modules.graphql.provider.dxm.node,org.jahia.modules.graphql.provider.dxm.nodetype</export-package>
+        <jahia-module-type>system</jahia-module-type>
     </properties>
 
     <dependencies>
@@ -80,7 +81,6 @@
                 <configuration>
                     <instructions>
                         <Jahia-Depends>default</Jahia-Depends>
-                        <!--<Require-Capability>xxxx</Require-Capability>-->
                         <_dsannotations>*</_dsannotations>
                     </instructions>
                 </configuration>
