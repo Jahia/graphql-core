@@ -8,6 +8,8 @@ import org.osgi.service.component.annotations.Component;
 import java.util.*;
 
 /**
+ * OSGI managed service that handle the graphql configuration file and load the different properties
+ *
  * Created by kevan
  */
 @Component(service = ManagedService.class, configurationPid = "org.jahia.modules.graphql.provider")
@@ -15,7 +17,7 @@ public class DXGraphQLConfig implements ManagedService {
 
     private final static String PERMISSION_PREFIX = "permission.";
 
-    Map<String, Set<DXGraphQLConfigFieldPermission>> permissions = null;
+    Map<String, Set<DXGraphQLConfigFieldPermission>> permissions = new HashMap<>();
 
     @Override
     public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
@@ -24,17 +26,28 @@ public class DXGraphQLConfig implements ManagedService {
             return;
         }
 
-        // init
-        permissions = new HashMap<>();
-
         // parse properties
         Enumeration<String> keys = properties.keys();
         while (keys.hasMoreElements()) {
             String key = keys.nextElement();
+
+            // parse permissions ( permission format is like: permission.Query.nodesByQuery = privileged )
             if (key.startsWith(PERMISSION_PREFIX)) {
-                // parse permission
                 String[] splittedKey = StringUtils.split(key, ".");
-                // todo
+                if(splittedKey.length >= 3 && StringUtils.isNotEmpty(splittedKey[1]) && StringUtils.isNotEmpty(splittedKey[2])) {
+
+                    Set<DXGraphQLConfigFieldPermission> fieldPermissions;
+                    if(!permissions.containsKey(splittedKey[1])) {
+                        fieldPermissions = new HashSet<>();
+                        permissions.put(splittedKey[1], fieldPermissions);
+                    } else {
+                        fieldPermissions = permissions.get(splittedKey[1]);
+                    }
+
+                    if (properties.get(key) != null) {
+                        fieldPermissions.add(new DXGraphQLConfigFieldPermission(splittedKey[2], (String) properties.get(key)));
+                    }
+                }
             }
         }
     }
@@ -58,6 +71,20 @@ public class DXGraphQLConfig implements ManagedService {
 
         public String getPermission() {
             return permission;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            DXGraphQLConfigFieldPermission that = (DXGraphQLConfigFieldPermission) o;
+            return Objects.equals(field, that.field) &&
+                    Objects.equals(permission, that.permission);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(field, permission);
         }
     }
 }
