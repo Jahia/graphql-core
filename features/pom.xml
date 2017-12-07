@@ -42,7 +42,7 @@
     </parent>
     <artifactId>graphql-core</artifactId>
     <name>DX :: GraphQL Core integration :: Features</name>
-    <packaging>feature</packaging>
+    <packaging>bundle</packaging>
     <description>This is the features project for the DX GraphQL Core integration project</description>
 
     <dependencies>
@@ -51,22 +51,6 @@
             <artifactId>org.apache.felix.http.whiteboard</artifactId>
             <version>2.2.1</version>
         </dependency>
-        <!-- Missing implicit GraphQL dependencies -->
-        <!--<dependency>-->
-            <!--<groupId>com.fasterxml.jackson.core</groupId>-->
-            <!--<artifactId>jackson-core</artifactId>-->
-            <!--<version>2.8.9</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>com.fasterxml.jackson.core</groupId>-->
-            <!--<artifactId>jackson-annotations</artifactId>-->
-            <!--<version>2.8.9</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>com.fasterxml.jackson.core</groupId>-->
-            <!--<artifactId>jackson-databind</artifactId>-->
-            <!--<version>2.8.9</version>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jdk8</artifactId>
@@ -126,25 +110,34 @@
     </dependencies>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.karaf.tooling</groupId>
-                    <artifactId>karaf-maven-plugin</artifactId>
-                    <version>${karaf.version}</version>
-                    <extensions>true</extensions>
-                    <configuration>
-                        <includeTransitiveDependency>false</includeTransitiveDependency>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.karaf.tooling</groupId>
                 <artifactId>karaf-maven-plugin</artifactId>
+                <version>${karaf.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <includeTransitiveDependency>false</includeTransitiveDependency>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>features-generate-descriptor</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>target/feature</directory>
+                <includes>
+                    <include>feature.xml</include>
+                </includes>
+                <targetPath>META-INF/org.apache.karaf.shell.features</targetPath>
+            </resource>
+        </resources>
     </build>
 
 </project>
