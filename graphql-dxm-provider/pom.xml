@@ -99,7 +99,7 @@
                             <artifacts>
                                 <artifact>
                                     <file>
-                                        src/main/resources/org.jahia.modules.graphql.provider.cfg
+                                        src/main/resources/META-INF/configurations/org.jahia.modules.graphql.provider.cfg
                                     </file>
                                     <type>cfg</type>
                                     <classifier>graphql-cfg</classifier>
