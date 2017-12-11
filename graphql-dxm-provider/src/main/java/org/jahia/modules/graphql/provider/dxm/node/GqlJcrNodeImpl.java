@@ -399,7 +399,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         }
     }
 
-    private static JCRNodeWrapper getNodeInLanguage(JCRNodeWrapper node, String language) throws RepositoryException {
+    static JCRNodeWrapper getNodeInLanguage(JCRNodeWrapper node, String language) throws RepositoryException {
         if (language == null) {
             return node;
         }

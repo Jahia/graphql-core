@@ -4,6 +4,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 
 import java.util.HashMap;
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.List;
 @GraphQLName("JCRPropertyInput")
 public class GqlJcrPropertyInput {
 
-    public GqlJcrPropertyInput(@GraphQLName("name") String name,
+    public GqlJcrPropertyInput(@GraphQLName("name") @GraphQLNonNull String name,
                                      @GraphQLName("language") String language,
                                      @GraphQLName("type") GqlJcrPropertyType type,
                                      @GraphQLName("value") String value,
