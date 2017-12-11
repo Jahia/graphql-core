@@ -375,9 +375,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     @Override
     @GraphQLNonNull
-    public GqlJcrSite getSite() {
+    public GqlJcrNode getSite() {
         try {
-            return new GqlJcrSite(node.getResolveSite());
+            return new GqlJcrNodeImpl(node.getResolveSite());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -407,17 +407,17 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         }
     }
 
-    @Override
-    public GqlJcrNode asMixin(@GraphQLName("type") String type) {
-        try {
-            if (!node.isNodeType(type)) {
-                return null;
-            }
-            return SpecializedTypesHandler.getNode(node, type);
-        } catch (RepositoryException e) {
-            throw new RuntimeException(e);
-        }
-    }
+//    @Override
+//    public GqlJcrNode asMixin(@GraphQLName("type") String type) {
+//        try {
+//            if (!node.isNodeType(type)) {
+//                return null;
+//            }
+//            return SpecializedTypesHandler.getNode(node, type);
+//        } catch (RepositoryException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
 
     private static String normalizePath(String path) {
         return (path.endsWith("/") ? path : path + "/");

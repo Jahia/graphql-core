@@ -97,8 +97,8 @@ public class SpecializedTypesHandler {
         instance = this;
         SpecializedTypesHandler.graphQLAnnotations = annotations;
         SpecializedTypesHandler.container = container;
-        specializedTypes.add("jnt:page");
-        specializedTypesClass.put("jnt:virtualsite", GqlJcrSite.class);
+//        specializedTypes.add("jnt:page");
+//        specializedTypesClass.put("jnt:virtualsite", GqlJcrSite.class);
     }
 
     public Map<String, GraphQLObjectType> getKnownTypes() {

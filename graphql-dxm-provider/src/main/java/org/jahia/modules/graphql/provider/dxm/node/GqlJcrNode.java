@@ -193,7 +193,7 @@ public interface GqlJcrNode {
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site")
-    GqlJcrSite getSite();
+    GqlJcrNode getSite();
 
     /**
      * @return GraphQL representations of the reference properties that target the JCR Node
@@ -204,15 +204,15 @@ public interface GqlJcrNode {
     @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
     DXPaginatedData<GqlJcrProperty> getReferences(DataFetchingEnvironment environment);
 
-    /**
-     * Get GraphQL representation of the JCR node as a mixin type it has.
-     *
-     * @param type The mixin type name
-     * @return GraphQL representation of the JCR node as the mixin type, or null in case the node does not actually has the mixin type
-     */
-    @GraphQLField
-    @GraphQLDescription("GraphQL representation of the JCR node as the mixin type, or null in case the node does not actually has the mixin type")
-    GqlJcrNode asMixin(@GraphQLName("type") @GraphQLDescription("The mixin type name") String type);
+//    /**
+//     * Get GraphQL representation of the JCR node as a mixin type it has.
+//     *
+//     * @param type The mixin type name
+//     * @return GraphQL representation of the JCR node as the mixin type, or null in case the node does not actually has the mixin type
+//     */
+//    @GraphQLField
+//    @GraphQLDescription("GraphQL representation of the JCR node as the mixin type, or null in case the node does not actually has the mixin type")
+//    GqlJcrNode asMixin(@GraphQLName("type") @GraphQLDescription("The mixin type name") String type);
 
     /**
      * A way to evaluate a criteria consisting of multiple sub-criteria.

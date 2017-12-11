@@ -149,10 +149,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     public Collection<Class<?>> getExtensions() {
         return Arrays.<Class<?>>asList(
-                NodeQueryExtensions.class,
-                NodeMutationExtensions.class,
-                NodeTypeJCRQueryExtensions.class,
-                NodetypeJCRNodeExtensions.class,
-                RenderNodeExtensions.class);
+                NodeQueryExtensions.class
+//                NodeMutationExtensions.class,
+//                NodeTypeJCRQueryExtensions.class,
+//                NodetypeJCRNodeExtensions.class,
+//                RenderNodeExtensions.class
+        );
     }
 }
