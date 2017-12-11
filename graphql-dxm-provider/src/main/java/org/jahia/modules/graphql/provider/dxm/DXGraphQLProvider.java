@@ -11,11 +11,8 @@ import graphql.servlet.GraphQLMutationProvider;
 import graphql.servlet.GraphQLProvider;
 import graphql.servlet.GraphQLQueryProvider;
 import graphql.servlet.GraphQLTypesProvider;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
-import org.jahia.modules.graphql.provider.dxm.node.NodeMutationExtensions;
-import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
-import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
-import org.jahia.modules.graphql.provider.dxm.nodetype.NodeTypeQueryExtensions;
+import org.jahia.modules.graphql.provider.dxm.node.*;
+import org.jahia.modules.graphql.provider.dxm.nodetype.NodeTypeJCRQueryExtensions;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodetypeJCRNodeExtensions;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.render.RenderNodeExtensions;
@@ -108,9 +105,9 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     public Collection<Class<?>> getExtensions() {
         return Arrays.<Class<?>>asList(
                 NodeQueryExtensions.class,
-                NodeTypeQueryExtensions.class,
+                NodeMutationExtensions.class,
+                NodeTypeJCRQueryExtensions.class,
                 NodetypeJCRNodeExtensions.class,
-                RenderNodeExtensions.class,
-                NodeMutationExtensions.class);
+                RenderNodeExtensions.class);
     }
 }

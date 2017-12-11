@@ -15,8 +15,14 @@ import org.jahia.services.render.RenderContext;
 @GraphQLTypeExtension(GqlJcrNode.class)
 public class RenderNodeExtensions {
 
+    private GqlJcrNode node;
+
+    public RenderNodeExtensions(GqlJcrNode node) {
+        this.node = node;
+    }
+
     @GraphQLField
-    public static GqlJcrNodeImpl getDisplayableNode(DataFetchingEnvironment environment) {
+    public GqlJcrNodeImpl getDisplayableNode(DataFetchingEnvironment environment) {
         RenderContext context = new RenderContext(((GraphQLContext) environment.getContext()).getRequest().get(),
                 ((GraphQLContext) environment.getContext()).getResponse().get(),
                 JCRSessionFactory.getInstance().getCurrentUser());
@@ -29,8 +35,7 @@ public class RenderNodeExtensions {
     }
 
     @GraphQLField
-    public static String getAjaxRenderUrl(DataFetchingEnvironment environment) {
-        GqlJcrNode node = environment.getSource();
+    public String getAjaxRenderUrl() {
         return node.getNode().getUrl() + ".ajax";
     }
 

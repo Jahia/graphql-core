@@ -79,6 +79,7 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
     public void shouldRetrievePropertyWithBasicFileds() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        property(name: \"jcr:uuid\") {"
                 + "            name"
@@ -88,8 +89,9 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
                 + "            }"
                 + "		  }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
+        JSONObject property = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property");
 
         Assert.assertEquals("jcr:uuid", property.getString("name"));
         Assert.assertEquals(GqlJcrPropertyType.STRING.name(), property.getString("type"));
@@ -99,6 +101,7 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
     @Test
     public void shouldRetrieveNonInternationalizedPropertyNotPassingLanguage() throws Exception {
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        property(name: \"jcr:uuid\") {"
                 + "            internationalized"
@@ -107,14 +110,16 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
                 + "            values"
                 + "		  }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
+        JSONObject property = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property");
         validateSingleValuedProperty(property, false, JSONObject.NULL, nodeUuid);
     }
 
     @Test
     public void shouldRetrieveNonInternationalizedPropertyPassingLanguage() throws Exception {
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        property(name: \"jcr:uuid\" language: \"en\") {"
                 + "            internationalized"
@@ -123,14 +128,16 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
                 + "            values"
                 + "		  }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
+        JSONObject property = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property");
         validateSingleValuedProperty(property, false, JSONObject.NULL, nodeUuid);
     }
 
     @Test
     public void shouldNotRetrieveInternationalizedPropertyNotPassingLanguage() throws Exception {
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        property(name: \"jcr:title\") {"
                 + "            internationalized"
@@ -139,14 +146,16 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
                 + "            values"
                 + "		  }"
                 + "    }"
+                + "    }"
                 + "}");
-        Object property = result.getJSONObject("data").getJSONObject("nodeByPath").get("property");
+        Object property = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").get("property");
         Assert.assertEquals(JSONObject.NULL, property);
     }
 
     @Test
     public void shouldRetrieveInternationalizedPropertyPassingLanguage() throws Exception {
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        property(name: \"jcr:title\" language: \"fr\") {"
                 + "            internationalized"
@@ -155,8 +164,9 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
                 + "            values"
                 + "		  }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
+        JSONObject property = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property");
         validateSingleValuedProperty(property, true, "fr", nodeTitleFr);
     }
 
@@ -164,6 +174,7 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
     public void shouldRetrieveNonInternationalizedPropertiesNotPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        properties(names: [\"jcr:uuid\", \"jcr:title\"]) {"
                 + "            name"
@@ -177,8 +188,9 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
                 + "            }"
                 + "		  }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONArray properties = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("properties");
+        JSONArray properties = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("properties");
 
         Assert.assertEquals(1, properties.length());
         JSONObject property = properties.getJSONObject(0);
@@ -189,6 +201,7 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
     public void shouldRetrieveInternationalizedAndNonInternationalizedPropertiesPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        properties(names: [\"jcr:uuid\", \"jcr:title\"] language: \"en\") {"
                 + "            name"
@@ -202,8 +215,9 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
                 + "            }"
                 + "		  }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONArray properties = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("properties");
+        JSONArray properties = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("properties");
         Map<String, JSONObject> propertyByName = toItemByKeyMap("name", properties);
 
         Assert.assertEquals(2, propertyByName.size());
@@ -215,13 +229,15 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
     public void shouldRetrieveAllPropertiesPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        properties(language: \"fr\") {"
                 + "            name"
                 + "		  }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONArray properties = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("properties");
+        JSONArray properties = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("properties");
         Map<String, JSONObject> propertyByName = toItemByKeyMap("name", properties);
 
         Assert.assertEquals(15, propertyByName.size());
@@ -246,14 +262,16 @@ public class GraphQLPropertiesTest extends GraphQLTestSupport {
     public void shouldRetrieveMultivaluedProperty() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        property(name: \"j:liveProperties\") {"
                 + "            value"
                 + "            values"
                 + "		  }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONObject property = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property");
+        JSONObject property = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property");
         JSONArray values = property.getJSONArray("values");
         HashSet<String> vals = new HashSet<>(values.length());
         for (int i = 0; i < values.length(); i++) {

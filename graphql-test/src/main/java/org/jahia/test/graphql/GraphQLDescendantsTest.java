@@ -97,8 +97,10 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveAllChildNodes() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children {"
+                + "        nodes {"
                 + "            uuid"
                 + "            name"
                 + "            path"
@@ -106,9 +108,11 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
                 + "                path"
                 + "            }"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(4, childByName.size());
@@ -122,13 +126,17 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByNames() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(names: [\"testSubList1\", \"testSubList2\"]) {"
+                + "        nodes {"
                 + "            name"
-                + "		  }"
+                + "	       }"
+                + "	       }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(2, childByName.size());
@@ -140,13 +148,17 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByAnyType() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(typesFilter: {types: [\"jnt:contentList\", \"nonExistingType\"]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(4, childByName.size());
@@ -160,13 +172,17 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByAllTypes() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(typesFilter: {multi: ALL types: [\"jnt:contentList\", \"jmix:liveProperties\"]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(1, childByName.size());
@@ -177,15 +193,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByPresentNonIternationalizedPropertyNotPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"j:liveProperties\" evaluation: PRESENT}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(1, childByName.size());
@@ -196,15 +216,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByPresentNonIternationalizedPropertyPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"j:liveProperties\" evaluation: PRESENT language:\"en\"}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(1, childByName.size());
@@ -215,15 +239,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldNotRetrieveChildNodesByPresentIternationalizedPropertyNotPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:title\" evaluation: PRESENT}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(0, childByName.size());
@@ -233,15 +261,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByPresentIternationalizedPropertyPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:title\" evaluation: PRESENT language:\"en\"}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(2, childByName.size());
@@ -253,15 +285,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByAbsentNonIternationalizedProperty() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"j:liveProperties\" evaluation: ABSENT}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(3, childByName.size());
@@ -274,15 +310,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByAbsentIternationalizedPropertyNotPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:title\" evaluation: ABSENT}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(4, childByName.size());
@@ -296,15 +336,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByAbsentIternationalizedPropertyPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:title\" evaluation: ABSENT language:\"fr\"}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(2, childByName.size());
@@ -316,15 +360,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByEqualNonIternationalizedPropertyValueNotPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:uuid\" value: \"" + subNodeUuid1 + "\"}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(1, childByName.size());
@@ -335,15 +383,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByEqualNonIternationalizedPropertyValuePassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:uuid\" value: \"" + subNodeUuid1 + "\" language: \"en\"}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(1, childByName.size());
@@ -354,15 +406,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldNotRetrieveChildNodesByEqualInternationalizedPropertyValueNotPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:title\" value: \"" + subnodeTitleEn1 + "\"}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(0, childByName.size());
@@ -372,15 +428,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByEqualternationalizedPropertyValuePassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:title\" value: \"" + subnodeTitleEn1 + "\" language: \"en\"}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(1, childByName.size());
@@ -391,15 +451,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByDifferentNonIternationalizedPropertyValueNotPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:uuid\" value: \"" + subNodeUuid1 + "\" evaluation: DIFFERENT}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(3, childByName.size());
@@ -412,15 +476,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByDifferentNonIternationalizedPropertyValuePassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:uuid\" value: \"" + subNodeUuid1 + "\" evaluation: DIFFERENT language: \"en\"}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(3, childByName.size());
@@ -433,15 +501,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByDifferentInternationalizedPropertyValueNotPassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:title\" value: \"" + subnodeTitleEn1 + "\" evaluation: DIFFERENT}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(4, childByName.size());
@@ -455,15 +527,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByDifferentInternationalizedPropertyValuePassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:title\" value: \"" + subnodeTitleEn1 + "\" evaluation: DIFFERENT language: \"en\"}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(3, childByName.size());
@@ -476,16 +552,20 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByAllPropertyValues() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:primaryType\" value: \"jnt:contentList\"}"
                 + "            {property: \"jcr:title\" value: \"" + subnodeTitleEn2 + "\" language: \"en\"}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(1, childByName.size());
@@ -496,16 +576,20 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByAnyPropertyValue() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {multi: ANY filters: ["
                 + "            {property: \"jcr:primaryType\" value: \"jnt:contentList\"}"
                 + "            {property: \"jcr:title\" value: \"" + subnodeTitleEn2 + "\" language: \"en\"}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(4, childByName.size());
@@ -518,12 +602,16 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldGetErrorNotRetrieveChildNodesByInconsistentEqualPropertyFilter() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:primaryType\"}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
 
@@ -534,12 +622,16 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldGetErrorNotRetrieveChildNodesByInconsistentDifferentPropertyFilter() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children(propertiesFilter: {filters: ["
                 + "            {property: \"jcr:primaryType\" evaluation: DIFFERENT}"
                 + "        ]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
 
@@ -550,6 +642,7 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveChildNodesByNameTypeAndPropertyValue() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        children("
                 + "            typesFilter: {types: [\"jmix:liveProperties\"]}"
@@ -557,11 +650,14 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
                 + "                {property: \"jcr:title\" value: \"" + subnodeTitleFr1 + "\" language: \"fr\"}"
                 + "            ]})"
                 + "        {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray children = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("children");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
         Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
 
         Assert.assertEquals(1, childByName.size());
@@ -572,13 +668,17 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveAllDescendantNodes() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        descendants {"
+                + "        nodes {"
                 + "            path"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray descendants = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("descendants");
+        JSONArray descendants = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("descendants").getJSONArray("nodes");
         Map<String, JSONObject> descendantsByPath = toItemByKeyMap("path", descendants);
 
         Assert.assertEquals(11, descendantsByPath.size());
@@ -595,13 +695,17 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     public void shouldRetrieveDescendantNodesByAllTypes() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        descendants(typesFilter: {multi: ALL, types: [\"jnt:contentList\", \"jmix:tagged\"]}) {"
+                + "        nodes {"
                 + "            name"
                 + "		  }"
+                + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
-        JSONArray descendants = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("descendants");
+        JSONArray descendants = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("descendants").getJSONArray("nodes");
         Map<String, JSONObject> descendantsByName = toItemByKeyMap("name", descendants);
 
         Assert.assertEquals(1, descendantsByName.size());

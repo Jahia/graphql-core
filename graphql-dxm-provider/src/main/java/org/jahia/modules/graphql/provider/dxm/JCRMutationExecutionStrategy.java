@@ -2,9 +2,7 @@ package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.ExecutionResult;
 import graphql.execution.*;
-import org.jahia.modules.graphql.provider.dxm.node.NodeMutationExtensions;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRTemplate;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutation;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -23,8 +21,8 @@ public class JCRMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
     @Override
     protected CompletableFuture<ExecutionResult> completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, Object fetchedValue) {
         CompletableFuture<ExecutionResult> result = super.completeField(executionContext, parameters, fetchedValue);
-        if (fetchedValue instanceof NodeMutationExtensions.GraphQLMutationJCR) {
-            ((NodeMutationExtensions.GraphQLMutationJCR)fetchedValue).save();
+        if (fetchedValue instanceof GqlJcrMutation) {
+            ((GqlJcrMutation)fetchedValue).save();
         }
         return result;
     }

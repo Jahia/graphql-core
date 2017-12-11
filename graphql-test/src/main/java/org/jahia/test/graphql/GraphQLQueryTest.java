@@ -26,7 +26,7 @@ package org.jahia.test.graphql;
 import java.util.Locale;
 
 import org.jahia.api.Constants;
-import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
 import org.json.JSONArray;
@@ -69,22 +69,23 @@ public class GraphQLQueryTest extends GraphQLTestSupport {
 
     @Test
     public void shouldRetrieveNodesBySql2Query() throws Exception {
-        testQuery("select * from [jnt:contentList] where isdescendantnode('/testList')", NodeQueryExtensions.QueryLanguage.SQL2, 7);
+        testQuery("select * from [jnt:contentList] where isdescendantnode('/testList')", GqlJcrQuery.QueryLanguage.SQL2, 7);
     }
 
     @Test
     public void shouldRetrieveNodesByXpathQuery() throws Exception {
-        testQuery("/jcr:root/testList//element(*, jnt:contentList)", NodeQueryExtensions.QueryLanguage.XPATH, 7);
+        testQuery("/jcr:root/testList//element(*, jnt:contentList)", GqlJcrQuery.QueryLanguage.XPATH, 7);
     }
 
     @Test
     public void shouldGetErrorNotRetrieveNodesByWrongQuery() throws Exception {
-        JSONObject result = runQuery("slct from [jnt:contentList]", NodeQueryExtensions.QueryLanguage.SQL2);
+        JSONObject result = runQuery("slct from [jnt:contentList]", GqlJcrQuery.QueryLanguage.SQL2);
         validateError(result, "javax.jcr.query.InvalidQueryException: Query:\nslct(*)from [jnt:contentList]; expected: SELECT");
     }
 
-    private static JSONObject runQuery(String query, NodeQueryExtensions.QueryLanguage language) throws JSONException {
+    private static JSONObject runQuery(String query, GqlJcrQuery.QueryLanguage language) throws JSONException {
         return executeQuery("{"
+                          + "    jcr {"
                           + "    nodesByQuery(query: \"" + query + "\", queryLanguage: " + language.name() + ") {"
                           + "        edges {"
                           + "            node {"
@@ -92,12 +93,13 @@ public class GraphQLQueryTest extends GraphQLTestSupport {
                           + "            }"
                           + "		  }"
                           + "    }"
+                          + "    }"
                           + "}");
     }
 
-    private static void testQuery(String query, NodeQueryExtensions.QueryLanguage language, long expectedNodesNumber) throws JSONException {
+    private static void testQuery(String query, GqlJcrQuery.QueryLanguage language, long expectedNodesNumber) throws JSONException {
         JSONObject result = runQuery(query, language);
-        JSONArray nodes = result.getJSONObject("data").getJSONObject("nodesByQuery").getJSONArray("edges");
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByQuery").getJSONArray("edges");
         Assert.assertEquals(expectedNodesNumber, nodes.length());
     }
 }

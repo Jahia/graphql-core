@@ -60,13 +60,15 @@ public class GraphQLAncestorsTest extends GraphQLTestSupport {
     public void shouldRetrieveParent() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
                 + "        parent {"
                 + "            name"
                 + "		  }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONObject parent = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("parent");
+        JSONObject parent = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("parent");
 
         validateNode(parent, "testSubList");
     }
@@ -75,13 +77,15 @@ public class GraphQLAncestorsTest extends GraphQLTestSupport {
     public void shouldRetrieveAllAncestors() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
                 + "        ancestors {"
                 + "            name"
                 + "		  }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONArray ancestors = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("ancestors");
+        JSONArray ancestors = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("ancestors");
 
         Assert.assertEquals(3, ancestors.length());
         validateNode(ancestors.getJSONObject(0), "");
@@ -93,13 +97,15 @@ public class GraphQLAncestorsTest extends GraphQLTestSupport {
     public void shouldRetrieveAncestorsUpToPath() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
                 + "        ancestors(upToPath: \"/testList\") {"
                 + "            name"
                 + "		  }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONArray ancestors = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("ancestors");
+        JSONArray ancestors = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("ancestors");
 
         Assert.assertEquals(2, ancestors.length());
         validateNode(ancestors.getJSONObject(0), "testList");
@@ -110,10 +116,12 @@ public class GraphQLAncestorsTest extends GraphQLTestSupport {
     public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsEmpty() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
                 + "        ancestors(upToPath: \"\") {"
                 + "            name"
                 + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
 
@@ -124,10 +132,12 @@ public class GraphQLAncestorsTest extends GraphQLTestSupport {
     public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsNotAncestorPath() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
                 + "        ancestors(upToPath: \"/nonExistingPath\") {"
                 + "            name"
                 + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
 
@@ -138,10 +148,12 @@ public class GraphQLAncestorsTest extends GraphQLTestSupport {
     public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsThisNodePath() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
                 + "        ancestors(upToPath: \"/testList/testSubList/testSubSubList\") {"
                 + "            name"
                 + "		  }"
+                + "    }"
                 + "    }"
                 + "}");
 

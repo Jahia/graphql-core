@@ -77,15 +77,19 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
     public void shouldRetrieveReferences() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList/testSubList1\") {"
                 + "        references {"
+                + "            nodes {"
                 + "            node {"
                 + "                name"
                 + "            }"
+                + "            }"
                 + "        }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONArray references = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONArray("references");
+        JSONArray references = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("references").getJSONArray("nodes");
         Map<String, JSONObject> referenceByNodeName = toItemByKeyMap("node", references);
 
         Assert.assertEquals(3, referenceByNodeName.size());
@@ -98,6 +102,7 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
     public void shouldRetrieveReferencedNodeByReference() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList/reference1\") {"
                 + "        property(name: \"j:node\") {"
                 + "            refNode {"
@@ -105,8 +110,9 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
                 + "            }"
                 + "        }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONObject refNode = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property").getJSONObject("refNode");
+        JSONObject refNode = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property").getJSONObject("refNode");
 
         validateNode(refNode, "testSubList1");
     }
@@ -115,6 +121,7 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
     public void shouldRetrieveReferencedNodeByUuidString() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList/reference2\") {"
                 + "        property(name: \"jcr:uuid\") {"
                 + "            refNode {"
@@ -122,8 +129,9 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
                 + "            }"
                 + "        }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONObject refNode = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property").getJSONObject("refNode");
+        JSONObject refNode = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property").getJSONObject("refNode");
 
         validateNode(refNode, "reference2");
     }
@@ -132,6 +140,7 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
     public void shouldRetrieveReferencedNodeByPathString() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList/testSubList1\") {"
                 + "        property(name: \"jcr:title\" language: \"en\") {"
                 + "            refNode {"
@@ -139,8 +148,9 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
                 + "            }"
                 + "        }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONObject refNode = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property").getJSONObject("refNode");
+        JSONObject refNode = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property").getJSONObject("refNode");
 
         validateNode(refNode, "testSubList2");
     }
@@ -149,12 +159,14 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
     public void shouldGetErrorNotRetrieveReferencedNodeFromPropertyOfWrongType() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        property(name: \"jcr:lastModified\") {"
                 + "            refNode {"
                 + "                name"
                 + "            }"
                 + "        }"
+                + "    }"
                 + "    }"
                 + "}");
 
@@ -165,12 +177,14 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
     public void shouldGetErrorNotRetrieveReferencedNodeByWrongPathString() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList/testSubList2\") {"
                 + "        property(name: \"jcr:title\" language: \"en\") {"
                 + "            refNode {"
                 + "                name"
                 + "            }"
                 + "        }"
+                + "    }"
                 + "    }"
                 + "}");
 
@@ -181,6 +195,7 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
     public void shouldNotRetrieveReferencedNodeFromMultipleValuedProperty() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        property(name: \"j:liveProperties\") {"
                 + "            refNode {"
@@ -188,8 +203,9 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
                 + "            }"
                 + "        }"
                 + "    }"
+                + "    }"
                 + "}");
-        Object refNode = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property").get("refNode");
+        Object refNode = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property").get("refNode");
 
         Assert.assertEquals(JSONObject.NULL, refNode);
     }
@@ -198,6 +214,7 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
     public void shouldRetrieveReferencedNodes() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList\") {"
                 + "        property(name: \"j:liveProperties\") {"
                 + "            refNodes {"
@@ -205,8 +222,9 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
                 + "            }"
                 + "        }"
                 + "    }"
+                + "    }"
                 + "}");
-        JSONArray refNodes = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property").getJSONArray("refNodes");
+        JSONArray refNodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property").getJSONArray("refNodes");
         Map<String, JSONObject> refNodeByName = toItemByKeyMap("name", refNodes);
 
         Assert.assertEquals(2, refNodeByName.size());
@@ -218,6 +236,7 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
     public void shouldNotRetrieveReferencedNodesFromSingleValuedProperty() throws Exception {
 
         JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "    nodeByPath(path: \"/testList/reference1\") {"
                 + "        property(name: \"j:node\") {"
                 + "            refNodes {"
@@ -225,8 +244,9 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
                 + "            }"
                 + "        }"
                 + "    }"
+                + "    }"
                 + "}");
-        Object refNodes = result.getJSONObject("data").getJSONObject("nodeByPath").getJSONObject("property").get("refNodes");
+        Object refNodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property").get("refNodes");
 
         Assert.assertEquals(JSONObject.NULL, refNodes);
     }

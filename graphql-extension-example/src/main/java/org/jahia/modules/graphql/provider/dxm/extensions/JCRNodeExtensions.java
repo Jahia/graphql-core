@@ -10,10 +10,15 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 @GraphQLTypeExtension(GqlJcrNode.class)
 public class JCRNodeExtensions {
 
+    private GqlJcrNode node;
+
+    public JCRNodeExtensions(GqlJcrNode node) {
+        this.node = node;
+    }
+
     @GraphQLField
-    public static String testExtension(DataFetchingEnvironment env, @GraphQLName("arg") String arg) {
-        GqlJcrNode n = env.getSource();
-        return "test " + n.getName() + " - " + arg;
+    public  String testExtension(@GraphQLName("arg") String arg) {
+        return "test " + node.getName() + " - " + arg;
     }
 
 }

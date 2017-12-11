@@ -3,7 +3,6 @@ package org.jahia.modules.graphql.provider.dxm.nodetype;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
-import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 
 import javax.jcr.RepositoryException;
@@ -15,10 +14,15 @@ import java.util.stream.Collectors;
 @GraphQLTypeExtension(GqlJcrNode.class)
 public class NodetypeJCRNodeExtensions {
 
+    private GqlJcrNode node;
+
+    public NodetypeJCRNodeExtensions(GqlJcrNode node) {
+        this.node = node;
+    }
+
     @GraphQLField
-    public static GqlJcrNodeType getPrimaryNodeType(DataFetchingEnvironment env) {
+    public GqlJcrNodeType getPrimaryNodeType() {
         try {
-            GqlJcrNode node = env.getSource();
             return new GqlJcrNodeType(node.getNode().getPrimaryNodeType());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
@@ -26,9 +30,8 @@ public class NodetypeJCRNodeExtensions {
     }
 
     @GraphQLField()
-    public static boolean getIsNodeType(DataFetchingEnvironment env, @GraphQLName("anyType") Collection<String> anyType) {
+    public boolean getIsNodeType(@GraphQLName("anyType") Collection<String> anyType) {
         try {
-            GqlJcrNode node = env.getSource();
             for (String type : anyType) {
                 if (node.getNode().isNodeType(type)) {
                     return true;
@@ -41,9 +44,8 @@ public class NodetypeJCRNodeExtensions {
     }
 
     @GraphQLField
-    public static List<GqlJcrNodeType> getMixinTypes(DataFetchingEnvironment env) {
+    public List<GqlJcrNodeType> getMixinTypes() {
         try {
-            GqlJcrNode node = env.getSource();
             return Arrays.asList(node.getNode().getMixinNodeTypes()).stream().map(GqlJcrNodeType::new).collect(Collectors.toList());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
