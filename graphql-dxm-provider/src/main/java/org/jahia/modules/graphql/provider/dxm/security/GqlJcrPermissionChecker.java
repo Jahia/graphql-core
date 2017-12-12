@@ -53,12 +53,14 @@ import graphql.schema.GraphQLType;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
 
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Permission checker can handle permission checks on graphQL types and fields
@@ -70,7 +72,7 @@ public class GqlJcrPermissionChecker {
      * @param type the GraphQL type
      * @param fields the GraphQL fields
      * @param permissions the map of all the permissions ( key format: {type.field}, value format: {permission} )
-     * throw
+     * @throws GqlAccessDeniedException in case of permission denied
      */
     public static void checkPermissions(final GraphQLType type, final List<Field> fields, final Map<String, String> permissions) {
         if (permissions == null || permissions.size() == 0 || StringUtils.equals(type.getName(), "JCRNodeConnection")) {
@@ -79,18 +81,31 @@ public class GqlJcrPermissionChecker {
         }
 
         List<String> types = resolveTypes(type);
+        List<String> fieldNames = fields.stream().map(field -> field != null ? field.getName() : null).collect(Collectors.toList());
+
+        try {
+            checkPermissions(types, fieldNames, permissions, JCRSessionFactory.getInstance().getCurrentUserSession());
+        } catch (RepositoryException e) {
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+        }
+    }
+
+    /**
+     * Check the permissions on the given types and fields
+     * @param types the types, primary type should be the latest in the list to support inheritance of permission properties
+     * @param fields the fields
+     * @param permissions the map of all the permissions ( key format: {type.field}, value format: {permission} )
+     * @throws GqlAccessDeniedException in case of permission denied
+     */
+    public static void checkPermissions(final List<String> types, final List<String> fields, final Map<String, String> permissions, JCRSessionWrapper session) throws RepositoryException {
         Map<String, String> requiredPermissionPerFields = resolvePermissionPerFields(types, fields, permissions);
 
         if (requiredPermissionPerFields.size() > 0) {
             // iterate on permissions to check
             for (Map.Entry<String, String> requiredPermissionForField : requiredPermissionPerFields.entrySet()) {
 
-                try {
-                    if (!JCRSessionFactory.getInstance().getCurrentUserSession().getNode("/").hasPermission(requiredPermissionForField.getValue())) {
-                        throw new GqlAccessDeniedException();
-                    }
-                } catch (RepositoryException e) {
-                    throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+                if (!session.getNode("/").hasPermission(requiredPermissionForField.getValue())) {
+                    throw new GqlAccessDeniedException(requiredPermissionForField.getValue());
                 }
             }
         }
@@ -116,12 +131,12 @@ public class GqlJcrPermissionChecker {
         return types;
     }
 
-    private static Map<String, String> resolvePermissionPerFields(List<String> types, List<Field> fields, Map<String, String> permissions) {
+    private static Map<String, String> resolvePermissionPerFields(List<String> types, List<String> fields, Map<String, String> permissions) {
         // resolved permissions
         Map<String, String> requiredPermissionForFields = new HashMap<>();
 
-        for (Field field : fields) {
-            String permission = getPermissionForTypes(types, field.getName(), permissions);
+        for (String field : fields) {
+            String permission = getPermissionForTypes(types, field, permissions);
 
             // fallback on "*" wildcard
             if (permission == null) {
@@ -129,7 +144,7 @@ public class GqlJcrPermissionChecker {
             }
 
             if (permission != null) {
-                requiredPermissionForFields.put(field.getName(), permission);
+                requiredPermissionForFields.put(field, permission);
             }
         }
 

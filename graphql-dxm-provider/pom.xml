@@ -69,6 +69,12 @@
             <version>${graphql-java-annotations.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jahia.test</groupId>
+            <artifactId>module-test-framework</artifactId>
+            <version>7.2.0.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

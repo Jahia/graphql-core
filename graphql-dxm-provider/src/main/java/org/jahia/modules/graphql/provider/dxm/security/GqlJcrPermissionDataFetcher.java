@@ -47,6 +47,7 @@ package org.jahia.modules.graphql.provider.dxm.security;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLType;
 
 import java.util.Map;
 

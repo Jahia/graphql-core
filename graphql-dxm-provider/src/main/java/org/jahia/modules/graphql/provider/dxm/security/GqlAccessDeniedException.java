@@ -51,7 +51,15 @@ import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
  * Exception throw when access is denied for the requested resource
  */
 public class GqlAccessDeniedException extends BaseGqlClientException {
-    GqlAccessDeniedException() {
+
+    private String permission;
+
+    GqlAccessDeniedException(String permission) {
         super("Permission denied", null);
+        this.permission = permission;
+    }
+
+    public String getPermission() {
+        return permission;
     }
 }
