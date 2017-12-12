@@ -45,6 +45,7 @@
 
 package org.jahia.modules.graphql.security;
 
+import graphql.language.Field;
 import org.jahia.modules.graphql.provider.dxm.security.GqlAccessDeniedException;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionChecker;
 import org.jahia.services.content.JCRCallback;
@@ -69,7 +70,7 @@ public class GqlJcrPermissionCheckerTest extends AbstractJUnitTest {
 
         // requested types and fields
         String[] types = new String[]{"JCRNode", "GenericJCRNode"};
-        String[] fields = new String[]{"getDisplayName"};
+        Field[] fields = new Field[]{new Field("getDisplayName")};
 
         Map<String, String> goodPermissions = new HashMap<>();
         goodPermissions.put("JCRNode.getDisplayName", "jcr:read");
@@ -86,8 +87,8 @@ public class GqlJcrPermissionCheckerTest extends AbstractJUnitTest {
 
         // requested types and fields
         String[] types = new String[]{"JCRNode", "GenericJCRNode"};
-        String[] getDisplayNameField = new String[]{"getDisplayName"};
-        String[] getPropertiesField = new String[]{"getProperties"};
+        Field[] getDisplayNameField = new Field[]{new Field("getDisplayName")};
+        Field[] getPropertiesField = new Field[]{new Field("getProperties")};
 
         Map<String, String> permissions = new HashMap<>();
         permissions.put("JCRNode.*", "jcr:read");
@@ -109,8 +110,8 @@ public class GqlJcrPermissionCheckerTest extends AbstractJUnitTest {
         // requested types and fields
         // GenericJCRNode should inherit from JCRNode permissions
         String[] types = new String[]{"JCRNode", "GenericJCRNode"};
-        String[] getDisplayNameField = new String[]{"getDisplayName"};
-        String[] getPropertiesField = new String[]{"getProperties"};
+        Field[] getDisplayNameField = new Field[]{new Field("getDisplayName")};
+        Field[] getPropertiesField = new Field[]{new Field("getProperties")};
 
         Map<String, String> permissions = new HashMap<>();
         permissions.put("JCRNode.*", "jcr:read");
@@ -131,7 +132,7 @@ public class GqlJcrPermissionCheckerTest extends AbstractJUnitTest {
 
         // requested types and fields
         String[] types = new String[]{"JCRNode", "GenericJCRNode"};
-        String[] multipleFields = new String[]{"getDisplayName", "getProperties"};
+        Field[] multipleFields = new Field[]{new Field("getDisplayName"), new Field("getProperties")};
 
         Map<String, String> goodPermissions = new HashMap<>();
         goodPermissions.put("JCRNode.getProperties", "jcr:read");
@@ -171,7 +172,7 @@ public class GqlJcrPermissionCheckerTest extends AbstractJUnitTest {
         checkPermission(types, multipleFields, badPermissions6, true);
     }
 
-    private void checkPermission(String[] types, String[] fields, Map<String, String> permissions, boolean shouldfail) throws RepositoryException {
+    private void checkPermission(String[] types, Field[] fields, Map<String, String> permissions, boolean shouldfail) throws RepositoryException {
         JCRTemplate.getInstance().doExecute(JahiaUserManagerService.GUEST_USERNAME, null, null, null, new JCRCallback<Object>() {
             @Override
             public Object doInJCR(JCRSessionWrapper jcrSessionWrapper) throws RepositoryException {

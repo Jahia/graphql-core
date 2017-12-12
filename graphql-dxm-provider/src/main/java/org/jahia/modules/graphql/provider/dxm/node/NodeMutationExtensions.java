@@ -62,8 +62,8 @@ public class NodeMutationExtensions {
     @GraphQLField
     @GraphQLName("jcr")
     @GraphQLDescription("JCR Mutation")
-    public static GqlJcrMutation getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace) throws RepositoryException {
-        return new GqlJcrMutation(workspace);
+    public static GqlJcrMutation getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") NodeQueryExtensions.Workspace workspace) throws RepositoryException {
+        return new GqlJcrMutation(workspace != null ? workspace.getValue() : null);
     }
 
 }

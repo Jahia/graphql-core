@@ -49,6 +49,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 
 /**
@@ -58,13 +59,43 @@ import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 public class NodeQueryExtensions {
 
     /**
+     * JCR query languages available to use for nodes querying.
+     */
+    public enum Workspace {
+
+        /**
+         * Edit workspace
+         */
+        EDIT(Constants.EDIT_WORKSPACE),
+
+        /**
+         * Live workspace
+         */
+        LIVE(Constants.LIVE_WORKSPACE);
+
+        private String workspace;
+
+        private Workspace(String workspace) {
+            this.workspace = workspace;
+        }
+
+        /**
+         * @return Corresponding workspace
+         */
+        public String getValue() {
+            return workspace;
+        }
+    }
+
+
+    /**
      * Root for all JCR queries
      */
     @GraphQLField
     @GraphQLName("jcr")
     @GraphQLDescription("JCR Queries")
-    public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace) {
-        return new GqlJcrQuery(workspace);
+    public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") Workspace workspace) {
+        return new GqlJcrQuery(workspace != null ? workspace.getValue() : null);
     }
 
 }

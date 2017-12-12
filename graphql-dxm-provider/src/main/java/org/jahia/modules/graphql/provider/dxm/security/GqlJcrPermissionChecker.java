@@ -46,6 +46,7 @@
 package org.jahia.modules.graphql.provider.dxm.security;
 
 import graphql.ErrorType;
+import graphql.language.Argument;
 import graphql.language.Field;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
@@ -81,10 +82,9 @@ public class GqlJcrPermissionChecker {
         }
 
         List<String> types = resolveTypes(type);
-        List<String> fieldNames = fields.stream().map(field -> field != null ? field.getName() : null).collect(Collectors.toList());
 
         try {
-            checkPermissions(types, fieldNames, permissions, JCRSessionFactory.getInstance().getCurrentUserSession());
+            checkPermissions(types, fields, permissions, JCRSessionFactory.getInstance().getCurrentUserSession());
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
@@ -97,7 +97,7 @@ public class GqlJcrPermissionChecker {
      * @param permissions the map of all the permissions ( key format: {type.field}, value format: {permission} )
      * @throws GqlAccessDeniedException in case of permission denied
      */
-    public static void checkPermissions(final List<String> types, final List<String> fields, final Map<String, String> permissions, JCRSessionWrapper session) throws RepositoryException {
+    public static void checkPermissions(final List<String> types, final List<Field> fields, final Map<String, String> permissions, JCRSessionWrapper session) throws RepositoryException {
         Map<String, String> requiredPermissionPerFields = resolvePermissionPerFields(types, fields, permissions);
 
         if (requiredPermissionPerFields.size() > 0) {
@@ -131,20 +131,22 @@ public class GqlJcrPermissionChecker {
         return types;
     }
 
-    private static Map<String, String> resolvePermissionPerFields(List<String> types, List<String> fields, Map<String, String> permissions) {
+    private static Map<String, String> resolvePermissionPerFields(List<String> types, List<Field> fields, Map<String, String> permissions) {
         // resolved permissions
         Map<String, String> requiredPermissionForFields = new HashMap<>();
 
-        for (String field : fields) {
-            String permission = getPermissionForTypes(types, field, permissions);
+        for (Field field : fields) {
+            if (field != null) {
+                String permission = getPermissionForTypes(types, field.getName(), permissions);
 
-            // fallback on "*" wildcard
-            if (permission == null) {
-                permission = getPermissionForTypes(types, "*", permissions);
-            }
+                // fallback on "*" wildcard
+                if (permission == null) {
+                    permission = getPermissionForTypes(types, "*", permissions);
+                }
 
-            if (permission != null) {
-                requiredPermissionForFields.put(field, permission);
+                if (permission != null) {
+                    requiredPermissionForFields.put(field.getAlias() != null ? field.getAlias() : field.getName(), permission);
+                }
             }
         }
 

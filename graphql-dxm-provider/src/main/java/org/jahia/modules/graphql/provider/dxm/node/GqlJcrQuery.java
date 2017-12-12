@@ -112,18 +112,16 @@ public class GqlJcrQuery {
      * Get GraphQL representation of a node by its UUID.
      *
      * @param uuid The UUID of the node
-     * @param workspace The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default
      * @return GraphQL representation of the node
      * @throws BaseGqlClientException In case of issues fetching the node
      */
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("Get GraphQL representation of a node by its UUID")
-    public GqlJcrNode getNodeById(@GraphQLName("uuid") @GraphQLNonNull @GraphQLDescription("The UUID of the node") String uuid,
-                                         @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace)
+    public GqlJcrNode getNodeById(@GraphQLName("uuid") @GraphQLNonNull @GraphQLDescription("The UUID of the node") String uuid)
             throws BaseGqlClientException {
         try {
-            return getGqlNodeById(uuid, workspace);
+            return getGqlNodeById(uuid);
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
@@ -133,18 +131,16 @@ public class GqlJcrQuery {
      * Get GraphQL representation of a node by its path.
      *
      * @param path The path of the node
-     * @param workspace The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default
      * @return GraphQL representation of the node
      * @throws BaseGqlClientException In case of issues fetching the node
      */
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("Get GraphQL representation of a node by its path")
-    public GqlJcrNode getNodeByPath(@GraphQLName("path") @GraphQLNonNull @GraphQLDescription("The path of the node") String path,
-                                           @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace)
+    public GqlJcrNode getNodeByPath(@GraphQLName("path") @GraphQLNonNull @GraphQLDescription("The path of the node") String path)
             throws BaseGqlClientException {
         try {
-            return getGqlNodeByPath(path, workspace);
+            return getGqlNodeByPath(path);
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
@@ -154,20 +150,18 @@ public class GqlJcrQuery {
      * Get GraphQL representations of multiple nodes by their UUIDs.
      *
      * @param uuids The UUIDs of the nodes
-     * @param workspace The name of the workspace to fetch the nodes from; either 'default', 'live', or null to use 'default' by default
      * @return GraphQL representations of the nodes
      * @throws BaseGqlClientException In case of issues fetching the nodes
      */
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their UUIDs")
-    public Collection<GqlJcrNode> getNodesById(@GraphQLName("uuids") @GraphQLNonNull @GraphQLDescription("The UUIDs of the nodes") Collection<@GraphQLNonNull String> uuids,
-                                                      @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the nodes from; either 'default', 'live', or null to use 'default' by default") String workspace)
+    public Collection<GqlJcrNode> getNodesById(@GraphQLName("uuids") @GraphQLNonNull @GraphQLDescription("The UUIDs of the nodes") Collection<@GraphQLNonNull String> uuids)
             throws BaseGqlClientException {
         try {
             List<GqlJcrNode> nodes = new ArrayList<>(uuids.size());
             for (String uuid : uuids) {
-                nodes.add(getGqlNodeById(uuid, workspace));
+                nodes.add(getGqlNodeById(uuid));
             }
             return nodes;
         } catch (RepositoryException e) {
@@ -179,20 +173,18 @@ public class GqlJcrQuery {
      * Get GraphQL representations of multiple nodes by their paths.
      *
      * @param paths The paths of the nodes
-     * @param workspace The name of the workspace to fetch the nodes from; either 'default', 'live', or null to use 'default' by default
      * @return GraphQL representations of the nodes
      * @throws BaseGqlClientException In case of issues fetching the nodes
      */
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their paths")
-    public Collection<GqlJcrNode> getNodesByPath(@GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("The paths of the nodes") Collection<@GraphQLNonNull String> paths,
-                                                        @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the nodes from; either 'default', 'live', or null to use 'default' by default") String workspace)
+    public Collection<GqlJcrNode> getNodesByPath(@GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("The paths of the nodes") Collection<@GraphQLNonNull String> paths)
             throws BaseGqlClientException {
         try {
             List<GqlJcrNode> nodes = new ArrayList<>(paths.size());
             for (String path : paths) {
-                nodes.add(getGqlNodeByPath(path, workspace));
+                nodes.add(getGqlNodeByPath(path));
             }
             return nodes;
         } catch (RepositoryException e) {
@@ -205,7 +197,6 @@ public class GqlJcrQuery {
      *
      * @param query The query string
      * @param queryLanguage The query language
-     * @param workspace The name of the workspace to select nodes from; either 'default', 'live', or null to use 'default' by default
      * @return GraphQL representations of nodes selected according to the query supplied
      * @throws BaseGqlClientException In case of issues executing the query
      */
@@ -213,12 +204,11 @@ public class GqlJcrQuery {
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("Get GraphQL representations of nodes using a query language supported by JCR")
     public DXPaginatedData<GqlJcrNode> getNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
-                                                              @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage,
-                                                              @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to select nodes from; either 'default', 'live', or null to use 'default' by default") String workspace, DataFetchingEnvironment environment)
+                                                              @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage, DataFetchingEnvironment environment)
             throws BaseGqlClientException {
         try {
             List<GqlJcrNode> result = new LinkedList<>();
-            QueryManagerWrapper queryManager = getSession(workspace).getWorkspace().getQueryManager();
+            QueryManagerWrapper queryManager = getSession().getWorkspace().getQueryManager();
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
             JCRNodeIteratorWrapper nodes = q.execute().getNodes();
             while (nodes.hasNext()) {
@@ -232,18 +222,15 @@ public class GqlJcrQuery {
         }
     }
 
-    private GqlJcrNode getGqlNodeByPath(String path, String workspace) throws RepositoryException {
-        return SpecializedTypesHandler.getNode(getSession(workspace).getNode(path));
+    private GqlJcrNode getGqlNodeByPath(String path) throws RepositoryException {
+        return SpecializedTypesHandler.getNode(getSession().getNode(path));
     }
 
-    private GqlJcrNode getGqlNodeById(String uuid, String workspace) throws RepositoryException {
-        return SpecializedTypesHandler.getNode(getSession(workspace).getNodeByIdentifier(uuid));
+    private GqlJcrNode getGqlNodeById(String uuid) throws RepositoryException {
+        return SpecializedTypesHandler.getNode(getSession().getNodeByIdentifier(uuid));
     }
 
-    private JCRSessionWrapper getSession(String workspace) throws RepositoryException {
-        if (workspace == null) {
-            workspace = this.workspace;
-        }
+    private JCRSessionWrapper getSession() throws RepositoryException {
         return JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
     }
 
