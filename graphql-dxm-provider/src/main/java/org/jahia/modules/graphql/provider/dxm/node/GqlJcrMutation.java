@@ -59,7 +59,7 @@ import javax.jcr.Value;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl.getNodeInLanguage;
+import static org.jahia.modules.graphql.provider.dxm.node.NodeHelper.getNodeInLanguage;
 
 /**
  * GraphQL root object for JCR related queries

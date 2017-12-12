@@ -51,6 +51,7 @@ import graphql.annotations.processor.ProcessingElementsContainer;
 import graphql.annotations.processor.retrievers.GraphQLExtensionsHandler;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.servlet.GraphQLMutationProvider;
 import graphql.servlet.GraphQLProvider;
@@ -59,8 +60,8 @@ import graphql.servlet.GraphQLTypesProvider;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodeTypeJCRQueryExtensions;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodetypeJCRNodeExtensions;
+import org.jahia.modules.graphql.provider.dxm.nodetype.NodetypeJCRPropertyExtensions;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
-import org.jahia.modules.graphql.provider.dxm.render.RenderNodeExtensions;
 import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +71,8 @@ import java.util.*;
 @Component(service = GraphQLProvider.class, immediate = true)
 public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider {
     private static Logger logger = LoggerFactory.getLogger(GraphQLQueryProvider.class);
+
+    private static DXGraphQLProvider instance;
 
     private SpecializedTypesHandler specializedTypesHandler;
 
@@ -82,9 +85,21 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private GraphQLObjectType queryType;
     private GraphQLObjectType mutationType;
 
+    public static DXGraphQLProvider getInstance() {
+        return instance;
+    }
+
     @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
     public void setGraphQLAnnotations(GraphQLAnnotationsComponent graphQLAnnotations) {
         this.graphQLAnnotations = graphQLAnnotations;
+    }
+
+    public GraphQLAnnotationsComponent getGraphQLAnnotations() {
+        return graphQLAnnotations;
+    }
+
+    public ProcessingElementsContainer getContainer() {
+        return container;
     }
 
     @Reference(cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY)
@@ -98,6 +113,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     @Activate
     public void activate() {
+        instance = this;
+
         container = graphQLAnnotations.createContainer();
 
         GraphQLExtensionsHandler extensionsHandler = graphQLAnnotations.getExtensionsHandler();
@@ -139,6 +156,10 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     }
 
 
+    public GraphQLOutputType getOutputType(Class<?> clazz) {
+        return graphQLAnnotations.getOutputTypeProcessor().getOutputType(clazz, container);
+    }
+
     @GraphQLName("Query")
     public static class Query {
     }
@@ -149,10 +170,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     public Collection<Class<?>> getExtensions() {
         return Arrays.<Class<?>>asList(
-                NodeQueryExtensions.class
+                NodeQueryExtensions.class,
 //                NodeMutationExtensions.class,
-//                NodeTypeJCRQueryExtensions.class,
-//                NodetypeJCRNodeExtensions.class,
+                NodeTypeJCRQueryExtensions.class,
+                NodetypeJCRNodeExtensions.class,
+                NodetypeJCRPropertyExtensions.class
 //                RenderNodeExtensions.class
         );
     }

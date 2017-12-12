@@ -48,7 +48,6 @@ package org.jahia.modules.graphql.provider.dxm.node;
 import graphql.TypeResolutionEnvironment;
 import graphql.annotations.processor.GraphQLAnnotationsComponent;
 import graphql.annotations.processor.ProcessingElementsContainer;
-import graphql.annotations.processor.retrievers.GraphQLObjectHandler;
 import graphql.schema.*;
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -76,8 +75,8 @@ public class SpecializedTypesHandler {
     public static final String CHILD_PREFIX = "child_";
     public static final String UNNAMED_CHILD_PREFIX = "child_";
 
-    private static GraphQLAnnotationsComponent graphQLAnnotations;
-    private static ProcessingElementsContainer container;
+    private GraphQLAnnotationsComponent graphQLAnnotations;
+    private ProcessingElementsContainer container;
 
     private static Logger logger = LoggerFactory.getLogger(SpecializedTypesHandler.class);
     private static Pattern VALID_NAME = Pattern.compile("^[_a-zA-Z][_a-zA-Z0-9]*$");
@@ -95,8 +94,10 @@ public class SpecializedTypesHandler {
 
     public SpecializedTypesHandler(GraphQLAnnotationsComponent annotations, ProcessingElementsContainer container) {
         instance = this;
-        SpecializedTypesHandler.graphQLAnnotations = annotations;
-        SpecializedTypesHandler.container = container;
+
+        this.graphQLAnnotations = annotations;
+        this.container = container;
+
 //        specializedTypes.add("jnt:page");
 //        specializedTypesClass.put("jnt:virtualsite", GqlJcrSite.class);
     }
@@ -290,10 +291,11 @@ public class SpecializedTypesHandler {
         @Override
         public GraphQLObjectType getType(TypeResolutionEnvironment env) {
             String type = ((GqlJcrNode) env.getObject()).getType();
-            if (getInstance().knownTypes.containsKey(type)) {
-                return getInstance().knownTypes.get(type);
+            SpecializedTypesHandler instance = SpecializedTypesHandler.getInstance();
+            if (instance.knownTypes.containsKey(type)) {
+                return instance.knownTypes.get(type);
             } else {
-                return (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputType(GqlJcrNodeImpl.class, container);
+                return (GraphQLObjectType) instance.graphQLAnnotations.getOutputTypeProcessor().getOutputType(GqlJcrNodeImpl.class, instance.container);
             }
         }
     }

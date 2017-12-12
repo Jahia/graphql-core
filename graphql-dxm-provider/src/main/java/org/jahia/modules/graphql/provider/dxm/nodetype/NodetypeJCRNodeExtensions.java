@@ -45,17 +45,19 @@
 
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
+import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 
 import javax.jcr.RepositoryException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Extensions for JCRNode
+ */
 @GraphQLTypeExtension(GqlJcrNode.class)
 public class NodetypeJCRNodeExtensions {
 
@@ -66,6 +68,7 @@ public class NodetypeJCRNodeExtensions {
     }
 
     @GraphQLField
+    @GraphQLNonNull
     public GqlJcrNodeType getPrimaryNodeType() {
         try {
             return new GqlJcrNodeType(node.getNode().getPrimaryNodeType());
@@ -74,27 +77,32 @@ public class NodetypeJCRNodeExtensions {
         }
     }
 
-    @GraphQLField()
-    public boolean getIsNodeType(@GraphQLName("anyType") Collection<String> anyType) {
-        try {
-            for (String type : anyType) {
-                if (node.getNode().isNodeType(type)) {
-                    return true;
-                }
-            }
-        } catch (RepositoryException e) {
-            throw new RuntimeException(e);
-        }
-        return false;
+    @GraphQLField
+    @GraphQLDescription("Reports if the current node matches the nodetype(s) passed in parameter")
+    @GraphQLNonNull
+    public boolean getIsNodeType(@GraphQLName("type") @GraphQLNonNull GqlJcrNode.NodeTypesInput input) {
+        return NodeHelper.getTypesPredicate(input).evaluate(node.getNode());
     }
 
     @GraphQLField
+    @GraphQLDescription("Returns an array of <code>NodeType</code> objects representing the mixin node types in effect for this node.")
+    @GraphQLNonNull
     public List<GqlJcrNodeType> getMixinTypes() {
         try {
-            return Arrays.asList(node.getNode().getMixinNodeTypes()).stream().map(GqlJcrNodeType::new).collect(Collectors.toList());
+            return Arrays.stream(node.getNode().getMixinNodeTypes()).map(GqlJcrNodeType::new).collect(Collectors.toList());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Returns the node definition that applies to this node.")
+    public GqlJcrNodeDefinition getDefinition() throws RepositoryException {
+        ExtendedNodeDefinition definition = (ExtendedNodeDefinition) node.getNode().getDefinition();
+        if (definition != null) {
+            return new GqlJcrNodeDefinition(definition);
+        }
+        return null;
     }
 
 }

@@ -48,78 +48,39 @@ package org.jahia.modules.graphql.provider.dxm.nodetype;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrPropertyType;
-import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
+
+import java.util.List;
 
 /**
- * GraphQL representation of a JCR property definition
+ * Input for nodetypes list
  */
-@GraphQLName("JCRPropertyDefinition")
-@GraphQLDescription("GraphQL representation of a JCR property definition")
-public class GqlJcrPropertyDefinition implements GqlJcrItemDefinition {
+public class NodeTypesListInput {
 
-    private ExtendedPropertyDefinition definition;
+    private List<String> modules;
+    private Boolean includeMixins;
+    private Boolean includeNonMixins;
 
-    public GqlJcrPropertyDefinition(ExtendedPropertyDefinition definition) {
-        this.definition = definition;
-    }
-
-    @Override
-    @GraphQLNonNull
-    public String getName() {
-        return definition.getName();
-    }
-
-    @Override
-    @GraphQLNonNull
-    public boolean isMandatory() {
-        return definition.isMandatory();
-    }
-
-    @Override
-    @GraphQLNonNull
-    public boolean isAutoCreated() {
-        return definition.isAutoCreated();
-    }
-
-    @Override
-    @GraphQLNonNull
-    public boolean isProtected() {
-        return definition.isProtected();
-    }
-
-    @Override
-    @GraphQLNonNull
-    public boolean isHidden() {
-        return definition.isHidden();
-    }
-
-    @Override
-    @GraphQLNonNull
-    public GqlJcrNodeType getDeclaringNodeType() {
-        return new GqlJcrNodeType(definition.getDeclaringNodeType());
+    public NodeTypesListInput(@GraphQLName("modules") List<String> modules, @GraphQLName("includeMixins") Boolean includeMixins, @GraphQLName("includeNonMixins") Boolean includeNonMixins) {
+        this.modules = modules;
+        this.includeMixins = includeMixins;
+        this.includeNonMixins = includeNonMixins;
     }
 
     @GraphQLField
-    @GraphQLDescription("Reports whether this property has language dependant values.")
-    @GraphQLNonNull
-    public boolean isInternationalized() {
-        return definition.isInternationalized();
+    @GraphQLDescription("Filter on nodetypes defined in these modules")
+    public List<String> getModules() {
+        return modules;
     }
 
     @GraphQLField
-    @GraphQLDescription("Reports whether this property can have multiple values.")
-    @GraphQLNonNull
-    public boolean isMultiple() {
-        return definition.isMultiple();
+    @GraphQLDescription("Include mixin types (default true)")
+    public Boolean getIncludeMixins() {
+        return includeMixins != null ? includeMixins : true;
     }
 
     @GraphQLField
-    @GraphQLDescription("Gets the required type of the property.")
-    @GraphQLNonNull
-    public GqlJcrPropertyType getRequiredType() {
-        return GqlJcrPropertyType.fromValue(definition.getRequiredType());
+    @GraphQLDescription("Include non mixin types (default true)")
+    public Boolean getIncludeNonMixins() {
+        return includeNonMixins != null ? includeNonMixins : true;
     }
-
 }

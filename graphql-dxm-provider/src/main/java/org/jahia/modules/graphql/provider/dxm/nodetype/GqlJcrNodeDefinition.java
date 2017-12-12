@@ -45,24 +45,84 @@
 
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * TODO Comment me
- *
- * @author toto
+ * GraphQL representation of a JCR node definition
  */
-@GraphQLName("NodeDefinition")
-public class GqlJcrNodeDefinition {
-    private String name;
+@GraphQLName("JCRNodeDefinition")
+@GraphQLDescription("GraphQL representation of a JCR node definition")
+public class GqlJcrNodeDefinition implements GqlJcrItemDefinition {
+
+    private ExtendedNodeDefinition definition;
+
+    public GqlJcrNodeDefinition(ExtendedNodeDefinition definition) {
+        this.definition = definition;
+    }
+
+    @Override
+    @GraphQLNonNull
+    public String getName() {
+        return definition.getName();
+    }
+
+    @Override
+    @GraphQLNonNull
+    public boolean isMandatory() {
+        return definition.isMandatory();
+    }
+
+    @Override
+    @GraphQLNonNull
+    public boolean isAutoCreated() {
+        return definition.isAutoCreated();
+    }
+
+    @Override
+    @GraphQLNonNull
+    public boolean isProtected() {
+        return definition.isProtected();
+    }
+
+    @Override
+    @GraphQLNonNull
+    public boolean isHidden() {
+        return definition.isHidden();
+    }
+
+    @Override
+    @GraphQLNonNull
+    public GqlJcrNodeType getDeclaringNodeType() {
+        return new GqlJcrNodeType(definition.getDeclaringNodeType());
+    }
 
     @GraphQLField
-    public String getName() {
-        return name;
+    @GraphQLDescription("Gets the minimum set of primary node types that the child node must have.")
+    public List<GqlJcrNodeType> getRequiredPrimaryType() {
+        return Arrays.stream(definition.getRequiredPrimaryTypes()).map(GqlJcrNodeType::new).collect(Collectors.toList());
     }
 
-    public void setName(String name) {
-        this.name = name;
+    @GraphQLField
+    @GraphQLDescription("Gets the default primary node type that will be assigned to the child node if it is created without an explicitly specified primary node type.")
+    public GqlJcrNodeType getDefaultPrimaryType() {
+        return new GqlJcrNodeType(definition.getDefaultPrimaryType());
     }
+
+    @GraphQLField
+    @GraphQLDescription("Reports whether this child node can have same-name siblings. In other words, whether the parent node can have more than one child node of this name.")
+    @GraphQLNonNull
+    public boolean allowsSameNameSiblings() {
+        return definition.allowsSameNameSiblings();
+    }
+
+
+
 }

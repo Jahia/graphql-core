@@ -45,81 +45,45 @@
 
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrPropertyType;
-import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
+import graphql.annotations.annotationTypes.*;
+import org.jahia.modules.graphql.provider.dxm.SimpleTypeResolver;
 
 /**
- * GraphQL representation of a JCR property definition
+ * GraphQL representation of a JCR item definition
  */
-@GraphQLName("JCRPropertyDefinition")
-@GraphQLDescription("GraphQL representation of a JCR property definition")
-public class GqlJcrPropertyDefinition implements GqlJcrItemDefinition {
-
-    private ExtendedPropertyDefinition definition;
-
-    public GqlJcrPropertyDefinition(ExtendedPropertyDefinition definition) {
-        this.definition = definition;
-    }
-
-    @Override
-    @GraphQLNonNull
-    public String getName() {
-        return definition.getName();
-    }
-
-    @Override
-    @GraphQLNonNull
-    public boolean isMandatory() {
-        return definition.isMandatory();
-    }
-
-    @Override
-    @GraphQLNonNull
-    public boolean isAutoCreated() {
-        return definition.isAutoCreated();
-    }
-
-    @Override
-    @GraphQLNonNull
-    public boolean isProtected() {
-        return definition.isProtected();
-    }
-
-    @Override
-    @GraphQLNonNull
-    public boolean isHidden() {
-        return definition.isHidden();
-    }
-
-    @Override
-    @GraphQLNonNull
-    public GqlJcrNodeType getDeclaringNodeType() {
-        return new GqlJcrNodeType(definition.getDeclaringNodeType());
-    }
+@GraphQLName("JCRItemDefinition")
+@GraphQLTypeResolver(SimpleTypeResolver.class)
+@GraphQLDescription("GraphQL representation of a JCR item definition")
+public interface GqlJcrItemDefinition {
 
     @GraphQLField
-    @GraphQLDescription("Reports whether this property has language dependant values.")
     @GraphQLNonNull
-    public boolean isInternationalized() {
-        return definition.isInternationalized();
-    }
+    @GraphQLDescription("Gets the name of the child item.")
+    String getName();
 
     @GraphQLField
-    @GraphQLDescription("Reports whether this property can have multiple values.")
     @GraphQLNonNull
-    public boolean isMultiple() {
-        return definition.isMultiple();
-    }
+    @GraphQLDescription("Reports whether the item is mandatory. A mandatory item is one that, if its parent node exists, must also exist.")
+    boolean isMandatory();
 
     @GraphQLField
-    @GraphQLDescription("Gets the required type of the property.")
     @GraphQLNonNull
-    public GqlJcrPropertyType getRequiredType() {
-        return GqlJcrPropertyType.fromValue(definition.getRequiredType());
-    }
+    @GraphQLDescription("Reports whether the item is to be automatically created when its parent node is created.")
+    boolean isAutoCreated();
+
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("Reports whether the child item is protected.")
+    boolean isProtected();
+
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("Reports whether the child item is hidden from UI.")
+    boolean isHidden();
+
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("Gets the node type that contains the declaration of this definition.")
+    GqlJcrNodeType getDeclaringNodeType();
 
 }

@@ -51,13 +51,11 @@ import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.collections4.functors.AllPredicate;
-import org.apache.commons.collections4.functors.AnyPredicate;
 import org.apache.commons.collections4.functors.TruePredicate;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.services.content.*;
-import org.jahia.utils.LanguageCodeConverters;
 
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
@@ -69,48 +67,6 @@ import java.util.*;
 @GraphQLName("GenericJCRNode")
 public class GqlJcrNodeImpl implements GqlJcrNode {
 
-    private static HashMap<PropertyEvaluation, PropertyEvaluationAlgorithm> ALGORITHM_BY_EVALUATION = new HashMap<>();
-
-    static {
-
-        ALGORITHM_BY_EVALUATION.put(PropertyEvaluation.PRESENT, new PropertyEvaluationAlgorithm() {
-
-            @Override
-            public boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
-                return hasProperty(node, language, propertyName);
-            }
-        });
-
-        ALGORITHM_BY_EVALUATION.put(PropertyEvaluation.ABSENT, new PropertyEvaluationAlgorithm() {
-
-            @Override
-            public boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
-                return !hasProperty(node, language, propertyName);
-            }
-        });
-
-        ALGORITHM_BY_EVALUATION.put(PropertyEvaluation.EQUAL, new PropertyEvaluationAlgorithm() {
-
-            @Override
-            public boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
-                if (propertyValue == null) {
-                    throw new GqlJcrWrongInputException("Property value is required for " + PropertyEvaluation.EQUAL + " evaluation");
-                }
-                return hasPropertyValue(node, language, propertyName, propertyValue);
-            }
-        });
-
-        ALGORITHM_BY_EVALUATION.put(PropertyEvaluation.DIFFERENT, new PropertyEvaluationAlgorithm() {
-
-            @Override
-            public boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
-                if (propertyValue == null) {
-                    throw new GqlJcrWrongInputException("Property value is required for " + PropertyEvaluation.DIFFERENT + " evaluation");
-                }
-                return !hasPropertyValue(node, language, propertyName, propertyValue);
-            }
-        });
-    }
 
     private JCRNodeWrapper node;
     private String type;
@@ -178,7 +134,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @Override
     public String getDisplayName(@GraphQLName("language") String language) {
         try {
-            JCRNodeWrapper node = getNodeInLanguage(this.node, language);
+            JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node, language);
             return node.getDisplayableName();
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
@@ -200,7 +156,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                     @GraphQLName("language") String language) {
         List<GqlJcrProperty> properties = new LinkedList<GqlJcrProperty>();
         try {
-            JCRNodeWrapper node = getNodeInLanguage(this.node, language);
+            JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node, language);
             if (names != null) {
                 for (String name : names) {
                     if (node.hasProperty(name)) {
@@ -223,7 +179,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     public GqlJcrProperty getProperty(@GraphQLName("name") @GraphQLNonNull String name,
                                       @GraphQLName("language") String language) {
         try {
-            JCRNodeWrapper node = getNodeInLanguage(this.node, language);
+            JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node, language);
             if (!node.hasProperty(name)) {
                 return null;
             }
@@ -290,51 +246,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             };
         }
 
-        Predicate<JCRNodeWrapper> typesPredicate;
-        if (typesFilter == null) {
-            typesPredicate = TruePredicate.truePredicate();
-        } else {
-            LinkedList<Predicate<JCRNodeWrapper>> typePredicates = new LinkedList<>();
-            for (String typeFilter : typesFilter.getTypes()) {
-                typePredicates.add(new Predicate<JCRNodeWrapper>() {
+        Predicate<JCRNodeWrapper> typesPredicate = NodeHelper.getTypesPredicate(typesFilter);
 
-                    @Override
-                    public boolean evaluate(JCRNodeWrapper node) {
-                        try {
-                            return node.isNodeType(typeFilter);
-                        } catch (RepositoryException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                });
-            }
-            typesPredicate = getCombinedPredicate(typePredicates, typesFilter.getMulticriteriaEvaluation(), MulticriteriaEvaluation.ANY);
-        }
-
-        Predicate<JCRNodeWrapper> propertiesPredicate;
-        if (propertiesFilter == null) {
-            propertiesPredicate = TruePredicate.truePredicate();
-        } else {
-            LinkedList<Predicate<JCRNodeWrapper>> propertyPredicates = new LinkedList<>();
-            for (NodePropertyInput propertyFilter : propertiesFilter.getPropertyFilters()) {
-                PropertyEvaluation propertyEvaluation = propertyFilter.getPropertyEvaluation();
-                if (propertyEvaluation == null) {
-                    propertyEvaluation = PropertyEvaluation.EQUAL;
-                }
-                PropertyEvaluationAlgorithm evaluationAlgorithm = ALGORITHM_BY_EVALUATION.get(propertyEvaluation);
-                if (evaluationAlgorithm == null) {
-                    throw new IllegalArgumentException("Unknown property evaluation: " + propertyEvaluation);
-                }
-                propertyPredicates.add(new Predicate<JCRNodeWrapper>() {
-
-                    @Override
-                    public boolean evaluate(JCRNodeWrapper node) {
-                        return evaluationAlgorithm.evaluate(node, propertyFilter.getLanguage(), propertyFilter.getPropertyName(), propertyFilter.getPropertyValue());
-                    }
-                });
-            }
-            propertiesPredicate = getCombinedPredicate(propertyPredicates, propertiesFilter.getMulticriteriaEvaluation(), MulticriteriaEvaluation.ALL);
-        }
+        Predicate<JCRNodeWrapper> propertiesPredicate = NodeHelper.getPropertiesPredicate(propertiesFilter);
 
         @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = AllPredicate.allPredicate(namesPredicate, typesPredicate, propertiesPredicate);
         return result;
@@ -423,52 +337,4 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         return (path.endsWith("/") ? path : path + "/");
     }
 
-    private static boolean hasProperty(JCRNodeWrapper node, String language, String propertyName) {
-        try {
-            node = getNodeInLanguage(node, language);
-            return node.hasProperty(propertyName);
-        } catch (RepositoryException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static boolean hasPropertyValue(JCRNodeWrapper node, String language, String propertyName, String propertyValue) {
-        try {
-            node = getNodeInLanguage(node, language);
-            if (!node.hasProperty(propertyName)) {
-                return false;
-            }
-            return (node.getProperty(propertyName).getString().equals(propertyValue));
-        } catch (RepositoryException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    static JCRNodeWrapper getNodeInLanguage(JCRNodeWrapper node, String language) throws RepositoryException {
-        if (language == null) {
-            return node;
-        }
-        String workspace = node.getSession().getWorkspace().getName();
-        Locale locale = LanguageCodeConverters.languageCodeToLocale(language);
-        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(workspace, locale);
-        return session.getNodeByIdentifier(node.getIdentifier());
-    }
-
-    private static <T> Predicate<T> getCombinedPredicate(Collection<Predicate<T>> predicates, MulticriteriaEvaluation multicriteriaEvaluation, MulticriteriaEvaluation defaultMulticriteriaEvaluation) {
-        if (multicriteriaEvaluation == null) {
-            multicriteriaEvaluation = defaultMulticriteriaEvaluation;
-        }
-        if (multicriteriaEvaluation == MulticriteriaEvaluation.ALL) {
-            return AllPredicate.allPredicate(predicates);
-        } else if (multicriteriaEvaluation == MulticriteriaEvaluation.ANY) {
-            return AnyPredicate.anyPredicate(predicates);
-        } else {
-            throw new IllegalArgumentException("Unknown multicriteria evaluation: " + multicriteriaEvaluation);
-        }
-    }
-
-    private interface PropertyEvaluationAlgorithm {
-
-        boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue);
-    }
 }

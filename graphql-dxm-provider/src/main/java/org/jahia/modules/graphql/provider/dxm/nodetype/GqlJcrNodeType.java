@@ -45,8 +45,10 @@
 
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.annotations.connection.PaginatedData;
 import graphql.schema.DataFetchingEnvironment;
@@ -62,33 +64,23 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * TODO Comment me
- *
- * @author toto
+ * GraphQL representation of a JCR node type
  */
 @GraphQLName("JCRNodeType")
+@GraphQLDescription("GraphQL representation of a JCR node type")
 public class GqlJcrNodeType {
     public static final Logger logger = LoggerFactory.getLogger(GqlJcrNodeType.class);
 
     private ExtendedNodeType nodeType;
-    private String name;
-    private String systemId;
-    private boolean isMixin;
-    private boolean isAbstract;
-    private boolean hasOrderableChildNodes;
-    private boolean isQueryable;
+
 
     public GqlJcrNodeType(ExtendedNodeType nodeType) {
         this.nodeType = nodeType;
-        this.name = nodeType.getName();
-        this.systemId = nodeType.getSystemId();
-        this.isMixin = nodeType.isMixin();
-        this.isAbstract = nodeType.isAbstract();
-        this.hasOrderableChildNodes = nodeType.hasOrderableChildNodes();
-        this.isQueryable = nodeType.isQueryable();
     }
 
     public ExtendedNodeType getNodeType() {
@@ -97,110 +89,83 @@ public class GqlJcrNodeType {
 
     @GraphQLField()
     public String getName() {
-        return name;
+        return nodeType.getName();
     }
 
     @GraphQLField()
-    public String getDisplayName(@GraphQLName("language") String language) {
+    public String getDisplayName(@GraphQLName("language") @GraphQLNonNull String language) {
         return nodeType.getLabel(LanguageCodeConverters.languageCodeToLocale(language));
 
     }
 
     @GraphQLField
+    @GraphQLDescription("System ID of the node type, corresponding to the name of the module declaring it.")
     public String getSystemId() {
-        return systemId;
+        return nodeType.getSystemId();
     }
 
     @GraphQLField
+    @GraphQLDescription("Returns true if this is a mixin type; returns false otherwise.")
     public boolean isMixin() {
-        return isMixin;
+        return nodeType.isMixin();
     }
 
     @GraphQLField
+    @GraphQLDescription("Returns true if this is an abstract node type; returns false otherwise.")
     public boolean isAbstract() {
-        return isAbstract;
+        return nodeType.isAbstract();
     }
 
     @GraphQLField
+    @GraphQLDescription("Returns true if nodes of this type must support orderable child nodes; returns false otherwise.")
     public boolean isHasOrderableChildNodes() {
-        return hasOrderableChildNodes;
+        return nodeType.hasOrderableChildNodes();
     }
 
     @GraphQLField
+    @GraphQLDescription("Returns true if the node type is queryable.")
     public boolean isQueryable() {
-        return isQueryable;
+        return nodeType.isQueryable();
     }
 
+    @GraphQLField
+    @GraphQLDescription("Returns the name of the primary item (one of the child items of the nodes of this node type). If this node has no primary item, then this method null.")
+    public GqlJcrItemDefinition getPrimaryItem() {
+        String primaryItemName = nodeType.getPrimaryItemName();
+        if (primaryItemName != null) {
+            if (nodeType.getChildNodeDefinitionsAsMap().containsKey(primaryItemName)) {
+                return new GqlJcrNodeDefinition(nodeType.getChildNodeDefinitionsAsMap().get(primaryItemName));
+            }
+            if (nodeType.getPropertyDefinitionsAsMap().containsKey(primaryItemName)) {
+                return new GqlJcrPropertyDefinition(nodeType.getPropertyDefinitionsAsMap().get(primaryItemName));
+            }
+        }
+        return null;
+    }
 
     @GraphQLField
+    @GraphQLDescription("Returns an array containing the property definitions of this node type.")
     public List<GqlJcrPropertyDefinition> getProperties() {
-        List<GqlJcrPropertyDefinition> propertyList = null;
-        try {
-            ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
-            propertyList = new ArrayList<>();
-            for (ExtendedPropertyDefinition definition : ent.getPropertyDefinitions()) {
-                GqlJcrPropertyDefinition qlPropertyDefinition = new GqlJcrPropertyDefinition();
-                qlPropertyDefinition.setName(definition.getName());
-                propertyList.add(qlPropertyDefinition);
-            }
-        } catch (NoSuchNodeTypeException e) {
-            logger.error(e.getMessage(), e);
-        }
-        return propertyList;
-
+        return Arrays.stream(nodeType.getPropertyDefinitions()).map(GqlJcrPropertyDefinition::new).collect(Collectors.toList());
     }
 
     @GraphQLField
+    @GraphQLDescription("Returns an array containing the child node definitions of this node type.")
     public List<GqlJcrNodeDefinition> getNodes() {
-        List<GqlJcrNodeDefinition> nodeList = null;
-        try {
-            ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
-            nodeList = new ArrayList<>();
-            for (ExtendedNodeDefinition definition : ent.getChildNodeDefinitions()) {
-                GqlJcrNodeDefinition qlNodeDefinition = new GqlJcrNodeDefinition();
-                qlNodeDefinition.setName(definition.getName());
-                nodeList.add(qlNodeDefinition);
-            }
-        } catch (NoSuchNodeTypeException e) {
-            logger.error(e.getMessage(), e);
-        }
-        return nodeList;
-
+        return Arrays.stream(nodeType.getChildNodeDefinitions()).map(GqlJcrNodeDefinition::new).collect(Collectors.toList());
     }
 
     @GraphQLField
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
-    public PaginatedData<GqlJcrNodeType> getSubTypes(DataFetchingEnvironment environment) {
-        List<GqlJcrNodeType> subTypes = null;
-        try {
-            ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
-            subTypes = new ArrayList<>();
-            for (ExtendedNodeType type : ent.getSubtypesAsList()) {
-                subTypes.add(new GqlJcrNodeType(type));
-            }
-        } catch (NoSuchNodeTypeException e) {
-            logger.error(e.getMessage(), e);
-        }
-        return PaginationHelper.paginate(subTypes, t -> PaginationHelper.encodeCursor(t.name), environment);
-
-
+    @GraphQLDescription("Returns all subtypes of this node type in the node type inheritance hierarchy.")
+    public PaginatedData<GqlJcrNodeType> getSubtypes(DataFetchingEnvironment environment) {
+        List<GqlJcrNodeType> subTypes = nodeType.getSubtypesAsList().stream().map(GqlJcrNodeType::new).collect(Collectors.toList());
+        return PaginationHelper.paginate(subTypes, t -> PaginationHelper.encodeCursor(t.getName()), environment);
     }
 
     @GraphQLField
-    public List<GqlJcrNodeType> getSuperTypes() {
-        List<GqlJcrNodeType> superTypes = null;
-        try {
-            ExtendedNodeType ent = NodeTypeRegistry.getInstance().getNodeType(nodeType.getName());
-            superTypes = new ArrayList<>();
-            for (ExtendedNodeType type : ent.getSupertypeSet()) {
-                superTypes.add(new GqlJcrNodeType(type));
-            }
-        } catch (NoSuchNodeTypeException e) {
-            logger.error(e.getMessage(), e);
-        }
-        return superTypes;
-
+    @GraphQLDescription("Returns all supertypes of this node type in the node type inheritance hierarchy.")
+    public List<GqlJcrNodeType> getSupertypes() {
+        return nodeType.getSupertypeSet().stream().map(GqlJcrNodeType::new).collect(Collectors.toList());
     }
-
-
 }

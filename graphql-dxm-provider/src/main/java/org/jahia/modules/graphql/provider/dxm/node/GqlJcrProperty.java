@@ -82,6 +82,14 @@ public class GqlJcrProperty {
     }
 
     /**
+     * Get underlying JCR property
+     * @return
+     */
+    public JCRPropertyWrapper getProperty() {
+        return property;
+    }
+
+    /**
      * @return The name of the JCR property
      */
     @GraphQLField

@@ -46,53 +46,36 @@
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
 import graphql.annotations.annotationTypes.*;
-import graphql.annotations.connection.GraphQLConnection;
-import graphql.schema.DataFetchingEnvironment;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery;
-import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
-import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
-import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
-import org.jahia.services.content.nodetypes.ExtendedNodeType;
-import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrProperty;
+import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
+import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.nodetype.NodeTypeIterator;
+import javax.jcr.RepositoryException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-@GraphQLTypeExtension(GqlJcrQuery.class)
-public class NodeTypeJCRQueryExtensions {
+/**
+ * Extensions for JCRProperty
+ */
+@GraphQLTypeExtension(GqlJcrProperty.class)
+public class NodetypeJCRPropertyExtensions {
 
-    private GqlJcrQuery source;
+    private GqlJcrProperty property;
 
-    public NodeTypeJCRQueryExtensions(GqlJcrQuery source) {
-        this.source = source;
+    public NodetypeJCRPropertyExtensions(GqlJcrProperty property) {
+        this.property = property;
     }
 
     @GraphQLField
-    @GraphQLDescription("Get a nodetype by its name")
-    public static GqlJcrNodeType getNodeTypeByName(@GraphQLNonNull @GraphQLName("name") String name) {
-        try {
-            return new GqlJcrNodeType(NodeTypeRegistry.getInstance().getNodeType(name));
-        } catch (NoSuchNodeTypeException e) {
-            throw new RuntimeException(e);
+    @GraphQLDescription("Returns the property definition that applies to this property.")
+    public GqlJcrPropertyDefinition getDefinition() throws RepositoryException {
+        ExtendedPropertyDefinition definition = (ExtendedPropertyDefinition) property.getProperty().getDefinition();
+        if (definition != null) {
+            return new GqlJcrPropertyDefinition(definition);
         }
-    }
-
-    @GraphQLField
-    @GraphQLDescription("Get a list of nodetypes based on specified parameter")
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
-    public static DXPaginatedData<GqlJcrNodeType> getNodeTypes(@GraphQLName("filter") NodeTypesListInput input,DataFetchingEnvironment environment) {
-        NodeTypeRegistry registry = NodeTypeRegistry.getInstance();
-        NodeTypeIterator nodeTypes = (input == null || input.getModules() == null) ? registry.getAllNodeTypes() : registry.getAllNodeTypes(input.getModules());
-        List<GqlJcrNodeType> mapped = Stream.generate(() -> ((ExtendedNodeType) nodeTypes.nextNodeType()))
-                .limit(nodeTypes.getSize())
-                .filter(n -> (n.isMixin() && (input == null || input.getIncludeMixins())) || (!n.isMixin() && (input == null || input.getIncludeNonMixins())))
-                .map(GqlJcrNodeType::new)
-                .collect(Collectors.toList());
-
-        return PaginationHelper.paginate(mapped, GqlJcrNodeType::getName, environment);
+        return null;
     }
 
 }
