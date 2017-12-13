@@ -13,6 +13,7 @@
                 <value>org.jahia.test.graphql.GraphQLDescendantsTest</value>
                 <value>org.jahia.test.graphql.GraphQLReferencesTest</value>
                 <value>org.jahia.test.graphql.GraphQLQueryTest</value>
+                <value>org.jahia.test.graphql.GraphQLNodetypesTest</value>
             </list>
         </property>
     </bean>
