@@ -122,6 +122,7 @@ public class GraphQLNodetypesTest extends GraphQLTestSupport {
                 "      test2: isNodeType(type: {types: [\"jmix:renderable\"]})\n" +
                 "      test3: isNodeType(type: {types: [\"jnt:content\", \"jnt:virtualsite\"], multi: ALL})\n" +
                 "      test4: isNodeType(type: {types: [\"jnt:content\", \"jnt:virtualsite\"], multi: ANY})\n" +
+                "      test5: isNodeType(type: {types: [\"wrongInput\"], multi: ANY})\n" +
                 "    }\n" +
                 "  }\n" +
                 "}\n");
@@ -131,6 +132,7 @@ public class GraphQLNodetypesTest extends GraphQLTestSupport {
         Assert.assertEquals(true, node.getBoolean("test2"));
         Assert.assertEquals(false, node.getBoolean("test3"));
         Assert.assertEquals(true, node.getBoolean("test4"));
+        Assert.assertEquals(false, node.getBoolean("test5"));
     }
 
 
@@ -197,6 +199,20 @@ public class GraphQLNodetypesTest extends GraphQLTestSupport {
     }
 
     @Test
+    public void shouldNotRetrieveNodetype() throws Exception {
+        JSONObject result = executeQuery("{\n" +
+                "  jcr {\n" +
+                "    nodeTypeByName(name: \"jmix:wrongNodetype\") {\n" +
+                "      name\n" +
+                "      displayName(language: \"en\")\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        validateError(result, "javax.jcr.nodetype.NoSuchNodeTypeException: Unknown type : jmix:wrongNodetype");
+    }
+
+    @Test
     public void shouldRetrieveNodetypesForModule() throws Exception {
         JSONObject result = executeQuery("{\n" +
                 "  jcr {\n" +
@@ -220,6 +236,23 @@ public class GraphQLNodetypesTest extends GraphQLTestSupport {
 
         Assert.assertTrue(names.contains("jnt:text"));
         Assert.assertFalse(names.contains("nt:base"));
+    }
+
+    @Test
+    public void shouldNotRetrieveNodetypesForModule() throws Exception {
+        JSONObject result = executeQuery("{\n" +
+                "  jcr {\n" +
+                "    nodeTypes(filter:{modules:[\"wrongModule\"]}) {\n" +
+                "      nodes {\n" +
+                "        name\n" +
+                "        systemId\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        JSONArray nodeTypes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeTypes").getJSONArray("nodes");
+        Assert.assertEquals(nodeTypes.length(), 0);
     }
 
     @Test

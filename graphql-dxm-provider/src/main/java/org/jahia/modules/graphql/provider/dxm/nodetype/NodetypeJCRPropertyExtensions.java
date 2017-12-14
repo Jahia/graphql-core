@@ -45,7 +45,9 @@
 
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
+import graphql.ErrorType;
 import graphql.annotations.annotationTypes.*;
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrProperty;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
@@ -70,8 +72,15 @@ public class NodetypeJCRPropertyExtensions {
 
     @GraphQLField
     @GraphQLDescription("Returns the property definition that applies to this property.")
-    public GqlJcrPropertyDefinition getDefinition() throws RepositoryException {
-        ExtendedPropertyDefinition definition = (ExtendedPropertyDefinition) property.getProperty().getDefinition();
+    public GqlJcrPropertyDefinition getDefinition() {
+        ExtendedPropertyDefinition definition;
+
+        try {
+            definition = (ExtendedPropertyDefinition) property.getProperty().getDefinition();
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+
         if (definition != null) {
             return new GqlJcrPropertyDefinition(definition);
         }

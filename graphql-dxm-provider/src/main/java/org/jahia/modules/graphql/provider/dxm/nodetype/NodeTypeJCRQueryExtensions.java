@@ -45,9 +45,11 @@
 
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
+import graphql.ErrorType;
 import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
@@ -76,7 +78,7 @@ public class NodeTypeJCRQueryExtensions {
         try {
             return new GqlJcrNodeType(NodeTypeRegistry.getInstance().getNodeType(name));
         } catch (NoSuchNodeTypeException e) {
-            throw new RuntimeException(e);
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
     }
 
