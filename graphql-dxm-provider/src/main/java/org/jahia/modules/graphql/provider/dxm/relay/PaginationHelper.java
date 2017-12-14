@@ -46,6 +46,7 @@
 package org.jahia.modules.graphql.provider.dxm.relay;
 
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -130,13 +131,32 @@ public class PaginationHelper {
         Integer offset;
         Integer limit;
 
+        public boolean isOffsetLimit() {
+            return (this.offset != null || this.limit != null);
+        }
+
+        public boolean isCursor() {
+            return (this.before != null || this.after != null || this.first != null || this.last != null);
+        }
+
+        private Integer validateNotNegativeValue(Integer value, String argument) {
+            if (value != null && value < 0) {
+                throw new GqlJcrWrongInputException("Argument '" + argument + "' can't be negative");
+            }
+            return value;
+        }
+
         public Arguments(String before, String after, Integer first, Integer last, Integer offset, Integer limit) {
             this.before = before;
             this.after = after;
-            this.first = first;
-            this.last = last;
-            this.offset = offset;
-            this.limit = limit;
+            this.first = validateNotNegativeValue(first, "first");
+            this.last = validateNotNegativeValue(last, "last");
+            this.offset = validateNotNegativeValue(offset, "offset");
+            this.limit = validateNotNegativeValue(limit, "limit");
+
+            if (isCursor() && isOffsetLimit()) {
+                throw new GqlJcrWrongInputException("Offset and/or Limit argument(s) can't be used with other pagination arguments");
+            }
         }
     }
 
