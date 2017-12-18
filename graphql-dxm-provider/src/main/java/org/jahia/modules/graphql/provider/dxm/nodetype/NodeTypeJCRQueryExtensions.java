@@ -86,6 +86,7 @@ public class NodeTypeJCRQueryExtensions {
     @GraphQLDescription("Get a list of nodetypes based on specified parameter")
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     public static DXPaginatedData<GqlJcrNodeType> getNodeTypes(@GraphQLName("filter") NodeTypesListInput input,DataFetchingEnvironment environment) {
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         NodeTypeRegistry registry = NodeTypeRegistry.getInstance();
         NodeTypeIterator nodeTypes = (input == null || input.getModules() == null) ? registry.getAllNodeTypes() : registry.getAllNodeTypes(input.getModules());
         List<GqlJcrNodeType> mapped = Stream.generate(() -> ((ExtendedNodeType) nodeTypes.nextNodeType()))
@@ -94,7 +95,7 @@ public class NodeTypeJCRQueryExtensions {
                 .map(GqlJcrNodeType::new)
                 .collect(Collectors.toList());
 
-        return PaginationHelper.paginate(mapped, GqlJcrNodeType::getName, environment);
+        return PaginationHelper.paginate(mapped, GqlJcrNodeType::getName, arguments);
     }
 
 }

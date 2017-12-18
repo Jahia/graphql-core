@@ -207,6 +207,7 @@ public class GqlJcrQuery {
                                                               @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage, DataFetchingEnvironment environment)
             throws BaseGqlClientException {
         try {
+            PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
             List<GqlJcrNode> result = new LinkedList<>();
             QueryManagerWrapper queryManager = getSession().getWorkspace().getQueryManager();
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
@@ -216,7 +217,7 @@ public class GqlJcrQuery {
                 result.add(SpecializedTypesHandler.getNode(node));
             }
             // todo: naive implementation of the pagination, could be improved in some cases by setting limit/offset in query
-            return PaginationHelper.paginate(result, n -> PaginationHelper.encodeCursor(n.getUuid()), environment);
+            return PaginationHelper.paginate(result, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }

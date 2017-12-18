@@ -159,8 +159,9 @@ public class GqlJcrNodeType {
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("Returns all subtypes of this node type in the node type inheritance hierarchy.")
     public PaginatedData<GqlJcrNodeType> getSubtypes(DataFetchingEnvironment environment) {
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         List<GqlJcrNodeType> subTypes = nodeType.getSubtypesAsList().stream().map(GqlJcrNodeType::new).collect(Collectors.toList());
-        return PaginationHelper.paginate(subTypes, t -> PaginationHelper.encodeCursor(t.getName()), environment);
+        return PaginationHelper.paginate(subTypes, t -> PaginationHelper.encodeCursor(t.getName()), arguments);
     }
 
     @GraphQLField

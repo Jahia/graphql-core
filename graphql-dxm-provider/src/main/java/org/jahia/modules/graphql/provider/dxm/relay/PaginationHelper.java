@@ -57,15 +57,14 @@ import static java.util.Base64.getEncoder;
 public class PaginationHelper {
 
     public static <T> DXPaginatedData<T> paginate(List<T> source, DataFetchingEnvironment environment) {
-        return paginate(source, obj -> encodeCursor("index:" + source.indexOf(obj)), environment);
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
+        return paginate(source, obj -> encodeCursor("index:" + source.indexOf(obj)), arguments);
     }
 
-    public static <T> DXPaginatedData<T> paginate(List<T> source, CursorSupport<T> cursorSupport, DataFetchingEnvironment environment) {
-        Arguments args = parseArguments(environment);
-
-        List<T> filtered = applyCursorsToEdge(args, source, cursorSupport);
-        filtered = applyFirstLast(filtered, args);
-        filtered = applyLimitOffset(filtered, args);
+    public static <T> DXPaginatedData<T> paginate(List<T> source, CursorSupport<T> cursorSupport, Arguments arguments) {
+        List<T> filtered = applyCursorsToEdge(arguments, source, cursorSupport);
+        filtered = applyFirstLast(filtered, arguments);
+        filtered = applyLimitOffset(filtered, arguments);
 
         boolean hasPrevious = filtered.size() > 0 && filtered.get(0) != source.get(0);
         boolean hasNext = filtered.size() > 0 && filtered.get(filtered.size()-1) != source.get(source.size()-1);

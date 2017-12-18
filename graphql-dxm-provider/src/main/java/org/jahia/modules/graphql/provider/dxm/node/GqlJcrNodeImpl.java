@@ -197,12 +197,13 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                    @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter,
                                                    DataFetchingEnvironment environment) {
         List<GqlJcrNode> children = new LinkedList<GqlJcrNode>();
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
             collectDescendants(node, getNodesPredicate(names, typesFilter, propertiesFilter), false, children);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
-        return PaginationHelper.paginate(children, n -> PaginationHelper.encodeCursor(n.getUuid()), environment);
+        return PaginationHelper.paginate(children, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
     }
 
     @Override
@@ -212,12 +213,13 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                       @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter,
                                                       DataFetchingEnvironment environment) {
         List<GqlJcrNode> descendants = new LinkedList<GqlJcrNode>();
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
             collectDescendants(node, getNodesPredicate(null, typesFilter, propertiesFilter), true, descendants);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
-        return PaginationHelper.paginate(descendants, n -> PaginationHelper.encodeCursor(n.getUuid()), environment);
+        return PaginationHelper.paginate(descendants, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
     }
 
     private void collectDescendants(JCRNodeWrapper node, Predicate<JCRNodeWrapper> predicate, boolean recurse, Collection<GqlJcrNode> descendants) throws RepositoryException {
@@ -302,13 +304,14 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLNonNull
     public DXPaginatedData<GqlJcrProperty> getReferences(DataFetchingEnvironment environment) {
         List<GqlJcrProperty> references = new LinkedList<GqlJcrProperty>();
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
             collectReferences(node.getReferences(), references);
             collectReferences(node.getWeakReferences(), references);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
-        return PaginationHelper.paginate(references, p -> PaginationHelper.encodeCursor(p.getNode().getUuid() + "/" + p.getName()), environment);
+        return PaginationHelper.paginate(references, p -> PaginationHelper.encodeCursor(p.getNode().getUuid() + "/" + p.getName()), arguments);
     }
 
     private void collectReferences(PropertyIterator references, Collection<GqlJcrProperty> gqlReferences) throws RepositoryException {
