@@ -48,6 +48,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.collections4.functors.AllPredicate;
 import org.apache.commons.collections4.functors.AnyPredicate;
+import org.apache.commons.collections4.functors.NonePredicate;
 import org.apache.commons.collections4.functors.TruePredicate;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -155,6 +156,8 @@ public class NodeHelper {
             return AllPredicate.allPredicate(predicates);
         } else if (multicriteriaEvaluation == GqlJcrNode.MulticriteriaEvaluation.ANY) {
             return AnyPredicate.anyPredicate(predicates);
+        } else if (multicriteriaEvaluation == GqlJcrNode.MulticriteriaEvaluation.NONE) {
+            return NonePredicate.nonePredicate(predicates);
         } else {
             throw new IllegalArgumentException("Unknown multicriteria evaluation: " + multicriteriaEvaluation);
         }

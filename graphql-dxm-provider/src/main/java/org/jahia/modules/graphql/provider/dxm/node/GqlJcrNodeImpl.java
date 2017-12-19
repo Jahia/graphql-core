@@ -71,6 +71,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     private JCRNodeWrapper node;
     private String type;
 
+    public static final List<String> DEFAULT_EXCLUDED_CHILDREN = Arrays.asList("jnt:translation");
+    public static final Predicate<JCRNodeWrapper> DEFAULT_CHILDREN_PREDICATE = NodeHelper.getTypesPredicate(new NodeTypesInput(MulticriteriaEvaluation.NONE, DEFAULT_EXCLUDED_CHILDREN));
+
     /**
      * Create an instance that represents a JCR node to GraphQL.
      *
@@ -252,7 +255,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
         Predicate<JCRNodeWrapper> propertiesPredicate = NodeHelper.getPropertiesPredicate(propertiesFilter);
 
-        @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = AllPredicate.allPredicate(namesPredicate, typesPredicate, propertiesPredicate);
+        @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = AllPredicate.allPredicate(DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate);
         return result;
     }
 

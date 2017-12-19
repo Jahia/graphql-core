@@ -229,7 +229,13 @@ public interface GqlJcrNode {
          * The result criteria evaluates positive if any sub-criteria evaluates positive.
          */
         @GraphQLDescription("The result criteria evaluates positive if any sub-criteria evaluates positive")
-        ANY
+        ANY,
+
+        /**
+         * The result criteria evaluates positive if no sub-criteria evaluates positive.
+         */
+        @GraphQLDescription("The result criteria evaluates positive if no sub-criteria evaluates positive")
+        NONE
     }
 
     /**
