@@ -45,9 +45,12 @@
 
 package org.jahia.modules.graphql.provider.dxm.config;
 
+import org.apache.commons.lang.StringUtils;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -59,6 +62,7 @@ import java.util.*;
 @Component(service = {DXGraphQLConfig.class, ManagedServiceFactory.class}, property = "service.pid=org.jahia.modules.graphql.provider", immediate = true)
 public class DXGraphQLConfig implements ManagedServiceFactory {
 
+    private static Logger logger = LoggerFactory.getLogger(DXGraphQLConfig.class);
     private final static String PERMISSION_PREFIX = "permission.";
 
     private Map<String, List<String>> keysByPid = new HashMap<>();
@@ -84,10 +88,25 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         Enumeration<String> keys = properties.keys();
         while (keys.hasMoreElements()) {
             String key = keys.nextElement();
-            keysForPid.add(key);
+            boolean addKey = true;
             // parse permissions ( permission format is like: permission.Query.nodesByQuery = privileged )
             if (key.startsWith(PERMISSION_PREFIX) && properties.get(key) != null) {
-                permissions.put(key.substring(PERMISSION_PREFIX.length()), (String) properties.get(key));
+                // check if any configuration also contains the same permission configuration
+                for (String p : keysByPid.keySet()) {
+                    if (!StringUtils.equals(p, pid) && keysByPid.get(p).contains(key)) {
+                        addKey = false;
+                        logger.warn("Unable to register permission for {} because it has been already registered by the config with id {}", key, p);
+                        break;
+                    }
+                }
+                if (addKey) {
+                    permissions.put(key.substring(PERMISSION_PREFIX.length()), (String) properties.get(key));
+                    // store the key for the permission configuration
+                    keysForPid.add(key);
+                }
+            } else {
+                // store other properties than permission configuration
+                keysForPid.add(key);
             }
         }
     }
