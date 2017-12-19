@@ -702,7 +702,7 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
         JSONArray descendants = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("descendants").getJSONArray("nodes");
         Map<String, JSONObject> descendantsByPath = toItemByKeyMap("path", descendants);
 
-        Assert.assertEquals(11, descendantsByPath.size());
+        Assert.assertEquals(7, descendantsByPath.size());
         Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList1"));
         Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList2"));
         Assert.assertTrue(descendantsByPath.containsKey("/testList/testSubList3"));
