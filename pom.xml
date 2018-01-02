@@ -53,21 +53,11 @@
     </properties>
 
     <scm>
-        <connection>scm:git:git@github.com:Jahia/graphql-core-feature.git</connection>
-        <developerConnection>scm:git:git@github.com:Jahia/graphql-core-feature.git</developerConnection>
-        <url>scm:git:git@github.com:Jahia/graphql-core-feature.git</url>
+        <connection>scm:git:git@github.com:Jahia/graphql-core.git</connection>
+        <developerConnection>scm:git:git@github.com:Jahia/graphql-core.git</developerConnection>
+        <url>scm:git:git@github.com:Jahia/graphql-core.git</url>
     </scm>
 
-    <distributionManagement>
-        <repository>
-            <id>jahia-releases</id>
-            <url>https://devtools.jahia.com/nexus/content/repositories/jahia-releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>jahia-snapshots</id>
-            <url>https://devtools.jahia.com/nexus/content/repositories/jahia-snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
     <repositories>
         <repository>
             <id>jahia-public</id>
