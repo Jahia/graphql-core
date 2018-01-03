@@ -53,7 +53,7 @@
     </parent>
     <artifactId>graphql-test</artifactId>
     <groupId>org.jahia.test</groupId>
-    <name>DX :: GraphQL Test Module</name>
+    <name>Jahia GraphQL Test Module</name>
     <packaging>bundle</packaging>
 
     <dependencies>
