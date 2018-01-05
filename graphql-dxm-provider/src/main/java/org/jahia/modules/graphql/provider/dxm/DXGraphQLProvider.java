@@ -127,8 +127,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
             }
         }
 
-        queryType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputType(Query.class, container);
-        mutationType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputType(Mutation.class, container);
+        queryType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Query.class, container);
+        mutationType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Mutation.class, container);
 
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
         specializedTypesHandler.initializeTypes();
@@ -138,7 +138,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     public Collection<GraphQLType> getTypes() {
         List<GraphQLType> types = new ArrayList<>();
 
-        types.add(graphQLAnnotations.getOutputTypeProcessor().getOutputType(GqlJcrNodeImpl.class, container));
+        types.add(graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNodeImpl.class, container));
         types.addAll(specializedTypesHandler.getKnownTypes().values());
         return types;
     }
@@ -155,7 +155,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
 
     public GraphQLOutputType getOutputType(Class<?> clazz) {
-        return graphQLAnnotations.getOutputTypeProcessor().getOutputType(clazz, container);
+        return graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(clazz, container);
     }
 
     @GraphQLName("Query")

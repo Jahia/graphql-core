@@ -106,7 +106,7 @@ public class SpecializedTypesHandler {
 
     public void initializeTypes() {
         knownTypes = new HashMap<>();
-        GraphQLInterfaceType interfaceType = (GraphQLInterfaceType) graphQLAnnotations.getOutputTypeProcessor().getOutputType(GqlJcrNode.class, container);
+        GraphQLInterfaceType interfaceType = (GraphQLInterfaceType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNode.class, container);
         for (String typeName : specializedTypes) {
             try {
                 final ExtendedNodeType type = NodeTypeRegistry.getInstance().getNodeType(typeName);
@@ -121,7 +121,7 @@ public class SpecializedTypesHandler {
             }
         }
         for (Map.Entry<String, Class<? extends GqlJcrNode>> entry : specializedTypesClass.entrySet()) {
-            knownTypes.put(entry.getKey(), (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputType(entry.getValue(), container));
+            knownTypes.put(entry.getKey(), (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(entry.getValue(), container));
         }
     }
 
@@ -132,7 +132,7 @@ public class SpecializedTypesHandler {
         final GraphQLObjectType.Builder builder = GraphQLObjectType.newObject()
                 .name(escapedTypeName)
                 .withInterface(interfaceType)
-                .fields(((GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputType(GqlJcrNodeImpl.class, container)).getFieldDefinitions());
+                .fields(((GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNodeImpl.class, container)).getFieldDefinitions());
 
         final PropertyDefinition[] properties = type.getPropertyDefinitions();
         if (properties.length > 0) {
@@ -293,7 +293,7 @@ public class SpecializedTypesHandler {
             if (instance.knownTypes.containsKey(type)) {
                 return instance.knownTypes.get(type);
             } else {
-                return (GraphQLObjectType) instance.graphQLAnnotations.getOutputTypeProcessor().getOutputType(GqlJcrNodeImpl.class, instance.container);
+                return (GraphQLObjectType) instance.graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNodeImpl.class, instance.container);
             }
         }
     }
