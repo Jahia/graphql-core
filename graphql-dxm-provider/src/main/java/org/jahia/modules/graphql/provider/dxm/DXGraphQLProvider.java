@@ -55,7 +55,10 @@ import graphql.servlet.GraphQLMutationProvider;
 import graphql.servlet.GraphQLProvider;
 import graphql.servlet.GraphQLQueryProvider;
 import graphql.servlet.GraphQLTypesProvider;
-import org.jahia.modules.graphql.provider.dxm.node.*;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
+import org.jahia.modules.graphql.provider.dxm.node.NodeMutationExtensions;
+import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
+import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodeTypeJCRQueryExtensions;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodetypeJCRNodeExtensions;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodetypeJCRPropertyExtensions;
@@ -169,7 +172,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     public Collection<Class<?>> getExtensions() {
         return Arrays.<Class<?>>asList(
                 NodeQueryExtensions.class,
-//                NodeMutationExtensions.class,
+                NodeMutationExtensions.class,
                 NodeTypeJCRQueryExtensions.class,
                 NodetypeJCRNodeExtensions.class,
                 NodetypeJCRPropertyExtensions.class
