@@ -43,6 +43,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.annotations.annotationTypes.GraphQLID;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
@@ -50,6 +51,7 @@ import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.collections4.Predicate;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.relay.GqlNode;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.services.content.*;
 
@@ -61,7 +63,7 @@ import java.util.*;
  * GraphQL representation of a JCR node - generic implementation.
  */
 @GraphQLName("GenericJCRNode")
-public class GqlJcrNodeImpl implements GqlJcrNode {
+public class GqlJcrNodeImpl implements GqlJcrNode, GqlNode {
 
 
     private JCRNodeWrapper node;
@@ -106,6 +108,17 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @Override
     public String getType() {
         return type;
+    }
+
+    @Override
+    @GraphQLID
+    @GraphQLNonNull
+    public String getId() {
+        try {
+            return "jcrnode:" + node.getSession().getWorkspace().getName()+":" + node.getIdentifier();
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

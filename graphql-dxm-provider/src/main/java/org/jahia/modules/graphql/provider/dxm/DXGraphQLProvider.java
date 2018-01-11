@@ -55,14 +55,13 @@ import graphql.servlet.GraphQLMutationProvider;
 import graphql.servlet.GraphQLProvider;
 import graphql.servlet.GraphQLQueryProvider;
 import graphql.servlet.GraphQLTypesProvider;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
-import org.jahia.modules.graphql.provider.dxm.node.NodeMutationExtensions;
-import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
-import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodeTypeJCRQueryExtensions;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodetypeJCRNodeExtensions;
 import org.jahia.modules.graphql.provider.dxm.nodetype.NodetypeJCRPropertyExtensions;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
+import org.jahia.modules.graphql.provider.dxm.relay.NodesHandler;
+import org.jahia.modules.graphql.provider.dxm.relay.RelayQueryExtensions;
 import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +75,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private static DXGraphQLProvider instance;
 
     private SpecializedTypesHandler specializedTypesHandler;
+
+    private NodesHandler nodesHandler;
 
     private GraphQLAnnotationsComponent graphQLAnnotations;
 
@@ -135,6 +136,9 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
         specializedTypesHandler.initializeTypes();
+
+        nodesHandler = new NodesHandler();
+        nodesHandler.addFetcher(new JcrNodeFetcher());
     }
 
     @Override
@@ -171,6 +175,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     public Collection<Class<?>> getExtensions() {
         return Arrays.<Class<?>>asList(
+                RelayQueryExtensions.class,
                 NodeQueryExtensions.class,
                 NodeMutationExtensions.class,
                 NodeTypeJCRQueryExtensions.class,

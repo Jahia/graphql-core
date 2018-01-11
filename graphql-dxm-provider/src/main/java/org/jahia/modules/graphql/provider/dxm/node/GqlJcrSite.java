@@ -46,11 +46,12 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import org.jahia.modules.graphql.provider.dxm.relay.GqlNode;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 
 @GraphQLName("JCRSite")
-public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode {
+public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode, GqlNode {
 
     private JCRSiteNode siteNode;
 
