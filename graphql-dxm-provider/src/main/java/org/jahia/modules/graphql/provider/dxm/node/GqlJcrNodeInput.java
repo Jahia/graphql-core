@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -44,37 +44,47 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 
-
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 @GraphQLName("JCRNodeInput")
+@GraphQLDescription("GraphQL representation of a JCR node to be created")
 public class GqlJcrNodeInput {
 
-    public GqlJcrNodeInput(@GraphQLName("name") String name,
-                           @GraphQLName("primaryNodeType") String primaryNodeType,
+    public GqlJcrNodeInput(@GraphQLName("name") @GraphQLNonNull String name,
+                           @GraphQLName("primaryNodeType") @GraphQLNonNull String primaryNodeType,
+                           @GraphQLName("mixins") List<String> mixins,
                            @GraphQLName("properties") List<GqlJcrPropertyInput> properties,
                            @GraphQLName("children") List<GqlJcrNodeInput> children) {
         this.name = name;
         this.primaryNodeType = primaryNodeType;
+        this.mixins = mixins;
         this.properties = properties;
         this.children = children;
     }
 
     @GraphQLField
+    @GraphQLDescription("The name of the node to create")
     public String name;
 
     @GraphQLField
+    @GraphQLDescription("The primary node type of the node to create")
     public String primaryNodeType;
 
     @GraphQLField
+    @GraphQLDescription("The list of mixins to add on the node")
+    public List<String> mixins;
+
+    @GraphQLField
+    @GraphQLDescription("The list of properties to set on the node")
     public List<GqlJcrPropertyInput> properties;
 
     @GraphQLField
+    @GraphQLDescription("The list of sub nodes to create")
     public List<GqlJcrNodeInput> children;
 
 }

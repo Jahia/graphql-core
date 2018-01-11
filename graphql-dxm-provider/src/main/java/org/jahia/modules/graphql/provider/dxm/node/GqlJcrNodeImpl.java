@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -48,8 +48,6 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.collections4.Predicate;
-import org.apache.commons.collections4.functors.AllPredicate;
-import org.apache.commons.collections4.functors.TruePredicate;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
@@ -200,7 +198,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrNode> children = new LinkedList<GqlJcrNode>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
-            collectDescendants(node, getNodesPredicate(names, typesFilter, propertiesFilter), false, children);
+            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter), false, children);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -216,45 +214,11 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrNode> descendants = new LinkedList<GqlJcrNode>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
-            collectDescendants(node, getNodesPredicate(null, typesFilter, propertiesFilter), true, descendants);
+            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter), true, descendants);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
         return PaginationHelper.paginate(descendants, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
-    }
-
-    private void collectDescendants(JCRNodeWrapper node, Predicate<JCRNodeWrapper> predicate, boolean recurse, Collection<GqlJcrNode> descendants) throws RepositoryException {
-        for (JCRNodeWrapper child : node.getNodes()) {
-            if (predicate.evaluate(child)) {
-                descendants.add(SpecializedTypesHandler.getNode(child));
-            }
-            if (recurse) {
-                collectDescendants(child, predicate, true, descendants);
-            }
-        }
-    }
-
-    private Predicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final NodeTypesInput typesFilter, final NodePropertiesInput propertiesFilter) {
-
-        Predicate<JCRNodeWrapper> namesPredicate;
-        if (names == null) {
-            namesPredicate = TruePredicate.truePredicate();
-        } else {
-            namesPredicate = new Predicate<JCRNodeWrapper>() {
-
-                @Override
-                public boolean evaluate(JCRNodeWrapper node) {
-                    return names.contains(node.getName());
-                }
-            };
-        }
-
-        Predicate<JCRNodeWrapper> typesPredicate = NodeHelper.getTypesPredicate(typesFilter);
-
-        Predicate<JCRNodeWrapper> propertiesPredicate = NodeHelper.getPropertiesPredicate(propertiesFilter);
-
-        @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = AllPredicate.allPredicate(DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate);
-        return result;
     }
 
     @Override

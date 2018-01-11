@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -192,6 +192,40 @@ public class NodeHelper {
         Locale locale = LanguageCodeConverters.languageCodeToLocale(language);
         JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(workspace, locale);
         return session.getNodeByIdentifier(node.getIdentifier());
+    }
+
+    static void collectDescendants(JCRNodeWrapper node, Predicate<JCRNodeWrapper> predicate, boolean recurse, Collection<GqlJcrNode> descendants) throws RepositoryException {
+        for (JCRNodeWrapper child : node.getNodes()) {
+            if (predicate.evaluate(child)) {
+                descendants.add(SpecializedTypesHandler.getNode(child));
+            }
+            if (recurse) {
+                collectDescendants(child, predicate, true, descendants);
+            }
+        }
+    }
+
+    static Predicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final GqlJcrNode.NodeTypesInput typesFilter, final GqlJcrNode.NodePropertiesInput propertiesFilter) {
+
+        Predicate<JCRNodeWrapper> namesPredicate;
+        if (names == null) {
+            namesPredicate = TruePredicate.truePredicate();
+        } else {
+            namesPredicate = new Predicate<JCRNodeWrapper>() {
+
+                @Override
+                public boolean evaluate(JCRNodeWrapper node) {
+                    return names.contains(node.getName());
+                }
+            };
+        }
+
+        Predicate<JCRNodeWrapper> typesPredicate = getTypesPredicate(typesFilter);
+
+        Predicate<JCRNodeWrapper> propertiesPredicate = getPropertiesPredicate(propertiesFilter);
+
+        @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = AllPredicate.allPredicate(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate);
+        return result;
     }
 
     private interface PropertyEvaluationAlgorithm {

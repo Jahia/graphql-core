@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -44,22 +44,22 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 
-
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 
-import java.util.HashMap;
 import java.util.List;
 
 @GraphQLName("JCRPropertyInput")
+@GraphQLDescription("GraphQL representation of a JCR property to set")
 public class GqlJcrPropertyInput {
 
     public GqlJcrPropertyInput(@GraphQLName("name") @GraphQLNonNull String name,
-                                     @GraphQLName("language") String language,
-                                     @GraphQLName("type") GqlJcrPropertyType type,
-                                     @GraphQLName("value") String value,
-                                     @GraphQLName("values") List<String> values) {
+                               @GraphQLName("language") String language,
+                               @GraphQLName("type") GqlJcrPropertyType type,
+                               @GraphQLName("value") String value,
+                               @GraphQLName("values") List<String> values) {
         this.name = name;
         this.language = language;
         this.type = type;
@@ -68,18 +68,23 @@ public class GqlJcrPropertyInput {
     }
 
     @GraphQLField
+    @GraphQLDescription("The name of the property to set")
     public String name;
 
     @GraphQLField
+    @GraphQLDescription("The language in which the property will be set (for internationalized properties")
     public String language;
 
     @GraphQLField
+    @GraphQLDescription("The type of the property")
     public GqlJcrPropertyType type;
 
     @GraphQLField
+    @GraphQLDescription("The value to set (for non multiple properties)")
     public String value;
 
     @GraphQLField
+    @GraphQLDescription("The values to set (for multiple properties)")
     public List<String> values;
 
 }

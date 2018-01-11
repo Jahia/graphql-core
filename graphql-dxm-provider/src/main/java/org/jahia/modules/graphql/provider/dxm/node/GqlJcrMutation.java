@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -47,16 +47,13 @@ package org.jahia.modules.graphql.provider.dxm.node;
 import graphql.ErrorType;
 import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
-import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.services.content.*;
-import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.query.QueryWrapper;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.jahia.modules.graphql.provider.dxm.node.NodeHelper.getNodeInLanguage;
 
@@ -69,32 +66,34 @@ public class GqlJcrMutation {
 
     private String workspace;
 
-    private Set<JCRSessionWrapper> sessions = new LinkedHashSet<>();
-
     public GqlJcrMutation(String workspace) throws RepositoryException {
         this.workspace = workspace;
     }
 
     @GraphQLField
-    public GraphQLMutationNode addNode(@GraphQLName("parentPathOrId") @GraphQLNonNull String parentPathOrId, @GraphQLName("name") @GraphQLNonNull String name, @GraphQLName("primaryNodeType") @GraphQLNonNull String primaryNodeType, @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace) throws BaseGqlClientException {
+    @GraphQLDescription("Creates a new JCR node under the specified parent")
+    public GqlJcrNodeAddResult addNode(@GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
+                                       @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create")  String name,
+                                       @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType) throws BaseGqlClientException {
         GqlJcrNode result = null;
         try {
-            GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null);
-            result = SpecializedTypesHandler.getNode(internalAddNode(getNodeFromPathOrId(getSession(workspace), parentPathOrId), node));
+            GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null, null);
+            result = SpecializedTypesHandler.getNode(internalAddNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
-        return new GraphQLMutationNode(result);
+        return new GqlJcrNodeAddResult(result);
     }
 
     @GraphQLField
-    public List<GraphQLMutationNode> addNodes(@GraphQLName("parentPathOrId") @GraphQLNonNull String parentPathOrId, @GraphQLName("nodes") @GraphQLNonNull List<GqlJcrNodeInput> nodes, @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace) throws BaseGqlClientException {
-        List<GraphQLMutationNode> result = null;
+    @GraphQLDescription("Batch creates a list of new JCR nodes under the specified parent")
+    public List<GqlJcrNodeAddResult> addNodesBatch(@GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The list of nodes to create") List<GqlJcrNodeWithParentInput> nodes) throws BaseGqlClientException {
+        List<GqlJcrNodeAddResult> result = null;
         try {
             result = new ArrayList<>();
-            for (GqlJcrNodeInput inputNode : nodes) {
-                GqlJcrNode jcrNode = SpecializedTypesHandler.getNode(internalAddNode(getNodeFromPathOrId(getSession(workspace), parentPathOrId), inputNode));
-                result.add(new GraphQLMutationNode(jcrNode));
+            for (GqlJcrNodeWithParentInput inputNode : nodes) {
+                GqlJcrNode jcrNode = SpecializedTypesHandler.getNode(internalAddNode(getNodeFromPathOrId(getSession(), inputNode.parentPathOrId), inputNode));
+                result.add(new GqlJcrNodeAddResult(jcrNode));
             }
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
@@ -103,40 +102,46 @@ public class GqlJcrMutation {
     }
 
     @GraphQLField
-    public GraphQLMutationNode updateNode(@GraphQLName("pathOrId") @GraphQLNonNull String pathOrId, @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace) throws RepositoryException {
-        return new GraphQLMutationNode(SpecializedTypesHandler.getNode(getNodeFromPathOrId(getSession(workspace), pathOrId)));
+    @GraphQLDescription("Mutates an existing node, based on path or id")
+    public GqlJcrMutationNode mutateNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to mutate") String pathOrId) throws RepositoryException {
+        return new GqlJcrMutationNode(getNodeFromPathOrId(getSession(), pathOrId));
     }
 
     @GraphQLField
-    public List<GraphQLMutationNode> updateNodes(@GraphQLName("pathsOrIds") @GraphQLNonNull List<String> pathsOrIds, @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace) throws RepositoryException {
-        List<GraphQLMutationNode> result = new ArrayList<>();
+    @GraphQLDescription("Mutates a set of existing nodes, based on path or id")
+    public List<GqlJcrMutationNode> mutateNodes(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or id ofs the nodes to mutate") List<String> pathsOrIds) throws RepositoryException {
+        List<GqlJcrMutationNode> result = new ArrayList<>();
         for (String pathOrId : pathsOrIds) {
-            result.add(new GraphQLMutationNode(SpecializedTypesHandler.getNode(getNodeFromPathOrId(getSession(workspace), pathOrId))));
+            result.add(new GqlJcrMutationNode(getNodeFromPathOrId(getSession(), pathOrId)));
         }
         return result;
     }
 
     @GraphQLField
-    public List<GraphQLMutationNode> updateNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
-                                                        @GraphQLName("queryLanguage") @GraphQLDefaultValue(GqlJcrQuery.QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") GqlJcrQuery.QueryLanguage queryLanguage, @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace) throws RepositoryException {
-        List<GraphQLMutationNode> result = new LinkedList<>();
-        QueryManagerWrapper queryManager = getSession(workspace).getWorkspace().getQueryManager();
+    @GraphQLDescription("Mutates a set of existing nodes, based on query execution")
+    public List<GqlJcrMutationNode> mutateNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
+                                                       @GraphQLName("queryLanguage") @GraphQLDefaultValue(GqlJcrQuery.QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") GqlJcrQuery.QueryLanguage queryLanguage) throws RepositoryException {
+        List<GqlJcrMutationNode> result = new LinkedList<>();
+        QueryManagerWrapper queryManager = getSession().getWorkspace().getQueryManager();
         QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
         JCRNodeIteratorWrapper nodes = q.execute().getNodes();
         while (nodes.hasNext()) {
             JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();
-            result.add(new GraphQLMutationNode(SpecializedTypesHandler.getNode(node)));
+            result.add(new GqlJcrMutationNode(node));
         }
         return result;
     }
 
     @GraphQLField
-    public boolean deleteNode(@GraphQLName("pathOrId") @GraphQLNonNull String pathOrId, @GraphQLName("markForDeletion") Boolean markForDeletion, @GraphQLName("markForDeletionComment") String markForDeletionComment, @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace) throws BaseGqlClientException {
+    @GraphQLDescription("Delete an existing node or mark it for deletion")
+    public boolean deleteNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to delete") String pathOrId,
+                              @GraphQLName("markForDeletion") @GraphQLDescription("If the node should be marked for deletion or completely removed") Boolean markForDeletion,
+                              @GraphQLName("markForDeletionComment") @GraphQLDescription("Optional comment if node is marked for deletion") String markForDeletionComment) throws BaseGqlClientException {
         try {
             if (markForDeletion != null && markForDeletion) {
-                getNodeFromPathOrId(getSession(workspace), pathOrId).markForDeletion(markForDeletionComment);
+                getNodeFromPathOrId(getSession(), pathOrId).markForDeletion(markForDeletionComment);
             } else {
-                getNodeFromPathOrId(getSession(workspace), pathOrId).remove();
+                getNodeFromPathOrId(getSession(), pathOrId).remove();
             }
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
@@ -145,9 +150,9 @@ public class GqlJcrMutation {
     }
 
     @GraphQLField
-    public boolean undeleteNode(@GraphQLName("pathOrId") @GraphQLNonNull String pathOrId, @GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'default', 'live', or null to use 'default' by default") String workspace) throws BaseGqlClientException {
+    public boolean undeleteNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to undelete") String pathOrId) throws BaseGqlClientException {
         try {
-            getNodeFromPathOrId(getSession(workspace), pathOrId).unmarkForDeletion();
+            getNodeFromPathOrId(getSession(), pathOrId).unmarkForDeletion();
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
@@ -156,157 +161,24 @@ public class GqlJcrMutation {
 
     public void save() throws BaseGqlClientException {
         try {
-            for (JCRSessionWrapper session : sessions) {
-                session.save();
-            }
+            getSession().save();
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
     }
 
-    private JCRSessionWrapper getSession(String workspace) throws RepositoryException {
-        if (workspace == null) {
-            workspace = this.workspace;
-        }
-        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
-        sessions.add(session);
-        return session;
+    private JCRSessionWrapper getSession() throws RepositoryException {
+        return JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
     }
 
 
-
-    @GraphQLName("MutationOnJcrNode")
-    public static class GraphQLMutationNode extends DXGraphQLProvider.Mutation {
-
-        public GqlJcrNode node;
-
-        public GraphQLMutationNode(GqlJcrNode node) {
-            this.node = node;
-        }
-
-        @GraphQLField
-        public GqlJcrNode getNode() {
-            return node;
-        }
-
-        @GraphQLField
-        public GraphQLMutationNode addNode(@GraphQLName("name") @GraphQLNonNull String name, @GraphQLName("primaryNodeType") @GraphQLNonNull String primaryNodeType) throws BaseGqlClientException {
-            GqlJcrNode result = null;
-            try {
-                GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null);
-                result = SpecializedTypesHandler.getNode(internalAddNode(getNode().getNode(), node));
-            } catch (RepositoryException e) {
-                throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
-            }
-            return new GraphQLMutationNode(result);
-        }
-
-        @GraphQLField
-        public List<GraphQLMutationNode> addNodes(@GraphQLName("nodes") @GraphQLNonNull List<GqlJcrNodeInput> nodes) throws BaseGqlClientException {
-            List<GraphQLMutationNode> result = null;
-            try {
-                result = new ArrayList<>();
-                for (GqlJcrNodeInput inputNode : nodes) {
-                    GqlJcrNode jcrNode = SpecializedTypesHandler.getNode(internalAddNode(getNode().getNode(), inputNode));
-                    result.add(new GraphQLMutationNode(jcrNode));
-                }
-            } catch (RepositoryException e) {
-                throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
-            }
-            return result;
-        }
-
-        @GraphQLField
-        @GraphQLName("setProperties")
-        public List<String> setProperties(@GraphQLName("properties") @GraphQLNonNull List<GqlJcrPropertyInput> properties) throws BaseGqlClientException {
-            try {
-                List<String> names = new ArrayList<>();
-                List<JCRPropertyWrapper> propertiesOutput = internalSetProperties(this.node.getNode(), properties);
-                for (JCRPropertyWrapper property : propertiesOutput) {
-                    names.add(property.getName());
-                }
-                return names;
-            } catch (RepositoryException e) {
-                throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
-            }
-        }
-
-        @GraphQLField
-        public List<String> addMixins(@GraphQLName("mixins") @GraphQLNonNull List<String> names) throws BaseGqlClientException {
-            try {
-                for (String name : names) {
-                    this.node.getNode().addMixin(name);
-                }
-                return Arrays.stream(node.getNode().getMixinNodeTypes()).map(ExtendedNodeType::getName).collect(Collectors.toList());
-            } catch (RepositoryException e) {
-                throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
-            }
-        }
-
-        @GraphQLField
-        public List<String> removeMixins(@GraphQLName("mixins") @GraphQLNonNull List<String> names) throws BaseGqlClientException {
-            try {
-                for (String name : names) {
-                    this.node.getNode().removeMixin(name);
-                }
-                return Arrays.stream(node.getNode().getMixinNodeTypes()).map(ExtendedNodeType::getName).collect(Collectors.toList());
-            } catch (RepositoryException e) {
-                throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
-            }
-        }
-
-        @GraphQLField
-        public String rename(@GraphQLName("name") @GraphQLNonNull String newName) throws BaseGqlClientException {
-            try {
-                JCRNodeWrapper node = getNode().getNode();
-                node.rename(newName);
-                return node.getPath();
-            } catch (RepositoryException e) {
-                throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
-            }
-        }
-
-        @GraphQLField
-        public String move(@GraphQLName("parentPathOrId") @GraphQLNonNull String parentPathOrId) throws BaseGqlClientException {
-            try {
-                JCRNodeWrapper node = getNode().getNode();
-                JCRNodeWrapper parentDest = getNodeFromPathOrId(node.getSession(), parentPathOrId);
-                node.getSession().move(node.getPath(), parentDest.getPath() + "/" + node.getName());
-                return node.getPath();
-            } catch (RepositoryException e) {
-                throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
-            }
-        }
-
-        @GraphQLField
-        public boolean delete(@GraphQLName("markForDeletion") Boolean markForDeletion, @GraphQLName("markForDeletionComment") String markForDeletionComment) throws BaseGqlClientException {
-            try {
-                if (markForDeletion != null && markForDeletion) {
-                    node.getNode().markForDeletion(markForDeletionComment);
-                } else {
-                    node.getNode().remove();
-                }
-            } catch (RepositoryException e) {
-                throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
-            }
-            return true;
-        }
-
-        @GraphQLField
-        public boolean undelete() throws BaseGqlClientException {
-            try {
-                node.getNode().unmarkForDeletion();
-            } catch (RepositoryException e) {
-                throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
-            }
-            return true;
-        }
-
-
-    }
-
-    private static JCRNodeWrapper internalAddNode(JCRNodeWrapper parent, GqlJcrNodeInput node) throws RepositoryException {
+    public static JCRNodeWrapper internalAddNode(JCRNodeWrapper parent, GqlJcrNodeInput node) throws RepositoryException {
         JCRNodeWrapper n = parent.addNode(node.name, node.primaryNodeType);
+        if (node.mixins != null) {
+            for (String mixin : node.mixins) {
+                n.addMixin(mixin);
+            }
+        }
         if (node.properties != null) {
             internalSetProperties(n, node.properties);
         }
@@ -318,8 +190,7 @@ public class GqlJcrMutation {
         return n;
     }
 
-    private static List<JCRPropertyWrapper> internalSetProperties(JCRNodeWrapper node, List<GqlJcrPropertyInput> properties) throws RepositoryException {
-        List<JCRPropertyWrapper> result = new ArrayList<>();
+    public static void internalSetProperties(JCRNodeWrapper node, List<GqlJcrPropertyInput> properties) throws RepositoryException {
         for (GqlJcrPropertyInput property : properties) {
             JCRNodeWrapper localizedNode = getNodeInLanguage(node, property.language);
             JCRSessionWrapper session = localizedNode.getSession();
@@ -327,19 +198,18 @@ public class GqlJcrMutation {
             int type = property.type != null ? property.type.getValue() : PropertyType.STRING;
             if (property.value != null) {
                 Value v = session.getValueFactory().createValue(property.value, type);
-                result.add(localizedNode.setProperty(property.name, v));
+                localizedNode.setProperty(property.name, v);
             } else if (property.values != null) {
                 List<Value> values = new ArrayList<>();
                 for (String value : property.values) {
                     values.add(session.getValueFactory().createValue(value, type));
                 }
-                result.add(localizedNode.setProperty(property.name, values.toArray(new Value[values.size()])));
+                localizedNode.setProperty(property.name, values.toArray(new Value[values.size()]));
             }
         }
-        return result;
     }
 
-    private static JCRNodeWrapper getNodeFromPathOrId(JCRSessionWrapper session, String pathOrId) throws RepositoryException {
+    public static JCRNodeWrapper getNodeFromPathOrId(JCRSessionWrapper session, String pathOrId) throws RepositoryException {
         if (pathOrId.startsWith("/")) {
             return session.getNode(pathOrId);
         } else {
