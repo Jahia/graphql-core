@@ -72,28 +72,26 @@ public class GqlJcrMutation {
 
     @GraphQLField
     @GraphQLDescription("Creates a new JCR node under the specified parent")
-    public GqlJcrNodeAddResult addNode(@GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
+    public GqlJcrNodeMutation addNode(@GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
                                        @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create")  String name,
                                        @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType) throws BaseGqlClientException {
         GqlJcrNode result = null;
         try {
             GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null, null);
-            result = SpecializedTypesHandler.getNode(internalAddNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
+            return new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
-        return new GqlJcrNodeAddResult(result);
     }
 
     @GraphQLField
     @GraphQLDescription("Batch creates a list of new JCR nodes under the specified parent")
-    public List<GqlJcrNodeAddResult> addNodesBatch(@GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The list of nodes to create") List<GqlJcrNodeWithParentInput> nodes) throws BaseGqlClientException {
-        List<GqlJcrNodeAddResult> result = null;
+    public List<GqlJcrNodeMutation> addNodesBatch(@GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The list of nodes to create") List<GqlJcrNodeWithParentInput> nodes) throws BaseGqlClientException {
+        List<GqlJcrNodeMutation> result = null;
         try {
             result = new ArrayList<>();
             for (GqlJcrNodeWithParentInput inputNode : nodes) {
-                GqlJcrNode jcrNode = SpecializedTypesHandler.getNode(internalAddNode(getNodeFromPathOrId(getSession(), inputNode.parentPathOrId), inputNode));
-                result.add(new GqlJcrNodeAddResult(jcrNode));
+                result.add(new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), inputNode.parentPathOrId), inputNode)));
             }
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
@@ -103,31 +101,31 @@ public class GqlJcrMutation {
 
     @GraphQLField
     @GraphQLDescription("Mutates an existing node, based on path or id")
-    public GqlJcrMutationNode mutateNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to mutate") String pathOrId) throws RepositoryException {
-        return new GqlJcrMutationNode(getNodeFromPathOrId(getSession(), pathOrId));
+    public GqlJcrNodeMutation mutateNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to mutate") String pathOrId) throws RepositoryException {
+        return new GqlJcrNodeMutation(getNodeFromPathOrId(getSession(), pathOrId));
     }
 
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on path or id")
-    public List<GqlJcrMutationNode> mutateNodes(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or id ofs the nodes to mutate") List<String> pathsOrIds) throws RepositoryException {
-        List<GqlJcrMutationNode> result = new ArrayList<>();
+    public List<GqlJcrNodeMutation> mutateNodes(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or id ofs the nodes to mutate") List<String> pathsOrIds) throws RepositoryException {
+        List<GqlJcrNodeMutation> result = new ArrayList<>();
         for (String pathOrId : pathsOrIds) {
-            result.add(new GqlJcrMutationNode(getNodeFromPathOrId(getSession(), pathOrId)));
+            result.add(new GqlJcrNodeMutation(getNodeFromPathOrId(getSession(), pathOrId)));
         }
         return result;
     }
 
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on query execution")
-    public List<GqlJcrMutationNode> mutateNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
+    public List<GqlJcrNodeMutation> mutateNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
                                                        @GraphQLName("queryLanguage") @GraphQLDefaultValue(GqlJcrQuery.QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") GqlJcrQuery.QueryLanguage queryLanguage) throws RepositoryException {
-        List<GqlJcrMutationNode> result = new LinkedList<>();
+        List<GqlJcrNodeMutation> result = new LinkedList<>();
         QueryManagerWrapper queryManager = getSession().getWorkspace().getQueryManager();
         QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
         JCRNodeIteratorWrapper nodes = q.execute().getNodes();
         while (nodes.hasNext()) {
             JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();
-            result.add(new GqlJcrMutationNode(node));
+            result.add(new GqlJcrNodeMutation(node));
         }
         return result;
     }
@@ -190,7 +188,8 @@ public class GqlJcrMutation {
         return n;
     }
 
-    public static void internalSetProperties(JCRNodeWrapper node, List<GqlJcrPropertyInput> properties) throws RepositoryException {
+    public static List<JCRPropertyWrapper> internalSetProperties(JCRNodeWrapper node, Collection<GqlJcrPropertyInput> properties) throws RepositoryException {
+        List<JCRPropertyWrapper> result = new ArrayList<>();
         for (GqlJcrPropertyInput property : properties) {
             JCRNodeWrapper localizedNode = getNodeInLanguage(node, property.language);
             JCRSessionWrapper session = localizedNode.getSession();
@@ -198,15 +197,16 @@ public class GqlJcrMutation {
             int type = property.type != null ? property.type.getValue() : PropertyType.STRING;
             if (property.value != null) {
                 Value v = session.getValueFactory().createValue(property.value, type);
-                localizedNode.setProperty(property.name, v);
+                result.add(localizedNode.setProperty(property.name, v));
             } else if (property.values != null) {
                 List<Value> values = new ArrayList<>();
                 for (String value : property.values) {
                     values.add(session.getValueFactory().createValue(value, type));
                 }
-                localizedNode.setProperty(property.name, values.toArray(new Value[values.size()]));
+                result.add(localizedNode.setProperty(property.name, values.toArray(new Value[values.size()])));
             }
         }
+        return result;
     }
 
     public static JCRNodeWrapper getNodeFromPathOrId(JCRSessionWrapper session, String pathOrId) throws RepositoryException {

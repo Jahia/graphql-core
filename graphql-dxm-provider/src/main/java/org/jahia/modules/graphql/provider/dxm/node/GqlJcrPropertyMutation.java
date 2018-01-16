@@ -51,6 +51,7 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 
 import javax.jcr.PropertyType;
@@ -62,16 +63,42 @@ import java.util.List;
 
 import static org.jahia.modules.graphql.provider.dxm.node.NodeHelper.getNodeInLanguage;
 
-@GraphQLName("MutationOnJcrProperty")
+@GraphQLName("JCRPropertyMutation")
 @GraphQLDescription("Mutations on a JCR property")
-public class GqlJcrMutationProperty {
+public class GqlJcrPropertyMutation {
 
     private JCRNodeWrapper node;
     private String name;
 
-    public GqlJcrMutationProperty(JCRNodeWrapper node, String name) {
+    public GqlJcrPropertyMutation(JCRNodeWrapper node, String name) {
         this.node = node;
         this.name = name;
+    }
+
+    public GqlJcrPropertyMutation(JCRPropertyWrapper property) {
+        try {
+            this.node = property.getParent();
+            this.name = property.getName();
+        } catch (RepositoryException e) {
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+        }
+    }
+
+
+    @GraphQLField
+    @GraphQLDescription("Get the graphQL representation of the property currently being mutated")
+    public GqlJcrProperty getProperty() {
+        try {
+            return new GqlJcrProperty(node.getProperty(name), SpecializedTypesHandler.getNode(node));
+        } catch (RepositoryException e) {
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+        }
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Get the path of the property currently being mutated")
+    public String getPath() {
+        return node.getPath() + "/" + name;
     }
 
     @GraphQLField
@@ -85,7 +112,7 @@ public class GqlJcrMutationProperty {
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.setProperty(name, getValue(type, value, session));
         } catch (RepositoryException e) {
-            e.printStackTrace();
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
         return true;
     }
@@ -101,7 +128,7 @@ public class GqlJcrMutationProperty {
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.setProperty(name, getValues(type, values, session));
         } catch (RepositoryException e) {
-            e.printStackTrace();
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
         return true;
     }
@@ -116,7 +143,7 @@ public class GqlJcrMutationProperty {
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.getProperty(name).addValue(getValue(type, value, session));
         } catch (RepositoryException e) {
-            e.printStackTrace();
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
         return true;
     }
@@ -131,7 +158,7 @@ public class GqlJcrMutationProperty {
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.getProperty(name).removeValue(getValue(type, value, session));
         } catch (RepositoryException e) {
-            e.printStackTrace();
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
         return true;
     }
@@ -146,7 +173,7 @@ public class GqlJcrMutationProperty {
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.getProperty(name).addValues(getValues(type, values, session));
         } catch (RepositoryException e) {
-            e.printStackTrace();
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
         return true;
     }
@@ -161,7 +188,7 @@ public class GqlJcrMutationProperty {
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.getProperty(name).removeValues(getValues(type, values, session));
         } catch (RepositoryException e) {
-            e.printStackTrace();
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
         return true;
     }

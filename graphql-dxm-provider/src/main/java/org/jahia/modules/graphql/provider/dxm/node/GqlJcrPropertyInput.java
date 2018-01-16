@@ -51,7 +51,7 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 
 import java.util.List;
 
-@GraphQLName("JCRPropertyInput")
+@GraphQLName("JCRProperty")
 @GraphQLDescription("GraphQL representation of a JCR property to set")
 public class GqlJcrPropertyInput {
 

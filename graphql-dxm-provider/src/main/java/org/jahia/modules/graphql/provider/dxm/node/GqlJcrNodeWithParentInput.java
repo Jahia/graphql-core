@@ -53,7 +53,7 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 
 import java.util.List;
 
-@GraphQLName("JCRNodeWithParentInput")
+@GraphQLName("JCRNodeWithParent")
 @GraphQLDescription("GraphQL representation of a JCR node to be created")
 public class GqlJcrNodeWithParentInput extends GqlJcrNodeInput {
 
