@@ -54,6 +54,9 @@ import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 
 import javax.jcr.RepositoryException;
+import java.nio.charset.StandardCharsets;
+
+import static java.util.Base64.getDecoder;
 
 public class JcrNodeFetcher implements NodeFetcher {
 
@@ -65,7 +68,8 @@ public class JcrNodeFetcher implements NodeFetcher {
 
     @Override
     public boolean canHandle(String id) {
-        return id.startsWith("jcrnode:");
+        String decoded = new String(getDecoder().decode(id), StandardCharsets.UTF_8);
+        return decoded.startsWith("jcrnode:");
     }
 
     @Override
@@ -76,7 +80,8 @@ public class JcrNodeFetcher implements NodeFetcher {
     @Override
     public GqlNode getNode(String id) {
         try {
-            String[] parts = id.split(":");
+            String decoded = new String(getDecoder().decode(id), StandardCharsets.UTF_8);
+            String[] parts = decoded.split(":");
             JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(parts[1]);
             JCRNodeWrapper node = session.getNodeByIdentifier(parts[2]);
             return (GqlNode) SpecializedTypesHandler.getNode(node);
