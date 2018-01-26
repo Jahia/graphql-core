@@ -95,9 +95,14 @@ public class SpecializedTypesHandler {
 
         this.graphQLAnnotations = annotations;
         this.container = container;
+    }
 
-//        specializedTypes.add("jnt:page");
-//        specializedTypesClass.put("jnt:virtualsite", GqlJcrSite.class);
+    public void addType(String nodeType, Class<? extends GqlJcrNode> clazz) {
+        if (clazz == null) {
+            specializedTypes.add(nodeType);
+        } else {
+            specializedTypesClass.put(nodeType, clazz);
+        }
     }
 
     public Map<String, GraphQLObjectType> getKnownTypes() {

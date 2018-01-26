@@ -56,17 +56,16 @@ import graphql.servlet.GraphQLProvider;
 import graphql.servlet.GraphQLQueryProvider;
 import graphql.servlet.GraphQLTypesProvider;
 import org.jahia.modules.graphql.provider.dxm.node.*;
-import org.jahia.modules.graphql.provider.dxm.nodetype.NodeTypeJCRQueryExtensions;
-import org.jahia.modules.graphql.provider.dxm.nodetype.NodetypeJCRNodeExtensions;
-import org.jahia.modules.graphql.provider.dxm.nodetype.NodetypeJCRPropertyExtensions;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.relay.NodesHandler;
-import org.jahia.modules.graphql.provider.dxm.relay.RelayQueryExtensions;
 import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 
 @Component(service = GraphQLProvider.class, immediate = true)
 public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider {
@@ -118,6 +117,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         instance = this;
 
         container = graphQLAnnotations.createContainer();
+        specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
 
         GraphQLExtensionsHandler extensionsHandler = graphQLAnnotations.getExtensionsHandler();
 
@@ -129,12 +129,25 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
                 extensionsHandler.registerTypeExtension(aClass, container);
             }
+            for (Class<? extends GqlJcrNode> aClass : extensionsProvider.getSpecializedTypes()) {
+                SpecializedType annotation = aClass.getAnnotation(SpecializedType.class);
+                if (annotation != null) {
+                    specializedTypesHandler.addType(annotation.value(), aClass);
+                } else {
+                    logger.error("No annotation found on class "+aClass);
+                }
+            }
         }
 
         queryType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Query.class, container);
         mutationType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Mutation.class, container);
 
-        specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
+        for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
+            for (Class<?> aClass : extensionsProvider.getExtensions()) {
+                extensionsHandler.registerTypeExtension(aClass, container);
+            }
+        }
+
         specializedTypesHandler.initializeTypes();
 
         nodesHandler = new NodesHandler();
@@ -173,15 +186,4 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     public static class Mutation {
     }
 
-    public Collection<Class<?>> getExtensions() {
-        return Arrays.<Class<?>>asList(
-                RelayQueryExtensions.class,
-                NodeQueryExtensions.class,
-                NodeMutationExtensions.class,
-                NodeTypeJCRQueryExtensions.class,
-                NodetypeJCRNodeExtensions.class,
-                NodetypeJCRPropertyExtensions.class
-//                RenderNodeExtensions.class
-        );
-    }
 }

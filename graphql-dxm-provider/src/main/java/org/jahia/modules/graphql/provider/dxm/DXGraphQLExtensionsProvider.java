@@ -43,10 +43,22 @@
  */
 package org.jahia.modules.graphql.provider.dxm;
 
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.node.SpecializedType;
+
 import java.util.Collection;
 
 public interface DXGraphQLExtensionsProvider {
 
-    Collection<Class<?>> getExtensions();
+    default Collection<Class<?>> getExtensions() {
+        return BundleScanner.getClasses(this,GraphQLTypeExtension.class);
+    }
+
+    default Collection<Class<? extends GqlJcrNode>> getSpecializedTypes() {
+        return BundleScanner.getClasses(this,SpecializedType.class);
+    }
+
+
 
 }
