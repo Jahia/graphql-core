@@ -203,6 +203,10 @@ public interface GqlJcrNode {
     @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
     DXPaginatedData<GqlJcrProperty> getReferences(DataFetchingEnvironment environment);
 
+    @GraphQLField
+    @GraphQLDescription("Get corresponding node in target workspace")
+    GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace);
+
 //    /**
 //     * Get GraphQL representation of the JCR node as a mixin type it has.
 //     *

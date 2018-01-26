@@ -44,9 +44,7 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.ErrorType;
-import graphql.annotations.annotationTypes.GraphQLID;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.collections4.Predicate;
@@ -58,7 +56,9 @@ import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.services.content.JCRItemWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
+import org.jahia.services.content.JCRSessionFactory;
 
+import javax.jcr.ItemNotFoundException;
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import java.nio.charset.StandardCharsets;
@@ -312,6 +312,20 @@ public class GqlJcrNodeImpl implements GqlJcrNode, GqlNode {
             GqlJcrNode gqlReferencingNode = SpecializedTypesHandler.getNode(referencingNode);
             GqlJcrProperty gqlReference = gqlReferencingNode.getProperty(reference.getName(), reference.getLocale());
             gqlReferences.add(gqlReference);
+        }
+    }
+
+    @Override
+    @GraphQLField
+    @GraphQLDescription("Get corresponding node in target workspace")
+    public GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace) {
+        try {
+            JCRNodeWrapper target = JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue()).getNodeByIdentifier(node.getIdentifier());
+            return SpecializedTypesHandler.getNode(target);
+        } catch (ItemNotFoundException e) {
+            return null;
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
         }
     }
 
