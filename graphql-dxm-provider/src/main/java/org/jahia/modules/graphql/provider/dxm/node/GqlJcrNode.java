@@ -48,7 +48,6 @@ import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
-import org.jahia.modules.graphql.provider.dxm.relay.GqlNode;
 import org.jahia.services.content.JCRNodeWrapper;
 
 import java.util.Collection;
@@ -155,6 +154,15 @@ public interface GqlJcrNode {
                                             DataFetchingEnvironment environment)
     throws GqlJcrWrongInputException;
 
+    /**
+     * Get GraphQL representations of a child node, based on relative path.
+     *
+     * @param path Name or relative path of the sub node
+     * @return GraphQL representations of the child node, according to parameters passed
+     */
+    @GraphQLField
+    @GraphQLDescription("GraphQL representations of a child node, based on relative path")
+    GqlJcrNode getChild(@GraphQLName("path") @GraphQLDescription("Name or relative path of the sub node") String path);
 
     /**
      * Get GraphQL representations of descendant nodes of the JCR node, according to filters specified. A descendant node must pass through all non-null filters in order to be included in the result.
