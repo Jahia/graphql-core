@@ -291,16 +291,6 @@ public class GqlJcrNodeImpl implements GqlJcrNode, GqlNode {
     }
 
     @Override
-    @GraphQLNonNull
-    public GqlJcrNode getSite() {
-        try {
-            return new GqlJcrNodeImpl(node.getResolveSite());
-        } catch (RepositoryException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     @GraphQLNonNull
     public DXPaginatedData<GqlJcrProperty> getReferences(DataFetchingEnvironment environment) {

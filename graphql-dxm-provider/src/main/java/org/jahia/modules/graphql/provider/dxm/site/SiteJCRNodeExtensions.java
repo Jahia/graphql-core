@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -41,27 +41,38 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.graphql.provider.dxm.node;
+package org.jahia.modules.graphql.provider.dxm.site;
 
-
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import org.jahia.modules.graphql.provider.dxm.relay.GqlNode;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.decorator.JCRSiteNode;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 
-@GraphQLName("JCRSite")
-public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode, GqlNode {
+import javax.jcr.RepositoryException;
 
-    private JCRSiteNode siteNode;
+@GraphQLTypeExtension(GqlJcrNode.class)
+public class SiteJCRNodeExtensions {
 
-    public GqlJcrSite(JCRNodeWrapper node) {
-        super(node);
-        this.siteNode = (JCRSiteNode) node;
+    private GqlJcrNode node;
+
+    public SiteJCRNodeExtensions(GqlJcrNode node) {
+        this.node = node;
     }
 
+    /**
+     * @return GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site
+     */
     @GraphQLField
-    public String getSiteKey() {
-        return siteNode.getSiteKey();
+    @GraphQLDescription("GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site")
+    @GraphQLNonNull
+    public GqlJcrSite getSite() {
+        try {
+            return new GqlJcrSite(node.getNode().getResolveSite());
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
     }
+
+
 }

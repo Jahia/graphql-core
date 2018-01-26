@@ -195,14 +195,6 @@ public interface GqlJcrNode {
     throws GqlJcrWrongInputException;
 
     /**
-     * @return GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site
-     */
-    @GraphQLField
-    @GraphQLNonNull
-    @GraphQLDescription("GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site")
-    GqlJcrNode getSite();
-
-    /**
      * @return GraphQL representations of the reference properties that target the JCR Node
      */
     @GraphQLField
