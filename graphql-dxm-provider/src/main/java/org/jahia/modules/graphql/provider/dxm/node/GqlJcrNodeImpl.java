@@ -316,9 +316,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode, GqlNode {
     }
 
     @Override
-    @GraphQLField
-    @GraphQLDescription("Get corresponding node in target workspace")
-    public GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace) {
+    public GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace) {
         try {
             JCRNodeWrapper target = JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue()).getNodeByIdentifier(node.getIdentifier());
             return SpecializedTypesHandler.getNode(target);
@@ -329,20 +327,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode, GqlNode {
         }
     }
 
-//    @Override
-//    public GqlJcrNode asMixin(@GraphQLName("type") String type) {
-//        try {
-//            if (!node.isNodeType(type)) {
-//                return null;
-//            }
-//            return SpecializedTypesHandler.getNode(node, type);
-//        } catch (RepositoryException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
-
     private static String normalizePath(String path) {
         return (path.endsWith("/") ? path : path + "/");
     }
-
 }

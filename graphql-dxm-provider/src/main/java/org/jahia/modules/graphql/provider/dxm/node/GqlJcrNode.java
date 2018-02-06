@@ -203,19 +203,15 @@ public interface GqlJcrNode {
     @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
     DXPaginatedData<GqlJcrProperty> getReferences(DataFetchingEnvironment environment);
 
+    /**
+     * Get GraphQL representation of this node in certain workspace.
+     *
+     * @param workspace The target workspace
+     * @return GraphQL representation of this node in certain workspace; null in case there is no corresponding node in the target workspace
+     */
     @GraphQLField
-    @GraphQLDescription("Get corresponding node in target workspace")
+    @GraphQLDescription("GraphQL representation of this node in certain workspace")
     GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace);
-
-//    /**
-//     * Get GraphQL representation of the JCR node as a mixin type it has.
-//     *
-//     * @param type The mixin type name
-//     * @return GraphQL representation of the JCR node as the mixin type, or null in case the node does not actually has the mixin type
-//     */
-//    @GraphQLField
-//    @GraphQLDescription("GraphQL representation of the JCR node as the mixin type, or null in case the node does not actually has the mixin type")
-//    GqlJcrNode asMixin(@GraphQLName("type") @GraphQLDescription("The mixin type name") String type);
 
     /**
      * A way to evaluate a criteria consisting of multiple sub-criteria.
