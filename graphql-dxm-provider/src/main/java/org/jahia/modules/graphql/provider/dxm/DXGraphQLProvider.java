@@ -55,9 +55,11 @@ import graphql.servlet.GraphQLMutationProvider;
 import graphql.servlet.GraphQLProvider;
 import graphql.servlet.GraphQLQueryProvider;
 import graphql.servlet.GraphQLTypesProvider;
-import org.jahia.modules.graphql.provider.dxm.node.*;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
+import org.jahia.modules.graphql.provider.dxm.node.SpecializedType;
+import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
-import org.jahia.modules.graphql.provider.dxm.relay.NodesHandler;
 import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,8 +76,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private static DXGraphQLProvider instance;
 
     private SpecializedTypesHandler specializedTypesHandler;
-
-    private NodesHandler nodesHandler;
 
     private GraphQLAnnotationsComponent graphQLAnnotations;
 
@@ -150,8 +150,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         specializedTypesHandler.initializeTypes();
 
-        nodesHandler = new NodesHandler();
-        nodesHandler.addFetcher(new JcrNodeFetcher());
     }
 
     @Override

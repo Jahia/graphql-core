@@ -49,7 +49,6 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedType;
-import org.jahia.modules.graphql.provider.dxm.relay.GqlNode;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 
@@ -59,7 +58,7 @@ import java.util.List;
 
 @GraphQLName("JCRSite")
 @SpecializedType("jnt:virtualsite")
-public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode, GqlNode {
+public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode {
 
     private JCRSiteNode siteNode;
 
