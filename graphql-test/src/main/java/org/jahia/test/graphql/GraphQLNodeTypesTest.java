@@ -57,7 +57,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class GraphQLNodetypesTest extends GraphQLTestSupport {
+public class GraphQLNodeTypesTest extends GraphQLTestSupport {
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
