@@ -15,6 +15,7 @@
                 <value>org.jahia.test.graphql.GraphQLQueryTest</value>
                 <value>org.jahia.test.graphql.GraphQLNodeTypesTest</value>
                 <value>org.jahia.test.graphql.GraphQLConnectionsTest</value>
+                <value>org.jahia.test.graphql.GraphQLWorkspaceTest</value>
             </list>
         </property>
     </bean>

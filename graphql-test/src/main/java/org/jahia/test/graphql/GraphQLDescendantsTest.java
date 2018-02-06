@@ -731,4 +731,19 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
         Assert.assertEquals(1, descendantsByName.size());
         validateNode(descendantsByName.get("testSubList4_1"), "testSubList4_1");
     }
+
+    @Test
+    public void shouldRetrieveOneChildByName() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "      nodeByPath(path: \"/testList\") {"
+                + "        child(path:\"testSubList1\") {"
+                + "          name"
+                + "		   }"
+                + "      }"
+                + "    }"
+                + "}");
+        JSONObject child = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("child");
+        validateNode(child, "testSubList1");
+    }
 }

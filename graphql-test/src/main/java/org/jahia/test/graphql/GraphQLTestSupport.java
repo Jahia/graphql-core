@@ -72,8 +72,17 @@ public class GraphQLTestSupport extends JahiaTestCase {
 
     protected static void removeTestNodes() throws RepositoryException {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRENCH, session -> {
-            session.getNode("/testList").remove();
-            session.save();
+            if (session.itemExists("/testList")) {
+                session.getNode("/testList").remove();
+                session.save();
+            }
+            return null;
+        });
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.LIVE_WORKSPACE, Locale.FRENCH, session -> {
+            if (session.itemExists("/testList")) {
+                session.getNode("/testList").remove();
+                session.save();
+            }
             return null;
         });
     }
