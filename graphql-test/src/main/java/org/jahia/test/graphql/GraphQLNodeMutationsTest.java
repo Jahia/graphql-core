@@ -53,8 +53,12 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.*;
 
+import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
@@ -93,7 +97,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
             JCRNodeWrapper node = session.getNodeByIdentifier(uuid);
             Assert.assertEquals("/testList/testNew", node.getPath());
-            assertNodeType(node, "jnt:contentList");
+            Assert.assertTrue(node.isNodeType("jnt:contentList"));
             return null;
         });
     }
@@ -138,9 +142,9 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
             JCRNodeWrapper node1 = session.getNodeByIdentifier(uuid1);
             Assert.assertEquals("/testList/testBatch1", node1.getPath());
-            assertNodeType(node1, "jnt:contentList");
-            assertNodeType(node1, "jmix:renderable");
-            assertPropertyValue(node1, "jcr:title", "test");
+            Assert.assertTrue(node1.isNodeType("jnt:contentList"));
+            Assert.assertTrue(node1.isNodeType("jmix:renderable"));
+            Assert.assertEquals("test", node1.getProperty("jcr:title").getString());
             JCRNodeWrapper node2 = JCRSessionFactory.getInstance().getCurrentUserSession().getNodeByIdentifier(uuid2);
             Assert.assertEquals("/testList/testBatch2", node2.getPath());
             return null;
@@ -159,7 +163,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            assertPropertyValue(session.getNode("/testList/testSubList1"), "jcr:title", "test");
+            Assert.assertEquals("test", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
             return null;
         });
     }
@@ -176,8 +180,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            assertPropertyValue(session.getNode("/testList/testSubList1"), "jcr:title", "test");
-            assertPropertyValue(session.getNode("/testList/testSubList2"), "jcr:title", "test");
+            Assert.assertEquals("test", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
+            Assert.assertEquals("test", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
             return null;
         });
     }
@@ -194,19 +198,245 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            assertPropertyValue(session.getNode("/testList/testSubList1"), "jcr:title", "test");
-            assertPropertyValue(session.getNode("/testList/testSubList2"), "jcr:title", "test");
+            Assert.assertEquals("test", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
+            Assert.assertEquals("test", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
             return null;
         });
     }
 
-    private void assertPropertyValue(JCRNodeWrapper node, String property, String value) throws RepositoryException {
-        Assert.assertEquals(value, node.getProperty(property).getString());
+    @Test
+    public void deleteNode() throws Exception {
+        JSONObject result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    deleteNode(pathOrId:\"/testList/testSubList1\") \n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList2\") {\n" +
+                "      delete\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            Assert.assertFalse(session.itemExists("/testList/testSubList1"));
+            Assert.assertFalse(session.itemExists("/testList/testSubList2"));
+            return null;
+        });
     }
 
-    private void assertNodeType(JCRNodeWrapper node1, String typeName) throws RepositoryException {
-        Assert.assertTrue(node1.isNodeType(typeName));
+    @Test
+    public void markDeleteUndeleteNode() throws Exception {
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    deleteNode(pathOrId:\"/testList/testSubList1\",markForDeletion:true, markForDeletionComment:\"test delete\") \n" +
+                "  }\n" +
+                "}\n");
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            Assert.assertTrue(session.itemExists("/testList/testSubList1"));
+            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
+            Assert.assertTrue(session.getNode("/testList/testSubList1").isMarkedForDeletion());
+            Assert.assertEquals("test delete", node.getProperty(Constants.MARKED_FOR_DELETION_MESSAGE).getString());
+            return null;
+        });
+
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    undeleteNode(pathOrId:\"/testList/testSubList1\") \n" +
+                "  }\n" +
+                "}\n");
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            Assert.assertTrue(session.itemExists("/testList/testSubList1"));
+            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
+            Assert.assertFalse(session.getNode("/testList/testSubList1").isMarkedForDeletion());
+            return null;
+        });
     }
 
+    @Test
+    public void addRemoveMixin() throws Exception {
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\")  {\n" +
+                "      addMixins(mixins:[\"jmix:renderable\"])\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            Assert.assertTrue(session.getNode("/testList/testSubList1").isNodeType("jmix:renderable"));
+            return null;
+        });
+
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\")  {\n" +
+                "      removeMixins(mixins:[\"jmix:renderable\"])\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            Assert.assertFalse(session.getNode("/testList/testSubList1").isNodeType("jmix:renderable"));
+            return null;
+        });
+    }
+
+    @Test
+    public void setPropertyMultiple() throws Exception {
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\")  {\n" +
+                "      addMixins(mixins:[\"jmix:unstructured\"])\n" +
+                "      mutateProperty(name:\"test\") {\n" +
+                "        setValues(values:[\"val1\",\"val2\"])\n" +
+                "        addValue(value:\"val3\")\n" +
+                "        addValues(values:[\"val4\",\"val5\"])\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
+            Assert.assertTrue(node.hasProperty("test"));
+            Assert.assertTrue(node.getProperty("test").isMultiple());
+            Assert.assertEquals(Arrays.asList("val1","val2","val3","val4","val5"), getPropertyStringValues(node, "test"));
+            return null;
+        });
+
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\")  {\n" +
+                "      mutateProperty(name:\"test\") {\n" +
+                "        removeValue(value:\"val3\")\n" +
+                "        removeValues(values:[\"val4\", \"val5\"])\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
+            Assert.assertTrue(node.hasProperty("test"));
+            Assert.assertTrue(node.getProperty("test").isMultiple());
+            Assert.assertEquals(Arrays.asList("val1","val2"), getPropertyStringValues(node, "test"));
+            return null;
+        });
+
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\")  {\n" +
+                "      mutateProperty(name:\"test\") {\n" +
+                "        delete\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
+            Assert.assertFalse(node.hasProperty("test"));
+            return null;
+        });
+    }
+
+    private List<String> getPropertyStringValues(JCRNodeWrapper node, String propertyName) throws RepositoryException {
+        return Arrays.stream(node.getProperty(propertyName).getValues()).map(p -> {
+                    try {
+                        return p.getString();
+                    } catch (RepositoryException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).collect(Collectors.toList());
+    }
+
+    @Test
+    public void addChild() throws Exception {
+        JSONObject result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList\")  {\n" +
+                "      addChild(name:\"testNew\",primaryNodeType:\"jnt:contentList\") {\n" +
+                "        uuid\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n" +
+                "\n");
+        String uuid = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONObject("addChild").getString("uuid");
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            JCRNodeWrapper node = session.getNodeByIdentifier(uuid);
+            Assert.assertEquals("/testList/testNew", node.getPath());
+            Assert.assertTrue(node.isNodeType("jnt:contentList"));
+            return null;
+        });
+    }
+
+
+    @Test
+    public void setPropertiesBatch() throws Exception {
+        JSONObject result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\")  {\n" +
+                "      addMixins(mixins:[\"mix:title\",\"jmix:unstructured\"])\n" +
+                "      setPropertiesBatch(properties:[\n" +
+                "        {name:\"testPropString\", value:\"string\"}, \n" +
+                "        {name:\"testPropLong\", value:\"123\", type:LONG}, \n" +
+                "        {name:\"testPropMultiple\", values:[\"val1\",\"val2\"]},\n" +
+                "        {name:\"jcr:title\", value:\"en\", language:\"en\"},\n" +
+                "        {name:\"jcr:title\", value:\"fr\", language:\"fr\"},\n" +
+                "      ]) {\n" +
+                "        path\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}");
+
+        JSONArray array = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONArray("setPropertiesBatch");
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
+            Assert.assertEquals(false, node.getProperty("testPropString").isMultiple());
+            Assert.assertEquals(PropertyType.STRING, node.getProperty("testPropString").getValue().getType());
+            Assert.assertEquals("string", node.getProperty("testPropString").getValue().getString());
+
+            Assert.assertEquals(false, node.getProperty("testPropLong").isMultiple());
+            Assert.assertEquals(PropertyType.LONG, node.getProperty("testPropLong").getValue().getType());
+            Assert.assertEquals(123, node.getProperty("testPropLong").getValue().getLong());
+
+            Assert.assertEquals(true, node.getProperty("testPropMultiple").isMultiple());
+            Assert.assertEquals(Arrays.asList("val1", "val2"), getPropertyStringValues(node, "testPropMultiple"));
+
+            Assert.assertEquals(false, node.getProperty("jcr:title").isMultiple());
+            Assert.assertEquals(PropertyType.STRING, node.getProperty("jcr:title").getValue().getType());
+            Assert.assertEquals("en", node.getProperty("jcr:title").getValue().getString());
+
+            return null;
+        });
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRENCH, session -> {
+            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
+            Assert.assertEquals(false, node.getProperty("jcr:title").isMultiple());
+            Assert.assertEquals(PropertyType.STRING, node.getProperty("jcr:title").getValue().getType());
+            Assert.assertEquals("fr", node.getProperty("jcr:title").getValue().getString());
+            return null;
+        });
+    }
+
+
+    @Test
+    public void moveAndRename() throws Exception {
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId: \"/testList/testSubList1\") {\n" +
+                "      move(parentPathOrId: \"/testList/testSubList2\")\n" +
+                "      rename(name: \"testRenamed\")\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            Assert.assertFalse(session.itemExists("/testList/testSubList1"));
+            Assert.assertTrue(session.itemExists("/testList/testSubList2/testRenamed"));
+            return null;
+        });
+    }
 
 }
