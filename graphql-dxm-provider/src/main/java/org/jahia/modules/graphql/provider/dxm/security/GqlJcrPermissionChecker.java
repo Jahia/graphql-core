@@ -43,14 +43,11 @@
  */
 package org.jahia.modules.graphql.provider.dxm.security;
 
-import graphql.ErrorType;
-import graphql.language.Argument;
 import graphql.language.Field;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import org.apache.commons.lang.StringUtils;
-import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -60,7 +57,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Permission checker can handle permission checks on graphQL types and fields

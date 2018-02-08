@@ -44,7 +44,6 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 
-import graphql.ErrorType;
 import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;

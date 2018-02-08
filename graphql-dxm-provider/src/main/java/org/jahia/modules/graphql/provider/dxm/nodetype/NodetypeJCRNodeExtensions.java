@@ -43,9 +43,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
-import graphql.ErrorType;
 import graphql.annotations.annotationTypes.*;
-import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;

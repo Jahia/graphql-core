@@ -43,7 +43,6 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.ErrorType;
 import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;

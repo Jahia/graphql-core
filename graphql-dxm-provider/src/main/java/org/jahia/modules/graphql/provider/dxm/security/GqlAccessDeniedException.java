@@ -50,6 +50,8 @@ import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
  */
 public class GqlAccessDeniedException extends BaseGqlClientException {
 
+    private static final long serialVersionUID = 549689671626148400L;
+
     private String permission;
 
     GqlAccessDeniedException(String permission) {

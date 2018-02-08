@@ -45,7 +45,6 @@
 
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.ErrorType;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;

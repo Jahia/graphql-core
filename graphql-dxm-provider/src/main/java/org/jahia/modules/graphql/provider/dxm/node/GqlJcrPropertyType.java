@@ -45,7 +45,6 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.GraphQLName;
 
-import javax.jcr.Property;
 import javax.jcr.PropertyType;
 import java.util.EnumSet;
 import java.util.HashMap;
