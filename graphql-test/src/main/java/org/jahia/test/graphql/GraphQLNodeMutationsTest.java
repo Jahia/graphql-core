@@ -73,6 +73,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
             JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
             JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
+            JCRNodeWrapper subnode4 = node.addNode("testNode", "jnt:bigText");
             session.save();
             return null;
         });
@@ -437,6 +438,35 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             Assert.assertTrue(session.itemExists("/testList/testSubList2/testRenamed"));
             return null;
         });
+    }
+
+    @Test
+    public void shouldSetWeakReferencePropertyByPath() throws Exception{
+        JSONObject  result = executeQuery("mutation {\n"
+                + " jcr {\n"
+                + "     addNode(parentPathOrId:\"/testList/testSubList1\", name:\"referenceNode\", "
+                + "primaryNodeType:\"jnt:contentReference\")"
+                + "{\n      mutateProperty(name:\"j:node\"){ \n"
+                + "     setValue(type: WEAKREFERENCE, language:\"en\", value:\"/testList/testNode\")\n"
+                + "             }\n "
+                + "     node {\n"
+                + "         property(name:\"j:node\"){ \n"
+                + "                 value\n"
+                + "             }\n"
+                + "         }\n"
+                + "       }\n"
+                + "     }\n"
+                + " }\n");
+
+        String uuid = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getJSONObject("node")
+                .getJSONObject("property").getString("value");
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            JCRNodeWrapper node = session.getNodeByIdentifier(uuid);
+            Assert.assertEquals("/testList/testNode", node.getPath());
+            Assert.assertTrue(node.isNodeType("jnt:bigText"));
+            return null;
+        });
+
     }
 
 }

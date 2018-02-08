@@ -61,6 +61,7 @@ import javax.jcr.ValueFormatException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutation.getNodeFromPathOrId;
 import static org.jahia.modules.graphql.provider.dxm.node.NodeHelper.getNodeInLanguage;
 
 @GraphQLName("JCRPropertyMutation")
@@ -100,6 +101,7 @@ public class GqlJcrPropertyMutation {
     public String getPath() {
         return node.getPath() + "/" + name;
     }
+
 
     @GraphQLField
     @GraphQLName("setValue")
@@ -207,7 +209,17 @@ public class GqlJcrPropertyMutation {
 
     private Value getValue(@GraphQLName("type") GqlJcrPropertyType type, @GraphQLName("value") String value, JCRSessionWrapper session) throws ValueFormatException {
         int jcrType = type != null ? type.getValue() : PropertyType.STRING;
-        return session.getValueFactory().createValue(value, jcrType);
+        if(jcrType == PropertyType.REFERENCE || jcrType == PropertyType.WEAKREFERENCE){
+            JCRNodeWrapper referencedNode;
+            try {
+                referencedNode = getNodeFromPathOrId(session, value);
+                return session.getValueFactory().createValue(referencedNode);
+            } catch (RepositoryException e) {
+                throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            }
+        }else {
+            return session.getValueFactory().createValue(value, jcrType);
+        }
     }
 
     private Value[] getValues(@GraphQLName("type") GqlJcrPropertyType type, @GraphQLName("values") List<String> values, JCRSessionWrapper session) throws ValueFormatException {
@@ -215,7 +227,17 @@ public class GqlJcrPropertyMutation {
 
         List<Value> jcrValues = new ArrayList<>();
         for (String value : values) {
-            jcrValues.add(session.getValueFactory().createValue(value, jcrType));
+            if(jcrType == PropertyType.REFERENCE || jcrType == PropertyType.WEAKREFERENCE){
+                JCRNodeWrapper referencedNode = null;
+                try {
+                    referencedNode = getNodeFromPathOrId(session, value);
+                    jcrValues.add(session.getValueFactory().createValue(referencedNode));
+                } catch (RepositoryException e) {
+                    throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+                }
+            }else {
+                jcrValues.add(session.getValueFactory().createValue(value, jcrType));
+            }
         }
 
         return jcrValues.toArray(new Value[jcrValues.size()]);
