@@ -58,7 +58,7 @@ import java.util.*;
 import static org.jahia.modules.graphql.provider.dxm.node.NodeHelper.getNodeInLanguage;
 
 /**
- * GraphQL root object for JCR related queries
+ * GraphQL root object for JCR related mutations.
  */
 @GraphQLName("JCRMutation")
 @GraphQLDescription("JCR Mutations")
@@ -66,16 +66,28 @@ public class GqlJcrMutation {
 
     private String workspace;
 
-    public GqlJcrMutation(String workspace) throws RepositoryException {
+    /**
+     * Initializes an instance of this class with the specified JCR workspace name.
+     * @param workspace the name of the JCR workspace
+     */
+    public GqlJcrMutation(String workspace) {
         this.workspace = workspace;
     }
 
+    /**
+     * Adds a child node to the specified one and returns the created mutation object.
+     * 
+     * @param parentPathOrId the path or UUID of the parent node
+     * @param name the name of the child node to be added
+     * @param primaryNodeType the child node primary node type
+     * @return the created mutation object
+     * @throws BaseGqlClientException in case of JCR related errors during adding of child node
+     */
     @GraphQLField
     @GraphQLDescription("Creates a new JCR node under the specified parent")
     public GqlJcrNodeMutation addNode(@GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
                                        @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create")  String name,
                                        @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType) throws BaseGqlClientException {
-        GqlJcrNode result = null;
         try {
             GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null, null);
             return new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
@@ -84,6 +96,14 @@ public class GqlJcrMutation {
         }
     }
 
+    /**
+     * Performs multiple add-child node operations for the specified list of inputs.
+     * 
+     * @param nodes the list of {@link GqlJcrNodeWithParentInput} objects, representing add-child operation request
+     * 
+     * @return the list of created mutation objects
+     * @throws BaseGqlClientException in case of JCR related errors during adding of child nodes
+     */
     @GraphQLField
     @GraphQLDescription("Batch creates a list of new JCR nodes under the specified parent")
     public List<GqlJcrNodeMutation> addNodesBatch(@GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The list of nodes to create") List<GqlJcrNodeWithParentInput> nodes) throws BaseGqlClientException {
@@ -99,12 +119,26 @@ public class GqlJcrMutation {
         return result;
     }
 
+    /**
+     * Creates mutation object to apply modifications on the specified node.
+     * 
+     * @param pathOrId the path or UUID of the node to apply modifications on
+     * @return the mutation object for the specified node
+     * @throws RepositoryException in case of node retrieval operation
+     */
     @GraphQLField
     @GraphQLDescription("Mutates an existing node, based on path or id")
     public GqlJcrNodeMutation mutateNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to mutate") String pathOrId) throws RepositoryException {
         return new GqlJcrNodeMutation(getNodeFromPathOrId(getSession(), pathOrId));
     }
 
+    /**
+     * Creates a list of mutation objects for the specified nodes.
+     * 
+     * @param pathsOrIds the list of path or UUIDs of the nodes to be modified
+     * @return the list with mutation objects for the specified nodes
+     * @throws RepositoryException in case of node retrieval
+     */
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on path or id")
     public List<GqlJcrNodeMutation> mutateNodes(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or id ofs the nodes to mutate") List<String> pathsOrIds) throws RepositoryException {
@@ -115,6 +149,14 @@ public class GqlJcrMutation {
         return result;
     }
 
+    /**
+     * Creates a list of mutation objects for the nodes, matching the specified query.
+     * 
+     * @param query the query to retrieve the nodes to be modified
+     * @param queryLanguage the query language
+     * @return the list with mutation objects
+     * @throws RepositoryException in case of node retrieval
+     */
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on query execution")
     public List<GqlJcrNodeMutation> mutateNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
@@ -130,9 +172,18 @@ public class GqlJcrMutation {
         return result;
     }
 
+    /**
+     * Performs node delete or mark for deletion operation on the specified node.
+     * 
+     * @param pathOrId the path or UUID of the node to perform operation on
+     * @param markForDeletion <code>true</code> if the node should be marked for deletion; <code>false</code> in case the node should be
+     *            directly removed
+     * @param markForDeletionComment in case of mark for deletion operation, specified the comment, describing the purpose of the operation
+     * @throws BaseGqlClientException in case of errors during the operation
+     */
     @GraphQLField
     @GraphQLDescription("Delete an existing node or mark it for deletion")
-    public boolean deleteNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to delete") String pathOrId,
+    public void deleteNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to delete") String pathOrId,
                               @GraphQLName("markForDeletion") @GraphQLDescription("If the node should be marked for deletion or completely removed") Boolean markForDeletion,
                               @GraphQLName("markForDeletionComment") @GraphQLDescription("Optional comment if node is marked for deletion") String markForDeletionComment) throws BaseGqlClientException {
         try {
@@ -144,19 +195,28 @@ public class GqlJcrMutation {
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
-        return true;
     }
 
+    /**
+     * Performs an undelete (unmark for deletion) operation for the specified JCR node.
+     * 
+     * @param pathOrId the path or UUID of the node to perform operation on
+     * @throws BaseGqlClientException in case of errors during undelete operation
+     */
     @GraphQLField
-    public boolean undeleteNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to undelete") String pathOrId) throws BaseGqlClientException {
+    public void undeleteNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to undelete") String pathOrId) throws BaseGqlClientException {
         try {
             getNodeFromPathOrId(getSession(), pathOrId).unmarkForDeletion();
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
-        return true;
     }
 
+    /**
+     * Saves the changes in the current JCR session.
+     * 
+     * @throws BaseGqlClientException in case of errors during session save operation
+     */
     public void save() throws BaseGqlClientException {
         try {
             getSession().save();
@@ -170,6 +230,14 @@ public class GqlJcrMutation {
     }
 
 
+    /**
+     * Adds a child node for the specified one.
+     * 
+     * @param parent the node to add child for
+     * @param node the child node to be added
+     * @return the child JCR node that was added
+     * @throws RepositoryException in case of a JCR error during add operation
+     */
     public static JCRNodeWrapper internalAddNode(JCRNodeWrapper parent, GqlJcrNodeInput node) throws RepositoryException {
         JCRNodeWrapper n = parent.addNode(node.name, node.primaryNodeType);
         if (node.mixins != null) {
@@ -188,6 +256,14 @@ public class GqlJcrMutation {
         return n;
     }
 
+    /**
+     * Set the provided properties to the specified node.
+     * 
+     * @param node the JCR node to set properties on
+     * @param properties the collection of properties to be set
+     * @return the result of the operation, containing list of modified JCR properties
+     * @throws RepositoryException in case of a JCR error during node update
+     */
     public static List<JCRPropertyWrapper> internalSetProperties(JCRNodeWrapper node, Collection<GqlJcrPropertyInput> properties) throws RepositoryException {
         List<JCRPropertyWrapper> result = new ArrayList<>();
         for (GqlJcrPropertyInput property : properties) {
@@ -209,13 +285,16 @@ public class GqlJcrMutation {
         return result;
     }
 
-    public static JCRNodeWrapper getNodeFromPathOrId(JCRSessionWrapper session, String pathOrId) throws RepositoryException {
-        if (pathOrId.startsWith("/")) {
-            return session.getNode(pathOrId);
-        } else {
-            return session.getNodeByIdentifier(pathOrId);
-        }
+    /**
+     * Retrieves the specified JCR node.
+     * 
+     * @param session the current JCR session
+     * @param pathOrId the string with either node UUID or its path
+     * @return the requested JCR node
+     * @throws RepositoryException in case of node retrieval operation
+     */
+    public static JCRNodeWrapper getNodeFromPathOrId(JCRSessionWrapper session, String pathOrId)
+            throws RepositoryException {
+        return '/' == pathOrId.charAt(0) ? session.getNode(pathOrId) : session.getNodeByIdentifier(pathOrId);
     }
-
-
 }

@@ -53,7 +53,6 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections4.Predicate;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 
 import javax.jcr.RepositoryException;

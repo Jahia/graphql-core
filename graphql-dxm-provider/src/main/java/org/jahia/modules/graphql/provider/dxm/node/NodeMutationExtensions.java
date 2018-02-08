@@ -56,7 +56,11 @@ import javax.jcr.RepositoryException;
 public class NodeMutationExtensions {
 
     /**
-     * Root for all JCR mutations
+     * Root for all JCR mutations.
+     * 
+     * @param workspace the name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default
+     * @return GraphQL root object for JCR related mutations
+     * @throws RepositoryException in case of JCR related errors
      */
     @GraphQLField
     @GraphQLName("jcr")
