@@ -58,9 +58,10 @@ import java.util.LinkedList;
 import static org.jahia.services.seo.jcr.VanityUrlManager.VANITYURLMAPPINGS_NODE;
 
 /**
- * Node extension for vanity URL
+ * Node extension for vanity URL.
  */
 @GraphQLTypeExtension(GqlJcrNode.class)
+@GraphQLDescription("Node extension for vanity URL")
 public class VanityUrlJCRNodeExtensions {
 
     private GqlJcrNode node;

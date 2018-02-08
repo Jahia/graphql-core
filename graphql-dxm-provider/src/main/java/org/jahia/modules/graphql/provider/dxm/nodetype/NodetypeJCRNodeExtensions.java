@@ -56,9 +56,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Extensions for JCRNode
+ * Extensions for JCRNode.
  */
 @GraphQLTypeExtension(GqlJcrNode.class)
+@GraphQLDescription("Extensions for JCRNode")
 public class NodetypeJCRNodeExtensions {
 
     private GqlJcrNode node;

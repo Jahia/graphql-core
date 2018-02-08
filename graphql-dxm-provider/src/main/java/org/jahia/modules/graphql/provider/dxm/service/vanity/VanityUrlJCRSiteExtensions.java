@@ -66,9 +66,10 @@ import java.util.List;
 import static org.jahia.services.seo.jcr.VanityUrlManager.JAHIANT_VANITYURL;
 
 /**
- * Site Extension for vanity URL
+ * Site Extension for vanity URL.
  */
 @GraphQLTypeExtension(GqlJcrSite.class)
+@GraphQLDescription("Site Extension for vanity URL")
 public class VanityUrlJCRSiteExtensions {
 
     private GqlJcrSite siteNode;

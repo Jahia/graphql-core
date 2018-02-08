@@ -49,9 +49,10 @@ import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import javax.jcr.RepositoryException;
 
 /**
- * A mutation extension that adds a possibility to alter JCR nodes.
+ * A mutation extension that adds a possibility to modify JCR nodes.
  */
 @GraphQLTypeExtension(DXGraphQLProvider.Mutation.class)
+@GraphQLDescription("A mutation extension that adds a possibility to modify JCR nodes")
 public class NodeMutationExtensions {
 
     /**

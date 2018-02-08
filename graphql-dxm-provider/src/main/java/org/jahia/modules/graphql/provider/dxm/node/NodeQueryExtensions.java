@@ -54,6 +54,7 @@ import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
  * A query extension that adds a possibility to fetch nodes by their UUIDs, paths, or via an SQL2/Xpath query.
  */
 @GraphQLTypeExtension(DXGraphQLProvider.Query.class)
+@GraphQLDescription("A query extension that adds a possibility to fetch nodes by their UUIDs, paths, or via an SQL2/Xpath query")
 public class NodeQueryExtensions {
 
     /**

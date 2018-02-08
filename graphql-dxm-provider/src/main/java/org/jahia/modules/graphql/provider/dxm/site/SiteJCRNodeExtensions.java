@@ -52,6 +52,7 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import javax.jcr.RepositoryException;
 
 @GraphQLTypeExtension(GqlJcrNode.class)
+@GraphQLDescription("Extension for the JCR site node")
 public class SiteJCRNodeExtensions {
 
     private GqlJcrNode node;

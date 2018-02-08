@@ -43,6 +43,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.processor.GraphQLAnnotationsComponent;
 import graphql.annotations.processor.ProcessingElementsContainer;
@@ -71,7 +72,7 @@ import java.util.List;
 
 @Component(service = GraphQLProvider.class, immediate = true)
 public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider {
-    private static Logger logger = LoggerFactory.getLogger(GraphQLQueryProvider.class);
+    private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
 
@@ -128,13 +129,18 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
                 extensionsHandler.registerTypeExtension(aClass, container);
+                if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
+                    logger.info("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
+                } else {
+                    logger.info("Registered type extension {}", aClass);
+                }
             }
             for (Class<? extends GqlJcrNode> aClass : extensionsProvider.getSpecializedTypes()) {
                 SpecializedType annotation = aClass.getAnnotation(SpecializedType.class);
                 if (annotation != null) {
                     specializedTypesHandler.addType(annotation.value(), aClass);
                 } else {
-                    logger.error("No annotation found on class "+aClass);
+                    logger.error("No annotation found on class " + aClass);
                 }
             }
         }
@@ -145,6 +151,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
                 extensionsHandler.registerTypeExtension(aClass, container);
+                logger.info("Registered type extension {}", aClass);
             }
         }
 
