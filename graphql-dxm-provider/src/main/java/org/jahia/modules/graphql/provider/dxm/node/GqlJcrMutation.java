@@ -47,6 +47,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 import graphql.ErrorType;
 import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
 
@@ -92,7 +93,7 @@ public class GqlJcrMutation {
             GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null, null);
             return new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -114,7 +115,7 @@ public class GqlJcrMutation {
                 result.add(new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), inputNode.parentPathOrId), inputNode)));
             }
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return result;
     }
@@ -194,7 +195,7 @@ public class GqlJcrMutation {
                 getNodeFromPathOrId(getSession(), pathOrId).remove();
             }
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -211,7 +212,7 @@ public class GqlJcrMutation {
         try {
             getNodeFromPathOrId(getSession(), pathOrId).unmarkForDeletion();
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         
         return true;
@@ -226,7 +227,7 @@ public class GqlJcrMutation {
         try {
             getSession().save();
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 

@@ -51,6 +51,7 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 
@@ -84,7 +85,7 @@ public class GqlJcrPermissionChecker {
         try {
             checkPermissions(types, fields, permissions, JCRSessionFactory.getInstance().getCurrentUserSession());
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 

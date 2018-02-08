@@ -52,6 +52,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections4.Predicate;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 
@@ -78,7 +79,7 @@ public class GqlJcrNodeMutation {
         try {
             return SpecializedTypesHandler.getNode(jcrNode);
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -88,7 +89,7 @@ public class GqlJcrNodeMutation {
         try {
             return jcrNode.getIdentifier();
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -100,7 +101,7 @@ public class GqlJcrNodeMutation {
             GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null, null);
             return new GqlJcrNodeMutation(GqlJcrMutation.internalAddNode(jcrNode, node));
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -114,7 +115,7 @@ public class GqlJcrNodeMutation {
             }
             return result;
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -124,7 +125,7 @@ public class GqlJcrNodeMutation {
         try {
             return new GqlJcrNodeMutation(jcrNode.getNode(path));
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -145,7 +146,7 @@ public class GqlJcrNodeMutation {
 
             return result;
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -168,7 +169,7 @@ public class GqlJcrNodeMutation {
         try {
             return GqlJcrMutation.internalSetProperties(jcrNode, properties).stream().map(GqlJcrPropertyMutation::new).collect(Collectors.toList());
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -182,7 +183,7 @@ public class GqlJcrNodeMutation {
             }
             return Arrays.stream(jcrNode.getMixinNodeTypes()).map(ExtendedNodeType::getName).collect(Collectors.toList());
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -195,7 +196,7 @@ public class GqlJcrNodeMutation {
             }
             return Arrays.stream(jcrNode.getMixinNodeTypes()).map(ExtendedNodeType::getName).collect(Collectors.toList());
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -206,7 +207,7 @@ public class GqlJcrNodeMutation {
             jcrNode.rename(newName);
             return jcrNode.getPath();
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -218,7 +219,7 @@ public class GqlJcrNodeMutation {
             jcrNode.getSession().move(jcrNode.getPath(), parentDest.getPath() + "/" + jcrNode.getName());
             return jcrNode.getPath();
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -233,7 +234,7 @@ public class GqlJcrNodeMutation {
                 jcrNode.remove();
             }
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -244,7 +245,7 @@ public class GqlJcrNodeMutation {
         try {
             jcrNode.unmarkForDeletion();
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return true;
     }

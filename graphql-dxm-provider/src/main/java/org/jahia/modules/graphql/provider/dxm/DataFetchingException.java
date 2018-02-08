@@ -44,35 +44,23 @@
 package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.ErrorType;
-import org.jahia.exceptions.JahiaRuntimeException;
 
 /**
- * Base exception for the GraphQL errors.
+ * GraphQL exception which is caused by the failure of a data fetching operation.
  */
-public class BaseGqlClientException extends JahiaRuntimeException {
+public class DataFetchingException extends BaseGqlClientException {
 
-    private static final long serialVersionUID = 2380023950503433037L;
+    private static final long serialVersionUID = 7641894928244318180L;
 
-    private ErrorType errorType;
-
-    public BaseGqlClientException(ErrorType errorType) {
-        this((String) null, errorType);
+    public DataFetchingException(String message) {
+        this(message, null);
     }
 
-    public BaseGqlClientException(String message, ErrorType errorType) {
-        this(message, null, errorType);
+    public DataFetchingException(String message, Throwable cause) {
+        super(message, cause, ErrorType.DataFetchingException);
     }
 
-    public BaseGqlClientException(String message, Throwable cause, ErrorType errorType) {
-        super(message, cause);
-        this.errorType = errorType;
-    }
-
-    public BaseGqlClientException(Throwable cause, ErrorType errorType) {
-        this(null, cause, errorType);
-    }
-
-    public ErrorType getErrorType() {
-        return errorType;
+    public DataFetchingException(Throwable cause) {
+        this(null, cause);
     }
 }

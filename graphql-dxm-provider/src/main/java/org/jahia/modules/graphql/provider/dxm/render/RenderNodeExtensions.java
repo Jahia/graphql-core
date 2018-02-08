@@ -52,6 +52,7 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.servlet.GraphQLContext;
 import org.jahia.bin.Render;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
@@ -89,7 +90,7 @@ public class RenderNodeExtensions {
             try {
                 return SpecializedTypesHandler.getNode(node);
             } catch (RepositoryException e) {
-                throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+                throw new DataFetchingException(e);
             }
         } else {
             return null;

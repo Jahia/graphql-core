@@ -50,6 +50,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -81,7 +82,7 @@ public class GqlJcrPropertyMutation {
             this.node = property.getParent();
             this.name = property.getName();
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -92,7 +93,7 @@ public class GqlJcrPropertyMutation {
         try {
             return new GqlJcrProperty(node.getProperty(name), SpecializedTypesHandler.getNode(node));
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -114,7 +115,7 @@ public class GqlJcrPropertyMutation {
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.setProperty(name, getValue(type, value, session));
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -130,7 +131,7 @@ public class GqlJcrPropertyMutation {
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.setProperty(name, getValues(type, values, session));
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -145,7 +146,7 @@ public class GqlJcrPropertyMutation {
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.getProperty(name).addValue(getValue(type, value, session));
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -160,7 +161,7 @@ public class GqlJcrPropertyMutation {
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.getProperty(name).removeValue(getValue(type, value, session));
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -175,7 +176,7 @@ public class GqlJcrPropertyMutation {
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.getProperty(name).addValues(getValues(type, values, session));
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -190,7 +191,7 @@ public class GqlJcrPropertyMutation {
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.getProperty(name).removeValues(getValues(type, values, session));
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -202,7 +203,7 @@ public class GqlJcrPropertyMutation {
             JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
             localizedNode.getProperty(name).remove();
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -219,7 +220,7 @@ public class GqlJcrPropertyMutation {
                 return session.getValueFactory().createValue(value, jcrType);
             }
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -240,7 +241,7 @@ public class GqlJcrPropertyMutation {
                 }
             }
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return jcrValues.toArray(new Value[jcrValues.size()]);
     }

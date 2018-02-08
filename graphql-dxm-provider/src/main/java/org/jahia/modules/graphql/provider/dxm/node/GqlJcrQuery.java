@@ -48,6 +48,7 @@ import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
@@ -121,7 +122,7 @@ public class GqlJcrQuery {
         try {
             return getGqlNodeById(uuid);
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -140,7 +141,7 @@ public class GqlJcrQuery {
         try {
             return getGqlNodeByPath(path);
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -163,7 +164,7 @@ public class GqlJcrQuery {
             }
             return nodes;
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -186,7 +187,7 @@ public class GqlJcrQuery {
             }
             return nodes;
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -217,7 +218,7 @@ public class GqlJcrQuery {
             // todo: naive implementation of the pagination, could be improved in some cases by setting limit/offset in query
             return PaginationHelper.paginate(result, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
         } catch (RepositoryException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
     }
 
