@@ -56,11 +56,12 @@ public class BaseGqlClientException extends JahiaRuntimeException {
     private ErrorType errorType;
 
     public BaseGqlClientException(ErrorType errorType) {
-        this((String) null, errorType);
+        this.errorType = errorType;
     }
 
     public BaseGqlClientException(String message, ErrorType errorType) {
-        this(message, null, errorType);
+        super(message);
+        this.errorType = errorType;
     }
 
     public BaseGqlClientException(String message, Throwable cause, ErrorType errorType) {
@@ -69,7 +70,8 @@ public class BaseGqlClientException extends JahiaRuntimeException {
     }
 
     public BaseGqlClientException(Throwable cause, ErrorType errorType) {
-        this(null, cause, errorType);
+        super(cause);
+        this.errorType = errorType;
     }
 
     public ErrorType getErrorType() {

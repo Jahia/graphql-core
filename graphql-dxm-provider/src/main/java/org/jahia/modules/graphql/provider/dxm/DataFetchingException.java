@@ -53,7 +53,7 @@ public class DataFetchingException extends BaseGqlClientException {
     private static final long serialVersionUID = 7641894928244318180L;
 
     public DataFetchingException(String message) {
-        this(message, null);
+        super(message, ErrorType.DataFetchingException);
     }
 
     public DataFetchingException(String message, Throwable cause) {
@@ -61,6 +61,6 @@ public class DataFetchingException extends BaseGqlClientException {
     }
 
     public DataFetchingException(Throwable cause) {
-        this(null, cause);
+        super(cause, ErrorType.DataFetchingException);
     }
 }
