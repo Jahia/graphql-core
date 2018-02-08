@@ -45,15 +45,14 @@
 
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.ErrorType;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
-import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
@@ -208,10 +207,18 @@ public class GqlJcrPropertyMutation {
         return true;
     }
 
+    private int getPropertyType(GqlJcrPropertyType type) throws RepositoryException {
+        if (type != null) {
+            return type.getValue();
+        }
+        ExtendedPropertyDefinition def = node.getApplicablePropertyDefinition(this.name);
+        return def != null && def.getRequiredType() != PropertyType.UNDEFINED ? def.getRequiredType()
+                : PropertyType.STRING;
+    }
+
     private Value getValue(@GraphQLName("type") GqlJcrPropertyType type, @GraphQLName("value") String value, JCRSessionWrapper session) throws ValueFormatException {
-        int jcrType;
         try {
-            jcrType = type != null ? type.getValue() : node.getApplicablePropertyDefinition(this.name).getRequiredType();
+            int jcrType = getPropertyType(type);
             if(jcrType == PropertyType.REFERENCE || jcrType == PropertyType.WEAKREFERENCE){
                 JCRNodeWrapper referencedNode;
                 referencedNode = getNodeFromPathOrId(session, value);
@@ -225,11 +232,9 @@ public class GqlJcrPropertyMutation {
     }
 
     private Value[] getValues(@GraphQLName("type") GqlJcrPropertyType type, @GraphQLName("values") List<String> values, JCRSessionWrapper session) throws ValueFormatException {
-        List<Value> jcrValues;
-        int jcrType;
+        List<Value> jcrValues = new ArrayList<>();
         try {
-            jcrValues = new ArrayList<>();
-            jcrType  = type != null ? type.getValue() : node.getApplicablePropertyDefinition(this.name).getRequiredType();
+            int jcrType  = getPropertyType(type);
             for (String value : values) {
                 if (jcrType == PropertyType.REFERENCE || jcrType == PropertyType.WEAKREFERENCE) {
                     JCRNodeWrapper referencedNode = null;
