@@ -733,17 +733,69 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldRetrieveDescendantNodeByName() throws Exception {
+    public void shouldRetrieveChildNodeByName() throws Exception {
+
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "      nodeByPath(path: \"/testList\") {"
-                + "        descendant(path:\"testSubList1\") {"
+                + "        descendant(relPath:\"testSubList1\") {"
                 + "          name"
                 + "		   }"
                 + "      }"
                 + "    }"
                 + "}");
-        JSONObject child = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("child");
+
+        JSONObject child = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("descendant");
         validateNode(child, "testSubList1");
+    }
+
+    @Test
+    public void shouldNotRetrieveChildNodeByName() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "      nodeByPath(path: \"/testList\") {"
+                + "        descendant(relPath:\"testSubList99\") {"
+                + "          name"
+                + "		   }"
+                + "      }"
+                + "    }"
+                + "}");
+
+        Object child = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").get("descendant");
+        Assert.assertEquals(JSONObject.NULL, child);
+    }
+
+    @Test
+    public void shouldRetrieveDescendantNodeByRelativePath() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "      nodeByPath(path: \"/testList\") {"
+                + "        descendant(relPath:\"testSubList4/testSubList4_1\") {"
+                + "          name"
+                + "		   }"
+                + "      }"
+                + "    }"
+                + "}");
+
+        JSONObject descendant = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("descendant");
+        validateNode(descendant, "testSubList4_1");
+    }
+
+    @Test
+    public void shouldGetErrorNotRetrieveAncestorNodeByRelativePath() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "      nodeByPath(path: \"/testList\") {"
+                + "        descendant(relPath:\"..\") {"
+                + "          name"
+                + "		   }"
+                + "      }"
+                + "    }"
+                + "}");
+
+        validateError(result, "No navigation outside of the node sub-tree is supported");
     }
 }
