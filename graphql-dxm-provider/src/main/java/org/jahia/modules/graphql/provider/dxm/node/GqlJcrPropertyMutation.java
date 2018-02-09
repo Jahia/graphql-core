@@ -45,19 +45,21 @@
 
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.ErrorType;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.fileupload.FileItem;
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.upload.UploadHelper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 
-import javax.jcr.PropertyType;
-import javax.jcr.RepositoryException;
-import javax.jcr.Value;
-import javax.jcr.ValueFormatException;
+import javax.jcr.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -108,11 +110,12 @@ public class GqlJcrPropertyMutation {
     @GraphQLDescription("Set property value")
     public boolean setValue(@GraphQLName("language") String language,
             @GraphQLName("type") GqlJcrPropertyType type,
-            @GraphQLName("value") String value) {
+            @GraphQLName("value") String value,
+            DataFetchingEnvironment environment) {
         try {
             JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
             JCRSessionWrapper session = localizedNode.getSession();
-            localizedNode.setProperty(name, getValue(type, value, session));
+            localizedNode.setProperty(name, getValue(type, value, session, environment));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -124,11 +127,11 @@ public class GqlJcrPropertyMutation {
     @GraphQLDescription("Set property values")
     public boolean setValues(@GraphQLName("language") String language,
             @GraphQLName("type") GqlJcrPropertyType type,
-            @GraphQLName("values") List<String> values) {
+            @GraphQLName("values") List<String> values, DataFetchingEnvironment environment) {
         try {
             JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
             JCRSessionWrapper session = localizedNode.getSession();
-            localizedNode.setProperty(name, getValues(type, values, session));
+            localizedNode.setProperty(name, getValues(type, values, session, environment));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -139,11 +142,11 @@ public class GqlJcrPropertyMutation {
     @GraphQLDescription("Add a new value to this property")
     public boolean addValue(@GraphQLName("language") String language,
             @GraphQLName("type") GqlJcrPropertyType type,
-            @GraphQLName("value") String value) {
+            @GraphQLName("value") String value, DataFetchingEnvironment environment) {
         try {
             JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
             JCRSessionWrapper session = localizedNode.getSession();
-            localizedNode.getProperty(name).addValue(getValue(type, value, session));
+            localizedNode.getProperty(name).addValue(getValue(type, value, session, environment));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -154,11 +157,11 @@ public class GqlJcrPropertyMutation {
     @GraphQLDescription("Remove a new value from this property")
     public boolean removeValue(@GraphQLName("language") String language,
             @GraphQLName("type") GqlJcrPropertyType type,
-            @GraphQLName("value") String value) {
+            @GraphQLName("value") String value, DataFetchingEnvironment environment) {
         try {
             JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
             JCRSessionWrapper session = localizedNode.getSession();
-            localizedNode.getProperty(name).removeValue(getValue(type, value, session));
+            localizedNode.getProperty(name).removeValue(getValue(type, value, session, environment));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -169,11 +172,11 @@ public class GqlJcrPropertyMutation {
     @GraphQLDescription("Add new values to this property")
     public boolean addValues(@GraphQLName("language") String language,
             @GraphQLName("type") GqlJcrPropertyType type,
-            @GraphQLName("values") List<String> values) {
+            @GraphQLName("values") List<String> values, DataFetchingEnvironment environment) {
         try {
             JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
             JCRSessionWrapper session = localizedNode.getSession();
-            localizedNode.getProperty(name).addValues(getValues(type, values, session));
+            localizedNode.getProperty(name).addValues(getValues(type, values, session, environment));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -184,11 +187,11 @@ public class GqlJcrPropertyMutation {
     @GraphQLDescription("Remove values from this property")
     public boolean removeValues(@GraphQLName("language") String language,
             @GraphQLName("type") GqlJcrPropertyType type,
-            @GraphQLName("values") List<String> values) {
+            @GraphQLName("values") List<String> values, DataFetchingEnvironment environment) {
         try {
             JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
             JCRSessionWrapper session = localizedNode.getSession();
-            localizedNode.getProperty(name).removeValues(getValues(type, values, session));
+            localizedNode.getProperty(name).removeValues(getValues(type, values, session, environment));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -207,46 +210,75 @@ public class GqlJcrPropertyMutation {
         return true;
     }
 
-    private int getPropertyType(GqlJcrPropertyType type) throws RepositoryException {
-        if (type != null) {
-            return type.getValue();
-        }
-        ExtendedPropertyDefinition def = node.getApplicablePropertyDefinition(this.name);
-        return def != null && def.getRequiredType() != PropertyType.UNDEFINED ? def.getRequiredType()
-                : PropertyType.STRING;
-    }
-
-    private Value getValue(@GraphQLName("type") GqlJcrPropertyType type, @GraphQLName("value") String value, JCRSessionWrapper session) throws ValueFormatException {
+    private Value getValue(@GraphQLName("type") GqlJcrPropertyType type, @GraphQLName("value") String value, JCRSessionWrapper session,
+            DataFetchingEnvironment environment) throws ValueFormatException {
+        int jcrType;
+        ValueFactory valueFactory = session.getValueFactory();
+        JCRNodeWrapper referencedNode;
+        Value result = null;
         try {
-            int jcrType = getPropertyType(type);
-            if(jcrType == PropertyType.REFERENCE || jcrType == PropertyType.WEAKREFERENCE){
-                JCRNodeWrapper referencedNode;
-                referencedNode = getNodeFromPathOrId(session, value);
-                return session.getValueFactory().createValue(referencedNode);
-            }else {
-                return session.getValueFactory().createValue(value, jcrType);
-            }
-        } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
-        }
-    }
-
-    private Value[] getValues(@GraphQLName("type") GqlJcrPropertyType type, @GraphQLName("values") List<String> values, JCRSessionWrapper session) throws ValueFormatException {
-        List<Value> jcrValues = new ArrayList<>();
-        try {
-            int jcrType  = getPropertyType(type);
-            for (String value : values) {
-                if (jcrType == PropertyType.REFERENCE || jcrType == PropertyType.WEAKREFERENCE) {
-                    JCRNodeWrapper referencedNode = null;
+            jcrType = type != null ? type.getValue() : this.node.getApplicablePropertyDefinition(this.name).getRequiredType();
+            switch (jcrType){
+                case PropertyType.REFERENCE:
                     referencedNode = getNodeFromPathOrId(session, value);
-                    jcrValues.add(session.getValueFactory().createValue(referencedNode));
+                    result = valueFactory.createValue(referencedNode);
+                    break;
+                case PropertyType.WEAKREFERENCE:
+                    referencedNode = getNodeFromPathOrId(session, value);
+                    result = valueFactory.createValue(referencedNode);
+                    break;
+                case PropertyType.BINARY:
+                    if(UploadHelper.isFileUpload(value, environment)){
+                        FileItem file = UploadHelper.getFileUpload(value, environment);
+                        Binary binary = valueFactory.createBinary(file.getInputStream());
+                        result = valueFactory.createValue(binary);
+                    }else{
+                        result = session.getValueFactory().createValue(value, jcrType);
+                    }
+                    break;
+                default:
+                    result = session.getValueFactory().createValue(value, jcrType);
+            }
+        } catch (RepositoryException | IOException e) {
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+        }
+        return result;
+    }
 
-                } else {
-                    jcrValues.add(session.getValueFactory().createValue(value, jcrType));
+
+    private Value[] getValues(@GraphQLName("type") GqlJcrPropertyType type, @GraphQLName("values") List<String> values, JCRSessionWrapper
+            session, DataFetchingEnvironment environment) throws ValueFormatException {
+        List<Value> jcrValues = new ArrayList<>();
+        int jcrType;
+        JCRNodeWrapper referencedNode;
+        ValueFactory valueFactory = session.getValueFactory();
+        try {
+            jcrType  = type != null ? type.getValue() : this.node.getApplicablePropertyDefinition(this.name).getRequiredType();
+            for (String value : values) {
+                switch (jcrType){
+                    case PropertyType.REFERENCE:
+                        referencedNode = getNodeFromPathOrId(session, value);
+                        jcrValues.add(valueFactory.createValue(referencedNode));
+                        break;
+                    case PropertyType.WEAKREFERENCE:
+                        referencedNode = getNodeFromPathOrId(session, value);
+                        jcrValues.add(valueFactory.createValue(referencedNode));
+                        break;
+                    case PropertyType.BINARY:
+                        if(UploadHelper.isFileUpload(value, environment)){
+                            FileItem file = UploadHelper.getFileUpload(value, environment);
+                            Binary binary = valueFactory.createBinary(file.getInputStream());
+                            jcrValues.add(valueFactory.createValue(binary));
+                        }else{
+                            jcrValues.add(session.getValueFactory().createValue(value, jcrType));
+                        }
+                        break;
+                    default:
+                        jcrValues.add(session.getValueFactory().createValue(value, jcrType));
                 }
             }
-        } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+        } catch (RepositoryException | IOException e) {
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
         return jcrValues.toArray(new Value[jcrValues.size()]);
     }

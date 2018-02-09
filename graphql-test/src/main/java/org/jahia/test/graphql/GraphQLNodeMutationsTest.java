@@ -57,9 +57,15 @@ import org.junit.*;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -86,9 +92,11 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     public void setup() throws Exception {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
             JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
-            node.addNode("testSubList1", "jnt:contentList");
-            node.addNode("testSubList2", "jnt:contentList");
-            node.addNode("testNode", "jnt:bigText");
+            JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
+            JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
+            JCRNodeWrapper subNode3 = node.addNode("testSubList3", "jnt:contentList");
+            JCRNodeWrapper subnode4 = node.addNode("testNode", "jnt:bigText");
+
             session.save();
             return null;
         });
@@ -566,10 +574,10 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     public void shouldSetWeakReferencePropertyByPath() throws Exception{
         JSONObject  result = executeQuery("mutation {\n"
                 + " jcr {\n"
-                + "     addNode(parentPathOrId:\"/testList/testSubList1\", name:\"referenceNode\", "
+                + "     addNode(parentPathOrId:\"/testList/testSubList3\", name:\"referenceNode\", "
                 + "primaryNodeType:\"jnt:contentReference\")"
                 + "{\n      mutateProperty(name:\"j:node\"){ \n"
-                + "     setValue(type: WEAKREFERENCE, language:\"en\", value:\"/testList/testNode\")\n"
+                + "     setValue(language:\"en\", value:\"/testList/testNode\")\n"
                 + "             }\n "
                 + "     node {\n"
                 + "         property(name:\"j:node\"){ \n"

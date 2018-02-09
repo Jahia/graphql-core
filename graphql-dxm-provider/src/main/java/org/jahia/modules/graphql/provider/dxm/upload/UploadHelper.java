@@ -76,7 +76,7 @@ public class UploadHelper {
     }
 
     /**
-     * Return the FileItem for the specified part nane
+     * Return the FileItem for the specified part name
      * @param name Name of the part
      * @param environment The DataFetchingEnvironment
      * @return The FileItem matching the specifid name
