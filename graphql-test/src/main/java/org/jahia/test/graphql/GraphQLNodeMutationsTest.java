@@ -57,8 +57,8 @@ import org.junit.*;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -176,20 +176,20 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             
             // properties
             assertTrue(node.hasProperty("j:expiration"));
-            assertEquals(node.getProperty("j:expiration").getLong(), 60000);
+            assertEquals(60000, node.getProperty("j:expiration").getLong());
             assertTrue(node.hasProperty("j:keywords"));
-            assertEquals(node.getProperty("j:keywords").getValues().length, 2);
-            assertEquals(node.getPropertyAsString("j:keywords"), "keyword1 keyword2");
-            assertEquals(node.getProperty("jcr:title").getString(),
-                    isEnglish ? "List title English" : "Listentitel Deutsch");
+            assertEquals(2, node.getProperty("j:keywords").getValues().length);
+            assertEquals("keyword1 keyword2", node.getPropertyAsString("j:keywords"));
+            assertEquals(isEnglish ? "List title English" : "Listentitel Deutsch",
+                    node.getProperty("jcr:title").getString());
 
             // i18n properties on child nodes
             assertTrue(node.getNode("text1").hasProperty("text"));
-            assertEquals(node.getNode("text1").getProperty("text").getString(),
-                    isEnglish ? "English text 111" : "Deutsch Text 111");
+            assertEquals(isEnglish ? "English text 111" : "Deutsch Text 111",
+                    node.getNode("text1").getProperty("text").getString());
             assertTrue(node.getNode("text2").hasProperty("text"));
-            assertEquals(node.getNode("text2").getProperty("text").getString(),
-                    isEnglish ? "English text 222" : "Deutsch Text 222");
+            assertEquals(isEnglish ? "English text 222" : "Deutsch Text 222",
+                    node.getNode("text2").getProperty("text").getString());
             return null;
         };
         // test in English
