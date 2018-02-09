@@ -58,6 +58,7 @@ import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -316,7 +317,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
     @Test
     public void deleteNode() throws Exception {
-        JSONObject result = executeQuery("mutation {\n" +
+        executeQuery("mutation {\n" +
                 "  jcr {\n" +
                 "    deleteNode(pathOrId:\"/testList/testSubList1\") \n" +
                 "    mutateNode(pathOrId:\"/testList/testSubList2\") {\n" +
@@ -324,39 +325,51 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "    }\n" +
                 "  }\n" +
                 "}\n");
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            Assert.assertFalse(session.itemExists("/testList/testSubList1"));
-            Assert.assertFalse(session.itemExists("/testList/testSubList2"));
+        inJcr(session -> {
+            assertFalse(session.itemExists("/testList/testSubList1"));
+            assertFalse(session.itemExists("/testList/testSubList2"));
             return null;
         });
     }
 
     @Test
-    public void markDeleteUndeleteNode() throws Exception {
+    public void markUnmarkNodeForDeletion() throws Exception {
         executeQuery("mutation {\n" +
                 "  jcr {\n" +
-                "    deleteNode(pathOrId:\"/testList/testSubList1\",markForDeletion:true, markForDeletionComment:\"test delete\") \n" +
+                "    markNodeForDeletion(pathOrId:\"/testList/testSubList1\",comment:\"test delete\") \n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList2\") {\n" +
+                "      markForDeletion(comment: \"test delete 2\")\n" +
+                "    }\n" +
                 "  }\n" +
                 "}\n");
 
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            Assert.assertTrue(session.itemExists("/testList/testSubList1"));
+        inJcr(session -> {
+            assertTrue(session.itemExists("/testList/testSubList1"));
             JCRNodeWrapper node = session.getNode("/testList/testSubList1");
-            Assert.assertTrue(session.getNode("/testList/testSubList1").isMarkedForDeletion());
-            Assert.assertEquals("test delete", node.getProperty(Constants.MARKED_FOR_DELETION_MESSAGE).getString());
+            assertTrue(node.isMarkedForDeletion());
+            assertEquals("test delete", node.getProperty(Constants.MARKED_FOR_DELETION_MESSAGE).getString());
+
+            assertTrue(session.itemExists("/testList/testSubList2"));
+            JCRNodeWrapper node2 = session.getNode("/testList/testSubList2");
+            assertTrue(node2.isMarkedForDeletion());
+            assertEquals("test delete 2", node2.getProperty(Constants.MARKED_FOR_DELETION_MESSAGE).getString());
             return null;
         });
 
         executeQuery("mutation {\n" +
                 "  jcr {\n" +
-                "    undeleteNode(pathOrId:\"/testList/testSubList1\") \n" +
+                "    unmarkNodeForDeletion(pathOrId:\"/testList/testSubList1\") \n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList2\") {\n" +
+                "      unmarkForDeletion\n" +
+                "    }\n" +
                 "  }\n" +
                 "}\n");
 
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            Assert.assertTrue(session.itemExists("/testList/testSubList1"));
-            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
-            Assert.assertFalse(session.getNode("/testList/testSubList1").isMarkedForDeletion());
+        inJcr(session -> {
+            assertTrue(session.itemExists("/testList/testSubList1"));
+            assertFalse(session.getNode("/testList/testSubList1").isMarkedForDeletion());
+            assertTrue(session.itemExists("/testList/testSubList2"));
+            assertFalse(session.getNode("/testList/testSubList2").isMarkedForDeletion());
             return null;
         });
     }

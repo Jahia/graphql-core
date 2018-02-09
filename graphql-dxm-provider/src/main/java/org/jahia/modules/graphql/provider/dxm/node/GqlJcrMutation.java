@@ -179,26 +179,17 @@ public class GqlJcrMutation {
     }
 
     /**
-     * Performs node delete or mark for deletion operation on the specified node.
-     *
+     * Performs the deletion of the specified node (and all the subtree).
+     * 
      * @param pathOrId the path or UUID of the node to perform operation on
-     * @param markForDeletion <code>true</code> if the node should be marked for deletion; <code>false</code> in case the node should be
-     *            directly removed
-     * @param markForDeletionComment in case of mark for deletion operation, specified the comment, describing the purpose of the operation
      * @return the result of the operation
      * @throws BaseGqlClientException in case of errors during the operation
      */
     @GraphQLField
-    @GraphQLDescription("Delete an existing node or mark it for deletion")
-    public boolean deleteNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to delete") String pathOrId,
-                              @GraphQLName("markForDeletion") @GraphQLDescription("If the node should be marked for deletion or completely removed") Boolean markForDeletion,
-                              @GraphQLName("markForDeletionComment") @GraphQLDescription("Optional comment if node is marked for deletion") String markForDeletionComment) throws BaseGqlClientException {
+    @GraphQLDescription("Delete an existing node and all its children")
+    public boolean deleteNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to delete") String pathOrId) throws BaseGqlClientException {
         try {
-            if (markForDeletion != null && markForDeletion) {
-                getNodeFromPathOrId(getSession(), pathOrId).markForDeletion(markForDeletionComment);
-            } else {
-                getNodeFromPathOrId(getSession(), pathOrId).remove();
-            }
+            getNodeFromPathOrId(getSession(), pathOrId).remove();
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -206,14 +197,35 @@ public class GqlJcrMutation {
     }
 
     /**
-     * Performs an undelete (unmark for deletion) operation for the specified JCR node.
+     * Performs node delete or mark for deletion operation on the specified node.
+     *
+     * @param pathOrId the path or UUID of the node to perform operation on
+     * @param comment the comment, describing the purpose of the operation
+     * @return the result of the operation
+     * @throws BaseGqlClientException in case of errors during the operation
+     */
+    @GraphQLField
+    @GraphQLDescription("Marks the existing node and all its children for deletion")
+    public boolean markNodeForDeletion(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to mark for deletion") String pathOrId,
+                              @GraphQLName("comment") @GraphQLDescription("Optional deletion comment") String comment) throws BaseGqlClientException {
+        try {
+            getNodeFromPathOrId(getSession(), pathOrId).markForDeletion(comment);
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+        return true;
+    }
+
+    /**
+     * Performs an unmark for deletion operation for the specified JCR node.
      *
      * @param pathOrId the path or UUID of the node to perform operation on
      * @return the result of the operation
      * @throws BaseGqlClientException in case of errors during undelete operation
      */
     @GraphQLField
-    public boolean undeleteNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to undelete") String pathOrId) throws BaseGqlClientException {
+    @GraphQLDescription("Unmarks the specified node and all its children for deletion")
+    public boolean unmarkNodeForDeletion(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to unmark for deletion") String pathOrId) throws BaseGqlClientException {
         try {
             getNodeFromPathOrId(getSession(), pathOrId).unmarkForDeletion();
         } catch (RepositoryException e) {

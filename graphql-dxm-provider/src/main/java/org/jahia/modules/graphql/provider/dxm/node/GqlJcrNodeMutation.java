@@ -62,6 +62,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Represents an object, dealing with modification operations on a JCR node.
+ */
 @GraphQLName("JCRNodeMutation")
 @GraphQLDescription("Mutations on a JCR node")
 public class GqlJcrNodeMutation {
@@ -222,25 +225,52 @@ public class GqlJcrNodeMutation {
         }
     }
 
+    /**
+     * Deletes the current node (and its subgraph).
+     * 
+     * @return operation result
+     * @throws BaseGqlClientException in case of an error during node delete operation
+     */
     @GraphQLField
-    @GraphQLDescription("Delete the current node or mark it for deletion")
-    public boolean delete(@GraphQLName("markForDeletion") @GraphQLDescription("If the node should be marked for deletion or completely removed") Boolean markForDeletion,
-                          @GraphQLName("markForDeletionComment") @GraphQLDescription("Optional comment if node is marked for deletion") String markForDeletionComment) throws BaseGqlClientException {
+    @GraphQLDescription("Delete the current node (and its subgraph)")
+    public boolean delete() throws BaseGqlClientException {
         try {
-            if (markForDeletion != null && markForDeletion) {
-                jcrNode.markForDeletion(markForDeletionComment);
-            } else {
-                jcrNode.remove();
-            }
+            jcrNode.remove();
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
         return true;
     }
 
+    /**
+     * Marks this node (and all the sub-nodes) for deletion if the.
+     * 
+     * @param comment the deletion comment
+     * @return operation result
+     * @throws BaseGqlClientException in case of an error during node mark for deletion operation
+     */
     @GraphQLField
-    @GraphQLDescription("Undeletes the current node")
-    public boolean undelete() throws BaseGqlClientException {
+    @GraphQLDescription("Mark the current node (and its subgraph) for deletion")
+    public boolean markForDeletion(
+            @GraphQLName("comment") @GraphQLDescription("Optional deletion comment") String comment)
+            throws BaseGqlClientException {
+        try {
+            jcrNode.markForDeletion(comment);
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+        return true;
+    }
+
+    /**
+     * Unmarks this node and all the sub-nodes for deletion.
+     * 
+     * @return operation result
+     * @throws BaseGqlClientException in case of an error during this operation
+     */
+    @GraphQLField
+    @GraphQLDescription("Unmark this node and all the sub-nodes for deletion")
+    public boolean unmarkForDeletion() throws BaseGqlClientException {
         try {
             jcrNode.unmarkForDeletion();
         } catch (RepositoryException e) {
@@ -248,6 +278,5 @@ public class GqlJcrNodeMutation {
         }
         return true;
     }
-
 
 }
