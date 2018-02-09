@@ -45,18 +45,17 @@
 
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.ErrorType;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.fileupload.FileItem;
-import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.upload.UploadHelper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 
 import javax.jcr.*;
 import java.io.IOException;
@@ -210,14 +209,22 @@ public class GqlJcrPropertyMutation {
         return true;
     }
 
+    private int getPropertyType(GqlJcrPropertyType type) throws RepositoryException {
+        if (type != null) {
+            return type.getValue();
+        }
+        ExtendedPropertyDefinition def = node.getApplicablePropertyDefinition(this.name);
+        return def != null && def.getRequiredType() != PropertyType.UNDEFINED ? def.getRequiredType()
+                : PropertyType.STRING;
+    }
+
     private Value getValue(@GraphQLName("type") GqlJcrPropertyType type, @GraphQLName("value") String value, JCRSessionWrapper session,
             DataFetchingEnvironment environment) throws ValueFormatException {
-        int jcrType;
-        ValueFactory valueFactory = session.getValueFactory();
-        JCRNodeWrapper referencedNode;
         Value result = null;
         try {
-            jcrType = type != null ? type.getValue() : this.node.getApplicablePropertyDefinition(this.name).getRequiredType();
+            ValueFactory valueFactory = session.getValueFactory();
+            JCRNodeWrapper referencedNode;
+            int jcrType = getPropertyType(type);;
             switch (jcrType){
                 case PropertyType.REFERENCE:
                     referencedNode = getNodeFromPathOrId(session, value);
@@ -225,7 +232,7 @@ public class GqlJcrPropertyMutation {
                     break;
                 case PropertyType.WEAKREFERENCE:
                     referencedNode = getNodeFromPathOrId(session, value);
-                    result = valueFactory.createValue(referencedNode);
+                    result = valueFactory.createValue(referencedNode, true);
                     break;
                 case PropertyType.BINARY:
                     if(UploadHelper.isFileUpload(value, environment)){
@@ -240,7 +247,7 @@ public class GqlJcrPropertyMutation {
                     result = session.getValueFactory().createValue(value, jcrType);
             }
         } catch (RepositoryException | IOException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return result;
     }
@@ -249,11 +256,10 @@ public class GqlJcrPropertyMutation {
     private Value[] getValues(@GraphQLName("type") GqlJcrPropertyType type, @GraphQLName("values") List<String> values, JCRSessionWrapper
             session, DataFetchingEnvironment environment) throws ValueFormatException {
         List<Value> jcrValues = new ArrayList<>();
-        int jcrType;
-        JCRNodeWrapper referencedNode;
-        ValueFactory valueFactory = session.getValueFactory();
         try {
-            jcrType  = type != null ? type.getValue() : this.node.getApplicablePropertyDefinition(this.name).getRequiredType();
+            JCRNodeWrapper referencedNode;
+            ValueFactory valueFactory = session.getValueFactory();
+            int jcrType = getPropertyType(type);
             for (String value : values) {
                 switch (jcrType){
                     case PropertyType.REFERENCE:
@@ -262,7 +268,7 @@ public class GqlJcrPropertyMutation {
                         break;
                     case PropertyType.WEAKREFERENCE:
                         referencedNode = getNodeFromPathOrId(session, value);
-                        jcrValues.add(valueFactory.createValue(referencedNode));
+                        jcrValues.add(valueFactory.createValue(referencedNode, true));
                         break;
                     case PropertyType.BINARY:
                         if(UploadHelper.isFileUpload(value, environment)){
@@ -278,7 +284,7 @@ public class GqlJcrPropertyMutation {
                 }
             }
         } catch (RepositoryException | IOException e) {
-            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+            throw new DataFetchingException(e);
         }
         return jcrValues.toArray(new Value[jcrValues.size()]);
     }
