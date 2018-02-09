@@ -46,6 +46,7 @@
 package org.jahia.test.graphql;
 
 import org.jahia.api.Constants;
+import org.jahia.services.content.JCRCallback;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRTemplate;
@@ -55,12 +56,25 @@ import org.junit.*;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
+
+    private static <T> T inJcr(JCRCallback<T> callback) throws Exception {
+        return inJcr(callback, null);
+    }
+
+    private static <T> T inJcr(JCRCallback<T> callback, Locale locale) throws Exception {
+        return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE,
+                locale != null ? locale : Locale.ENGLISH, callback);
+    }
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
@@ -71,9 +85,9 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     public void setup() throws Exception {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
             JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
-            JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
-            JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
-            JCRNodeWrapper subnode4 = node.addNode("testNode", "jnt:bigText");
+            node.addNode("testSubList1", "jnt:contentList");
+            node.addNode("testSubList2", "jnt:contentList");
+            node.addNode("testNode", "jnt:bigText");
             session.save();
             return null;
         });
@@ -87,20 +101,101 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
     @Test
     public void addNode() throws Exception {
+        // add simple node
         JSONObject result = executeQuery("mutation {\n" +
                 "  jcr {\n" +
-                "    addNode(parentPathOrId:\"/testList\",name:\"testNew\",primaryNodeType:\"jnt:contentList\") {\n" +
+                "    addNode(parentPathOrId:\"/testList\",name:\"testNew1\",primaryNodeType:\"jnt:contentList\") {\n" +
                 "      uuid\n" +
                 "    }\n" +
                 "  }\n" +
                 "}\n");
         String uuid = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getString("uuid");
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+        inJcr(session -> {
             JCRNodeWrapper node = session.getNodeByIdentifier(uuid);
-            Assert.assertEquals("/testList/testNew", node.getPath());
-            Assert.assertTrue(node.isNodeType("jnt:contentList"));
+            assertEquals("/testList/testNew1", node.getPath());
+            assertTrue(node.isNodeType("jnt:contentList"));
             return null;
         });
+
+        // add node with mixins
+        result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId:\"/testList\",name:\"testNew2\",primaryNodeType:\"jnt:contentList\", mixins: [\"jmix:keywords\", \"jmix:cache\"]) {\n" +
+                "      uuid\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        String uuidWithMixins = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getString("uuid");
+        inJcr(session -> {
+            JCRNodeWrapper node = session.getNodeByIdentifier(uuidWithMixins);
+            assertEquals("/testList/testNew2", node.getPath());
+            assertTrue(node.isNodeType("jnt:contentList"));
+            assertTrue(node.isNodeType("jmix:keywords"));
+            assertTrue(node.isNodeType("jmix:cache"));
+            return null;
+        });
+
+        // add node with mixins, properties and child nodes
+        result = executeQuery("mutation {\n" + 
+                "  jcr {\n" + 
+                "    addNode(parentPathOrId: \"/testList\", name: \"testNew3\", primaryNodeType: \"jnt:contentList\", mixins: [\"jmix:keywords\", \"jmix:cache\"], \n" + 
+                "      children: [\n" + 
+                "        {name: \"text1\", primaryNodeType: \"jnt:text\", \n" + 
+                "          properties: [{language: \"en\", name: \"text\", value: \"English text 111\"}, {language: \"de\", name: \"text\", value: \"Deutsch Text 111\"}]\n" + 
+                "        },\n" + 
+                "        {name: \"text2\", primaryNodeType: \"jnt:text\", \n" + 
+                "          properties: [{language: \"en\", name: \"text\", value: \"English text 222\"}, {language: \"de\", name: \"text\", value: \"Deutsch Text 222\"}]\n" + 
+                "        },\n" + 
+                "      ],\n" + 
+                "      properties: [\n" + 
+                "        {name: \"j:expiration\", value: \"60000\"},\n" + 
+                "        {name: \"j:keywords\", values: [\"keyword1\", \"keyword2\"]},\n" + 
+                "        {name: \"jcr:title\", value: \"List title English\", language: \"en\"},\n" + 
+                "        {name: \"jcr:title\", value: \"Listentitel Deutsch\", language: \"de\"}\n" + 
+                "      ]\n" + 
+                "    ) {\n" + 
+                "      uuid\n" + 
+                "    }\n" + 
+                "  }\n" + 
+                "}\n");
+        String uuidWithEverything = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getString("uuid");
+        JCRCallback<Object> callback = session -> {
+            JCRNodeWrapper node = session.getNodeByIdentifier(uuidWithEverything);
+            assertEquals("/testList/testNew3", node.getPath());
+            assertTrue(node.isNodeType("jnt:contentList"));
+
+            // mixins
+            assertTrue(node.isNodeType("jmix:keywords"));
+            assertTrue(node.isNodeType("jmix:cache"));
+
+            // children
+            assertTrue(node.hasNode("text1"));
+            assertTrue(node.hasNode("text2"));
+
+            boolean isEnglish = session.getLocale().equals(Locale.ENGLISH);
+            
+            // properties
+            assertTrue(node.hasProperty("j:expiration"));
+            assertEquals(node.getProperty("j:expiration").getLong(), 60000);
+            assertTrue(node.hasProperty("j:keywords"));
+            assertEquals(node.getProperty("j:keywords").getValues().length, 2);
+            assertEquals(node.getPropertyAsString("j:keywords"), "keyword1 keyword2");
+            assertEquals(node.getProperty("jcr:title").getString(),
+                    isEnglish ? "List title English" : "Listentitel Deutsch");
+
+            // i18n properties on child nodes
+            assertTrue(node.getNode("text1").hasProperty("text"));
+            assertEquals(node.getNode("text1").getProperty("text").getString(),
+                    isEnglish ? "English text 111" : "Deutsch Text 111");
+            assertTrue(node.getNode("text2").hasProperty("text"));
+            assertEquals(node.getNode("text2").getProperty("text").getString(),
+                    isEnglish ? "English text 222" : "Deutsch Text 222");
+            return null;
+        };
+        // test in English
+        inJcr(callback, Locale.ENGLISH);
+        // test in German
+        inJcr(callback, Locale.GERMAN);
     }
 
     @Test

@@ -80,6 +80,9 @@ public class GqlJcrMutation {
      * @param parentPathOrId the path or UUID of the parent node
      * @param name the name of the child node to be added
      * @param primaryNodeType the child node primary node type
+     * @param mixins list of mixin types, which should be added to the created node
+     * @param properties list of properties to be set on the newly created node
+     * @param children list of child nodes to be added to the newly created node
      * @return the created mutation object
      * @throws BaseGqlClientException in case of JCR related errors during adding of child node
      */
@@ -87,9 +90,12 @@ public class GqlJcrMutation {
     @GraphQLDescription("Creates a new JCR node under the specified parent")
     public GqlJcrNodeMutation addNode(@GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
                                        @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create")  String name,
-                                       @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType) throws BaseGqlClientException {
+                                       @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType,
+                                       @GraphQLName("mixins") @GraphQLDescription("The list of mixin type names") List<String> mixins,
+                                       @GraphQLName("properties") List<GqlJcrPropertyInput> properties,
+                                       @GraphQLName("children") List<GqlJcrNodeInput> children) throws BaseGqlClientException {
         try {
-            GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null, null);
+            GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, mixins, properties, children);
             return new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
