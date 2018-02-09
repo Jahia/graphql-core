@@ -176,6 +176,13 @@ public class GqlJcrNodeMutation {
     }
 
 
+    /**
+     * Adds the list of mixin types for the current node.
+     * 
+     * @param names the list of mixin type names to be added
+     * @return the list of actual node mixin type names after the operation
+     * @throws BaseGqlClientException in case of a mixin operation error
+     */
     @GraphQLField
     @GraphQLDescription("Adds mixin types on the current node")
     public List<String> addMixins(@GraphQLName("mixins") @GraphQLNonNull @GraphQLDescription("The list of mixin type names") List<String> names) throws BaseGqlClientException {
@@ -189,8 +196,15 @@ public class GqlJcrNodeMutation {
         }
     }
 
+    /**
+     * Removes the list of mixin types from the current node.
+     * 
+     * @param names the list of mixin type names to be removed
+     * @return the list of actual node mixin type names after the operation
+     * @throws BaseGqlClientException in case of a mixin operation error
+     */
     @GraphQLField
-    @GraphQLDescription("Remove mixin types on the current node")
+    @GraphQLDescription("Removes mixin types on the current node")
     public List<String> removeMixins(@GraphQLName("mixins") @GraphQLNonNull @GraphQLDescription("The list of mixin type names") List<String> names) throws BaseGqlClientException {
         try {
             for (String name : names) {

@@ -387,13 +387,14 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         executeQuery("mutation {\n" +
                 "  jcr {\n" +
                 "    mutateNode(pathOrId:\"/testList/testSubList1\")  {\n" +
-                "      addMixins(mixins:[\"jmix:renderable\"])\n" +
+                "      addMixins(mixins:[\"jmix:renderable\", \"jmix:cache\"])\n" +
                 "    }\n" +
                 "  }\n" +
                 "}\n");
 
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            Assert.assertTrue(session.getNode("/testList/testSubList1").isNodeType("jmix:renderable"));
+        inJcr(session -> {
+            assertTrue(session.getNode("/testList/testSubList1").isNodeType("jmix:renderable"));
+            assertTrue(session.getNode("/testList/testSubList1").isNodeType("jmix:cache"));
             return null;
         });
 
@@ -405,8 +406,23 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
 
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            Assert.assertFalse(session.getNode("/testList/testSubList1").isNodeType("jmix:renderable"));
+        inJcr(session -> {
+            assertFalse(session.getNode("/testList/testSubList1").isNodeType("jmix:renderable"));
+            assertTrue(session.getNode("/testList/testSubList1").isNodeType("jmix:cache"));
+            return null;
+        });
+
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\")  {\n" +
+                "      removeMixins(mixins:[\"jmix:cache\"])\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        inJcr(session -> {
+            assertFalse(session.getNode("/testList/testSubList1").isNodeType("jmix:renderable"));
+            assertFalse(session.getNode("/testList/testSubList1").isNodeType("jmix:cache"));
             return null;
         });
     }
