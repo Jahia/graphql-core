@@ -76,7 +76,7 @@ public class GqlJcrMutation {
 
     /**
      * Adds a child node to the specified one and returns the created mutation object.
-     * 
+     *
      * @param parentPathOrId the path or UUID of the parent node
      * @param name the name of the child node to be added
      * @param primaryNodeType the child node primary node type
@@ -89,11 +89,11 @@ public class GqlJcrMutation {
     @GraphQLField
     @GraphQLDescription("Creates a new JCR node under the specified parent")
     public GqlJcrNodeMutation addNode(@GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
-                                       @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create")  String name,
-                                       @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType,
-                                       @GraphQLName("mixins") @GraphQLDescription("The list of mixin type names") List<String> mixins,
-                                       @GraphQLName("properties") List<GqlJcrPropertyInput> properties,
-                                       @GraphQLName("children") List<GqlJcrNodeInput> children) throws BaseGqlClientException {
+                                      @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create")  String name,
+                                      @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType,
+                                      @GraphQLName("mixins") @GraphQLDescription("The list of mixin type names") List<String> mixins,
+                                      @GraphQLName("properties") List<GqlJcrPropertyInput> properties,
+                                      @GraphQLName("children") List<GqlJcrNodeInput> children) throws BaseGqlClientException {
         try {
             GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, mixins, properties, children);
             return new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
@@ -104,9 +104,9 @@ public class GqlJcrMutation {
 
     /**
      * Performs multiple add-child node operations for the specified list of inputs.
-     * 
+     *
      * @param nodes the list of {@link GqlJcrNodeWithParentInput} objects, representing add-child operation request
-     * 
+     *
      * @return the list of created mutation objects
      * @throws BaseGqlClientException in case of JCR related errors during adding of child nodes
      */
@@ -127,7 +127,7 @@ public class GqlJcrMutation {
 
     /**
      * Creates mutation object to apply modifications on the specified node.
-     * 
+     *
      * @param pathOrId the path or UUID of the node to apply modifications on
      * @return the mutation object for the specified node
      * @throws RepositoryException in case of node retrieval operation
@@ -140,7 +140,7 @@ public class GqlJcrMutation {
 
     /**
      * Creates a list of mutation objects for the specified nodes.
-     * 
+     *
      * @param pathsOrIds the list of path or UUIDs of the nodes to be modified
      * @return the list with mutation objects for the specified nodes
      * @throws RepositoryException in case of node retrieval
@@ -157,7 +157,7 @@ public class GqlJcrMutation {
 
     /**
      * Creates a list of mutation objects for the nodes, matching the specified query.
-     * 
+     *
      * @param query the query to retrieve the nodes to be modified
      * @param queryLanguage the query language
      * @return the list with mutation objects
@@ -180,7 +180,7 @@ public class GqlJcrMutation {
 
     /**
      * Performs node delete or mark for deletion operation on the specified node.
-     * 
+     *
      * @param pathOrId the path or UUID of the node to perform operation on
      * @param markForDeletion <code>true</code> if the node should be marked for deletion; <code>false</code> in case the node should be
      *            directly removed
@@ -207,7 +207,7 @@ public class GqlJcrMutation {
 
     /**
      * Performs an undelete (unmark for deletion) operation for the specified JCR node.
-     * 
+     *
      * @param pathOrId the path or UUID of the node to perform operation on
      * @return the result of the operation
      * @throws BaseGqlClientException in case of errors during undelete operation
@@ -219,13 +219,13 @@ public class GqlJcrMutation {
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
-        
+
         return true;
     }
 
     /**
      * Saves the changes in the current JCR session.
-     * 
+     *
      * @throws BaseGqlClientException in case of errors during session save operation
      */
     public void save() throws BaseGqlClientException {
@@ -243,33 +243,33 @@ public class GqlJcrMutation {
 
     /**
      * Adds a child node for the specified one.
-     * 
+     *
      * @param parent the node to add child for
      * @param node the child node to be added
      * @return the child JCR node that was added
      * @throws RepositoryException in case of a JCR error during add operation
      */
     public static JCRNodeWrapper internalAddNode(JCRNodeWrapper parent, GqlJcrNodeInput node) throws RepositoryException {
-        JCRNodeWrapper n = parent.addNode(node.name, node.primaryNodeType);
+        JCRNodeWrapper jcrNode = parent.addNode(node.name, node.primaryNodeType);
         if (node.mixins != null) {
             for (String mixin : node.mixins) {
-                n.addMixin(mixin);
+                jcrNode.addMixin(mixin);
             }
         }
         if (node.properties != null) {
-            internalSetProperties(n, node.properties);
+            internalSetProperties(jcrNode, node.properties);
         }
         if (node.children != null) {
             for (GqlJcrNodeInput child : node.children) {
-                internalAddNode(n, child);
+                internalAddNode(jcrNode, child);
             }
         }
-        return n;
+        return jcrNode;
     }
 
     /**
      * Set the provided properties to the specified node.
-     * 
+     *
      * @param node the JCR node to set properties on
      * @param properties the collection of properties to be set
      * @return the result of the operation, containing list of modified JCR properties
@@ -280,8 +280,7 @@ public class GqlJcrMutation {
         for (GqlJcrPropertyInput property : properties) {
             JCRNodeWrapper localizedNode = getNodeInLanguage(node, property.language);
             JCRSessionWrapper session = localizedNode.getSession();
-
-            int type = property.type != null ? property.type.getValue() : PropertyType.STRING;
+            int type = (property.type != null ? property.type.getValue() : PropertyType.STRING);
             if (property.value != null) {
                 Value v = session.getValueFactory().createValue(property.value, type);
                 result.add(localizedNode.setProperty(property.name, v));
@@ -298,14 +297,13 @@ public class GqlJcrMutation {
 
     /**
      * Retrieves the specified JCR node.
-     * 
+     *
      * @param session the current JCR session
      * @param pathOrId the string with either node UUID or its path
      * @return the requested JCR node
      * @throws RepositoryException in case of node retrieval operation
      */
-    public static JCRNodeWrapper getNodeFromPathOrId(JCRSessionWrapper session, String pathOrId)
-            throws RepositoryException {
-        return '/' == pathOrId.charAt(0) ? session.getNode(pathOrId) : session.getNodeByIdentifier(pathOrId);
+    public static JCRNodeWrapper getNodeFromPathOrId(JCRSessionWrapper session, String pathOrId) throws RepositoryException {
+        return ('/' == pathOrId.charAt(0) ? session.getNode(pathOrId) : session.getNodeByIdentifier(pathOrId));
     }
 }

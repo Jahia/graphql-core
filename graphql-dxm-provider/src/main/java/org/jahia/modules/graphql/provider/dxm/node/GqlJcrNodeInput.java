@@ -43,7 +43,6 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
@@ -86,5 +85,4 @@ public class GqlJcrNodeInput {
     @GraphQLField
     @GraphQLDescription("The list of sub nodes to create")
     public List<GqlJcrNodeInput> children;
-
 }

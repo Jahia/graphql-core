@@ -80,11 +80,10 @@ public class GqlJcrPropertyInput {
     public GqlJcrPropertyType type;
 
     @GraphQLField
-    @GraphQLDescription("The value to set (for non multiple properties)")
+    @GraphQLDescription("The value to set (for single valued properties)")
     public String value;
 
     @GraphQLField
-    @GraphQLDescription("The values to set (for multiple properties)")
+    @GraphQLDescription("The values to set (for multivalued properties)")
     public List<String> values;
-
 }
