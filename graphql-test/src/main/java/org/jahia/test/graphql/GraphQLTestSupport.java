@@ -57,7 +57,6 @@ import javax.jcr.RepositoryException;
 import javax.servlet.Servlet;
 
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 import org.junit.Assert;
@@ -71,14 +70,12 @@ public class GraphQLTestSupport extends JahiaTestCase {
     }
 
     protected static void removeTestNodes() throws RepositoryException {
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRENCH, session -> {
-            if (session.itemExists("/testList")) {
-                session.getNode("/testList").remove();
-                session.save();
-            }
-            return null;
-        });
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.LIVE_WORKSPACE, Locale.FRENCH, session -> {
+        removeTestNodes(Constants.EDIT_WORKSPACE);
+        removeTestNodes(Constants.LIVE_WORKSPACE);
+    }
+
+    private static void removeTestNodes(String workspace) throws RepositoryException {
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, workspace, null, session -> {
             if (session.itemExists("/testList")) {
                 session.getNode("/testList").remove();
                 session.save();

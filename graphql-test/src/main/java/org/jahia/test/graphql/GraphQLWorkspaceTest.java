@@ -91,7 +91,8 @@ public class GraphQLWorkspaceTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void testGetNodeDefault() throws Exception {
+    public void shouldRetrieveNodeFromDefault() throws Exception {
+
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "      testSubList2:nodeByPath(path: \"/testList/testSubList2\") {"
@@ -102,14 +103,18 @@ public class GraphQLWorkspaceTest extends GraphQLTestSupport {
                 + "      }"
                 + "    }"
                 + "}");
-        JSONObject node1 = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("testSubList2");
-        JSONObject node3 = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("testSubList3");
-        validateNode(node1, "testSubList2");
-        validateNode(node3, "testSubList3");
+
+        JSONObject jcr = result.getJSONObject("data").getJSONObject("jcr");
+        JSONObject subList2 = jcr.getJSONObject("testSubList2");
+        JSONObject subList3 = jcr.getJSONObject("testSubList3");
+
+        validateNode(subList2, "testSubList2");
+        validateNode(subList3, "testSubList3");
     }
 
     @Test
-    public void testGetNodeLive() throws Exception {
+    public void shouldRetrieveNodeFromLive() throws Exception {
+
         JSONObject result = executeQuery("{"
                 + "    jcr(workspace:LIVE) {"
                 + "      testSubList1:nodeByPath(path: \"/testList/testSubList1\") {"
@@ -117,12 +122,14 @@ public class GraphQLWorkspaceTest extends GraphQLTestSupport {
                 + "      }"
                 + "    }"
                 + "}");
-        JSONObject node1 = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("testSubList1");
-        validateNode(node1, "testSubList1");
+
+        JSONObject subList1 = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("testSubList1");
+        validateNode(subList1, "testSubList1");
     }
 
     @Test
-    public void testGetNodeInLive() throws Exception {
+    public void shouldRetrieveLiveCounterpartOfNode() throws Exception {
+
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "      testSubList3:nodeByPath(path: \"/testList/testSubList3\") {"
@@ -133,11 +140,32 @@ public class GraphQLWorkspaceTest extends GraphQLTestSupport {
                 + "      }"
                 + "    }"
                 + "}");
-        JSONObject node3 = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("testSubList3");
-        JSONObject node2 = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("testSubList3").getJSONObject("nodeInWorkspace");
-        validateNode(node3, "testSubList3");
-        validateNode(node2, "testSubList1");
+
+        JSONObject subList3Default = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("testSubList3");
+        JSONObject subList1Live = subList3Default.getJSONObject("nodeInWorkspace");
+
+        validateNode(subList3Default, "testSubList3");
+        validateNode(subList1Live, "testSubList1");
     }
 
+    @Test
+    public void shouldNotRetrieveLiveCounterpartOfNode() throws Exception {
 
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "      testSubList2:nodeByPath(path: \"/testList/testSubList2\") {"
+                + "        name"
+                + "        nodeInWorkspace(workspace:LIVE) {"
+                + "          name"
+                + "        }"
+                + "      }"
+                + "    }"
+                + "}");
+
+        JSONObject subList2Default = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("testSubList2");
+        Object subList1Live = subList2Default.get("nodeInWorkspace");
+
+        validateNode(subList2Default, "testSubList2");
+        Assert.assertEquals(JSONObject.NULL, subList1Live);
+    }
 }
