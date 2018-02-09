@@ -733,11 +733,11 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldRetrieveOneChildByName() throws Exception {
+    public void shouldRetrieveDescendantNodeByName() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "      nodeByPath(path: \"/testList\") {"
-                + "        child(path:\"testSubList1\") {"
+                + "        descendant(path:\"testSubList1\") {"
                 + "          name"
                 + "		   }"
                 + "      }"

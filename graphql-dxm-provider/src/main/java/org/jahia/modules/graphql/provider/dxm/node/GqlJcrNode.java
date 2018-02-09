@@ -155,14 +155,16 @@ public interface GqlJcrNode {
     throws GqlJcrWrongInputException;
 
     /**
-     * Get GraphQL representations of a child node, based on relative path.
+     * Get GraphQL representation of a descendant node, based on relative path.
      *
-     * @param path Name or relative path of the sub node
-     * @return GraphQL representations of the child node, according to parameters passed
+     * @param relPath Name or relative path of the sub node
+     * @return GraphQL representation of the descendant node; null in case no descendant node exists at the specified path
+     * @throws GqlJcrWrongInputException In case of malformed relative descendant node path
      */
     @GraphQLField
-    @GraphQLDescription("GraphQL representations of a child node, based on relative path")
-    GqlJcrNode getChild(@GraphQLName("path") @GraphQLDescription("Name or relative path of the sub node") String path);
+    @GraphQLDescription("GraphQL representation of a descendant node, based on its relative path")
+    GqlJcrNode getDescendant(@GraphQLName("relPath") @GraphQLDescription("Name or relative path of the sub node") @GraphQLNonNull String relPath)
+    throws GqlJcrWrongInputException;
 
     /**
      * Get GraphQL representations of descendant nodes of the JCR node, according to filters specified. A descendant node must pass through all non-null filters in order to be included in the result.
@@ -177,7 +179,7 @@ public interface GqlJcrNode {
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the descendant nodes, according to parameters passed")
     DXPaginatedData<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
-                                    @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter,
+                                               @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter,
                                                DataFetchingEnvironment environment)
     throws GqlJcrWrongInputException;
 

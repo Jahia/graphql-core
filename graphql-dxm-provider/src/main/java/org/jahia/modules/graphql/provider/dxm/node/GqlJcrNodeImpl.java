@@ -214,10 +214,13 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
-    public GqlJcrNode getChild(@GraphQLName("path") String path) {
+    public GqlJcrNode getDescendant(@GraphQLName("relPath") @GraphQLNonNull String relPath) {
+        if (relPath.contains("..")) {
+            throw new GqlJcrWrongInputException("No navigation outside of the node sub-tree is supported");
+        }
         try {
-            if (node.hasNode(path)) {
-                return SpecializedTypesHandler.getNode(node.getNode(path));
+            if (node.hasNode(relPath)) {
+                return SpecializedTypesHandler.getNode(node.getNode(relPath));
             }
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
