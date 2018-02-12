@@ -52,6 +52,7 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections4.Predicate;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.DataModificationException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 
@@ -77,7 +78,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
     @GraphQLField
     @GraphQLDescription("Get the graphQL representation of the node currently being mutated")
-    public GqlJcrNode getNode() {
+    public GqlJcrNode getNode() throws BaseGqlClientException {
         try {
             return SpecializedTypesHandler.getNode(jcrNode);
         } catch (RepositoryException e) {
@@ -87,7 +88,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
     @GraphQLField
     @GraphQLDescription("Get the identifier of the node currently being mutated")
-    public String getUuid() {
+    public String getUuid() throws BaseGqlClientException {
         try {
             return jcrNode.getIdentifier();
         } catch (RepositoryException e) {
@@ -98,12 +99,13 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     @GraphQLField
     @GraphQLDescription("Creates a new JCR node under the current node")
     public GqlJcrNodeMutation addChild(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
-                                        @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType) throws BaseGqlClientException {
+                                       @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType)
+    throws BaseGqlClientException {
         try {
             GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null, null);
             return new GqlJcrNodeMutation(internalAddNode(jcrNode, node));
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataModificationException(e);
         }
     }
 
@@ -117,7 +119,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             }
             return result;
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataModificationException(e);
         }
     }
 
@@ -127,7 +129,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             return new GqlJcrNodeMutation(jcrNode.getNode(path));
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataModificationException(e);
         }
     }
 
@@ -135,7 +137,8 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     @GraphQLDescription("Mutates a set of existing sub nodes, based on filters passed as parameter")
     public List<GqlJcrNodeMutation> mutateChildren(@GraphQLName("names") @GraphQLDescription("Filter of child nodes by their names; null to avoid such filtering") Collection<String> names,
                                                    @GraphQLName("typesFilter") @GraphQLDescription("Filter of child nodes by their types; null to avoid such filtering") GqlJcrNode.NodeTypesInput typesFilter,
-                                                   @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter) throws BaseGqlClientException {
+                                                   @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter)
+    throws BaseGqlClientException {
         try {
             List<GqlJcrNodeMutation> result = new ArrayList<>();
 
@@ -148,7 +151,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
             return result;
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataModificationException(e);
         }
     }
 
@@ -171,14 +174,14 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             return internalSetProperties(jcrNode, properties).stream().map(GqlJcrPropertyMutation::new).collect(Collectors.toList());
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataModificationException(e);
         }
     }
 
 
     /**
      * Adds the list of mixin types for the current node.
-     * 
+     *
      * @param names the list of mixin type names to be added
      * @return the list of actual node mixin type names after the operation
      * @throws BaseGqlClientException in case of a mixin operation error
@@ -192,13 +195,13 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             }
             return Arrays.stream(jcrNode.getMixinNodeTypes()).map(ExtendedNodeType::getName).collect(Collectors.toList());
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataModificationException(e);
         }
     }
 
     /**
      * Removes the list of mixin types from the current node.
-     * 
+     *
      * @param names the list of mixin type names to be removed
      * @return the list of actual node mixin type names after the operation
      * @throws BaseGqlClientException in case of a mixin operation error
@@ -212,7 +215,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             }
             return Arrays.stream(jcrNode.getMixinNodeTypes()).map(ExtendedNodeType::getName).collect(Collectors.toList());
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataModificationException(e);
         }
     }
 
@@ -223,7 +226,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             jcrNode.rename(newName);
             return jcrNode.getPath();
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataModificationException(e);
         }
     }
 
@@ -235,13 +238,13 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             jcrNode.getSession().move(jcrNode.getPath(), parentDest.getPath() + "/" + jcrNode.getName());
             return jcrNode.getPath();
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataModificationException(e);
         }
     }
 
     /**
      * Deletes the current node (and its subgraph).
-     * 
+     *
      * @return operation result
      * @throws BaseGqlClientException in case of an error during node delete operation
      */
@@ -251,34 +254,32 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             jcrNode.remove();
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataModificationException(e);
         }
         return true;
     }
 
     /**
      * Marks this node (and all the sub-nodes) for deletion if the.
-     * 
+     *
      * @param comment the deletion comment
      * @return operation result
      * @throws BaseGqlClientException in case of an error during node mark for deletion operation
      */
     @GraphQLField
     @GraphQLDescription("Mark the current node (and its subgraph) for deletion")
-    public boolean markForDeletion(
-            @GraphQLName("comment") @GraphQLDescription("Optional deletion comment") String comment)
-            throws BaseGqlClientException {
+    public boolean markForDeletion(@GraphQLName("comment") @GraphQLDescription("Optional deletion comment") String comment) throws BaseGqlClientException {
         try {
             jcrNode.markForDeletion(comment);
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataModificationException(e);
         }
         return true;
     }
 
     /**
      * Unmarks this node and all the sub-nodes for deletion.
-     * 
+     *
      * @return operation result
      * @throws BaseGqlClientException in case of an error during this operation
      */
@@ -288,9 +289,8 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             jcrNode.unmarkForDeletion();
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataModificationException(e);
         }
         return true;
     }
-
 }
