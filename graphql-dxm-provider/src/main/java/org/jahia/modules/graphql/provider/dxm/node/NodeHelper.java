@@ -184,6 +184,14 @@ public class NodeHelper {
 
 
 
+    /**
+     * Retrieves the JCR node using localized session. If <code>language</code> is <code>null</code>, returns the node itself.
+     * 
+     * @param node the node to be retrieved in a localized session
+     * @param language the language of the localized session to use
+     * @return the JCR node using localized session. If <code>language</code> is <code>null</code>, returns the node itself
+     * @throws RepositoryException in case of JCR access errors
+     */
     public static JCRNodeWrapper getNodeInLanguage(JCRNodeWrapper node, String language) throws RepositoryException {
         if (language == null) {
             return node;

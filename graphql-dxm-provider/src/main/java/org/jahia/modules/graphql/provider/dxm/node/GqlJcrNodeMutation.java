@@ -155,16 +155,28 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         }
     }
 
+    /**
+     * Creates a mutation object for modifications of the specified node property.
+     * 
+     * @param propertyName the name of the property to be modified
+     * @return a mutation object for modifications of the specified node property
+     */
     @GraphQLField
     @GraphQLDescription("Mutates or creates a property on the current node")
-    public GqlJcrPropertyMutation mutateProperty(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property to update") String propertyName) throws BaseGqlClientException {
+    public GqlJcrPropertyMutation mutateProperty(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property to update") String propertyName) {
         return new GqlJcrPropertyMutation(jcrNode, propertyName);
     }
 
+    /**
+     * Creates a collection of mutation object for modifications of the specified node properties
+     * 
+     * @param names the name of node properties to be modified
+     * @return a collection of mutation object for modifications of the specified node properties
+     */
     @GraphQLField
     @GraphQLDescription("Mutates or creates a set of properties on the current node")
-    public Collection<GqlJcrPropertyMutation> mutateProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names) throws BaseGqlClientException {
-        return names.stream().map((String name)-> new GqlJcrPropertyMutation(jcrNode,name)).collect(Collectors.toList());
+    public Collection<GqlJcrPropertyMutation> mutateProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names) {
+        return names.stream().map((String name) -> new GqlJcrPropertyMutation(jcrNode, name)).collect(Collectors.toList());
     }
 
     @GraphQLField

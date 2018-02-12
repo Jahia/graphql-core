@@ -275,25 +275,68 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void mutateNode() throws Exception {
-        JSONObject result = executeQuery("mutation {\n" +
+    public void mutateProperty() throws Exception {
+        executeQuery("mutation {\n" +
                 "  jcr {\n" +
                 "    mutateNode(pathOrId: \"/testList/testSubList1\") {\n" +
-                "      mutateProperty(name: \"jcr:title\") {\n" +
-                "        setValue(language: \"en\", value: \"test\")\n" +
+                "      addMixins(mixins:[\"jmix:renderable\", \"jmix:cache\"])\n" +
+                "      mut1: mutateProperty(name: \"jcr:title\") {\n" +
+                "        setValueInEN: setValue(language: \"en\", value: \"test title\")\n" +
+                "        setValueInDE: setValue(language: \"de\", value: \"Test Titel\")\n" +
+                "      }\n" +
+                "      mut2: mutateProperty(name: \"j:view\") {\n" +
+                "        setValue(value: \"my-view\")\n" +
+                "      }\n" +
+                "      mut3: mutateProperty(name: \"j:expiration\") {\n" +
+                "        setValue(value: \"60000\")\n" +
+                "      }\n" +
+                "      mut4: mutateProperty(name: \"j:perUser\") {\n" +
+                "        setValue(value: \"true\")\n" +
                 "      }\n" +
                 "    }\n" +
                 "  }\n" +
                 "}\n");
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            Assert.assertEquals("test", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
+
+        inJcr(session -> {
+            assertEquals("test title", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
+            assertEquals("my-view", session.getNode("/testList/testSubList1").getProperty("j:view").getString());
+            assertEquals(60000, session.getNode("/testList/testSubList1").getProperty("j:expiration").getLong());
+            assertEquals(true, session.getNode("/testList/testSubList1").getProperty("j:perUser").getBoolean());
+            return null;
+        });
+        inJcr(session -> {
+            assertEquals("Test Titel", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
+            return null;
+        }, Locale.GERMAN);
+
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId: \"/testList/testSubList1\") {\n" +
+                "      mut1: mutateProperty(name: \"jcr:title\") {\n" +
+                "        setValue(language: \"en\", value: \"test title 2\")\n" +
+                "      }\n" +
+                "      mut2: mutateProperty(name: \"j:expiration\") {\n" +
+                "        setValue(value: \"30000\")\n" +
+                "      }\n" +
+                "      mut3: mutateProperty(name: \"j:perUser\") {\n" +
+                "        delete\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        inJcr(session -> {
+            assertEquals("test title 2", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
+            assertEquals("my-view", session.getNode("/testList/testSubList1").getProperty("j:view").getString());
+            assertEquals(30000, session.getNode("/testList/testSubList1").getProperty("j:expiration").getLong());
+            assertFalse(session.getNode("/testList/testSubList1").hasProperty("j:perUser"));
             return null;
         });
     }
 
     @Test
-    public void mutateNodes() throws Exception {
-        JSONObject result = executeQuery("mutation {\n" +
+    public void mutatePropertyMultipleNodes() throws Exception {
+        executeQuery("mutation {\n" +
                 "  jcr {\n" +
                 "    mutateNodes(pathsOrIds: [\"/testList/testSubList1\",\"/testList/testSubList2\"]) {\n" +
                 "      mutateProperty(name: \"jcr:title\") {\n" +
@@ -302,9 +345,9 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "    }\n" +
                 "  }\n" +
                 "}\n");
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            Assert.assertEquals("test", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
-            Assert.assertEquals("test", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
+        inJcr(session -> {
+            assertEquals("test", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
+            assertEquals("test", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
             return null;
         });
     }
@@ -446,11 +489,11 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
 
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+        inJcr(session -> {
             JCRNodeWrapper node = session.getNode("/testList/testSubList1");
-            Assert.assertTrue(node.hasProperty("test"));
-            Assert.assertTrue(node.getProperty("test").isMultiple());
-            Assert.assertEquals(Arrays.asList("val1","val2","val3","val4","val5"), getPropertyStringValues(node, "test"));
+            assertTrue(node.hasProperty("test"));
+            assertTrue(node.getProperty("test").isMultiple());
+            assertEquals(Arrays.asList("val1", "val2", "val3", "val4", "val5"), getPropertyStringValues(node, "test"));
             return null;
         });
 
@@ -458,18 +501,18 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  jcr {\n" +
                 "    mutateNode(pathOrId:\"/testList/testSubList1\")  {\n" +
                 "      mutateProperty(name:\"test\") {\n" +
-                "        removeValue(value:\"val3\")\n" +
-                "        removeValues(values:[\"val4\", \"val5\"])\n" +
+                "        removeValue(value:\"val1\")\n" +
+                "        removeValues(values:[\"val3\", \"val4\"])\n" +
                 "      }\n" +
                 "    }\n" +
                 "  }\n" +
                 "}\n");
 
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+        inJcr(session -> {
             JCRNodeWrapper node = session.getNode("/testList/testSubList1");
-            Assert.assertTrue(node.hasProperty("test"));
-            Assert.assertTrue(node.getProperty("test").isMultiple());
-            Assert.assertEquals(Arrays.asList("val1","val2"), getPropertyStringValues(node, "test"));
+            assertTrue(node.hasProperty("test"));
+            assertTrue(node.getProperty("test").isMultiple());
+            assertEquals(Arrays.asList("val2","val5"), getPropertyStringValues(node, "test"));
             return null;
         });
 
@@ -483,9 +526,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
 
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
-            Assert.assertFalse(node.hasProperty("test"));
+        inJcr(session -> {
+            assertFalse(session.getNode("/testList/testSubList1").hasProperty("test"));
             return null;
         });
     }

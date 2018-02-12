@@ -64,6 +64,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Mutation object for JCR node property modifications.
+ */
 @GraphQLName("JCRPropertyMutation")
 @GraphQLDescription("Mutations on a JCR property")
 public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
@@ -71,11 +74,20 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     private JCRNodeWrapper node;
     private String name;
 
+    /**
+     * Initializes an instance of this class.
+     * @param node the corresponding JCR node
+     * @param name the name of the node property
+     */
     public GqlJcrPropertyMutation(JCRNodeWrapper node, String name) {
         this.node = node;
         this.name = name;
     }
 
+    /**
+     * Initializes an instance of this class.
+     * @param property the corresponding JCR node property
+     */
     public GqlJcrPropertyMutation(JCRPropertyWrapper property) {
         try {
             this.node = property.getParent();
@@ -112,8 +124,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            JCRSessionWrapper session = localizedNode.getSession();
-            localizedNode.setProperty(name, getValue(type, value, session, environment));
+            localizedNode.setProperty(name, getValue(type, value, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException e) {
             throw new DataModificationException(e);
         }
@@ -129,8 +140,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            JCRSessionWrapper session = localizedNode.getSession();
-            localizedNode.setProperty(name, getValues(type, values, session, environment));
+            localizedNode.setProperty(name, getValues(type, values, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException e) {
             throw new DataModificationException(e);
         }
@@ -145,8 +155,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            JCRSessionWrapper session = localizedNode.getSession();
-            localizedNode.getProperty(name).addValue(getValue(type, value, session, environment));
+            localizedNode.getProperty(name).addValue(getValue(type, value, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException e) {
             throw new DataModificationException(e);
         }
@@ -161,8 +170,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            JCRSessionWrapper session = localizedNode.getSession();
-            localizedNode.getProperty(name).removeValue(getValue(type, value, session, environment));
+            localizedNode.getProperty(name).removeValue(getValue(type, value, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException e) {
             throw new DataModificationException(e);
         }
@@ -177,8 +185,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            JCRSessionWrapper session = localizedNode.getSession();
-            localizedNode.getProperty(name).addValues(getValues(type, values, session, environment));
+            localizedNode.getProperty(name).addValues(getValues(type, values, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException e) {
             throw new DataModificationException(e);
         }
@@ -193,8 +200,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            JCRSessionWrapper session = localizedNode.getSession();
-            localizedNode.getProperty(name).removeValues(getValues(type, values, session, environment));
+            localizedNode.getProperty(name).removeValues(getValues(type, values, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException e) {
             throw new DataModificationException(e);
         }
@@ -222,7 +228,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
                 : PropertyType.STRING;
     }
 
-    private Value getValue(@GraphQLName("type") GqlJcrPropertyType type, @GraphQLName("value") String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException {
+    private Value getValue(GqlJcrPropertyType type, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException {
         Value result = null;
         ValueFactory valueFactory = session.getValueFactory();
         JCRNodeWrapper referencedNode;
@@ -251,7 +257,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         return result;
     }
 
-    private Value[] getValues(@GraphQLName("type") GqlJcrPropertyType type, @GraphQLName("values") List<String> values, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException {
+    private Value[] getValues(GqlJcrPropertyType type, List<String> values, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException {
         List<Value> jcrValues = new ArrayList<>();
         JCRNodeWrapper referencedNode;
         ValueFactory valueFactory = session.getValueFactory();
