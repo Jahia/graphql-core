@@ -46,6 +46,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.DataModificationException;
 import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
@@ -128,7 +129,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
      *
      * @param pathOrId the path or UUID of the node to apply modifications on
      * @return the mutation object for the specified node
-     * @throws RepositoryException in case of node retrieval operation
+     * @throws BaseGqlClientException in case of node retrieval error
      */
     @GraphQLField
     @GraphQLDescription("Mutates an existing node, based on path or id")
@@ -136,7 +137,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
         try {
             return new GqlJcrNodeMutation(getNodeFromPathOrId(getSession(), pathOrId));
         } catch (RepositoryException e) {
-            throw new DataModificationException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -145,7 +146,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
      *
      * @param pathsOrIds the list of path or UUIDs of the nodes to be modified
      * @return the list with mutation objects for the specified nodes
-     * @throws RepositoryException in case of node retrieval
+     * @throws BaseGqlClientException in case of node retrieval error
      */
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on path or id")
@@ -155,7 +156,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
             try {
                 result.add(new GqlJcrNodeMutation(getNodeFromPathOrId(getSession(), pathOrId)));
             } catch (RepositoryException e) {
-                throw new DataModificationException(e);
+                throw new DataFetchingException(e);
             }
         }
         return result;
@@ -167,7 +168,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
      * @param query the query to retrieve the nodes to be modified
      * @param queryLanguage the query language
      * @return the list with mutation objects
-     * @throws RepositoryException in case of node retrieval
+     * @throws BaseGqlClientException in case of node retrieval errors
      */
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on query execution")
@@ -181,7 +182,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
             nodes = q.execute().getNodes();
         } catch (RepositoryException e) {
-            throw new DataModificationException(e);
+            throw new DataFetchingException(e);
         }
         while (nodes.hasNext()) {
             JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();

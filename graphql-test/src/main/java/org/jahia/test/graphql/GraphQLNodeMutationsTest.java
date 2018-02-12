@@ -354,7 +354,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
     @Test
     public void mutateNodesByQuery() throws Exception {
-        JSONObject result = executeQuery("mutation {\n" +
+        executeQuery("mutation {\n" +
                 "  jcr {\n" +
                 "    mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList')\",queryLanguage:SQL2) {\n" +
                 "      mutateProperty(name: \"jcr:title\") {\n" +
@@ -363,9 +363,22 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "    }\n" +
                 "  }\n" +
                 "}\n");
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            Assert.assertEquals("test", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
-            Assert.assertEquals("test", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
+        inJcr(session -> {
+            assertEquals("test", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
+            assertEquals("test", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
+            return null;
+        });
+
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList')\",queryLanguage:SQL2) {\n" +
+                "      delete\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        inJcr(session -> {
+            assertFalse(session.nodeExists("/testList/testSubList1"));
+            assertFalse(session.nodeExists("/testList/testSubList2"));
             return null;
         });
     }
