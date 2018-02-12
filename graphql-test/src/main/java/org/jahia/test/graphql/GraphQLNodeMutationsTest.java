@@ -566,7 +566,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
     @Test
     public void setPropertiesBatch() throws Exception {
-        JSONObject result = executeQuery("mutation {\n" +
+        executeQuery("mutation {\n" +
                 "  jcr {\n" +
                 "    mutateNode(pathOrId:\"/testList/testSubList1\")  {\n" +
                 "      addMixins(mixins:[\"mix:title\",\"jmix:unstructured\"])\n" +
