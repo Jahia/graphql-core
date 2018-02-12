@@ -53,12 +53,12 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import java.util.List;
 
 /**
- * Get FileItem from multipart request
+ * Get FileItem from multipart request.
  */
 public class UploadHelper {
 
     /**
-     * Check if the specified value matches a part in the request
+     * Check if the specified value matches a part in the request.
      * @param name Name of the part
      * @param environment The DataFetchingEnvironment
      * @return true if a FileItem is found
@@ -76,10 +76,10 @@ public class UploadHelper {
     }
 
     /**
-     * Return the FileItem for the specified part name
+     * Return the FileItem for the specified part name.
      * @param name Name of the part
      * @param environment The DataFetchingEnvironment
-     * @return The FileItem matching the specifid name
+     * @return The FileItem matching the specified name
      */
     public static FileItem getFileUpload(String name, DataFetchingEnvironment environment) {
         GraphQLContext context = environment.getContext();
@@ -88,7 +88,7 @@ public class UploadHelper {
         }
         List<FileItem> f = context.getFiles().get().get(name);
         if (f == null || f.size() != 1) {
-            throw new GqlJcrWrongInputException("Must send file as multipart request for "+name);
+            throw new GqlJcrWrongInputException("Must send file as multipart request for " + name);
         }
         return f.get(0);
     }

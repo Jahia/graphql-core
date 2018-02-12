@@ -59,6 +59,8 @@ import org.junit.*;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
+
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -89,6 +91,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             node.addNode("testSubList2", "jnt:contentList");
             node.addNode("testSubList3", "jnt:contentList");
             node.addNode("testNode", "jnt:bigText");
+            
+            session.getRootNode().addNode("testFolder", "jnt:folder");
 
             session.save();
             return null;
@@ -98,6 +102,13 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     @After
     public void tearDown() throws Exception {
         GraphQLTestSupport.removeTestNodes();
+        inJcr(session -> {
+            if (session.nodeExists("/testFolder")) {
+                session.getNode("/testFolder").remove();
+                session.save();
+            }
+            return null;
+        });
         JCRSessionFactory.getInstance().closeAllSessions();
     }
 
@@ -623,9 +634,9 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         IOUtils.write("test text", outputStream);
         outputStream.close();
         files.put("test-binary", Collections.singletonList(diskFileItem));
-        JSONObject  result = executeQueryWithFiles("mutation {\n" +
+        JSONObject result = executeQueryWithFiles("mutation {\n" +
                 "  jcr {\n" +
-                "    addNode(parentPathOrId:\"/\", name:\"file.txt\", primaryNodeType:\"jnt:file\") {\n" +
+                "    addNode(parentPathOrId:\"/testFolder\", name:\"file.txt\", primaryNodeType:\"jnt:file\") {\n" +
                 "      addChild(name:\"jcr:content\", primaryNodeType:\"nt:resource\") {\n" +
                 "        setData:mutateProperty(name:\"jcr:data\") {\n" +
                 "          setValue(value:\"test-binary\")\n" +
@@ -646,8 +657,37 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         String value = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getJSONObject("addChild").getJSONObject("node")
                 .getJSONObject("property").getString("value");
 
-        Assert.assertEquals("test text", value);
+        assertEquals("test text", value);
 
+        // test binary property by providing its value as string
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId:\"/testFolder\", name:\"file2.txt\", primaryNodeType:\"jnt:file\") {\n" +
+                "      addChild(name:\"jcr:content\", primaryNodeType:\"nt:resource\") {\n" +
+                "        setData:mutateProperty(name:\"jcr:data\") {\n" +
+                "          setValue(value:\"my text binary value\")\n" +
+                "        }\n" +
+                "        setMimeType:mutateProperty(name:\"jcr:mimeType\") {\n" +
+                "          setValue(value:\"text/plain\")\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        inJcr(session -> {
+            assertTrue(session.nodeExists("/testFolder/file2.txt"));
+            JCRNodeWrapper fileNode = session.getNode("/testFolder/file2.txt");
+            assertTrue(fileNode.isNodeType(Constants.JAHIANT_FILE));
+            assertEquals("text/plain", fileNode.getFileContent().getContentType());
+
+            try {
+                assertEquals("my text binary value", IOUtils.toString(fileNode.getFileContent().downloadFile()));
+            } catch (IOException e) {
+                fail(e.getMessage());
+            }
+            return null;
+        });
     }
 
 }

@@ -232,11 +232,11 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
                     result = valueFactory.createValue(referencedNode, true);
                     break;
                 case PropertyType.BINARY:
-                    if(UploadHelper.isFileUpload(value, environment)){
+                    if (UploadHelper.isFileUpload(value, environment)) {
                         FileItem file = UploadHelper.getFileUpload(value, environment);
                         Binary binary = valueFactory.createBinary(file.getInputStream());
                         result = valueFactory.createValue(binary);
-                    }else{
+                    } else {
                         result = session.getValueFactory().createValue(value, jcrType);
                     }
                     break;
@@ -268,11 +268,11 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
                         jcrValues.add(valueFactory.createValue(referencedNode, true));
                         break;
                     case PropertyType.BINARY:
-                        if(UploadHelper.isFileUpload(value, environment)){
+                        if (UploadHelper.isFileUpload(value, environment)) {
                             FileItem file = UploadHelper.getFileUpload(value, environment);
                             Binary binary = valueFactory.createBinary(file.getInputStream());
                             jcrValues.add(valueFactory.createValue(binary));
-                        }else{
+                        } else {
                             jcrValues.add(session.getValueFactory().createValue(value, jcrType));
                         }
                         break;
