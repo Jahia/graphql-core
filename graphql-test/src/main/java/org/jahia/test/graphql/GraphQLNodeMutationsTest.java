@@ -57,15 +57,9 @@ import org.junit.*;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -92,10 +86,10 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     public void setup() throws Exception {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
             JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
-            JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
-            JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
-            JCRNodeWrapper subNode3 = node.addNode("testSubList3", "jnt:contentList");
-            JCRNodeWrapper subnode4 = node.addNode("testNode", "jnt:bigText");
+            node.addNode("testSubList1", "jnt:contentList");
+            node.addNode("testSubList2", "jnt:contentList");
+            node.addNode("testSubList3", "jnt:contentList");
+            node.addNode("testNode", "jnt:bigText");
 
             session.save();
             return null;
@@ -606,13 +600,19 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
         String uuid = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getJSONObject("node")
                 .getJSONObject("property").getString("value");
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+        
+        inJcr(session -> {
             JCRNodeWrapper node = session.getNodeByIdentifier(uuid);
-            Assert.assertEquals("/testList/testNode", node.getPath());
-            Assert.assertTrue(node.isNodeType("jnt:bigText"));
+            assertEquals("/testList/testNode", node.getPath());
+            assertTrue(node.isNodeType("jnt:bigText"));
+
+            node = session.getNode("/testList/testSubList3/referenceNode");
+            assertTrue(node.hasProperty("j:node"));
+            assertEquals(PropertyType.WEAKREFERENCE, node.getProperty("j:node").getType());
+            assertEquals(session.getNode("/testList/testNode").getIdentifier(), node.getProperty("j:node").getString());
+            assertEquals("/testList/testNode", node.getProperty("j:node").getNode().getPath());
             return null;
         });
-
     }
 
 }
