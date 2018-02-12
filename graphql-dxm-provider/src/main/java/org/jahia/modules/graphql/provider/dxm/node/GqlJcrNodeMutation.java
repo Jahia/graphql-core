@@ -67,7 +67,7 @@ import java.util.stream.Collectors;
  */
 @GraphQLName("JCRNodeMutation")
 @GraphQLDescription("Mutations on a JCR node")
-public class GqlJcrNodeMutation {
+public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
     public JCRNodeWrapper jcrNode;
 
@@ -101,7 +101,7 @@ public class GqlJcrNodeMutation {
                                         @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType) throws BaseGqlClientException {
         try {
             GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null, null);
-            return new GqlJcrNodeMutation(GqlJcrMutation.internalAddNode(jcrNode, node));
+            return new GqlJcrNodeMutation(internalAddNode(jcrNode, node));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -113,7 +113,7 @@ public class GqlJcrNodeMutation {
         try {
             List<GqlJcrNodeMutation> result = new ArrayList<>();
             for (GqlJcrNodeInput inputNode : nodes) {
-                result.add(new GqlJcrNodeMutation(GqlJcrMutation.internalAddNode(this.jcrNode, inputNode)));
+                result.add(new GqlJcrNodeMutation(internalAddNode(this.jcrNode, inputNode)));
             }
             return result;
         } catch (RepositoryException e) {
@@ -169,7 +169,7 @@ public class GqlJcrNodeMutation {
     @GraphQLDescription("Mutates or creates a set of properties on the current node")
     public Collection<GqlJcrPropertyMutation> setPropertiesBatch(@GraphQLName("properties") @GraphQLDescription("The list of JCR properties to set") Collection<GqlJcrPropertyInput> properties) throws BaseGqlClientException {
         try {
-            return GqlJcrMutation.internalSetProperties(jcrNode, properties).stream().map(GqlJcrPropertyMutation::new).collect(Collectors.toList());
+            return internalSetProperties(jcrNode, properties).stream().map(GqlJcrPropertyMutation::new).collect(Collectors.toList());
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -231,7 +231,7 @@ public class GqlJcrNodeMutation {
     @GraphQLDescription("Move the current node")
     public String move(@GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The target node path or id") String parentPathOrId) throws BaseGqlClientException {
         try {
-            JCRNodeWrapper parentDest = GqlJcrMutation.getNodeFromPathOrId(jcrNode.getSession(), parentPathOrId);
+            JCRNodeWrapper parentDest = getNodeFromPathOrId(jcrNode.getSession(), parentPathOrId);
             jcrNode.getSession().move(jcrNode.getPath(), parentDest.getPath() + "/" + jcrNode.getName());
             return jcrNode.getPath();
         } catch (RepositoryException e) {

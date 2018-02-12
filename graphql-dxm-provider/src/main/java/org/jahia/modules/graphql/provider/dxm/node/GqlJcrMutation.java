@@ -50,19 +50,15 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
 
-import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
-import javax.jcr.Value;
 import java.util.*;
-
-import static org.jahia.modules.graphql.provider.dxm.node.NodeHelper.getNodeInLanguage;
 
 /**
  * GraphQL root object for JCR related mutations.
  */
 @GraphQLName("JCRMutation")
 @GraphQLDescription("JCR Mutations")
-public class GqlJcrMutation {
+public class GqlJcrMutation extends GqlJcrMutationSupport {
 
     private String workspace;
 
@@ -250,72 +246,5 @@ public class GqlJcrMutation {
 
     private JCRSessionWrapper getSession() throws RepositoryException {
         return JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
-    }
-
-
-    /**
-     * Adds a child node for the specified one.
-     *
-     * @param parent the node to add child for
-     * @param node the child node to be added
-     * @return the child JCR node that was added
-     * @throws RepositoryException in case of a JCR error during add operation
-     */
-    public static JCRNodeWrapper internalAddNode(JCRNodeWrapper parent, GqlJcrNodeInput node) throws RepositoryException {
-        JCRNodeWrapper jcrNode = parent.addNode(node.name, node.primaryNodeType);
-        if (node.mixins != null) {
-            for (String mixin : node.mixins) {
-                jcrNode.addMixin(mixin);
-            }
-        }
-        if (node.properties != null) {
-            internalSetProperties(jcrNode, node.properties);
-        }
-        if (node.children != null) {
-            for (GqlJcrNodeInput child : node.children) {
-                internalAddNode(jcrNode, child);
-            }
-        }
-        return jcrNode;
-    }
-
-    /**
-     * Set the provided properties to the specified node.
-     *
-     * @param node the JCR node to set properties on
-     * @param properties the collection of properties to be set
-     * @return the result of the operation, containing list of modified JCR properties
-     * @throws RepositoryException in case of a JCR error during node update
-     */
-    public static List<JCRPropertyWrapper> internalSetProperties(JCRNodeWrapper node, Collection<GqlJcrPropertyInput> properties) throws RepositoryException {
-        List<JCRPropertyWrapper> result = new ArrayList<>();
-        for (GqlJcrPropertyInput property : properties) {
-            JCRNodeWrapper localizedNode = getNodeInLanguage(node, property.language);
-            JCRSessionWrapper session = localizedNode.getSession();
-            int type = (property.type != null ? property.type.getValue() : PropertyType.STRING);
-            if (property.value != null) {
-                Value v = session.getValueFactory().createValue(property.value, type);
-                result.add(localizedNode.setProperty(property.name, v));
-            } else if (property.values != null) {
-                List<Value> values = new ArrayList<>();
-                for (String value : property.values) {
-                    values.add(session.getValueFactory().createValue(value, type));
-                }
-                result.add(localizedNode.setProperty(property.name, values.toArray(new Value[values.size()])));
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Retrieves the specified JCR node.
-     *
-     * @param session the current JCR session
-     * @param pathOrId the string with either node UUID or its path
-     * @return the requested JCR node
-     * @throws RepositoryException in case of node retrieval operation
-     */
-    public static JCRNodeWrapper getNodeFromPathOrId(JCRSessionWrapper session, String pathOrId) throws RepositoryException {
-        return ('/' == pathOrId.charAt(0) ? session.getNode(pathOrId) : session.getNodeByIdentifier(pathOrId));
     }
 }

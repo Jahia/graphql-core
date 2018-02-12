@@ -62,12 +62,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutation.getNodeFromPathOrId;
-import static org.jahia.modules.graphql.provider.dxm.node.NodeHelper.getNodeInLanguage;
-
 @GraphQLName("JCRPropertyMutation")
 @GraphQLDescription("Mutations on a JCR property")
-public class GqlJcrPropertyMutation {
+public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
 
     private JCRNodeWrapper node;
     private String name;
@@ -112,7 +109,7 @@ public class GqlJcrPropertyMutation {
             @GraphQLName("value") String value,
             DataFetchingEnvironment environment) {
         try {
-            JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
+            JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.setProperty(name, getValue(type, value, session, environment));
         } catch (RepositoryException e) {
@@ -128,7 +125,7 @@ public class GqlJcrPropertyMutation {
             @GraphQLName("type") GqlJcrPropertyType type,
             @GraphQLName("values") List<String> values, DataFetchingEnvironment environment) {
         try {
-            JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
+            JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.setProperty(name, getValues(type, values, session, environment));
         } catch (RepositoryException e) {
@@ -143,7 +140,7 @@ public class GqlJcrPropertyMutation {
             @GraphQLName("type") GqlJcrPropertyType type,
             @GraphQLName("value") String value, DataFetchingEnvironment environment) {
         try {
-            JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
+            JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.getProperty(name).addValue(getValue(type, value, session, environment));
         } catch (RepositoryException e) {
@@ -158,7 +155,7 @@ public class GqlJcrPropertyMutation {
             @GraphQLName("type") GqlJcrPropertyType type,
             @GraphQLName("value") String value, DataFetchingEnvironment environment) {
         try {
-            JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
+            JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.getProperty(name).removeValue(getValue(type, value, session, environment));
         } catch (RepositoryException e) {
@@ -173,7 +170,7 @@ public class GqlJcrPropertyMutation {
             @GraphQLName("type") GqlJcrPropertyType type,
             @GraphQLName("values") List<String> values, DataFetchingEnvironment environment) {
         try {
-            JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
+            JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.getProperty(name).addValues(getValues(type, values, session, environment));
         } catch (RepositoryException e) {
@@ -188,7 +185,7 @@ public class GqlJcrPropertyMutation {
             @GraphQLName("type") GqlJcrPropertyType type,
             @GraphQLName("values") List<String> values, DataFetchingEnvironment environment) {
         try {
-            JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
+            JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             JCRSessionWrapper session = localizedNode.getSession();
             localizedNode.getProperty(name).removeValues(getValues(type, values, session, environment));
         } catch (RepositoryException e) {
@@ -201,7 +198,7 @@ public class GqlJcrPropertyMutation {
     @GraphQLDescription("Delete this property")
     public boolean delete(@GraphQLName("language") String language) {
         try {
-            JCRNodeWrapper localizedNode = getNodeInLanguage(node, language);
+            JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).remove();
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
