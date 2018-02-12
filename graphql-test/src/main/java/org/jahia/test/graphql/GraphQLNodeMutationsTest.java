@@ -583,34 +583,33 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}");
 
-        JSONArray array = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONArray("setPropertiesBatch");
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+        inJcr(session -> {
             JCRNodeWrapper node = session.getNode("/testList/testSubList1");
-            Assert.assertEquals(false, node.getProperty("testPropString").isMultiple());
-            Assert.assertEquals(PropertyType.STRING, node.getProperty("testPropString").getValue().getType());
-            Assert.assertEquals("string", node.getProperty("testPropString").getValue().getString());
+            assertEquals(false, node.getProperty("testPropString").isMultiple());
+            assertEquals(PropertyType.STRING, node.getProperty("testPropString").getValue().getType());
+            assertEquals("string", node.getProperty("testPropString").getValue().getString());
 
-            Assert.assertEquals(false, node.getProperty("testPropLong").isMultiple());
-            Assert.assertEquals(PropertyType.LONG, node.getProperty("testPropLong").getValue().getType());
-            Assert.assertEquals(123, node.getProperty("testPropLong").getValue().getLong());
+            assertEquals(false, node.getProperty("testPropLong").isMultiple());
+            assertEquals(PropertyType.LONG, node.getProperty("testPropLong").getValue().getType());
+            assertEquals(123, node.getProperty("testPropLong").getValue().getLong());
 
-            Assert.assertEquals(true, node.getProperty("testPropMultiple").isMultiple());
-            Assert.assertEquals(Arrays.asList("val1", "val2"), getPropertyStringValues(node, "testPropMultiple"));
+            assertEquals(true, node.getProperty("testPropMultiple").isMultiple());
+            assertEquals(Arrays.asList("val1", "val2"), getPropertyStringValues(node, "testPropMultiple"));
 
-            Assert.assertEquals(false, node.getProperty("jcr:title").isMultiple());
-            Assert.assertEquals(PropertyType.STRING, node.getProperty("jcr:title").getValue().getType());
-            Assert.assertEquals("en", node.getProperty("jcr:title").getValue().getString());
+            assertEquals(false, node.getProperty("jcr:title").isMultiple());
+            assertEquals(PropertyType.STRING, node.getProperty("jcr:title").getValue().getType());
+            assertEquals("en", node.getProperty("jcr:title").getValue().getString());
 
             return null;
         });
 
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRENCH, session -> {
+        inJcr(session -> {
             JCRNodeWrapper node = session.getNode("/testList/testSubList1");
-            Assert.assertEquals(false, node.getProperty("jcr:title").isMultiple());
-            Assert.assertEquals(PropertyType.STRING, node.getProperty("jcr:title").getValue().getType());
-            Assert.assertEquals("fr", node.getProperty("jcr:title").getValue().getString());
+            assertEquals(false, node.getProperty("jcr:title").isMultiple());
+            assertEquals(PropertyType.STRING, node.getProperty("jcr:title").getValue().getType());
+            assertEquals("fr", node.getProperty("jcr:title").getValue().getString());
             return null;
-        });
+        }, Locale.FRENCH);
     }
 
 

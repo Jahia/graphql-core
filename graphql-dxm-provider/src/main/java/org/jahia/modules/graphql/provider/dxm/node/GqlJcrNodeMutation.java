@@ -179,6 +179,13 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         return names.stream().map((String name) -> new GqlJcrPropertyMutation(jcrNode, name)).collect(Collectors.toList());
     }
 
+    /**
+     * Performs batch-set of the specified properties on the JCR node.
+     * 
+     * @param properties the collection of properties to be set
+     * @return the collection of property mutation objects for the modified properties
+     * @throws BaseGqlClientException in case of modification errors
+     */
     @GraphQLField
     @GraphQLName("setPropertiesBatch")
     @GraphQLDescription("Mutates or creates a set of properties on the current node")
