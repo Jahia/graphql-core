@@ -57,17 +57,22 @@ import java.util.Collection;
 @GraphQLDescription("GraphQL representation of a JCR node to be created")
 public class GqlJcrNodeWithParentInput extends GqlJcrNodeInput {
 
-    public GqlJcrNodeWithParentInput(@GraphQLName("parentPathOrId") @GraphQLNonNull String parentPathOrId,
-                                     @GraphQLName("name") @GraphQLNonNull String name,
-                                     @GraphQLName("primaryNodeType") @GraphQLNonNull String primaryNodeType,
-                                     @GraphQLName("mixins") Collection<String> mixins,
-                                     @GraphQLName("properties") Collection<GqlJcrPropertyInput> properties,
-                                     @GraphQLName("children") Collection<GqlJcrNodeInput> children) {
+    private String parentPathOrId;
+
+    public GqlJcrNodeWithParentInput(@GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The parent path or id where the node will be created") String parentPathOrId,
+                                     @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
+                                     @GraphQLName("primaryNodeType") @GraphQLDescription("The primary node type of the node to create") @GraphQLNonNull String primaryNodeType,
+                                     @GraphQLName("mixins") @GraphQLDescription("The collection of mixins to add to the node") Collection<String> mixins,
+                                     @GraphQLName("properties") @GraphQLDescription("The collection of properties to set to the node") Collection<GqlJcrPropertyInput> properties,
+                                     @GraphQLName("children") @GraphQLDescription("The collection of sub nodes to create") Collection<GqlJcrNodeInput> children) {
         super(name, primaryNodeType, mixins, properties, children);
         this.parentPathOrId = parentPathOrId;
     }
 
     @GraphQLField
+    @GraphQLNonNull
     @GraphQLDescription("The parent path or id where the node will be created")
-    public String parentPathOrId;
+    public String getParentPathOrId() {
+        return parentPathOrId;
+    }
 }

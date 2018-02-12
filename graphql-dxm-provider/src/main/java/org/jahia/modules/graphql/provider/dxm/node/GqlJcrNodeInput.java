@@ -54,11 +54,17 @@ import java.util.Collection;
 @GraphQLDescription("GraphQL representation of a JCR node to be created")
 public class GqlJcrNodeInput {
 
-    public GqlJcrNodeInput(@GraphQLName("name") @GraphQLNonNull String name,
-                           @GraphQLName("primaryNodeType") @GraphQLNonNull String primaryNodeType,
-                           @GraphQLName("mixins") Collection<String> mixins,
-                           @GraphQLName("properties") Collection<GqlJcrPropertyInput> properties,
-                           @GraphQLName("children") Collection<GqlJcrNodeInput> children) {
+    private String name;
+    private String primaryNodeType;
+    private Collection<String> mixins;
+    private Collection<GqlJcrPropertyInput> properties;
+    private Collection<GqlJcrNodeInput> children;
+
+    public GqlJcrNodeInput(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
+                           @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType,
+                           @GraphQLName("mixins") @GraphQLDescription("The collection of mixins to add to the node") Collection<String> mixins,
+                           @GraphQLName("properties") @GraphQLDescription("The collection of properties to set to the node") Collection<GqlJcrPropertyInput> properties,
+                           @GraphQLName("children") @GraphQLDescription("The collection of sub nodes to create") Collection<GqlJcrNodeInput> children) {
         this.name = name;
         this.primaryNodeType = primaryNodeType;
         this.mixins = mixins;
@@ -67,22 +73,34 @@ public class GqlJcrNodeInput {
     }
 
     @GraphQLField
+    @GraphQLNonNull
     @GraphQLDescription("The name of the node to create")
-    public String name;
+    public String getName() {
+        return name;
+    }
 
     @GraphQLField
+    @GraphQLNonNull
     @GraphQLDescription("The primary node type of the node to create")
-    public String primaryNodeType;
+    public String getPrimaryNodeType() {
+        return primaryNodeType;
+    }
 
     @GraphQLField
-    @GraphQLDescription("The collection of mixins to add on the node")
-    public Collection<String> mixins;
+    @GraphQLDescription("The collection of mixins to add to the node")
+    public Collection<String> getMixins() {
+        return mixins;
+    }
 
     @GraphQLField
-    @GraphQLDescription("The collection of properties to set on the node")
-    public Collection<GqlJcrPropertyInput> properties;
+    @GraphQLDescription("The collection of properties to set to the node")
+    public Collection<GqlJcrPropertyInput> getProperties() {
+        return properties;
+    }
 
     @GraphQLField
     @GraphQLDescription("The collection of sub nodes to create")
-    public Collection<GqlJcrNodeInput> children;
+    public Collection<GqlJcrNodeInput> getChildren() {
+        return children;
+    }
 }

@@ -55,11 +55,17 @@ import java.util.List;
 @GraphQLDescription("GraphQL representation of a JCR property to set")
 public class GqlJcrPropertyInput {
 
-    public GqlJcrPropertyInput(@GraphQLName("name") @GraphQLNonNull String name,
-                               @GraphQLName("language") String language,
-                               @GraphQLName("type") GqlJcrPropertyType type,
-                               @GraphQLName("value") String value,
-                               @GraphQLName("values") List<String> values) {
+    private String name;
+    private String language;
+    private GqlJcrPropertyType type;
+    private String value;
+    private List<String> values;
+
+    public GqlJcrPropertyInput(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property to set") String name,
+                               @GraphQLName("type") @GraphQLDescription("The type of the property") GqlJcrPropertyType type,
+                               @GraphQLName("language") @GraphQLDescription("The language in which the property will be set (for internationalized properties") String language,
+                               @GraphQLName("value") @GraphQLDescription("The value to set (for single valued properties)") String value,
+                               @GraphQLName("values") @GraphQLDescription("The values to set (for multivalued properties)") List<String> values) {
         this.name = name;
         this.language = language;
         this.type = type;
@@ -68,22 +74,33 @@ public class GqlJcrPropertyInput {
     }
 
     @GraphQLField
+    @GraphQLNonNull
     @GraphQLDescription("The name of the property to set")
-    public String name;
-
-    @GraphQLField
-    @GraphQLDescription("The language in which the property will be set (for internationalized properties")
-    public String language;
+    public String getName() {
+        return name;
+    }
 
     @GraphQLField
     @GraphQLDescription("The type of the property")
-    public GqlJcrPropertyType type;
+    public GqlJcrPropertyType getType() {
+        return type;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The language in which the property will be set (for internationalized properties")
+    public String getLanguage() {
+        return language;
+    }
 
     @GraphQLField
     @GraphQLDescription("The value to set (for single valued properties)")
-    public String value;
+    public String getValue() {
+        return value;
+    }
 
     @GraphQLField
     @GraphQLDescription("The values to set (for multivalued properties)")
-    public List<String> values;
+    public List<String> getValues() {
+        return values;
+    }
 }

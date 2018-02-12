@@ -26,17 +26,17 @@ public class GqlJcrMutationSupport {
      * @throws RepositoryException in case of a JCR error during add operation
      */
     protected static JCRNodeWrapper internalAddNode(JCRNodeWrapper parent, GqlJcrNodeInput node) throws RepositoryException {
-        JCRNodeWrapper jcrNode = parent.addNode(node.name, node.primaryNodeType);
-        if (node.mixins != null) {
-            for (String mixin : node.mixins) {
+        JCRNodeWrapper jcrNode = parent.addNode(node.getName(), node.getPrimaryNodeType());
+        if (node.getMixins() != null) {
+            for (String mixin : node.getMixins()) {
                 jcrNode.addMixin(mixin);
             }
         }
-        if (node.properties != null) {
-            internalSetProperties(jcrNode, node.properties);
+        if (node.getProperties() != null) {
+            internalSetProperties(jcrNode, node.getProperties());
         }
-        if (node.children != null) {
-            for (GqlJcrNodeInput child : node.children) {
+        if (node.getChildren() != null) {
+            for (GqlJcrNodeInput child : node.getChildren()) {
                 internalAddNode(jcrNode, child);
             }
         }
@@ -54,18 +54,18 @@ public class GqlJcrMutationSupport {
     protected static List<JCRPropertyWrapper> internalSetProperties(JCRNodeWrapper node, Collection<GqlJcrPropertyInput> properties) throws RepositoryException {
         List<JCRPropertyWrapper> result = new ArrayList<>();
         for (GqlJcrPropertyInput property : properties) {
-            JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, property.language);
+            JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, property.getLanguage());
             JCRSessionWrapper session = localizedNode.getSession();
-            int type = (property.type != null ? property.type.getValue() : PropertyType.STRING);
-            if (property.value != null) {
-                Value v = session.getValueFactory().createValue(property.value, type);
-                result.add(localizedNode.setProperty(property.name, v));
-            } else if (property.values != null) {
+            int type = (property.getType() != null ? property.getType().getValue() : PropertyType.STRING);
+            if (property.getValue() != null) {
+                Value v = session.getValueFactory().createValue(property.getValue(), type);
+                result.add(localizedNode.setProperty(property.getName(), v));
+            } else if (property.getValues() != null) {
                 List<Value> values = new ArrayList<>();
-                for (String value : property.values) {
+                for (String value : property.getValues()) {
                     values.add(session.getValueFactory().createValue(value, type));
                 }
-                result.add(localizedNode.setProperty(property.name, values.toArray(new Value[values.size()])));
+                result.add(localizedNode.setProperty(property.getName(), values.toArray(new Value[values.size()])));
             }
         }
         return result;

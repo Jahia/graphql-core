@@ -115,7 +115,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
         List<GqlJcrNodeMutation> result = new ArrayList<>();
         for (GqlJcrNodeWithParentInput node : nodes) {
             try {
-                result.add(new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), node.parentPathOrId), node)));
+                result.add(new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), node.getParentPathOrId()), node)));
             } catch (RepositoryException e) {
                 throw new DataModificationException(e);
             }
