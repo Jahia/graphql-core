@@ -51,7 +51,7 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 
-import java.util.List;
+import java.util.Collection;
 
 @GraphQLName("JCRNodeWithParent")
 @GraphQLDescription("GraphQL representation of a JCR node to be created")
@@ -60,15 +60,14 @@ public class GqlJcrNodeWithParentInput extends GqlJcrNodeInput {
     public GqlJcrNodeWithParentInput(@GraphQLName("parentPathOrId") @GraphQLNonNull String parentPathOrId,
                                      @GraphQLName("name") @GraphQLNonNull String name,
                                      @GraphQLName("primaryNodeType") @GraphQLNonNull String primaryNodeType,
-                                     @GraphQLName("mixins") List<String> mixins,
-                                     @GraphQLName("properties") List<GqlJcrPropertyInput> properties,
-                                     @GraphQLName("children") List<GqlJcrNodeInput> children) {
-        super(name,primaryNodeType,mixins,properties,children);
+                                     @GraphQLName("mixins") Collection<String> mixins,
+                                     @GraphQLName("properties") Collection<GqlJcrPropertyInput> properties,
+                                     @GraphQLName("children") Collection<GqlJcrNodeInput> children) {
+        super(name, primaryNodeType, mixins, properties, children);
         this.parentPathOrId = parentPathOrId;
     }
 
     @GraphQLField
     @GraphQLDescription("The parent path or id where the node will be created")
     public String parentPathOrId;
-
 }

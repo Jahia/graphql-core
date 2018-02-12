@@ -101,8 +101,8 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     public GqlJcrNodeMutation addChild(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
                                        @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType)
     throws BaseGqlClientException {
+        GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null, null);
         try {
-            GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null, null);
             return new GqlJcrNodeMutation(internalAddNode(jcrNode, node));
         } catch (RepositoryException e) {
             throw new DataModificationException(e);
@@ -110,17 +110,17 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     }
 
     @GraphQLField
-    @GraphQLDescription("Batch creates a list of new JCR nodes under the current node")
-    public List<GqlJcrNodeMutation> addChildrenBatch(@GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The list of nodes to create") List<GqlJcrNodeInput> nodes) throws BaseGqlClientException {
-        try {
-            List<GqlJcrNodeMutation> result = new ArrayList<>();
-            for (GqlJcrNodeInput inputNode : nodes) {
-                result.add(new GqlJcrNodeMutation(internalAddNode(this.jcrNode, inputNode)));
+    @GraphQLDescription("Batch creates a number of new JCR nodes under the current node")
+    public List<GqlJcrNodeMutation> addChildrenBatch(@GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The collection of nodes to create") Collection<GqlJcrNodeInput> nodes) throws BaseGqlClientException {
+        List<GqlJcrNodeMutation> result = new ArrayList<>();
+        for (GqlJcrNodeInput node : nodes) {
+            try {
+                result.add(new GqlJcrNodeMutation(internalAddNode(this.jcrNode, node)));
+            } catch (RepositoryException e) {
+                throw new DataModificationException(e);
             }
-            return result;
-        } catch (RepositoryException e) {
-            throw new DataModificationException(e);
         }
+        return result;
     }
 
     @GraphQLField
@@ -139,25 +139,23 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
                                                    @GraphQLName("typesFilter") @GraphQLDescription("Filter of child nodes by their types; null to avoid such filtering") GqlJcrNode.NodeTypesInput typesFilter,
                                                    @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter)
     throws BaseGqlClientException {
+        List<GqlJcrNodeMutation> result = new ArrayList<>();
+        Predicate<JCRNodeWrapper> predicate = NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter);
         try {
-            List<GqlJcrNodeMutation> result = new ArrayList<>();
-
-            Predicate<JCRNodeWrapper> predicate = NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter);
             for (JCRNodeWrapper node : jcrNode.getNodes()) {
                 if (predicate.evaluate(node)) {
                     result.add(new GqlJcrNodeMutation(node));
                 }
             }
-
-            return result;
         } catch (RepositoryException e) {
             throw new DataModificationException(e);
         }
+        return result;
     }
 
     /**
      * Creates a mutation object for modifications of the specified node property.
-     * 
+     *
      * @param propertyName the name of the property to be modified
      * @return a mutation object for modifications of the specified node property
      */
@@ -169,19 +167,19 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
     /**
      * Creates a collection of mutation object for modifications of the specified node properties
-     * 
+     *
      * @param names the name of node properties to be modified
      * @return a collection of mutation object for modifications of the specified node properties
      */
     @GraphQLField
     @GraphQLDescription("Mutates or creates a set of properties on the current node")
-    public Collection<GqlJcrPropertyMutation> mutateProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names) {
+    public List<GqlJcrPropertyMutation> mutateProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names) throws BaseGqlClientException {
         return names.stream().map((String name) -> new GqlJcrPropertyMutation(jcrNode, name)).collect(Collectors.toList());
     }
 
     /**
      * Performs batch-set of the specified properties on the JCR node.
-     * 
+     *
      * @param properties the collection of properties to be set
      * @return the collection of property mutation objects for the modified properties
      * @throws BaseGqlClientException in case of modification errors
@@ -189,7 +187,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     @GraphQLField
     @GraphQLName("setPropertiesBatch")
     @GraphQLDescription("Mutates or creates a set of properties on the current node")
-    public Collection<GqlJcrPropertyMutation> setPropertiesBatch(@GraphQLName("properties") @GraphQLDescription("The list of JCR properties to set") Collection<GqlJcrPropertyInput> properties) throws BaseGqlClientException {
+    public List<GqlJcrPropertyMutation> setPropertiesBatch(@GraphQLName("properties") @GraphQLDescription("The collection of JCR properties to set") Collection<GqlJcrPropertyInput> properties) throws BaseGqlClientException {
         try {
             return internalSetProperties(jcrNode, properties).stream().map(GqlJcrPropertyMutation::new).collect(Collectors.toList());
         } catch (RepositoryException e) {
@@ -197,20 +195,19 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         }
     }
 
-
     /**
-     * Adds the list of mixin types for the current node.
+     * Adds the collection of mixin types for the current node.
      *
-     * @param names the list of mixin type names to be added
+     * @param mixins the collection of mixin type names to be added
      * @return the list of actual node mixin type names after the operation
      * @throws BaseGqlClientException in case of a mixin operation error
      */
     @GraphQLField
     @GraphQLDescription("Adds mixin types on the current node")
-    public List<String> addMixins(@GraphQLName("mixins") @GraphQLNonNull @GraphQLDescription("The list of mixin type names") List<String> names) throws BaseGqlClientException {
+    public List<String> addMixins(@GraphQLName("mixins") @GraphQLNonNull @GraphQLDescription("The collection of mixin type names") Collection<String> mixins) throws BaseGqlClientException {
         try {
-            for (String name : names) {
-                jcrNode.addMixin(name);
+            for (String mixin : mixins) {
+                jcrNode.addMixin(mixin);
             }
             return Arrays.stream(jcrNode.getMixinNodeTypes()).map(ExtendedNodeType::getName).collect(Collectors.toList());
         } catch (RepositoryException e) {
@@ -219,18 +216,18 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     }
 
     /**
-     * Removes the list of mixin types from the current node.
+     * Removes the collection of mixin types from the current node.
      *
-     * @param names the list of mixin type names to be removed
+     * @param mixins the collection of mixin type names to be removed
      * @return the list of actual node mixin type names after the operation
      * @throws BaseGqlClientException in case of a mixin operation error
      */
     @GraphQLField
     @GraphQLDescription("Removes mixin types on the current node")
-    public List<String> removeMixins(@GraphQLName("mixins") @GraphQLNonNull @GraphQLDescription("The list of mixin type names") List<String> names) throws BaseGqlClientException {
+    public List<String> removeMixins(@GraphQLName("mixins") @GraphQLNonNull @GraphQLDescription("The collection of mixin type names") Collection<String> mixins) throws BaseGqlClientException {
         try {
-            for (String name : names) {
-                jcrNode.removeMixin(name);
+            for (String mixin : mixins) {
+                jcrNode.removeMixin(mixin);
             }
             return Arrays.stream(jcrNode.getMixinNodeTypes()).map(ExtendedNodeType::getName).collect(Collectors.toList());
         } catch (RepositoryException e) {
@@ -243,10 +240,10 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     public String rename(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The new name of the node") String newName) throws BaseGqlClientException {
         try {
             jcrNode.rename(newName);
-            return jcrNode.getPath();
         } catch (RepositoryException e) {
             throw new DataModificationException(e);
         }
+        return jcrNode.getPath();
     }
 
     @GraphQLField
@@ -255,10 +252,10 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper parentDest = getNodeFromPathOrId(jcrNode.getSession(), parentPathOrId);
             jcrNode.getSession().move(jcrNode.getPath(), parentDest.getPath() + "/" + jcrNode.getName());
-            return jcrNode.getPath();
         } catch (RepositoryException e) {
             throw new DataModificationException(e);
         }
+        return jcrNode.getPath();
     }
 
     /**

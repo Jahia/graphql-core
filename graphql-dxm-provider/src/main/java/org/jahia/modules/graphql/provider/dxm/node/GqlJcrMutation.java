@@ -78,9 +78,9 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
      * @param parentPathOrId the path or UUID of the parent node
      * @param name the name of the child node to be added
      * @param primaryNodeType the child node primary node type
-     * @param mixins list of mixin types, which should be added to the created node
-     * @param properties list of properties to be set on the newly created node
-     * @param children list of child nodes to be added to the newly created node
+     * @param mixins collection of mixin types, which should be added to the created node
+     * @param properties collection of properties to be set on the newly created node
+     * @param children collection of child nodes to be added to the newly created node
      * @return the created mutation object
      * @throws BaseGqlClientException in case of JCR related errors during adding of child node
      */
@@ -89,12 +89,12 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
     public GqlJcrNodeMutation addNode(@GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
                                       @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create")  String name,
                                       @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType,
-                                      @GraphQLName("mixins") @GraphQLDescription("The list of mixin type names") List<String> mixins,
-                                      @GraphQLName("properties") List<GqlJcrPropertyInput> properties,
-                                      @GraphQLName("children") List<GqlJcrNodeInput> children)
+                                      @GraphQLName("mixins") @GraphQLDescription("The collection of mixin type names") Collection<String> mixins,
+                                      @GraphQLName("properties") Collection<GqlJcrPropertyInput> properties,
+                                      @GraphQLName("children") Collection<GqlJcrNodeInput> children)
     throws BaseGqlClientException {
+        GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, mixins, properties, children);
         try {
-            GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, mixins, properties, children);
             return new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
         } catch (RepositoryException e) {
             throw new DataModificationException(e);
@@ -102,24 +102,23 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
     }
 
     /**
-     * Performs multiple add-child node operations for the specified list of inputs.
+     * Performs multiple add-child node operations for the specified collection of inputs.
      *
-     * @param nodes the list of {@link GqlJcrNodeWithParentInput} objects, representing add-child operation request
+     * @param nodes the collection of {@link GqlJcrNodeWithParentInput} objects, representing add-child operation request
      *
      * @return the list of created mutation objects
      * @throws BaseGqlClientException in case of JCR related errors during adding of child nodes
      */
     @GraphQLField
-    @GraphQLDescription("Batch creates a list of new JCR nodes under the specified parent")
-    public List<GqlJcrNodeMutation> addNodesBatch(@GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The list of nodes to create") List<GqlJcrNodeWithParentInput> nodes) throws BaseGqlClientException {
-        List<GqlJcrNodeMutation> result = null;
-        try {
-            result = new ArrayList<>();
-            for (GqlJcrNodeWithParentInput inputNode : nodes) {
-                result.add(new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), inputNode.parentPathOrId), inputNode)));
+    @GraphQLDescription("Batch creates a number of new JCR nodes under the specified parent")
+    public List<GqlJcrNodeMutation> addNodesBatch(@GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The collection of nodes to create") Collection<GqlJcrNodeWithParentInput> nodes) throws BaseGqlClientException {
+        List<GqlJcrNodeMutation> result = new ArrayList<>();
+        for (GqlJcrNodeWithParentInput node : nodes) {
+            try {
+                result.add(new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), node.parentPathOrId), node)));
+            } catch (RepositoryException e) {
+                throw new DataModificationException(e);
             }
-        } catch (RepositoryException e) {
-            throw new DataModificationException(e);
         }
         return result;
     }
@@ -144,13 +143,13 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
     /**
      * Creates a list of mutation objects for the specified nodes.
      *
-     * @param pathsOrIds the list of path or UUIDs of the nodes to be modified
+     * @param pathsOrIds the collection of path or UUIDs of the nodes to be modified
      * @return the list with mutation objects for the specified nodes
      * @throws BaseGqlClientException in case of node retrieval error
      */
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on path or id")
-    public List<GqlJcrNodeMutation> mutateNodes(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or id ofs the nodes to mutate") List<String> pathsOrIds) throws BaseGqlClientException {
+    public List<GqlJcrNodeMutation> mutateNodes(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or id ofs the nodes to mutate") Collection<String> pathsOrIds) throws BaseGqlClientException {
         List<GqlJcrNodeMutation> result = new ArrayList<>();
         for (String pathOrId : pathsOrIds) {
             try {

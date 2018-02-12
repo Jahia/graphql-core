@@ -48,7 +48,7 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 
-import java.util.List;
+import java.util.Collection;
 
 @GraphQLName("JCRNode")
 @GraphQLDescription("GraphQL representation of a JCR node to be created")
@@ -56,9 +56,9 @@ public class GqlJcrNodeInput {
 
     public GqlJcrNodeInput(@GraphQLName("name") @GraphQLNonNull String name,
                            @GraphQLName("primaryNodeType") @GraphQLNonNull String primaryNodeType,
-                           @GraphQLName("mixins") List<String> mixins,
-                           @GraphQLName("properties") List<GqlJcrPropertyInput> properties,
-                           @GraphQLName("children") List<GqlJcrNodeInput> children) {
+                           @GraphQLName("mixins") Collection<String> mixins,
+                           @GraphQLName("properties") Collection<GqlJcrPropertyInput> properties,
+                           @GraphQLName("children") Collection<GqlJcrNodeInput> children) {
         this.name = name;
         this.primaryNodeType = primaryNodeType;
         this.mixins = mixins;
@@ -75,14 +75,14 @@ public class GqlJcrNodeInput {
     public String primaryNodeType;
 
     @GraphQLField
-    @GraphQLDescription("The list of mixins to add on the node")
-    public List<String> mixins;
+    @GraphQLDescription("The collection of mixins to add on the node")
+    public Collection<String> mixins;
 
     @GraphQLField
-    @GraphQLDescription("The list of properties to set on the node")
-    public List<GqlJcrPropertyInput> properties;
+    @GraphQLDescription("The collection of properties to set on the node")
+    public Collection<GqlJcrPropertyInput> properties;
 
     @GraphQLField
-    @GraphQLDescription("The list of sub nodes to create")
-    public List<GqlJcrNodeInput> children;
+    @GraphQLDescription("The collection of sub nodes to create")
+    public Collection<GqlJcrNodeInput> children;
 }
