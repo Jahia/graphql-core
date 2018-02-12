@@ -45,6 +45,9 @@
 
 package org.jahia.test.graphql;
 
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItem;
+import org.apache.commons.io.IOUtils;
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRCallback;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -56,15 +59,11 @@ import org.junit.*;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import java.io.OutputStream;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.*;
 
 public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
@@ -613,6 +612,42 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             assertEquals("/testList/testNode", node.getProperty("j:node").getNode().getPath());
             return null;
         });
+    }
+
+
+    @Test
+    public void propertyBinaryValue() throws Exception{
+        Map<String,List<FileItem>> files = new HashMap<>();
+        DiskFileItem diskFileItem = new DiskFileItem("", "text/plain", false, "test.txt", 100, null);
+        OutputStream outputStream = diskFileItem.getOutputStream();
+        IOUtils.write("test text", outputStream);
+        outputStream.close();
+        files.put("test-binary", Collections.singletonList(diskFileItem));
+        JSONObject  result = executeQueryWithFiles("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId:\"/\", name:\"file.txt\", primaryNodeType:\"jnt:file\") {\n" +
+                "      addChild(name:\"jcr:content\", primaryNodeType:\"nt:resource\") {\n" +
+                "        setData:mutateProperty(name:\"jcr:data\") {\n" +
+                "          setValue(value:\"test-binary\")\n" +
+                "        }\n" +
+                "        setMimeType:mutateProperty(name:\"jcr:mimeType\") {\n" +
+                "          setValue(value:\"text/plain\")\n" +
+                "        }\n" +
+                "        node {\n" +
+                "          property(name:\"jcr:data\") {\n" +
+                "            value\n" +
+                "          }\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n", files);
+
+        String value = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getJSONObject("addChild").getJSONObject("node")
+                .getJSONObject("property").getString("value");
+
+        Assert.assertEquals("test text", value);
+
     }
 
 }

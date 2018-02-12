@@ -43,8 +43,9 @@
  */
 package org.jahia.test.graphql;
 
+import graphql.servlet.GraphQLContext;
 import graphql.servlet.OsgiGraphQLServlet;
-
+import org.apache.commons.fileupload.FileItem;
 import org.jahia.api.Constants;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRTemplate;
@@ -52,14 +53,14 @@ import org.jahia.test.JahiaTestCase;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.Assert;
 
 import javax.jcr.RepositoryException;
 import javax.servlet.Servlet;
-
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-import org.junit.Assert;
+import java.util.Optional;
 
 public class GraphQLTestSupport extends JahiaTestCase {
 
@@ -86,6 +87,19 @@ public class GraphQLTestSupport extends JahiaTestCase {
 
     protected static JSONObject executeQuery(String query) throws JSONException {
         return new JSONObject(servlet.executeQuery(query));
+    }
+
+    protected static JSONObject executeQueryWithFiles(String query, Map<String, List<FileItem>> files) throws JSONException {
+        try {
+            servlet.setContextProvider((req, resp) -> {
+                GraphQLContext context = new GraphQLContext(req,resp);
+                context.setFiles(Optional.of(files));
+                return context;
+            });
+            return new JSONObject(servlet.executeQuery(query));
+        } finally {
+            servlet.unsetContextProvider(null);
+        }
     }
 
     protected static Map<String, JSONObject> toItemByKeyMap(String key, JSONArray items) throws JSONException {
