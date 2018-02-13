@@ -46,7 +46,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
-import org.jahia.modules.graphql.provider.dxm.DataMutationException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
 
@@ -174,7 +174,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
             }
             nodes = q.execute().getNodes();
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         while (nodes.hasNext()) {
             JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();
@@ -196,7 +196,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
         try {
             getNodeFromPathOrId(getSession(), pathOrId).remove();
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -217,7 +217,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
         try {
             getNodeFromPathOrId(getSession(), pathOrId).markForDeletion(comment);
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -235,7 +235,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
         try {
             getNodeFromPathOrId(getSession(), pathOrId).unmarkForDeletion();
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -247,7 +247,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
         try {
             getSession().save();
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -255,7 +255,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
         try {
             return JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
     }
 }

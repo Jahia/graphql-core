@@ -51,7 +51,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.fileupload.FileItem;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
-import org.jahia.modules.graphql.provider.dxm.DataMutationException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.upload.UploadHelper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
@@ -92,7 +92,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             this.node = property.getParent();
             this.name = property.getName();
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -102,7 +102,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             return new GqlJcrProperty(node.getProperty(name), SpecializedTypesHandler.getNode(node));
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -125,7 +125,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.setProperty(name, getValue(type, value, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -141,7 +141,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.setProperty(name, getValues(type, values, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -156,7 +156,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).addValue(getValue(type, value, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -171,7 +171,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).removeValue(getValue(type, value, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -186,7 +186,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).addValues(getValues(type, values, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -201,7 +201,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).removeValues(getValues(type, values, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -213,7 +213,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).remove();
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }

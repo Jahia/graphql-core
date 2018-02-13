@@ -50,7 +50,7 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
-import org.jahia.modules.graphql.provider.dxm.DataMutationException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 
@@ -82,7 +82,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             return SpecializedTypesHandler.getNode(jcrNode);
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -92,13 +92,13 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             return jcrNode.getIdentifier();
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
     }
 
     /**
      * Adds child node for the current one.
-     * 
+     *
      * @param name the name of the child node to be added
      * @param primaryNodeType the primary node type of the child
      * @param mixins collection of mixin types, which should be added to the created node
@@ -121,7 +121,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
     /**
      * Adds multiple child nodes for the current one.
-     * 
+     *
      * @param nodes the list of child nodes to be added
      * @return a collection of mutation objects for created children
      * @throws BaseGqlClientException in case of creation operation error
@@ -138,7 +138,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
     /**
      * Creates a mutation object for modifications of a node's descendant.
-     * 
+     *
      * @param relPath the relative path of the child node to retrieve
      * @return a mutation object for modifications of a node's child
      * @throws BaseGqlClientException in case of an error during retrieval of child node
@@ -152,13 +152,13 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             return new GqlJcrNodeMutation(jcrNode.getNode(relPath));
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
     }
 
     /**
      * Creates a collection of mutation object to modify the node descendants.
-     * 
+     *
      * @param typesFilter filter of descendant nodes by their types; <code>null</code> to avoid such filtering
      * @param propertiesFilter filter of descendant nodes by their property values; <code>null</code> to avoid such filtering
      * @return a collection of mutation object to modify the node descendants
@@ -174,14 +174,14 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter),
                     true, descendant -> descendants.add(new GqlJcrNodeMutation(descendant)));
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return descendants;
     }
 
     /**
      * Creates a collection of mutation object to modify the direct children nodes.
-     * 
+     *
      * @param names filter of child nodes by their names; <code>null</code> to avoid such filtering
      * @param typesFilter filter of child nodes by their types; <code>null</code> to avoid such filtering
      * @param propertiesFilter filter of child nodes by their property values; <code>null</code> to avoid such filtering
@@ -199,7 +199,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter),
                     false, child -> children.add(new GqlJcrNodeMutation(child)));
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return children;
     }
@@ -258,7 +258,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             }
             return Arrays.stream(jcrNode.getMixinNodeTypes()).map(ExtendedNodeType::getName).collect(Collectors.toList());
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -278,13 +278,13 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             }
             return Arrays.stream(jcrNode.getMixinNodeTypes()).map(ExtendedNodeType::getName).collect(Collectors.toList());
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
     }
 
     /**
      * Renames the current node.
-     * 
+     *
      * @param newName the new name for the node
      * @return the new full path of the renamed node
      * @throws BaseGqlClientException in case of renaming error
@@ -295,7 +295,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             jcrNode.rename(newName);
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return jcrNode.getPath();
     }
@@ -303,7 +303,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     /**
      * Moves the current node to a specified destination path (if <code>destPath</code> is specified) or moves it under the specified node
      * (if <code>parentPathOrId</code> is specified). Either of two parameters is expected.
-     * 
+     *
      * @param destPath target node path of the current node after the move operation
      * @param parentPathOrId parent node path or id under which the current node will be moved to
      * @return the new path of the current node after move operation
@@ -325,7 +325,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
                         "Either destPath or parentPathOrId is expected for the node move operation");
             }
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return jcrNode.getPath();
     }
@@ -342,7 +342,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             jcrNode.remove();
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -360,7 +360,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             jcrNode.markForDeletion(comment);
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }
@@ -377,7 +377,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             jcrNode.unmarkForDeletion();
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         return true;
     }

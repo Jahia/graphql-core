@@ -8,7 +8,7 @@ import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
 
-import org.jahia.modules.graphql.provider.dxm.DataMutationException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -35,7 +35,7 @@ public class GqlJcrMutationSupport {
                 }
             }
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
         if (node.getProperties() != null) {
             setProperties(jcrNode, node.getProperties());
@@ -75,7 +75,7 @@ public class GqlJcrMutationSupport {
             }
             return result;
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -90,7 +90,7 @@ public class GqlJcrMutationSupport {
         try {
             return ('/' == pathOrId.charAt(0) ? session.getNode(pathOrId) : session.getNodeByIdentifier(pathOrId));
         } catch (RepositoryException e) {
-            throw new DataMutationException(e);
+            throw new DataFetchingException(e);
         }
     }
 }
