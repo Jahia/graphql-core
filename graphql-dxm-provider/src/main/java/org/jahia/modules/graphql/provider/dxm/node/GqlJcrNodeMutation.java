@@ -55,6 +55,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 
 import javax.jcr.RepositoryException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -95,12 +96,26 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         }
     }
 
+    /**
+     * Adds child node for the current one.
+     * 
+     * @param name the name of the child node to be added
+     * @param primaryNodeType the primary node type of the child
+     * @param mixins collection of mixin types, which should be added to the created node
+     * @param properties collection of properties to be set on the newly created node
+     * @param children collection of child nodes to be added to the newly created node
+     * @return a mutation object for the created child node
+     * @throws BaseGqlClientException in case of creation operation error
+     */
     @GraphQLField
     @GraphQLDescription("Creates a new JCR node under the current node")
     public GqlJcrNodeMutation addChild(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
-                                       @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType)
+                                       @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType,
+                                       @GraphQLName("mixins") @GraphQLDescription("The collection of mixin type names") Collection<String> mixins,
+                                       @GraphQLName("properties") Collection<GqlJcrPropertyInput> properties,
+                                       @GraphQLName("children") Collection<GqlJcrNodeInput> children)
     throws BaseGqlClientException {
-        GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, null, null, null);
+        GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, mixins, properties, children);
         return new GqlJcrNodeMutation(addNode(jcrNode, node));
     }
 

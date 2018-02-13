@@ -600,25 +600,108 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
     @Test
     public void addChild() throws Exception {
+        // add simple node
         JSONObject result = executeQuery("mutation {\n" +
                 "  jcr {\n" +
                 "    mutateNode(pathOrId:\"/testList\")  {\n" +
-                "      addChild(name:\"testNew\",primaryNodeType:\"jnt:contentList\") {\n" +
+                "      addChild(name:\"testNew1\",primaryNodeType:\"jnt:contentList\") {\n" +
                 "        uuid\n" +
                 "      }\n" +
                 "    }\n" +
                 "  }\n" +
-                "}\n" +
-                "\n");
+                "}\n");
         String uuid = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONObject("addChild").getString("uuid");
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+        inJcr(session -> {
             JCRNodeWrapper node = session.getNodeByIdentifier(uuid);
-            Assert.assertEquals("/testList/testNew", node.getPath());
-            Assert.assertTrue(node.isNodeType("jnt:contentList"));
+            assertEquals("/testList/testNew1", node.getPath());
+            assertTrue(node.isNodeType("jnt:contentList"));
             return null;
         });
-    }
 
+        // add node with mixins
+        result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList\")  {\n" +
+                "      addChild(name:\"testNew2\",primaryNodeType:\"jnt:contentList\", mixins: [\"jmix:keywords\", \"jmix:cache\"]) {\n" +
+                "        uuid\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        String uuidWithMixins = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONObject("addChild").getString("uuid");
+        inJcr(session -> {
+            JCRNodeWrapper node = session.getNodeByIdentifier(uuidWithMixins);
+            assertEquals("/testList/testNew2", node.getPath());
+            assertTrue(node.isNodeType("jnt:contentList"));
+            assertTrue(node.isNodeType("jmix:keywords"));
+            assertTrue(node.isNodeType("jmix:cache"));
+            return null;
+        });
+
+        // add node with mixins, properties and child nodes
+        result = executeQuery("mutation {\n" + 
+                "  jcr {\n" + 
+                "    mutateNode(pathOrId:\"/testList\")  {\n" +
+                "      addChild(name: \"testNew3\", primaryNodeType: \"jnt:contentList\", mixins: [\"jmix:keywords\", \"jmix:cache\"], \n" + 
+                "        children: [\n" + 
+                "          {name: \"text1\", primaryNodeType: \"jnt:text\", \n" + 
+                "            properties: [{language: \"en\", name: \"text\", value: \"English text 111\"}, {language: \"de\", name: \"text\", value: \"Deutsch Text 111\"}]\n" + 
+                "          },\n" + 
+                "          {name: \"text2\", primaryNodeType: \"jnt:text\", \n" + 
+                "            properties: [{language: \"en\", name: \"text\", value: \"English text 222\"}, {language: \"de\", name: \"text\", value: \"Deutsch Text 222\"}]\n" + 
+                "          },\n" + 
+                "        ],\n" + 
+                "        properties: [\n" + 
+                "          {name: \"j:expiration\", value: \"60000\"},\n" + 
+                "          {name: \"j:keywords\", values: [\"keyword1\", \"keyword2\"]},\n" + 
+                "          {name: \"jcr:title\", value: \"List title English\", language: \"en\"},\n" + 
+                "          {name: \"jcr:title\", value: \"Listentitel Deutsch\", language: \"de\"}\n" + 
+                "        ]\n" + 
+                "      ) {\n" + 
+                "        uuid\n" + 
+                "      }\n" + 
+                "    }\n" +
+                "  }\n" + 
+                "}\n");
+        String uuidWithEverything = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONObject("addChild").getString("uuid");
+        JCRCallback<Object> callback = session -> {
+            JCRNodeWrapper node = session.getNodeByIdentifier(uuidWithEverything);
+            assertEquals("/testList/testNew3", node.getPath());
+            assertTrue(node.isNodeType("jnt:contentList"));
+
+            // mixins
+            assertTrue(node.isNodeType("jmix:keywords"));
+            assertTrue(node.isNodeType("jmix:cache"));
+
+            // children
+            assertTrue(node.hasNode("text1"));
+            assertTrue(node.hasNode("text2"));
+
+            boolean isEnglish = session.getLocale().equals(Locale.ENGLISH);
+            
+            // properties
+            assertTrue(node.hasProperty("j:expiration"));
+            assertEquals(60000, node.getProperty("j:expiration").getLong());
+            assertTrue(node.hasProperty("j:keywords"));
+            assertEquals(2, node.getProperty("j:keywords").getValues().length);
+            assertEquals("keyword1 keyword2", node.getPropertyAsString("j:keywords"));
+            assertEquals(isEnglish ? "List title English" : "Listentitel Deutsch",
+                    node.getProperty("jcr:title").getString());
+
+            // i18n properties on child nodes
+            assertTrue(node.getNode("text1").hasProperty("text"));
+            assertEquals(isEnglish ? "English text 111" : "Deutsch Text 111",
+                    node.getNode("text1").getProperty("text").getString());
+            assertTrue(node.getNode("text2").hasProperty("text"));
+            assertEquals(isEnglish ? "English text 222" : "Deutsch Text 222",
+                    node.getNode("text2").getProperty("text").getString());
+            return null;
+        };
+        // test in English
+        inJcr(callback, Locale.ENGLISH);
+        // test in German
+        inJcr(callback, Locale.GERMAN);
+    }
 
     @Test
     public void setPropertiesBatch() throws Exception {
