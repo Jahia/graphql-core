@@ -46,8 +46,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
-import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.DataModificationException;
+import org.jahia.modules.graphql.provider.dxm.DataMutationException;
 import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
 
@@ -94,11 +93,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
                                       @GraphQLName("children") Collection<GqlJcrNodeInput> children)
     throws BaseGqlClientException {
         GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, mixins, properties, children);
-        try {
-            return new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
-        } catch (RepositoryException e) {
-            throw new DataModificationException(e);
-        }
+        return new GqlJcrNodeMutation(addNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
     }
 
     /**
@@ -114,11 +109,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
     public List<GqlJcrNodeMutation> addNodesBatch(@GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The collection of nodes to create") Collection<GqlJcrNodeWithParentInput> nodes) throws BaseGqlClientException {
         List<GqlJcrNodeMutation> result = new ArrayList<>();
         for (GqlJcrNodeWithParentInput node : nodes) {
-            try {
-                result.add(new GqlJcrNodeMutation(internalAddNode(getNodeFromPathOrId(getSession(), node.getParentPathOrId()), node)));
-            } catch (RepositoryException e) {
-                throw new DataModificationException(e);
-            }
+            result.add(new GqlJcrNodeMutation(addNode(getNodeFromPathOrId(getSession(), node.getParentPathOrId()), node)));
         }
         return result;
     }
@@ -133,11 +124,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
     @GraphQLField
     @GraphQLDescription("Mutates an existing node, based on path or id")
     public GqlJcrNodeMutation mutateNode(@GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to mutate") String pathOrId) throws BaseGqlClientException {
-        try {
-            return new GqlJcrNodeMutation(getNodeFromPathOrId(getSession(), pathOrId));
-        } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
-        }
+        return new GqlJcrNodeMutation(getNodeFromPathOrId(getSession(), pathOrId));
     }
 
     /**
@@ -152,11 +139,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
     public List<GqlJcrNodeMutation> mutateNodes(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or id ofs the nodes to mutate") Collection<String> pathsOrIds) throws BaseGqlClientException {
         List<GqlJcrNodeMutation> result = new ArrayList<>();
         for (String pathOrId : pathsOrIds) {
-            try {
-                result.add(new GqlJcrNodeMutation(getNodeFromPathOrId(getSession(), pathOrId)));
-            } catch (RepositoryException e) {
-                throw new DataFetchingException(e);
-            }
+            result.add(new GqlJcrNodeMutation(getNodeFromPathOrId(getSession(), pathOrId)));
         }
         return result;
     }
@@ -191,7 +174,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
             }
             nodes = q.execute().getNodes();
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw new DataMutationException(e);
         }
         while (nodes.hasNext()) {
             JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();
@@ -213,7 +196,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
         try {
             getNodeFromPathOrId(getSession(), pathOrId).remove();
         } catch (RepositoryException e) {
-            throw new DataModificationException(e);
+            throw new DataMutationException(e);
         }
         return true;
     }
@@ -234,7 +217,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
         try {
             getNodeFromPathOrId(getSession(), pathOrId).markForDeletion(comment);
         } catch (RepositoryException e) {
-            throw new DataModificationException(e);
+            throw new DataMutationException(e);
         }
         return true;
     }
@@ -252,7 +235,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
         try {
             getNodeFromPathOrId(getSession(), pathOrId).unmarkForDeletion();
         } catch (RepositoryException e) {
-            throw new DataModificationException(e);
+            throw new DataMutationException(e);
         }
         return true;
     }
@@ -266,11 +249,15 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
         try {
             getSession().save();
         } catch (RepositoryException e) {
-            throw new DataModificationException(e);
+            throw new DataMutationException(e);
         }
     }
 
-    private JCRSessionWrapper getSession() throws RepositoryException {
-        return JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
+    private JCRSessionWrapper getSession() {
+        try {
+            return JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
+        } catch (RepositoryException e) {
+            throw new DataMutationException(e);
+        }
     }
 }

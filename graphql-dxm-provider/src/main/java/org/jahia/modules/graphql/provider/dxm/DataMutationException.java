@@ -46,21 +46,37 @@ package org.jahia.modules.graphql.provider.dxm;
 import graphql.ErrorType;
 
 /**
- * GraphQL exception which is caused by the failure of a data modification operation.
+ * GraphQL exception which occurred during a data mutation operation.
  */
-public class DataModificationException extends BaseGqlClientException {
+public class DataMutationException extends BaseGqlClientException {
 
     private static final long serialVersionUID = 3430141649369409012L;
 
-    public DataModificationException(String message) {
+    /**
+     * Create an exception instance.
+     *
+     * @param message Error message
+     */
+    public DataMutationException(String message) {
         super(message, ErrorType.ExecutionAborted);
     }
 
-    public DataModificationException(String message, Throwable cause) {
+    /**
+     * Create an exception instance.
+     *
+     * @param message Error message
+     * @param cause The cause
+     */
+    public DataMutationException(String message, Throwable cause) {
         super(message, cause, ErrorType.ExecutionAborted);
     }
 
-    public DataModificationException(Throwable cause) {
+    /**
+     * Create an exception instance.
+     *
+     * @param cause The cause
+     */
+    public DataMutationException(Throwable cause) {
         super(cause, ErrorType.ExecutionAborted);
     }
 }
