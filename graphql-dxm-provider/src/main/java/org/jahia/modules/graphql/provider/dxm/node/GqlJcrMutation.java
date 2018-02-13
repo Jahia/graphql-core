@@ -166,19 +166,29 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
      *
      * @param query the query to retrieve the nodes to be modified
      * @param queryLanguage the query language
+     * @param limit the maximum size of the result set
+     * @param offset the start offset of the result set
      * @return the list with mutation objects
      * @throws BaseGqlClientException in case of node retrieval errors
      */
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on query execution")
     public List<GqlJcrNodeMutation> mutateNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
-                                                       @GraphQLName("queryLanguage") @GraphQLDefaultValue(GqlJcrQuery.QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") GqlJcrQuery.QueryLanguage queryLanguage)
+                                                       @GraphQLName("queryLanguage") @GraphQLDefaultValue(GqlJcrQuery.QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") GqlJcrQuery.QueryLanguage queryLanguage,
+                                                       @GraphQLName("limit") @GraphQLDescription("The maximum size of the result set") Long limit,
+                                                       @GraphQLName("offset") @GraphQLDescription("The start offset of the result set") Long offset)
     throws BaseGqlClientException {
         List<GqlJcrNodeMutation> result = new LinkedList<>();
         JCRNodeIteratorWrapper nodes;
         try {
             QueryManagerWrapper queryManager = getSession().getWorkspace().getQueryManager();
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
+            if (limit != null && limit.longValue() > 0) {
+                q.setLimit(limit.longValue());
+            }
+            if (offset != null && offset.longValue() > 0) {
+                q.setOffset(offset.longValue());
+            }
             nodes = q.execute().getNodes();
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
