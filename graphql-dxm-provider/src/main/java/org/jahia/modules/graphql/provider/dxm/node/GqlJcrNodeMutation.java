@@ -119,6 +119,13 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         return new GqlJcrNodeMutation(addNode(jcrNode, node));
     }
 
+    /**
+     * Adds multiple child nodes for the current one.
+     * 
+     * @param nodes the list of child nodes to be added
+     * @return a collection of mutation objects for created children
+     * @throws BaseGqlClientException in case of creation operation error
+     */
     @GraphQLField
     @GraphQLDescription("Batch creates a number of new JCR nodes under the current node")
     public Collection<GqlJcrNodeMutation> addChildrenBatch(@GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The collection of nodes to create") Collection<GqlJcrNodeInput> nodes) throws BaseGqlClientException {
