@@ -228,62 +228,38 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     }
 
     private Value getValue(GqlJcrPropertyType type, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException {
-        Value result = null;
-        ValueFactory valueFactory = session.getValueFactory();
-        JCRNodeWrapper referencedNode;
-        int jcrType = getPropertyType(type);
-        switch (jcrType){
-            case PropertyType.REFERENCE:
-                referencedNode = getNodeFromPathOrId(session, value);
-                result = valueFactory.createValue(referencedNode);
-                break;
-            case PropertyType.WEAKREFERENCE:
-                referencedNode = getNodeFromPathOrId(session, value);
-                result = valueFactory.createValue(referencedNode, true);
-                break;
-            case PropertyType.BINARY:
-                if(UploadHelper.isFileUpload(value, environment)){
-                    FileItem file = UploadHelper.getFileUpload(value, environment);
-                    Binary binary = valueFactory.createBinary(file.getInputStream());
-                    result = valueFactory.createValue(binary);
-                }else{
-                    result = session.getValueFactory().createValue(value, jcrType);
-                }
-                break;
-            default:
-                result = session.getValueFactory().createValue(value, jcrType);
-        }
-        return result;
+        return getValue(getPropertyType(type), value, session, environment);
     }
 
     private Value[] getValues(GqlJcrPropertyType type, List<String> values, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException {
         List<Value> jcrValues = new ArrayList<>();
-        JCRNodeWrapper referencedNode;
-        ValueFactory valueFactory = session.getValueFactory();
         int jcrType = getPropertyType(type);
         for (String value : values) {
-            switch (jcrType){
-                case PropertyType.REFERENCE:
-                    referencedNode = getNodeFromPathOrId(session, value);
-                    jcrValues.add(valueFactory.createValue(referencedNode));
-                    break;
-                case PropertyType.WEAKREFERENCE:
-                    referencedNode = getNodeFromPathOrId(session, value);
-                    jcrValues.add(valueFactory.createValue(referencedNode, true));
-                    break;
-                case PropertyType.BINARY:
-                    if (UploadHelper.isFileUpload(value, environment)) {
-                        FileItem file = UploadHelper.getFileUpload(value, environment);
-                        Binary binary = valueFactory.createBinary(file.getInputStream());
-                        jcrValues.add(valueFactory.createValue(binary));
-                    } else {
-                        jcrValues.add(session.getValueFactory().createValue(value, jcrType));
-                    }
-                    break;
-                default:
-                    jcrValues.add(session.getValueFactory().createValue(value, jcrType));
-            }
+            jcrValues.add(getValue(jcrType, value, session, environment));
         }
         return jcrValues.toArray(new Value[jcrValues.size()]);
+    }
+
+    private Value getValue(int jcrType, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException {
+        ValueFactory valueFactory = session.getValueFactory();
+        JCRNodeWrapper referencedNode;
+        switch (jcrType){
+            case PropertyType.REFERENCE:
+                referencedNode = getNodeFromPathOrId(session, value);
+                return valueFactory.createValue(referencedNode);
+            case PropertyType.WEAKREFERENCE:
+                referencedNode = getNodeFromPathOrId(session, value);
+                return valueFactory.createValue(referencedNode, true);
+            case PropertyType.BINARY:
+                if (UploadHelper.isFileUpload(value, environment)) {
+                    FileItem file = UploadHelper.getFileUpload(value, environment);
+                    Binary binary = valueFactory.createBinary(file.getInputStream());
+                    return valueFactory.createValue(binary);
+                } else {
+                    return valueFactory.createValue(value, jcrType);
+                }
+            default:
+                return valueFactory.createValue(value, jcrType);
+        }
     }
 }
