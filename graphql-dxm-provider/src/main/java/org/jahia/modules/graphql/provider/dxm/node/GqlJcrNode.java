@@ -141,6 +141,7 @@ public interface GqlJcrNode {
      * @param names Filter of child nodes by their names; null to avoid such filtering
      * @param typesFilter Filter of child nodes by their types; null to avoid such filtering
      * @param propertiesFilter Filter of child nodes by their property values; null to avoid such filtering
+     * @param environment the execution content instance
      * @return GraphQL representations of the child nodes, according to parameters passed
      * @throws GqlJcrWrongInputException In case any of the property filters passed as a part of the propertiesFilter is inconsistent (for example missing a property value to be used for comparison)
      */
@@ -171,6 +172,7 @@ public interface GqlJcrNode {
      *
      * @param typesFilter Filter of descendant nodes by their types; null to avoid such filtering
      * @param propertiesFilter Filter of descendant nodes by their property values; null to avoid such filtering
+     * @param environment the execution content instance
      * @return GraphQL representations of the descendant nodes, according to parameters passed
      * @throws GqlJcrWrongInputException In case any of the property filters passed as a part of the propertiesFilter is inconsistent (for example missing a property value to be used for comparison)
      */
@@ -197,6 +199,7 @@ public interface GqlJcrNode {
     throws GqlJcrWrongInputException;
 
     /**
+     * @param environment the execution content instance
      * @return GraphQL representations of the reference properties that target the JCR Node
      */
     @GraphQLField

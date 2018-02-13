@@ -136,6 +136,7 @@ public class VanityUrlJCRSiteExtensions {
      * @param environment status of the connection
      * @return a paginated list of vanity urls
      */
+    @SuppressWarnings("unchecked")
     @GraphQLField
     @GraphQLName("getAllVanityURLs")
     @GraphQLDescription("return vanity urls")

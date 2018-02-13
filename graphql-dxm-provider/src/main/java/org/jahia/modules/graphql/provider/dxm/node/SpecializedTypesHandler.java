@@ -142,7 +142,6 @@ public class SpecializedTypesHandler {
 
         final PropertyDefinition[] properties = type.getPropertyDefinitions();
         if (properties.length > 0) {
-            final Set<String> multiplePropertyTypes = new HashSet<>(properties.length);
             for (PropertyDefinition property : properties) {
                 final String propName = property.getName();
                 final int propertyType = property.getRequiredType();
@@ -154,26 +153,12 @@ public class SpecializedTypesHandler {
                             .dataFetcher(new NamedPropertiesDataFetcher())
                             .type(getGraphQLType(propertyType, multiple))
                             .build());
-                } else {
-                    // Unnamed properties
-//                    final String propertyTypeName = PropertyType.nameFromValue(propertyType);
-//                    if (!multiplePropertyTypes.contains(propertyTypeName)) {
-//                        builder.field(
-//                                newFieldDefinition()
-//                                        .name(UNNAMED_PROPERTY_PREFIX + propertyTypeName)
-//                                        .type(getGraphQLType(propertyType, false))
-//                                        .dataFetcher(new UnnamedPropertiesDataFetcher())
-//                                        .build()
-//                        );
-//                        multiplePropertyTypes.add(propertyTypeName);
-//                    }
                 }
             }
         }
 
         final NodeDefinition[] children = type.getChildNodeDefinitions();
         if (children.length > 0) {
-            final Set<String> multipleChildTypes = new HashSet<>(children.length);
             for (NodeDefinition child : children) {
                 final String childName = child.getName();
 
@@ -186,20 +171,6 @@ public class SpecializedTypesHandler {
                             .type(gqlChildType)
                             .dataFetcher(new NamedChildDataFetcher())
                             .build());
-                } else {
-                    // Unnamed children
-//                    final String childTypeName = getChildTypeName(child);
-//                    if (!multipleChildTypes.contains(childTypeName)) {
-//                        final String escapedChildTypeName = escape(childTypeName);
-//                        builder.field(
-//                                newFieldDefinition()
-//                                        .name(UNNAMED_CHILD_PREFIX + escapedChildTypeName)
-//                                        .type(new GraphQLList(new GraphQLTypeReference(specializedTypes.contains(childTypeName) ? escapedChildTypeName : "GenericJCRNode")))
-//                                        .dataFetcher(new UnnamedChildNodesDataFetcher())
-//                                        .build()
-//                        );
-//                        multipleChildTypes.add(childTypeName);
-//                    }
                 }
             }
         }

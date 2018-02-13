@@ -53,7 +53,7 @@ import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UnnamedChildNodesDataFetcher implements DataFetcher {
+public class UnnamedChildNodesDataFetcher implements DataFetcher<Object> {
     @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
         String type = dataFetchingEnvironment.getFields().get(0).getName();

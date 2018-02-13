@@ -88,7 +88,9 @@ public class NodeQueryExtensions {
 
 
     /**
-     * Root for all JCR queries
+     * Root for all JCR queries.
+     * @param workspace the JCR workspace name for the query 
+     * @return the root query object
      */
     @GraphQLField
     @GraphQLName("jcr")

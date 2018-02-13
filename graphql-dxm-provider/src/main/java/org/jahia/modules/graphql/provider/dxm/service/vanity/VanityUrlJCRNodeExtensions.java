@@ -77,6 +77,7 @@ public class VanityUrlJCRNodeExtensions {
      * @param onlyDefault get only default vanity urls
      * @return a list of vanity urls
      */
+    @SuppressWarnings("unchecked")
     @GraphQLField
     @GraphQLName("vanityUrls")
     @GraphQLDescription("return vanity urls")

@@ -50,7 +50,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.RepositoryException;
 
-public  class NamedChildDataFetcher implements DataFetcher {
+public  class NamedChildDataFetcher implements DataFetcher<Object> {
     @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
         String name = dataFetchingEnvironment.getFields().get(0).getName();

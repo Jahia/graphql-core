@@ -49,7 +49,8 @@ import org.apache.commons.lang.StringUtils;
 
 import javax.jcr.PropertyType;
 
-public class UnnamedPropertiesDataFetcher implements DataFetcher {
+public class UnnamedPropertiesDataFetcher implements DataFetcher<Object> {
+    @SuppressWarnings("unused")
     @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
         String type = dataFetchingEnvironment.getFields().get(0).getName();

@@ -47,7 +47,6 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.schema.DataFetchingEnvironment;
-import org.apache.commons.fileupload.FileItem;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.upload.UploadHelper;
@@ -240,19 +239,14 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
 
     private Value getValue(int jcrType, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException {
         ValueFactory valueFactory = session.getValueFactory();
-        JCRNodeWrapper referencedNode;
         switch (jcrType) {
             case PropertyType.REFERENCE:
-                referencedNode = getNodeFromPathOrId(session, value);
-                return valueFactory.createValue(referencedNode);
+                return valueFactory.createValue(getNodeFromPathOrId(session, value));
             case PropertyType.WEAKREFERENCE:
-                referencedNode = getNodeFromPathOrId(session, value);
-                return valueFactory.createValue(referencedNode, true);
+                return valueFactory.createValue(getNodeFromPathOrId(session, value), true);
             case PropertyType.BINARY:
                 if (UploadHelper.isFileUpload(value, environment)) {
-                    FileItem file = UploadHelper.getFileUpload(value, environment);
-                    Binary binary = valueFactory.createBinary(file.getInputStream());
-                    return valueFactory.createValue(binary);
+                    return valueFactory.createValue(valueFactory.createBinary(UploadHelper.getFileUpload(value, environment).getInputStream()));
                 } else {
                     return valueFactory.createValue(value, jcrType);
                 }

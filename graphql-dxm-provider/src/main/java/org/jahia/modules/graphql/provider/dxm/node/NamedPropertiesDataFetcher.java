@@ -55,7 +55,7 @@ import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NamedPropertiesDataFetcher implements DataFetcher {
+public class NamedPropertiesDataFetcher implements DataFetcher<Object> {
     @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
         String name = dataFetchingEnvironment.getFields().get(0).getName();

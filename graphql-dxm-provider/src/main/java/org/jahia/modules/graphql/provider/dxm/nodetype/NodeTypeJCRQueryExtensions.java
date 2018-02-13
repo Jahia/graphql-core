@@ -63,10 +63,12 @@ import java.util.stream.Stream;
 @GraphQLTypeExtension(GqlJcrQuery.class)
 public class NodeTypeJCRQueryExtensions {
 
-    private GqlJcrQuery source;
+    public NodeTypeJCRQueryExtensions() {
+        this(null);
+    }
 
     public NodeTypeJCRQueryExtensions(GqlJcrQuery source) {
-        this.source = source;
+        super();
     }
 
     @GraphQLField

@@ -48,8 +48,8 @@ import graphql.schema.DataFetchingEnvironment;
 import java.util.Map;
 
 /**
- * DataFetcher used to check the permission on the GraphQL type and field
- * @param <T>
+ * DataFetcher used to check the permission on the GraphQL type and field.
+ * @param <T> the type of object returned
  */
 public class GqlJcrPermissionDataFetcher<T> implements DataFetcher<T> {
 

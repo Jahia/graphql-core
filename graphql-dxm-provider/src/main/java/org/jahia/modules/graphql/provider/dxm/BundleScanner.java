@@ -71,11 +71,12 @@ public class BundleScanner {
         return classes;
     }
 
+    @SuppressWarnings("unchecked")
     private static <T> void findClasses(String path, Class<? extends Annotation> annotation, List<Class<? extends T>> classes, Bundle bundle) {
-        Enumeration items = bundle.getEntryPaths(path);
+        Enumeration<String> items = bundle.getEntryPaths(path);
         if (items != null) {
             while (items.hasMoreElements()) {
-                String subpath = (String) items.nextElement();
+                String subpath = items.nextElement();
                 if (subpath.endsWith(".class")) {
                     if (!subpath.contains("$")) {
                         try {

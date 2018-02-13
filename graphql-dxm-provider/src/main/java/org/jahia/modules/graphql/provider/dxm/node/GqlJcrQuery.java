@@ -195,6 +195,7 @@ public class GqlJcrQuery {
      *
      * @param query The query string
      * @param queryLanguage The query language
+     * @param environment the execution content instance
      * @return GraphQL representations of nodes selected according to the query supplied
      * @throws BaseGqlClientException In case of issues executing the query
      */

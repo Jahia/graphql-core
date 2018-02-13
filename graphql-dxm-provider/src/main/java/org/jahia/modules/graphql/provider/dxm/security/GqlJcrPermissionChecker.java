@@ -90,6 +90,8 @@ public class GqlJcrPermissionChecker {
      * @param types the types, primary type should be the latest in the list to support inheritance of permission properties
      * @param fields the fields
      * @param permissions the map of all the permissions ( key format: {type.field}, value format: {permission} )
+     * @param session current JCR session instance
+     * @throws RepositoryException in case of JCR-related errors
      * @throws GqlAccessDeniedException in case of permission denied
      */
     public static void checkPermissions(final List<String> types, final List<Field> fields, final Map<String, String> permissions, JCRSessionWrapper session) throws RepositoryException {

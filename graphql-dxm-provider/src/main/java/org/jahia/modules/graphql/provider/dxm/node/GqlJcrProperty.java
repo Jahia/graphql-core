@@ -80,8 +80,8 @@ public class GqlJcrProperty {
     }
 
     /**
-     * Get underlying JCR property
-     * @return
+     * Get underlying JCR property.
+     * @return underlying JCR property
      */
     public JCRPropertyWrapper getProperty() {
         return property;
