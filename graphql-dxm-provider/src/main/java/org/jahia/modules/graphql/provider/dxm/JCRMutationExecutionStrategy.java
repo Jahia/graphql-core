@@ -49,26 +49,24 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutation;
 
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Extends some aspects of the standard strategy.
+ */
 public class JCRMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
 
     public JCRMutationExecutionStrategy(DataFetcherExceptionHandler exceptionHandler) {
         super(exceptionHandler);
     }
 
-    @Override
-    public CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, ExecutionStrategyParameters parameters) throws NonNullableFieldWasNullException {
-        return super.execute(executionContext, parameters);
-    }
-
-
+    /**
+     * Extend the standard behavior to complete any GqlJcrMutation field via persisting any changes made to JCR during its execution.
+     */
     @Override
     protected CompletableFuture<ExecutionResult> completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, Object fetchedValue) {
         CompletableFuture<ExecutionResult> result = super.completeField(executionContext, parameters, fetchedValue);
         if (fetchedValue instanceof GqlJcrMutation) {
-            ((GqlJcrMutation)fetchedValue).save();
+            ((GqlJcrMutation) fetchedValue).save();
         }
         return result;
     }
-
-
 }
