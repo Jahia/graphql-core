@@ -814,21 +814,47 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         }, Locale.FRENCH);
     }
 
-
     @Test
     public void moveAndRename() throws Exception {
         executeQuery("mutation {\n" +
                 "  jcr {\n" +
                 "    mutateNode(pathOrId: \"/testList/testSubList1\") {\n" +
-                "      move(parentPathOrId: \"/testList/testSubList2\")\n" +
                 "      rename(name: \"testRenamed\")\n" +
                 "    }\n" +
                 "  }\n" +
                 "}\n");
 
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            Assert.assertFalse(session.itemExists("/testList/testSubList1"));
-            Assert.assertTrue(session.itemExists("/testList/testSubList2/testRenamed"));
+        inJcr(session -> {
+            assertFalse(session.itemExists("/testList/testSubList1"));
+            assertTrue(session.itemExists("/testList/testRenamed"));
+            return null;
+        });
+
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId: \"/testList/testRenamed\") {\n" +
+                "      move(parentPathOrId: \"/testList/testSubList2\")\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        inJcr(session -> {
+            assertFalse(session.itemExists("/testList/testRenamed"));
+            assertTrue(session.itemExists("/testList/testSubList2/testRenamed"));
+            return null;
+        });
+
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId: \"/testList/testSubList2/testRenamed\") {\n" +
+                "      move(destPath: \"/testList/testRenamedNew\")\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        inJcr(session -> {
+            assertFalse(session.itemExists("/testList/testSubList2/testRenamed"));
+            assertTrue(session.itemExists("/testList/testRenamedNew"));
             return null;
         });
     }

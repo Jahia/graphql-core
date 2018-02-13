@@ -282,6 +282,13 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         }
     }
 
+    /**
+     * Renames the current node.
+     * 
+     * @param newName the new name for the node
+     * @return the new full path of the renamed node
+     * @throws BaseGqlClientException in case of renaming error
+     */
     @GraphQLField
     @GraphQLDescription("Rename the current node")
     public String rename(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The new name of the node") String newName) throws BaseGqlClientException {
@@ -293,12 +300,29 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         return jcrNode.getPath();
     }
 
+    /**
+     * Moves the current node to a specified destination path (if <code>destPath</code> is specified) or moves it under the specified node
+     * (if <code>parentPathOrId</code> is specified). Either of two parameters is expected.
+     * 
+     * @param destPath target node path of the current node after the move operation
+     * @param parentPathOrId parent node path or id under which the current node will be moved to
+     * @return the new path of the current node after move operation
+     * @throws BaseGqlClientException in case of move error
+     */
     @GraphQLField
     @GraphQLDescription("Move the current node")
-    public String move(@GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The target node path or id") String parentPathOrId) throws BaseGqlClientException {
+    public String move(@GraphQLName("destPath") @GraphQLDescription("The target node path of the current node after the move operation") String destPath,
+                       @GraphQLName("parentPathOrId") @GraphQLDescription("The parent node path or id under which the current node will be moved to") String parentPathOrId) throws BaseGqlClientException {
         try {
-            JCRNodeWrapper parentDest = getNodeFromPathOrId(jcrNode.getSession(), parentPathOrId);
-            jcrNode.getSession().move(jcrNode.getPath(), parentDest.getPath() + "/" + jcrNode.getName());
+            if (destPath != null) {
+                jcrNode.getSession().move(jcrNode.getPath(), destPath);
+            } else if (parentPathOrId != null) {
+                JCRNodeWrapper parentDest = getNodeFromPathOrId(jcrNode.getSession(), parentPathOrId);
+                jcrNode.getSession().move(jcrNode.getPath(), parentDest.getPath() + "/" + jcrNode.getName());
+            } else {
+                throw new GqlJcrWrongInputException(
+                        "Either destPath or parentPathOrId is expected for the node move operation");
+            }
         } catch (RepositoryException e) {
             throw new DataMutationException(e);
         }
