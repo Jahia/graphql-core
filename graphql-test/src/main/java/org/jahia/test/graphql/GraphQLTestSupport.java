@@ -54,6 +54,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import javax.servlet.Servlet;
@@ -63,6 +65,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public class GraphQLTestSupport extends JahiaTestCase {
+
+    private static final Logger logger = LoggerFactory.getLogger(GraphQLTestSupport.class);
 
     private static OsgiGraphQLServlet servlet;
 
@@ -86,7 +90,15 @@ public class GraphQLTestSupport extends JahiaTestCase {
     }
 
     protected static JSONObject executeQuery(String query) throws JSONException {
-        return new JSONObject(servlet.executeQuery(query));
+        String result = servlet.executeQuery(query);
+        if (result != null) {
+            if (result.contains("Validation error")) {
+                logger.error("Validation error {} for query: {}", result, query);
+            } else if (result.contains("Invalid Syntax")) {
+                logger.error("Invalid Syntax\" {} for query: {}", result, query);
+            }
+        }
+        return new JSONObject(result);
     }
 
     protected static JSONObject executeQueryWithFiles(String query, Map<String, List<FileItem>> files) throws JSONException {
@@ -96,7 +108,7 @@ public class GraphQLTestSupport extends JahiaTestCase {
                 context.setFiles(Optional.of(files));
                 return context;
             });
-            return new JSONObject(servlet.executeQuery(query));
+            return executeQuery(query);
         } finally {
             servlet.unsetContextProvider(null);
         }

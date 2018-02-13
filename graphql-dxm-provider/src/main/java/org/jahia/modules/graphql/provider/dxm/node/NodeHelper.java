@@ -58,6 +58,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 public class NodeHelper {
 
@@ -202,13 +203,13 @@ public class NodeHelper {
         return session.getNodeByIdentifier(node.getIdentifier());
     }
 
-    static void collectDescendants(JCRNodeWrapper node, Predicate<JCRNodeWrapper> predicate, boolean recurse, Collection<GqlJcrNode> descendants) throws RepositoryException {
+    static void collectDescendants(JCRNodeWrapper node, Predicate<JCRNodeWrapper> predicate, boolean recurse, Consumer<JCRNodeWrapper> consumer) throws RepositoryException {
         for (JCRNodeWrapper child : node.getNodes()) {
             if (predicate.evaluate(child)) {
-                descendants.add(SpecializedTypesHandler.getNode(child));
+                consumer.accept(child);
             }
             if (recurse) {
-                collectDescendants(child, predicate, true, descendants);
+                collectDescendants(child, predicate, true, consumer);
             }
         }
     }

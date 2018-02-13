@@ -49,7 +49,6 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
-import org.apache.commons.collections4.Predicate;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataMutationException;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -59,6 +58,7 @@ import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -114,34 +114,72 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         return result;
     }
 
+    /**
+     * Creates a mutation object for modifications of a node's descendant.
+     * 
+     * @param relPath the relative path of the child node to retrieve
+     * @return a mutation object for modifications of a node's child
+     * @throws BaseGqlClientException in case of an error during retrieval of child node
+     */
     @GraphQLField
     @GraphQLDescription("Mutates an existing sub node, based on its relative path to the current node")
-    public GqlJcrNodeMutation mutateChild(@GraphQLName("path") @GraphQLNonNull @GraphQLDescription("Name or relative path of the sub node to mutate") String path) throws BaseGqlClientException {
+    public GqlJcrNodeMutation mutateDescendant(@GraphQLName("relPath") @GraphQLNonNull @GraphQLDescription("Name or relative path of the sub node to mutate") String relPath) throws BaseGqlClientException {
+        if (relPath.contains("..")) {
+            throw new GqlJcrWrongInputException("No navigation outside of the node sub-tree is supported");
+        }
         try {
-            return new GqlJcrNodeMutation(jcrNode.getNode(path));
+            return new GqlJcrNodeMutation(jcrNode.getNode(relPath));
         } catch (RepositoryException e) {
             throw new DataMutationException(e);
         }
     }
 
+    /**
+     * Creates a collection of mutation object to modify the node descendants.
+     * 
+     * @param typesFilter filter of descendant nodes by their types; <code>null</code> to avoid such filtering
+     * @param propertiesFilter filter of descendant nodes by their property values; <code>null</code> to avoid such filtering
+     * @return a collection of mutation object to modify the node descendants
+     * @throws BaseGqlClientException in case of descendant retrieval error
+     */
     @GraphQLField
-    @GraphQLDescription("Mutates a set of existing sub nodes, based on filters passed as parameter")
+    @GraphQLDescription("Mutates a set of existing descendant nodes, based on filters passed as parameter")
+    public Collection<GqlJcrNodeMutation> mutateDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") GqlJcrNode.NodeTypesInput typesFilter,
+                                                   @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter)
+    throws BaseGqlClientException {
+        List<GqlJcrNodeMutation> descendants = new LinkedList<>();
+        try {
+            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter),
+                    true, descendant -> descendants.add(new GqlJcrNodeMutation(descendant)));
+        } catch (RepositoryException e) {
+            throw new DataMutationException(e);
+        }
+        return descendants;
+    }
+
+    /**
+     * Creates a collection of mutation object to modify the direct children nodes.
+     * 
+     * @param names filter of child nodes by their names; <code>null</code> to avoid such filtering
+     * @param typesFilter filter of child nodes by their types; <code>null</code> to avoid such filtering
+     * @param propertiesFilter filter of child nodes by their property values; <code>null</code> to avoid such filtering
+     * @return a collection of mutation object to modify the direct children nodes
+     * @throws BaseGqlClientException in case of children retrieval error
+     */
+    @GraphQLField
+    @GraphQLDescription("Mutates a set of existing direct sub nodes, based on filters passed as parameter")
     public Collection<GqlJcrNodeMutation> mutateChildren(@GraphQLName("names") @GraphQLDescription("Filter of child nodes by their names; null to avoid such filtering") Collection<String> names,
                                                    @GraphQLName("typesFilter") @GraphQLDescription("Filter of child nodes by their types; null to avoid such filtering") GqlJcrNode.NodeTypesInput typesFilter,
                                                    @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter)
     throws BaseGqlClientException {
-        List<GqlJcrNodeMutation> result = new ArrayList<>();
-        Predicate<JCRNodeWrapper> predicate = NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter);
+        List<GqlJcrNodeMutation> children = new LinkedList<>();
         try {
-            for (JCRNodeWrapper node : jcrNode.getNodes()) {
-                if (predicate.evaluate(node)) {
-                    result.add(new GqlJcrNodeMutation(node));
-                }
-            }
+            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter),
+                    false, child -> children.add(new GqlJcrNodeMutation(child)));
         } catch (RepositoryException e) {
             throw new DataMutationException(e);
         }
-        return result;
+        return children;
     }
 
     /**
@@ -164,7 +202,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
      */
     @GraphQLField
     @GraphQLDescription("Mutates or creates a set of properties on the current node")
-    public Collection<GqlJcrPropertyMutation> mutateProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names) throws BaseGqlClientException {
+    public Collection<GqlJcrPropertyMutation> mutateProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names) {
         return names.stream().map((String name) -> new GqlJcrPropertyMutation(jcrNode, name)).collect(Collectors.toList());
     }
 

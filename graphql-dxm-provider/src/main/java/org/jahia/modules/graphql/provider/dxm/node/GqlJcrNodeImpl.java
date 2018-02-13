@@ -206,7 +206,13 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrNode> children = new LinkedList<GqlJcrNode>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
-            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter), false, children);
+            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter), false, child-> {
+                try {
+                    children.add(SpecializedTypesHandler.getNode(child));
+                } catch (RepositoryException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -237,7 +243,13 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrNode> descendants = new LinkedList<GqlJcrNode>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
-            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter), true, descendants);
+            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter), true, descendant -> {
+                try {
+                    descendants.add(SpecializedTypesHandler.getNode(descendant));
+                } catch (RepositoryException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }

@@ -48,6 +48,7 @@ package org.jahia.test.graphql;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRCallback;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -59,7 +60,6 @@ import org.junit.*;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
@@ -67,8 +67,17 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
+/**
+ * Integration test for GraphQL mutations.
+ */
 public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
+    private static void addText(JCRNodeWrapper parent, String name, String text, String nodeType)
+            throws RepositoryException {
+        JCRNodeWrapper textNode = parent.addNode(name, StringUtils.defaultString(nodeType, "jnt:text"));
+        textNode.setProperty("text", text);
+    }
+    
     private static <T> T inJcr(JCRCallback<T> callback) throws Exception {
         return inJcr(callback, null);
     }
@@ -86,7 +95,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     @Before
     public void setup() throws Exception {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
+            JCRNodeWrapper node = session.getRootNode().addNode("testList", "jnt:contentList");
             node.addNode("testSubList1", "jnt:contentList");
             node.addNode("testSubList2", "jnt:contentList");
             node.addNode("testSubList3", "jnt:contentList");
@@ -778,4 +787,222 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         });
     }
 
+    @Test
+    public void mutateChildren() throws Exception {
+        setupTextNodes();
+
+        // mutate children by name
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\") {\n" +
+                "      mutateChildren(names: [\"text2\", \"bigText2\"]) {\n" +
+                "        mutateProperty(name: \"text\") {\n" +
+                "          setValue(language: \"en\", value: \"value2\")\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        inJcr(session -> {
+            assertEquals("value1", session.getNode("/testList/testSubList1/text1").getProperty("text").getString());
+            assertEquals("value2", session.getNode("/testList/testSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value2", session.getNode("/testList/testSubList1/bigText2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/text1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText2").getProperty("text").getString());
+
+            return null;
+        });
+
+        // mutate children by type
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\") {\n" +
+                "      mutateChildren(typesFilter: {types: [\"jnt:text\"]}) {\n" +
+                "        mutateProperty(name: \"text\") {\n" +
+                "          setValue(language: \"en\", value: \"value3\")\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        inJcr(session -> {
+            assertEquals("value3", session.getNode("/testList/testSubList1/text1").getProperty("text").getString());
+            assertEquals("value3", session.getNode("/testList/testSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value2", session.getNode("/testList/testSubList1/bigText2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/text1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText2").getProperty("text").getString());
+
+            // reset the modified value
+            session.getNode("/testList/testSubList1/text1").setProperty("text", "value1");
+            session.save();
+            return null;
+        });
+
+        // mutate children by type and property value
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\") {\n" +
+                "      mutateChildren(typesFilter: {types: [\"jnt:text\"]}, propertiesFilter: {filters: [{property: \"text\" language: \"en\" value: \"value3\"}]}) {\n" +
+                "        mutateProperty(name: \"text\") {\n" +
+                "          setValue(language: \"en\", value: \"value4\")\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        inJcr(session -> {
+            assertEquals("value1", session.getNode("/testList/testSubList1/text1").getProperty("text").getString());
+            assertEquals("value4", session.getNode("/testList/testSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value2", session.getNode("/testList/testSubList1/bigText2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/text1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText2").getProperty("text").getString());
+
+            return null;
+        });
+    }
+
+    @Test
+    public void mutateDescendant() throws Exception {
+        setupTextNodes();
+
+        // mutate child
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\") {\n" +
+                "      mutateDescendant(relPath: \"text2\") {\n" +
+                "        mutateProperty(name: \"text\") {\n" +
+                "          setValue(language: \"en\", value: \"value2\")\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        inJcr(session -> {
+            assertEquals("value1", session.getNode("/testList/testSubList1/text1").getProperty("text").getString());
+            assertEquals("value2", session.getNode("/testList/testSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/bigText2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/text1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText2").getProperty("text").getString());
+
+            // reset the modified value
+            session.getNode("/testList/testSubList1/text2").setProperty("text", "value1");
+            session.save();
+
+            return null;
+        });
+
+        // mutate descendant
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\") {\n" +
+                "      mutateDescendant(relPath: \"testSubSubList1/text2\") {\n" +
+                "        mutateProperty(name: \"text\") {\n" +
+                "          setValue(language: \"en\", value: \"value2\")\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        inJcr(session -> {
+            assertEquals("value1", session.getNode("/testList/testSubList1/text1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/bigText2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/text1").getProperty("text").getString());
+            assertEquals("value2", session.getNode("/testList/testSubList1/testSubSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText2").getProperty("text").getString());
+
+            return null;
+        });
+    }
+
+    @Test
+    public void mutateDescendants() throws Exception {
+        setupTextNodes();
+
+        // mutate descendants by type
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\") {\n" +
+                "      mutateDescendants(typesFilter: {types: [\"jnt:text\"]}) {\n" +
+                "        mutateProperty(name: \"text\") {\n" +
+                "          setValue(language: \"en\", value: \"value2\")\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        inJcr(session -> {
+            assertEquals("value2", session.getNode("/testList/testSubList1/text1").getProperty("text").getString());
+            assertEquals("value2", session.getNode("/testList/testSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/bigText2").getProperty("text").getString());
+            assertEquals("value2", session.getNode("/testList/testSubList1/testSubSubList1/text1").getProperty("text").getString());
+            assertEquals("value2", session.getNode("/testList/testSubList1/testSubSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText2").getProperty("text").getString());
+
+            // reset the modified value
+            session.getNode("/testList/testSubList1/text1").setProperty("text", "value1");
+            session.getNode("/testList/testSubList1/testSubSubList1/text1").setProperty("text", "value1");
+            session.save();
+
+            return null;
+        });
+
+        // mutate descendants by type and property value
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNode(pathOrId:\"/testList/testSubList1\") {\n" +
+                "      mutateDescendants(typesFilter: {types: [\"jnt:text\"]}, propertiesFilter: {filters: [{property: \"text\" language: \"en\" value: \"value2\"}]}) {\n" +
+                "        mutateProperty(name: \"text\") {\n" +
+                "          setValue(language: \"en\", value: \"value3\")\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        inJcr(session -> {
+            assertEquals("value1", session.getNode("/testList/testSubList1/text1").getProperty("text").getString());
+            assertEquals("value3", session.getNode("/testList/testSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/bigText2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/text1").getProperty("text").getString());
+            assertEquals("value3", session.getNode("/testList/testSubList1/testSubSubList1/text2").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText1").getProperty("text").getString());
+            assertEquals("value1", session.getNode("/testList/testSubList1/testSubSubList1/bigText2").getProperty("text").getString());
+
+            return null;
+        });
+    }
+
+    private void setupTextNodes() throws Exception {
+        inJcr(session -> {
+            JCRNodeWrapper subList = session.getNode("/testList/testSubList1");
+            addText(subList, "text1", "value1", "jnt:text");
+            addText(subList, "text2", "value1", "jnt:text");
+            addText(subList, "bigText1", "value1", "jnt:bigText");
+            addText(subList, "bigText2", "value1", "jnt:bigText");
+            subList = subList.addNode("testSubSubList1", "jnt:contentList");
+            addText(subList, "text1", "value1", "jnt:text");
+            addText(subList, "text2", "value1", "jnt:text");
+            addText(subList, "bigText1", "value1", "jnt:bigText");
+            addText(subList, "bigText2", "value1", "jnt:bigText");
+            session.save();
+            return null;
+        });
+    }
 }
