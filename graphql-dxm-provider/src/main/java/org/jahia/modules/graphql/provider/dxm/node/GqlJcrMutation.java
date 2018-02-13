@@ -101,12 +101,12 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
      *
      * @param nodes the collection of {@link GqlJcrNodeWithParentInput} objects, representing add-child operation request
      *
-     * @return the list of created mutation objects
+     * @return a collection of created mutation objects
      * @throws BaseGqlClientException in case of JCR related errors during adding of child nodes
      */
     @GraphQLField
     @GraphQLDescription("Batch creates a number of new JCR nodes under the specified parent")
-    public List<GqlJcrNodeMutation> addNodesBatch(@GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The collection of nodes to create") Collection<GqlJcrNodeWithParentInput> nodes) throws BaseGqlClientException {
+    public Collection<GqlJcrNodeMutation> addNodesBatch(@GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The collection of nodes to create") Collection<GqlJcrNodeWithParentInput> nodes) throws BaseGqlClientException {
         List<GqlJcrNodeMutation> result = new ArrayList<>();
         for (GqlJcrNodeWithParentInput node : nodes) {
             result.add(new GqlJcrNodeMutation(addNode(getNodeFromPathOrId(getSession(), node.getParentPathOrId()), node)));
@@ -131,12 +131,12 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
      * Creates a list of mutation objects for the specified nodes.
      *
      * @param pathsOrIds the collection of path or UUIDs of the nodes to be modified
-     * @return the list with mutation objects for the specified nodes
+     * @return a collection with mutation objects for the specified nodes
      * @throws BaseGqlClientException in case of node retrieval error
      */
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on path or id")
-    public List<GqlJcrNodeMutation> mutateNodes(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or id ofs the nodes to mutate") Collection<String> pathsOrIds) throws BaseGqlClientException {
+    public Collection<GqlJcrNodeMutation> mutateNodes(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or id ofs the nodes to mutate") Collection<String> pathsOrIds) throws BaseGqlClientException {
         List<GqlJcrNodeMutation> result = new ArrayList<>();
         for (String pathOrId : pathsOrIds) {
             result.add(new GqlJcrNodeMutation(getNodeFromPathOrId(getSession(), pathOrId)));
@@ -145,21 +145,21 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
     }
 
     /**
-     * Creates a list of mutation objects for the nodes, matching the specified query.
+     * Creates a collection of mutation objects for the nodes, matching the specified query.
      *
      * @param query the query to retrieve the nodes to be modified
      * @param queryLanguage the query language
      * @param limit the maximum size of the result set
      * @param offset the start offset of the result set
-     * @return the list with mutation objects
+     * @return a collection of mutation objects
      * @throws BaseGqlClientException in case of node retrieval errors
      */
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on query execution")
-    public List<GqlJcrNodeMutation> mutateNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
-                                                       @GraphQLName("queryLanguage") @GraphQLDefaultValue(GqlJcrQuery.QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") GqlJcrQuery.QueryLanguage queryLanguage,
-                                                       @GraphQLName("limit") @GraphQLDescription("The maximum size of the result set") Long limit,
-                                                       @GraphQLName("offset") @GraphQLDescription("The start offset of the result set") Long offset)
+    public Collection<GqlJcrNodeMutation> mutateNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
+                                                             @GraphQLName("queryLanguage") @GraphQLDefaultValue(GqlJcrQuery.QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") GqlJcrQuery.QueryLanguage queryLanguage,
+                                                             @GraphQLName("limit") @GraphQLDescription("The maximum size of the result set") Long limit,
+                                                             @GraphQLName("offset") @GraphQLDescription("The start offset of the result set") Long offset)
     throws BaseGqlClientException {
         List<GqlJcrNodeMutation> result = new LinkedList<>();
         JCRNodeIteratorWrapper nodes;
