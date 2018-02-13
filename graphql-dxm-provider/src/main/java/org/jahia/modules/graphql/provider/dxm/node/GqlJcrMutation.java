@@ -242,8 +242,6 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
 
     /**
      * Saves the changes in the current JCR session.
-     *
-     * @throws BaseGqlClientException in case of errors during session save operation
      */
     public void save() {
         try {

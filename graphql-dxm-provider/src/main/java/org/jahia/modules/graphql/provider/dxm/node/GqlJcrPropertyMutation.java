@@ -243,7 +243,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     private Value getValue(int jcrType, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException {
         ValueFactory valueFactory = session.getValueFactory();
         JCRNodeWrapper referencedNode;
-        switch (jcrType){
+        switch (jcrType) {
             case PropertyType.REFERENCE:
                 referencedNode = getNodeFromPathOrId(session, value);
                 return valueFactory.createValue(referencedNode);
