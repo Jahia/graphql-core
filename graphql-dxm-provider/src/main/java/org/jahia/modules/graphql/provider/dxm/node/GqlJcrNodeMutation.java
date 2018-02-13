@@ -310,7 +310,8 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
      * @throws BaseGqlClientException in case of move error
      */
     @GraphQLField
-    @GraphQLDescription("Move the current node")
+    @GraphQLDescription("Moves the current node to a specified destination path (if destPath is specified) or moves it under the specified node"
+            + " (if parentPathOrId is specified). Either of two parameters is expected.")
     public String move(@GraphQLName("destPath") @GraphQLDescription("The target node path of the current node after the move operation") String destPath,
                        @GraphQLName("parentPathOrId") @GraphQLDescription("The parent node path or id under which the current node will be moved to") String parentPathOrId) throws BaseGqlClientException {
         try {
