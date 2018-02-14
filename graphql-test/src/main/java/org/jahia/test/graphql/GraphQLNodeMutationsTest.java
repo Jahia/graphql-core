@@ -49,6 +49,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRCallback;
+import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRTemplate;
@@ -70,12 +71,17 @@ import static org.junit.Assert.*;
  */
 public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
+    private String testSubList1Uuid;
+    private String testSubList2Uuid;
+    private String testSubList3Uuid;
+    private String testNodeUuid;
+
     private static void addText(JCRNodeWrapper parent, String name, String text, String nodeType)
             throws RepositoryException {
         JCRNodeWrapper textNode = parent.addNode(name, StringUtils.defaultString(nodeType, "jnt:text"));
         textNode.setProperty("text", text);
     }
-    
+
     private static <T> T inJcr(JCRCallback<T> callback) throws Exception {
         return inJcr(callback, null);
     }
@@ -94,13 +100,15 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     public void setup() throws Exception {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
             JCRNodeWrapper node = session.getRootNode().addNode("testList", "jnt:contentList");
-            node.addNode("testSubList1", "jnt:contentList");
-            node.addNode("testSubList2", "jnt:contentList");
-            node.addNode("testSubList3", "jnt:contentList");
-            node.addNode("testNode", "jnt:bigText");
-            
+            JCRNodeWrapper testSubList1 = node.addNode("testSubList1", "jnt:contentList");
+            JCRNodeWrapper testSubList2 = node.addNode("testSubList2", "jnt:contentList");
+            JCRNodeWrapper testSubList3 = node.addNode("testSubList3", "jnt:contentList");
+            JCRNodeWrapper testNode = node.addNode("testNode", "jnt:bigText");
+            testSubList1Uuid = testSubList1.getIdentifier();
+            testSubList2Uuid = testSubList2.getIdentifier();
+            testSubList3Uuid = testSubList3.getIdentifier();
+            testNodeUuid = testNode.getIdentifier();
             session.getRootNode().addNode("testFolder", "jnt:folder");
-
             session.save();
             return null;
         });
@@ -156,27 +164,27 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         });
 
         // add node with mixins, properties and child nodes
-        result = executeQuery("mutation {\n" + 
-                "  jcr {\n" + 
-                "    addNode(parentPathOrId: \"/testList\", name: \"testNew3\", primaryNodeType: \"jnt:contentList\", mixins: [\"jmix:keywords\", \"jmix:cache\"], \n" + 
-                "      children: [\n" + 
-                "        {name: \"text1\", primaryNodeType: \"jnt:text\", \n" + 
-                "          properties: [{language: \"en\", name: \"text\", value: \"English text 111\"}, {language: \"de\", name: \"text\", value: \"Deutsch Text 111\"}]\n" + 
-                "        },\n" + 
-                "        {name: \"text2\", primaryNodeType: \"jnt:text\", \n" + 
-                "          properties: [{language: \"en\", name: \"text\", value: \"English text 222\"}, {language: \"de\", name: \"text\", value: \"Deutsch Text 222\"}]\n" + 
-                "        },\n" + 
-                "      ],\n" + 
-                "      properties: [\n" + 
-                "        {name: \"j:expiration\", value: \"60000\"},\n" + 
-                "        {name: \"j:keywords\", values: [\"keyword1\", \"keyword2\"]},\n" + 
-                "        {name: \"jcr:title\", value: \"List title English\", language: \"en\"},\n" + 
-                "        {name: \"jcr:title\", value: \"Listentitel Deutsch\", language: \"de\"}\n" + 
-                "      ]\n" + 
-                "    ) {\n" + 
-                "      uuid\n" + 
-                "    }\n" + 
-                "  }\n" + 
+        result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId: \"/testList\", name: \"testNew3\", primaryNodeType: \"jnt:contentList\", mixins: [\"jmix:keywords\", \"jmix:cache\"], \n" +
+                "      children: [\n" +
+                "        {name: \"text1\", primaryNodeType: \"jnt:text\", \n" +
+                "          properties: [{language: \"en\", name: \"text\", value: \"English text 111\"}, {language: \"de\", name: \"text\", value: \"Deutsch Text 111\"}]\n" +
+                "        },\n" +
+                "        {name: \"text2\", primaryNodeType: \"jnt:text\", \n" +
+                "          properties: [{language: \"en\", name: \"text\", value: \"English text 222\"}, {language: \"de\", name: \"text\", value: \"Deutsch Text 222\"}]\n" +
+                "        },\n" +
+                "      ],\n" +
+                "      properties: [\n" +
+                "        {name: \"j:expiration\", value: \"60000\"},\n" +
+                "        {name: \"j:keywords\", values: [\"keyword1\", \"keyword2\"]},\n" +
+                "        {name: \"jcr:title\", value: \"List title English\", language: \"en\"},\n" +
+                "        {name: \"jcr:title\", value: \"Listentitel Deutsch\", language: \"de\"}\n" +
+                "      ]\n" +
+                "    ) {\n" +
+                "      uuid\n" +
+                "    }\n" +
+                "  }\n" +
                 "}\n");
         String uuidWithEverything = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getString("uuid");
         JCRCallback<Object> callback = session -> {
@@ -193,7 +201,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             assertTrue(node.hasNode("text2"));
 
             boolean isEnglish = session.getLocale().equals(Locale.ENGLISH);
-            
+
             // properties
             assertTrue(node.hasProperty("j:expiration"));
             assertEquals(60000, node.getProperty("j:expiration").getLong());
@@ -268,7 +276,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             assertEquals("test", node1.getProperty("jcr:title").getString());
             assertTrue(node1.hasNode("text1"));
             assertTrue(node1.getNode("text1").isNodeType("jnt:text"));
-            
+
             JCRNodeWrapper node2 = session.getNodeByIdentifier(uuid2);
             assertEquals("/testList/testBatch2", node2.getPath());
             assertTrue(node2.isNodeType("jnt:contentList"));
@@ -637,29 +645,29 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         });
 
         // add node with mixins, properties and child nodes
-        result = executeQuery("mutation {\n" + 
-                "  jcr {\n" + 
+        result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
                 "    mutateNode(pathOrId:\"/testList\")  {\n" +
-                "      addChild(name: \"testNew3\", primaryNodeType: \"jnt:contentList\", mixins: [\"jmix:keywords\", \"jmix:cache\"], \n" + 
-                "        children: [\n" + 
-                "          {name: \"text1\", primaryNodeType: \"jnt:text\", \n" + 
-                "            properties: [{language: \"en\", name: \"text\", value: \"English text 111\"}, {language: \"de\", name: \"text\", value: \"Deutsch Text 111\"}]\n" + 
-                "          },\n" + 
-                "          {name: \"text2\", primaryNodeType: \"jnt:text\", \n" + 
-                "            properties: [{language: \"en\", name: \"text\", value: \"English text 222\"}, {language: \"de\", name: \"text\", value: \"Deutsch Text 222\"}]\n" + 
-                "          },\n" + 
-                "        ],\n" + 
-                "        properties: [\n" + 
-                "          {name: \"j:expiration\", value: \"60000\"},\n" + 
-                "          {name: \"j:keywords\", values: [\"keyword1\", \"keyword2\"]},\n" + 
-                "          {name: \"jcr:title\", value: \"List title English\", language: \"en\"},\n" + 
-                "          {name: \"jcr:title\", value: \"Listentitel Deutsch\", language: \"de\"}\n" + 
-                "        ]\n" + 
-                "      ) {\n" + 
-                "        uuid\n" + 
-                "      }\n" + 
+                "      addChild(name: \"testNew3\", primaryNodeType: \"jnt:contentList\", mixins: [\"jmix:keywords\", \"jmix:cache\"], \n" +
+                "        children: [\n" +
+                "          {name: \"text1\", primaryNodeType: \"jnt:text\", \n" +
+                "            properties: [{language: \"en\", name: \"text\", value: \"English text 111\"}, {language: \"de\", name: \"text\", value: \"Deutsch Text 111\"}]\n" +
+                "          },\n" +
+                "          {name: \"text2\", primaryNodeType: \"jnt:text\", \n" +
+                "            properties: [{language: \"en\", name: \"text\", value: \"English text 222\"}, {language: \"de\", name: \"text\", value: \"Deutsch Text 222\"}]\n" +
+                "          },\n" +
+                "        ],\n" +
+                "        properties: [\n" +
+                "          {name: \"j:expiration\", value: \"60000\"},\n" +
+                "          {name: \"j:keywords\", values: [\"keyword1\", \"keyword2\"]},\n" +
+                "          {name: \"jcr:title\", value: \"List title English\", language: \"en\"},\n" +
+                "          {name: \"jcr:title\", value: \"Listentitel Deutsch\", language: \"de\"}\n" +
+                "        ]\n" +
+                "      ) {\n" +
+                "        uuid\n" +
+                "      }\n" +
                 "    }\n" +
-                "  }\n" + 
+                "  }\n" +
                 "}\n");
         String uuidWithEverything = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONObject("addChild").getString("uuid");
         JCRCallback<Object> callback = session -> {
@@ -676,7 +684,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             assertTrue(node.hasNode("text2"));
 
             boolean isEnglish = session.getLocale().equals(Locale.ENGLISH);
-            
+
             // properties
             assertTrue(node.hasProperty("j:expiration"));
             assertEquals(60000, node.getProperty("j:expiration").getLong());
@@ -751,7 +759,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             assertEquals("test", node1.getProperty("jcr:title").getString());
             assertTrue(node1.hasNode("text1"));
             assertTrue(node1.getNode("text1").isNodeType("jnt:text"));
-            
+
             JCRNodeWrapper node2 = session.getNodeByIdentifier(uuid2);
             assertEquals("/testList/testBatch2", node2.getPath());
             assertTrue(node2.isNodeType("jnt:contentList"));
@@ -877,7 +885,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
         String uuid = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getJSONObject("node")
                 .getJSONObject("property").getString("value");
-        
+
         inJcr(session -> {
             JCRNodeWrapper node = session.getNodeByIdentifier(uuid);
             assertEquals("/testList/testNode", node.getPath());
@@ -1157,6 +1165,83 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
             return null;
         });
+    }
+
+    @Test
+    public void shouldReorderAllChildNodesByNames() throws Exception {
+        executeQuery(buildReorderChildNodesQuery("testNode", "testSubList3", "testSubList2", "testSubList1"));
+        validateChildNodesOrder("testNode", "testSubList3", "testSubList2", "testSubList1");
+    }
+
+    @Test
+    public void shouldReorderAllChildNodesByIds() throws Exception {
+        executeQuery(buildReorderChildNodesQuery(testSubList2Uuid, testSubList1Uuid, testNodeUuid, testSubList3Uuid));
+        validateChildNodesOrder("testSubList2", "testSubList1", "testNode", "testSubList3");
+    }
+
+    @Test
+    public void shouldReorderSelectedChildNodesAndPutOtherOnesAtTheEnd() throws Exception {
+        executeQuery(buildReorderChildNodesQuery("testSubList2", "testSubList3", "testNode"));
+        validateChildNodesOrder("testSubList2", "testSubList3", "testNode", "testSubList1");
+    }
+
+    @Test
+    public void shouldGetErrorAndNotReorderChildNodesIfEmptyListPassed() throws Exception {
+        List<String> orderedChildNames = getActualOrderedChildNames();
+        JSONObject result = executeQuery(buildReorderChildNodesQuery());
+        validateError(result, "A non-empty list of child node names or UUIDs is expected");
+        validateChildNodesOrder(orderedChildNames);
+    }
+
+    @Test
+    public void shouldGetErrorAndNotReorderChildNodesIfAnyOneDoesNotExist() throws Exception {
+        List<String> orderedChildNames = getActualOrderedChildNames();
+        JSONObject result = executeQuery(buildReorderChildNodesQuery("testSubList4", "testNode", "testSubList2", "testSubList1"));
+        validateError(result, "The 'testSubList4' name or UUID does not correspond to any actual child node");
+        validateChildNodesOrder(orderedChildNames);
+    }
+
+    private static String buildReorderChildNodesQuery(String... childNamesOrIds) {
+        StringBuilder query = new StringBuilder();
+        query.append(
+            "mutation {\n" +
+            "  jcr {\n" +
+            "    mutateNode(pathOrId:\"/testList\") {\n" +
+            "      reorderChildren(childNamesOrIds: ["
+        );
+        for (int i = 0; i < childNamesOrIds.length; i++) {
+            if (i != 0) {
+                query.append(", ");
+            }
+            query.append('"').append(childNamesOrIds[i]).append('"');
+        }
+        query.append("])\n" +
+            "    }\n" +
+            "  }\n" +
+            "}\n");
+        return query.toString();
+    }
+
+    private static List<String> getActualOrderedChildNames() throws Exception {
+        LinkedList<String> orderedChildNodes = new LinkedList<>();
+        inJcr(session -> {
+            JCRNodeWrapper testList = session.getNode("/testList");
+            JCRNodeIteratorWrapper children = testList.getNodes();
+            while (children.hasNext()) {
+                JCRNodeWrapper child = (JCRNodeWrapper) children.next();
+                orderedChildNodes.add(child.getName());
+            }
+            return null;
+        });
+        return orderedChildNodes;
+    }
+
+    private static void validateChildNodesOrder(String... expectedOrderedChildNames) throws Exception {
+        validateChildNodesOrder(Arrays.asList(expectedOrderedChildNames));
+    }
+
+    private static void validateChildNodesOrder(List<String> expectedOrderedChildNames) throws Exception {
+        assertEquals(expectedOrderedChildNames, getActualOrderedChildNames());
     }
 
     private void setupTextNodes() throws Exception {
