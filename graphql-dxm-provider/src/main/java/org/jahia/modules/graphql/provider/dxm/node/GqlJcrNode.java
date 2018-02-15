@@ -123,7 +123,8 @@ public interface GqlJcrNode {
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the properties in the requested language")
     Collection<GqlJcrProperty> getProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names,
-                                             @GraphQLName("language") @GraphQLDescription("The language to obtain the properties in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones") String language);
+                                             @GraphQLName("language") @GraphQLDescription("The language to obtain the properties in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones") String language,
+                                             @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment);
 
     /**
      * Get a GraphQL representation of a single property of the JCR node.
@@ -185,7 +186,7 @@ public interface GqlJcrNode {
     @GraphQLDescription("GraphQL representations of the descendant nodes, according to parameters passed")
     DXPaginatedData<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
                                                @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter,
-                                               DataFetchingEnvironment environment)
+                                               @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment)
     throws GqlJcrWrongInputException;
 
     /**
@@ -198,7 +199,8 @@ public interface GqlJcrNode {
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the ancestor nodes of the JCR node, top down direction")
-    List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") @GraphQLDescription("The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes") String upToPath)
+    List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") @GraphQLDescription("The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes") String upToPath,
+                                  @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment)
     throws GqlJcrWrongInputException;
 
     /**
@@ -209,7 +211,7 @@ public interface GqlJcrNode {
     @GraphQLNonNull
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
-    DXPaginatedData<GqlJcrProperty> getReferences(DataFetchingEnvironment environment);
+    DXPaginatedData<GqlJcrProperty> getReferences(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,DataFetchingEnvironment environment);
 
     /**
      * Get GraphQL representation of this node in certain workspace.

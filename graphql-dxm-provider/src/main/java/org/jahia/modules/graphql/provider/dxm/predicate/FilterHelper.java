@@ -46,20 +46,15 @@
 package org.jahia.modules.graphql.provider.dxm.predicate;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.execution.ValuesResolver;
-import graphql.language.*;
 import graphql.relay.Connection;
-import graphql.schema.*;
-import org.apache.commons.collections4.Predicate;
-import org.apache.commons.collections4.functors.TruePredicate;
-import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import graphql.schema.DataFetchingEnvironment;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
-
-import static graphql.schema.DataFetchingEnvironmentBuilder.newDataFetchingEnvironment;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class FilterHelper {
 
@@ -92,12 +87,12 @@ public class FilterHelper {
 
     @FunctionalInterface
     interface FieldEvaluationAlgorithm {
-        boolean evaluate(Object source, String fieldName, String fieldValue, FieldEvaluationEnvironment environment);
+        boolean evaluate(Object source, String fieldName, String fieldValue, FieldEvaluator environment);
     }
 
     static {
         ALGORITHM_BY_EVALUATION.put(FieldEvaluation.EQUAL, ((source, fieldName, fieldValue, environment) -> {
-            Object value = getField(source, fieldName, environment);
+            Object value = environment.getFieldValue(source, fieldName);
             return value != null && value.toString().equals(fieldValue);
         }));
 
@@ -106,7 +101,7 @@ public class FilterHelper {
         ));
 
         ALGORITHM_BY_EVALUATION.put(FieldEvaluation.EMPTY, ((source, fieldName, fieldValue, environment) -> {
-            Object value = getField(source, fieldName, environment);
+            Object value = environment.getFieldValue(source, fieldName);
             if (value instanceof Connection) {
                 return ((Connection) value).getEdges().size() == 0;
             } else if (value instanceof Collection) {
@@ -122,70 +117,12 @@ public class FilterHelper {
     }
 
     /**
-     * Evaluate a field value on a given object
-     *
-     * @param source The source object on which we will get the field value
-     * @param fieldName The field name or alias
-     * @param environment The environment
-     * @return The value, as returned by the DataFetcher
-     */
-    private static Object getField(Object source, String fieldName, FieldEvaluationEnvironment environment) {
-        GraphQLFieldsContainer objectType = environment.getObjectType(source);
-        DataFetchingEnvironmentBuilder fieldEnv = newDataFetchingEnvironment().source(source);
-
-        if (environment.getSelectionSet() != null) {
-            // Try to find field in selection set to reuse alias/arguments
-            Field field = findField(environment.getSelectionSet(), fieldName);
-            if (field != null) {
-                GraphQLFieldDefinition fieldDefinition = objectType.getFieldDefinition(field.getName());
-                if (fieldDefinition == null) {
-                    // Definition not present on current type (can be a field in a non-matching fragment), returns null
-                    return null;
-                }
-
-                ValuesResolver valuesResolver = new ValuesResolver();
-                Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), environment.getVariables());
-                fieldEnv.arguments(argumentValues);
-                return fieldDefinition.getDataFetcher().get(fieldEnv.build());
-            }
-        }
-
-        // Otherwise, directly look in field definitions
-        GraphQLFieldDefinition fieldDefinition = objectType.getFieldDefinition(fieldName);
-        if (fieldDefinition == null) {
-            // Definition not present on current type (can be a field in a non-matching fragment), returns null
-            return null;
-        }
-        return fieldDefinition.getDataFetcher().get(fieldEnv.build());
-    }
-
-    private static Field findField(SelectionSet set, String name) {
-        for (Selection selection : set.getSelections()) {
-            if (selection instanceof Field) {
-                Field field = (Field) selection;
-                String nameOrAlias = field.getAlias() != null ? field.getAlias() : field.getName();
-                if (nameOrAlias.equals(name)) {
-                    return field;
-                }
-            } else if (selection instanceof InlineFragment) {
-                Field f = findField(((InlineFragment) selection).getSelectionSet(), name);
-                if (f != null) {
-                    return f;
-                }
-            } else if (selection instanceof FragmentSpread) {
-                // Not supported, skip
-            }
-        }
-        return null;
-    }
-
-    /**
      * Get a predicate based on the value of a sub field evaluation
      */
-    public static Predicate<Object> getFieldPredicate(FieldFiltersInput fieldFilters, FieldEvaluationEnvironment environment) {
+    public static Predicate<Object> getFieldPredicate(FieldFiltersInput fieldFilters, FieldEvaluator environment) {
         Predicate<Object> fieldPredicate;
         if (fieldFilters == null) {
-            fieldPredicate = TruePredicate.truePredicate();
+            fieldPredicate = PredicateHelper.truePredicate();
         } else {
             LinkedList<Predicate<Object>> predicates = new LinkedList<>();
             for (FieldFilterInput fieldFilter : fieldFilters.getFilters()) {
@@ -203,6 +140,20 @@ public class FilterHelper {
             fieldPredicate = PredicateHelper.getCombinedPredicate(predicates, fieldFilters.getMulticriteriaEvaluation(), MulticriteriaEvaluation.ALL);
         }
         return fieldPredicate;
+    }
+
+    public static <T> List<T> filterList(List<T> collection, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+        if (fieldFilter == null) {
+            return collection;
+        }
+        return collection.stream().filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment))).collect(Collectors.toList());
+    }
+
+    public static <T> List<T> filterConnection(List<T> collection, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+        if (fieldFilter == null) {
+            return collection;
+        }
+        return collection.stream().filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment))).collect(Collectors.toList());
     }
 
 }

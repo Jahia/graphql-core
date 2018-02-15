@@ -48,6 +48,9 @@ import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
@@ -84,7 +87,9 @@ public class NodeTypeJCRQueryExtensions {
     @GraphQLField
     @GraphQLDescription("Get a list of nodetypes based on specified parameter")
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
-    public static DXPaginatedData<GqlJcrNodeType> getNodeTypes(@GraphQLName("filter") NodeTypesListInput input,DataFetchingEnvironment environment) {
+    public static DXPaginatedData<GqlJcrNodeType> getNodeTypes(@GraphQLName("filter") NodeTypesListInput input,
+                                                               @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                                               DataFetchingEnvironment environment) {
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         NodeTypeRegistry registry = NodeTypeRegistry.getInstance();
         NodeTypeIterator nodeTypes = (input == null || input.getModules() == null) ? registry.getAllNodeTypes() : registry.getAllNodeTypes(input.getModules());
@@ -92,6 +97,7 @@ public class NodeTypeJCRQueryExtensions {
                 .limit(nodeTypes.getSize())
                 .filter(n -> (n.isMixin() && (input == null || input.getIncludeMixins())) || (!n.isMixin() && (input == null || input.getIncludeNonMixins())))
                 .map(GqlJcrNodeType::new)
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
                 .collect(Collectors.toList());
 
         return PaginationHelper.paginate(mapped, GqlJcrNodeType::getName, arguments);

@@ -44,8 +44,12 @@
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
 import graphql.annotations.annotationTypes.*;
+import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 
 import javax.jcr.RepositoryException;
@@ -80,15 +84,18 @@ public class NodetypeJCRNodeExtensions {
     @GraphQLDescription("Reports if the current node matches the nodetype(s) passed in parameter")
     @GraphQLNonNull
     public boolean getIsNodeType(@GraphQLName("type") @GraphQLNonNull GqlJcrNode.NodeTypesInput input) {
-        return NodeHelper.getTypesPredicate(input).evaluate(node.getNode());
+        return NodeHelper.getTypesPredicate(input).test(node.getNode());
     }
 
     @GraphQLField
     @GraphQLDescription("Returns an array of <code>NodeType</code> objects representing the mixin node types in effect for this node.")
     @GraphQLNonNull
-    public List<GqlJcrNodeType> getMixinTypes() {
+    public List<GqlJcrNodeType> getMixinTypes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
         try {
-            return Arrays.stream(node.getNode().getMixinNodeTypes()).map(GqlJcrNodeType::new).collect(Collectors.toList());
+            return Arrays.stream(node.getNode().getMixinNodeTypes())
+                    .map(GqlJcrNodeType::new)
+                    .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
+                    .collect(Collectors.toList());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }

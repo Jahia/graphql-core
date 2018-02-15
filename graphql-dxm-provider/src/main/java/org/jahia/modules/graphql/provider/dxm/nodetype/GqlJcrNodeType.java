@@ -50,6 +50,9 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.annotations.connection.PaginatedData;
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
@@ -138,14 +141,20 @@ public class GqlJcrNodeType {
 
     @GraphQLField
     @GraphQLDescription("Returns an array containing the property definitions of this node type.")
-    public List<GqlJcrPropertyDefinition> getProperties() {
-        return Arrays.stream(nodeType.getPropertyDefinitions()).map(GqlJcrPropertyDefinition::new).collect(Collectors.toList());
+    public List<GqlJcrPropertyDefinition> getProperties(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+        return Arrays.stream(nodeType.getPropertyDefinitions())
+                .map(GqlJcrPropertyDefinition::new)
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
+                .collect(Collectors.toList());
     }
 
     @GraphQLField
     @GraphQLDescription("Returns an array containing the child node definitions of this node type.")
-    public List<GqlJcrNodeDefinition> getNodes() {
-        return Arrays.stream(nodeType.getChildNodeDefinitions()).map(GqlJcrNodeDefinition::new).collect(Collectors.toList());
+    public List<GqlJcrNodeDefinition> getNodes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+        return Arrays.stream(nodeType.getChildNodeDefinitions())
+                .map(GqlJcrNodeDefinition::new)
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
+                .collect(Collectors.toList());
     }
 
     @GraphQLField
@@ -159,7 +168,10 @@ public class GqlJcrNodeType {
 
     @GraphQLField
     @GraphQLDescription("Returns all supertypes of this node type in the node type inheritance hierarchy.")
-    public List<GqlJcrNodeType> getSupertypes() {
-        return nodeType.getSupertypeSet().stream().map(GqlJcrNodeType::new).collect(Collectors.toList());
+    public List<GqlJcrNodeType> getSupertypes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+        return nodeType.getSupertypeSet().stream()
+                .map(GqlJcrNodeType::new)
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
+                .collect(Collectors.toList());
     }
 }

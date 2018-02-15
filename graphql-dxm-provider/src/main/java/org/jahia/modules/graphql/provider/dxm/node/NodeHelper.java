@@ -43,9 +43,6 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import org.apache.commons.collections4.Predicate;
-import org.apache.commons.collections4.functors.AllPredicate;
-import org.apache.commons.collections4.functors.TruePredicate;
 import org.jahia.modules.graphql.provider.dxm.predicate.MulticriteriaEvaluation;
 import org.jahia.modules.graphql.provider.dxm.predicate.PredicateHelper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -54,11 +51,9 @@ import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.LanguageCodeConverters;
 
 import javax.jcr.RepositoryException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Locale;
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class NodeHelper {
 
@@ -108,7 +103,7 @@ public class NodeHelper {
     public static Predicate<JCRNodeWrapper> getPropertiesPredicate(GqlJcrNode.NodePropertiesInput propertiesFilter) {
         Predicate<JCRNodeWrapper> propertiesPredicate;
         if (propertiesFilter == null) {
-            propertiesPredicate = TruePredicate.truePredicate();
+            propertiesPredicate = PredicateHelper.truePredicate();
         } else {
             LinkedList<Predicate<JCRNodeWrapper>> propertyPredicates = new LinkedList<>();
             for (GqlJcrNode.NodePropertyInput propertyFilter : propertiesFilter.getPropertyFilters()) {
@@ -130,7 +125,7 @@ public class NodeHelper {
     public static Predicate<JCRNodeWrapper> getTypesPredicate(GqlJcrNode.NodeTypesInput typesFilter) {
         Predicate<JCRNodeWrapper> typesPredicate;
         if (typesFilter == null) {
-            typesPredicate = TruePredicate.truePredicate();
+            typesPredicate = PredicateHelper.truePredicate();
         } else {
             LinkedList<Predicate<JCRNodeWrapper>> typePredicates = new LinkedList<>();
             for (String typeFilter : typesFilter.getTypes()) {
@@ -190,7 +185,7 @@ public class NodeHelper {
 
     static void collectDescendants(JCRNodeWrapper node, Predicate<JCRNodeWrapper> predicate, boolean recurse, Consumer<JCRNodeWrapper> consumer) throws RepositoryException {
         for (JCRNodeWrapper child : node.getNodes()) {
-            if (predicate.evaluate(child)) {
+            if (predicate.test(child)) {
                 consumer.accept(child);
             }
             if (recurse) {
@@ -203,22 +198,16 @@ public class NodeHelper {
 
         Predicate<JCRNodeWrapper> namesPredicate;
         if (names == null) {
-            namesPredicate = TruePredicate.truePredicate();
+            namesPredicate = PredicateHelper.truePredicate();
         } else {
-            namesPredicate = new Predicate<JCRNodeWrapper>() {
-
-                @Override
-                public boolean evaluate(JCRNodeWrapper node) {
-                    return names.contains(node.getName());
-                }
-            };
+            namesPredicate = (node) -> names.contains(node.getName());
         }
 
         Predicate<JCRNodeWrapper> typesPredicate = getTypesPredicate(typesFilter);
 
         Predicate<JCRNodeWrapper> propertiesPredicate = getPropertiesPredicate(propertiesFilter);
 
-        @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = AllPredicate.allPredicate(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate);
+        @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = PredicateHelper.allPredicates(Arrays.asList(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate));
         return result;
     }
 

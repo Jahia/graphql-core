@@ -45,14 +45,22 @@
 
 package org.jahia.modules.graphql.provider.dxm.predicate;
 
-import org.apache.commons.collections4.Predicate;
-import org.apache.commons.collections4.functors.AllPredicate;
-import org.apache.commons.collections4.functors.AnyPredicate;
-import org.apache.commons.collections4.functors.NonePredicate;
-
 import java.util.Collection;
+import java.util.function.Predicate;
 
 public class PredicateHelper {
+
+    public static <T> Predicate<T> truePredicate() {
+        return (object) -> true;
+    }
+
+    public static <T> Predicate<T> anyPredicate(Collection<Predicate<T>> predicates) {
+        return predicates.stream().reduce(Predicate::or).orElse(t->false);
+    }
+
+    public static <T> Predicate<T> allPredicates(Collection<Predicate<T>> predicates) {
+        return predicates.stream().reduce(Predicate::and).orElse(t->false);
+    }
 
     /**
      * Combine multiple predicate based on MulticriteriaEvaluation value
@@ -67,13 +75,14 @@ public class PredicateHelper {
             multicriteriaEvaluation = defaultMulticriteriaEvaluation;
         }
         if (multicriteriaEvaluation == MulticriteriaEvaluation.ALL) {
-            return AllPredicate.allPredicate(predicates);
+            return allPredicates(predicates);
         } else if (multicriteriaEvaluation == MulticriteriaEvaluation.ANY) {
-            return AnyPredicate.anyPredicate(predicates);
+            return anyPredicate(predicates);
         } else if (multicriteriaEvaluation == MulticriteriaEvaluation.NONE) {
-            return NonePredicate.nonePredicate(predicates);
+            return anyPredicate(predicates).negate();
         } else {
             throw new IllegalArgumentException("Unknown multicriteria evaluation: " + multicriteriaEvaluation);
         }
     }
+
 }

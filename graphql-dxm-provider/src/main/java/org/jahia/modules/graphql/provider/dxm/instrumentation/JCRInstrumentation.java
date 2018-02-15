@@ -47,14 +47,12 @@ import graphql.execution.ExecutionContext;
 import graphql.execution.instrumentation.NoOpInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
-import graphql.language.SelectionSet;
 import graphql.schema.DataFetcher;
 import graphql.servlet.GraphQLContext;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
 
-import java.util.HashMap;
-import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * JCR instrumentation implementation
@@ -62,6 +60,7 @@ import java.util.Map;
 public class JCRInstrumentation extends NoOpInstrumentation {
 
     public static final String GRAPHQL_VARIABLES = "graphQLVariables";
+    public static final String FRAGMENTS_BY_NAME = "fragmentsByName";
 
     private DXGraphQLConfig dxGraphQLConfig;
 
@@ -77,10 +76,12 @@ public class JCRInstrumentation extends NoOpInstrumentation {
 
     @Override
     public ExecutionContext instrumentExecutionContext(ExecutionContext executionContext, InstrumentationExecutionParameters parameters) {
-        // Stores variable in request attribute for future usage, return context unmodified
+        // Stores variable and fragments in request attribute for future usage, return context unmodified
         GraphQLContext context = (GraphQLContext) executionContext.getContext();
         if (context.getRequest().isPresent()) {
-            context.getRequest().get().setAttribute(GRAPHQL_VARIABLES, executionContext.getVariables());
+            HttpServletRequest servletRequest = context.getRequest().get();
+            servletRequest.setAttribute(GRAPHQL_VARIABLES, executionContext.getVariables());
+            servletRequest.setAttribute(FRAGMENTS_BY_NAME, executionContext.getFragmentsByName());
         }
         return super.instrumentExecutionContext(executionContext, parameters);
     }
