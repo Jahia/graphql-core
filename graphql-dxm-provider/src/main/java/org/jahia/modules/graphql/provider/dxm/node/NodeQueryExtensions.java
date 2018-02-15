@@ -58,18 +58,21 @@ import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 public class NodeQueryExtensions {
 
     /**
-     * JCR query languages available to use for nodes querying.
+     * JCR workspace to use for the operations.
      */
+    @GraphQLDescription("JCR workspace to use for the operations")
     public enum Workspace {
 
         /**
          * Edit workspace
          */
+        @GraphQLDescription("Edit workspace")
         EDIT(Constants.EDIT_WORKSPACE),
 
         /**
          * Live workspace
          */
+        @GraphQLDescription("Live workspace")
         LIVE(Constants.LIVE_WORKSPACE);
 
         private String workspace;
@@ -79,7 +82,7 @@ public class NodeQueryExtensions {
         }
 
         /**
-         * @return Corresponding workspace
+         * @return corresponding workspace name
          */
         public String getValue() {
             return workspace;
@@ -95,7 +98,7 @@ public class NodeQueryExtensions {
     @GraphQLField
     @GraphQLName("jcr")
     @GraphQLDescription("JCR Queries")
-    public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") Workspace workspace) {
+    public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either EDIT, LIVE, or null to use EDIT by default") Workspace workspace) {
         return new GqlJcrQuery(workspace != null ? workspace.getValue() : null);
     }
 

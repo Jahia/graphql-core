@@ -80,16 +80,19 @@ public class GqlJcrQuery {
     /**
      * JCR query languages available to use for nodes querying.
      */
+    @GraphQLDescription("JCR query languages available to use for nodes querying")
     public enum QueryLanguage {
 
         /**
          * SQL2 query language.
          */
+        @GraphQLDescription("SQL2 query language")
         SQL2(Query.JCR_SQL2),
 
         /**
          * XPath query language.
          */
+        @GraphQLDescription("XPath query language")
         XPATH(Query.XPATH);
 
         private String jcrQueryLanguage;
