@@ -97,7 +97,11 @@ public class FieldEvaluationEnvironment {
      */
     public static FieldEvaluationEnvironment buildEnvironmentForConnection(DataFetchingEnvironment environment) {
         // Extract return type from connection
-        GraphQLObjectType outputType = ((GraphQLObjectType)environment.getFieldType());
+        GraphQLOutputType fieldType = environment.getFieldType();
+        if (fieldType instanceof GraphQLNonNull) {
+            fieldType = (GraphQLOutputType) ((GraphQLNonNull) fieldType).getWrappedType();
+        }
+        GraphQLObjectType outputType = ((GraphQLObjectType) fieldType);
         GraphQLList list = (GraphQLList) outputType.getFieldDefinition("nodes").getType();
         GraphQLType type = list.getWrappedType();
 
