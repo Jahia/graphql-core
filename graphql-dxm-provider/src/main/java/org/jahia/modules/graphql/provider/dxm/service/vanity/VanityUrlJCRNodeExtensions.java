@@ -84,18 +84,19 @@ public class VanityUrlJCRNodeExtensions {
     public Collection<GqlJcrVanityUrl> getVanityUrls(@GraphQLName("languages") Collection<String>  languages, @GraphQLName("onlyActive") Boolean onlyActive, @GraphQLName("onlyDefault") Boolean onlyDefault ) {
         try {
             Collection<GqlJcrVanityUrl> vanityUrls = new LinkedList<>();
-            JCRNodeIteratorWrapper urls = node.getNode().getNode(VANITYURLMAPPINGS_NODE).getNodes();
-            urls.forEachRemaining(vanityUrl -> {
-                GqlJcrVanityUrl gqlVanityUrl = new GqlJcrVanityUrl((JCRNodeWrapper) vanityUrl);
-                try {
-                    if ((languages == null || languages.contains(gqlVanityUrl.getLanguage())) && ((onlyActive != null && !onlyActive) || gqlVanityUrl.isActive()) && ((onlyDefault != null &&!onlyDefault) || gqlVanityUrl.isDefault())) {
-                        vanityUrls.add(gqlVanityUrl);
+            if (node.getNode().hasNode(VANITYURLMAPPINGS_NODE)) {
+                JCRNodeIteratorWrapper urls = node.getNode().getNode(VANITYURLMAPPINGS_NODE).getNodes();
+                urls.forEachRemaining(vanityUrl -> {
+                    GqlJcrVanityUrl gqlVanityUrl = new GqlJcrVanityUrl((JCRNodeWrapper) vanityUrl);
+                    try {
+                        if ((languages == null || languages.contains(gqlVanityUrl.getLanguage())) && ((onlyActive != null && !onlyActive) || gqlVanityUrl.isActive()) && ((onlyDefault != null && !onlyDefault) || gqlVanityUrl.isDefault())) {
+                            vanityUrls.add(gqlVanityUrl);
+                        }
+                    } catch (RepositoryException e) {
+                        throw new RuntimeException(e);
                     }
-                } catch (RepositoryException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
+                });
+            }
             return vanityUrls;
 
         } catch (RepositoryException e) {
