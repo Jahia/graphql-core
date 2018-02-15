@@ -43,24 +43,30 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.annotations.annotationTypes.GraphQLDefaultValue;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
-
+import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
+
+import com.google.common.collect.Lists;
 
 import javax.jcr.RepositoryException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -69,6 +75,40 @@ import java.util.stream.Collectors;
 @GraphQLName("JCRNodeMutation")
 @GraphQLDescription("Mutations on a JCR node")
 public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
+    
+    /**
+     * The target position of reordered child nodes.
+     */
+    @GraphQLDescription("The target position of reordered child nodes")
+    public enum ReorderedChildrenPosition {
+        /**
+         * Specified children are sorted in a requested order and placed at the end of the list after the remaining children.
+         */
+        @GraphQLDescription("Specified children are sorted in a requested order and placed at the end of the list after the remaining children")
+        LAST,
+
+        /**
+         * Specified children are sorted in a requested order, but remaining are kept at their places.
+         */
+        @GraphQLDescription("Specified children are sorted in a requested order, but remaining are kept at their places")
+        INPLACE,
+
+        /**
+         * Specified children are sorted in a requested order and placed at the top, before all remaining children.
+         */
+        @GraphQLDescription("Specified children are sorted in a requested order and placed at the top, before all remaining children")
+        FIRST;
+    }
+    
+    /**
+     * Default value supplier for {@link ReorderedChildrenPosition}.
+     */
+    public static class ReorderedChildrenPositionDefaultValue implements Supplier<Object> {
+        @Override
+        public ReorderedChildrenPosition get() {
+            return ReorderedChildrenPosition.INPLACE;
+        }
+    }
 
     public JCRNodeWrapper jcrNode;
 
@@ -383,65 +423,79 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     }
 
     /**
-     * Reorder child nodes according to the list of names/UUIDs passed.
+     * Reorder child nodes according to the list of names passed. The result of reordering will ensure that the ordering of specified child
+     * nodes will be guaranteed. But the resulting position of specified set of ordered children will depend on the value of the
+     * <code>position</code> parameter (see {@link ReorderedChildrenPosition}).
      *
-     * @param childNamesOrIds a non-empty list of child node names or UUIDs in the desired order; all existing child nodes whose names/UUIDs are missing from the list will be automatically moved to the end
+     * @param names a non-empty list of child node names in the desired order
+     * @param position see {@link ReorderedChildrenPosition} for possible values. The default value is <code>inplace</code>.
      * @return operation result
      * @throws BaseGqlClientException in case of an error
      */
     @GraphQLField
-    @GraphQLDescription("Reorder child nodes according to the list of names/UUIDs passed")
-    public boolean reorderChildren(@GraphQLName("childNamesOrIds") @GraphQLNonNull @GraphQLDescription("List of child node names or UUIDs in the desired order") List<String> childNamesOrIds) throws BaseGqlClientException {
+    @GraphQLDescription("Reorder child nodes according to the list of names passed")
+    public boolean reorderChildren(
+            @GraphQLName("names") @GraphQLNonNull @GraphQLDescription("List of child node names in the desired order") List<String> names,
+            @GraphQLName("position") @GraphQLDefaultValue(ReorderedChildrenPositionDefaultValue.class) @GraphQLDescription("The target position of reordered child nodes. The default value is inplace.") ReorderedChildrenPosition position)
+            throws BaseGqlClientException {
 
-        if (childNamesOrIds.isEmpty()) {
-            throw new GqlJcrWrongInputException("A non-empty list of child node names or UUIDs is expected");
-        }
+        validateChildNamesToReorder(names, position);
 
         try {
-
-            // Create a blank list of child nodes to represent their desired order - to be populated at the next step.
-            List<JCRNodeWrapper> orderedChildren = new ArrayList<>(childNamesOrIds.size());
-            for (int i = 0; i < childNamesOrIds.size(); i++) {
-                orderedChildren.add(null);
-            }
-
-            // Iterate through the actual list of child nodes, put them to the desired list at their desired positions.
-            JCRNodeIteratorWrapper children = jcrNode.getNodes();
-            while (children.hasNext()) {
-                JCRNodeWrapper child = (JCRNodeWrapper) children.next();
-                int index = childNamesOrIds.indexOf(child.getIdentifier());
-                if (index < 0) {
-                    index = childNamesOrIds.indexOf(child.getName());
-                }
-                if (index < 0) {
-                    // The node is missing from the parameter names/UUIDs list - add it to the end.
-                    orderedChildren.add(child);
+            String destChildName = null;
+            // we proceed in reverse order
+            for (String srcChildName : Lists.reverse(names)) {
+                if (destChildName == null) {
+                    // we are on the last element in the list (first one, we process)
+                    if (position == ReorderedChildrenPosition.LAST) {
+                        // we put it at the end of the children list
+                        jcrNode.orderBefore(srcChildName, null);
+                    } else if (position == ReorderedChildrenPosition.FIRST) {
+                        // we put it at the beginning
+                        Iterator<JCRNodeWrapper> childNodeIterator = jcrNode.getNodes().iterator();
+                        if (childNodeIterator.hasNext()) {
+                            jcrNode.orderBefore(srcChildName, childNodeIterator.next().getName());
+                        } else {
+                            throw new GqlJcrWrongInputException(
+                                    "Node " + jcrNode.getPath() + " has no children to reorder");
+                        }
+                    }
                 } else {
-                    // The node is found in the parameter names/UUIDs list - put it at the desired position.
-                    orderedChildren.set(index, child);
+                    jcrNode.orderBefore(srcChildName, destChildName);
                 }
-            }
-
-            // Check if the parameter list contained any child node names/UUIDs that do not actually exist.
-            for (int i = 0; i < childNamesOrIds.size(); i++) {
-                if (orderedChildren.get(i) == null) {
-                    String childNameOrId = childNamesOrIds.get(i);
-                    throw new GqlJcrWrongInputException("The '" + childNameOrId + "' name or UUID does not correspond to any actual child node");
-                }
-            }
-
-            // Reorder child nodes.
-            String previousChildName = null;
-            for (int i = orderedChildren.size(); i > 0; i--) {
-                JCRNodeWrapper child = orderedChildren.get(i - 1);
-                String childName = child.getName();
-                jcrNode.orderBefore(child.getName(), previousChildName);
-                previousChildName = childName;
+                destChildName = srcChildName;
             }
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
 
         return true;
+    }
+
+    private void validateChildNamesToReorder(List<String> names, ReorderedChildrenPosition position) {
+        if (names == null || names.isEmpty()) {
+            // check for presence of names
+            throw new GqlJcrWrongInputException("A non-empty list of child node names is expected");
+        }
+        if (names.size() == 1) {
+            // we've got a single name
+            if (position == ReorderedChildrenPosition.INPLACE) {
+                throw new GqlJcrWrongInputException(
+                        "Reorder operation expects at least two names in case target position is inplace");
+            }
+        } else {
+            // check for duplicate names
+            Set<String> uniqueNames = new LinkedHashSet<>(names);
+            if (uniqueNames.size() != names.size()) {
+                throw new GqlJcrWrongInputException(
+                        "Ambigous child name order: duplicates are not expected in the list of passed child node names to reorder");
+            } else {
+                // check for null
+                if (names.indexOf(null) != -1 || names.indexOf(StringUtils.EMPTY) != -1) {
+                    // null is not permitted
+                    throw new GqlJcrWrongInputException("Null or empty child names are not permitted");
+                }
+            }
+        }
     }
 }

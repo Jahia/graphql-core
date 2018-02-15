@@ -48,6 +48,7 @@ import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation.ReorderedChildrenPosition;
 import org.jahia.services.content.JCRCallback;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -70,11 +71,6 @@ import static org.junit.Assert.*;
  * Integration test for GraphQL mutations.
  */
 public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
-
-    private String testSubList1Uuid;
-    private String testSubList2Uuid;
-    private String testSubList3Uuid;
-    private String testNodeUuid;
 
     private static void addText(JCRNodeWrapper parent, String name, String text, String nodeType)
             throws RepositoryException {
@@ -100,14 +96,10 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     public void setup() throws Exception {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
             JCRNodeWrapper node = session.getRootNode().addNode("testList", "jnt:contentList");
-            JCRNodeWrapper testSubList1 = node.addNode("testSubList1", "jnt:contentList");
-            JCRNodeWrapper testSubList2 = node.addNode("testSubList2", "jnt:contentList");
-            JCRNodeWrapper testSubList3 = node.addNode("testSubList3", "jnt:contentList");
-            JCRNodeWrapper testNode = node.addNode("testNode", "jnt:bigText");
-            testSubList1Uuid = testSubList1.getIdentifier();
-            testSubList2Uuid = testSubList2.getIdentifier();
-            testSubList3Uuid = testSubList3.getIdentifier();
-            testNodeUuid = testNode.getIdentifier();
+            node.addNode("testSubList1", "jnt:contentList");
+            node.addNode("testSubList2", "jnt:contentList");
+            node.addNode("testSubList3", "jnt:contentList");
+            node.addNode("testNode", "jnt:bigText");
             session.getRootNode().addNode("testFolder", "jnt:folder");
             session.save();
             return null;
@@ -1167,53 +1159,27 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         });
     }
 
-    @Test
-    public void shouldReorderAllChildNodesByNames() throws Exception {
-        executeQuery(buildReorderChildNodesQuery("testNode", "testSubList3", "testSubList2", "testSubList1"));
-        validateChildNodesOrder("testNode", "testSubList3", "testSubList2", "testSubList1");
+    private static String buildReorderChildNodesQuery(String... childNames) {
+        return buildReorderChildNodesQuery(null, childNames);
     }
 
-    @Test
-    public void shouldReorderAllChildNodesByIds() throws Exception {
-        executeQuery(buildReorderChildNodesQuery(testSubList2Uuid, testSubList1Uuid, testNodeUuid, testSubList3Uuid));
-        validateChildNodesOrder("testSubList2", "testSubList1", "testNode", "testSubList3");
-    }
-
-    @Test
-    public void shouldReorderSelectedChildNodesAndPutOtherOnesAtTheEnd() throws Exception {
-        executeQuery(buildReorderChildNodesQuery("testSubList2", "testSubList3", "testNode"));
-        validateChildNodesOrder("testSubList2", "testSubList3", "testNode", "testSubList1");
-    }
-
-    @Test
-    public void shouldGetErrorAndNotReorderChildNodesIfEmptyListPassed() throws Exception {
-        List<String> orderedChildNames = getActualOrderedChildNames();
-        JSONObject result = executeQuery(buildReorderChildNodesQuery());
-        validateError(result, "A non-empty list of child node names or UUIDs is expected");
-        validateChildNodesOrder(orderedChildNames);
-    }
-
-    @Test
-    public void shouldGetErrorAndNotReorderChildNodesIfAnyOneDoesNotExist() throws Exception {
-        List<String> orderedChildNames = getActualOrderedChildNames();
-        JSONObject result = executeQuery(buildReorderChildNodesQuery("testSubList4", "testNode", "testSubList2", "testSubList1"));
-        validateError(result, "The 'testSubList4' name or UUID does not correspond to any actual child node");
-        validateChildNodesOrder(orderedChildNames);
-    }
-
-    private static String buildReorderChildNodesQuery(String... childNamesOrIds) {
+    private static String buildReorderChildNodesQuery(ReorderedChildrenPosition position, String... childNames) {
         StringBuilder query = new StringBuilder();
         query.append(
             "mutation {\n" +
             "  jcr {\n" +
             "    mutateNode(pathOrId:\"/testList\") {\n" +
-            "      reorderChildren(childNamesOrIds: ["
+            "      reorderChildren("
         );
-        for (int i = 0; i < childNamesOrIds.length; i++) {
+        if (position != null) {
+            query.append("position: ").append(position).append(",");
+        }
+        query.append("names: [");
+        for (int i = 0; i < childNames.length; i++) {
             if (i != 0) {
                 query.append(", ");
             }
-            query.append('"').append(childNamesOrIds[i]).append('"');
+            query.append('"').append(childNames[i]).append('"');
         }
         query.append("])\n" +
             "    }\n" +
@@ -1260,4 +1226,84 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             return null;
         });
     }
+
+    @Test
+    public void reorderChildrenWrongInputException() throws Exception {
+        List<String> orderedChildNames = getActualOrderedChildNames();
+        JSONObject result = executeQuery(buildReorderChildNodesQuery());
+        validateError(result, "A non-empty list of child node names is expected");
+        validateChildNodesOrder(orderedChildNames);
+
+        result = executeQuery(buildReorderChildNodesQuery("testSubList1"));
+        validateError(result, "Reorder operation expects at least two names in case target position is inplace");
+        validateChildNodesOrder(orderedChildNames);
+
+        result = executeQuery(buildReorderChildNodesQuery("", null));
+        validateError(result, "Null or empty child names are not permitted");
+        validateChildNodesOrder(orderedChildNames);
+
+        result = executeQuery(buildReorderChildNodesQuery("testSubList1", "testSubList", "testSubList1"));
+        validateError(result,
+                "Ambigous child name order: duplicates are not expected in the list of passed child node names to reorder");
+        validateChildNodesOrder(orderedChildNames);
+    }
+
+    @Test
+    public void reorderChildrenNonExistingChild() throws Exception {
+        List<String> orderedChildNames = getActualOrderedChildNames();
+        JSONObject result = executeQuery(
+                buildReorderChildNodesQuery("testSubList4", "testNode", "testSubList2", "testSubList1"));
+        validateError(result,
+                "javax.jcr.ItemNotFoundException: node /testList has no child node with name testSubList4");
+        validateChildNodesOrder(orderedChildNames);
+    }
+
+    @Test
+    public void reorderChildrenAll() throws Exception {
+        executeQuery(buildReorderChildNodesQuery("testNode", "testSubList3", "testSubList2", "testSubList1"));
+        validateChildNodesOrder("testNode", "testSubList3", "testSubList2", "testSubList1");
+    }
+
+    @Test
+    public void reorderChildrenSelected() throws Exception {
+        executeQuery(buildReorderChildNodesQuery("testNode", "testSubList3", "testSubList2"));
+        validateChildNodesOrder("testSubList1", "testNode", "testSubList3", "testSubList2");
+
+        executeQuery(buildReorderChildNodesQuery("testSubList2", "testNode"));
+        validateChildNodesOrder("testSubList1", "testSubList2", "testNode", "testSubList3");
+    }
+
+    @Test
+    public void reorderChildrenSelectedPositionFirst() throws Exception {
+        executeQuery(buildReorderChildNodesQuery(ReorderedChildrenPosition.FIRST, "testNode", "testSubList3",
+                "testSubList2"));
+        validateChildNodesOrder("testNode", "testSubList3", "testSubList2", "testSubList1");
+
+        executeQuery(buildReorderChildNodesQuery(ReorderedChildrenPosition.FIRST, "testSubList1", "testSubList2"));
+        validateChildNodesOrder("testSubList1", "testSubList2", "testNode", "testSubList3");
+    }
+
+    @Test
+    public void reorderChildrenSelectedPositionLast() throws Exception {
+        executeQuery(buildReorderChildNodesQuery(ReorderedChildrenPosition.LAST, "testNode", "testSubList3",
+                "testSubList2"));
+        validateChildNodesOrder("testSubList1", "testNode", "testSubList3", "testSubList2");
+
+        executeQuery(buildReorderChildNodesQuery(ReorderedChildrenPosition.LAST, "testSubList3", "testSubList1"));
+        validateChildNodesOrder("testNode", "testSubList2", "testSubList3", "testSubList1");
+    }
+
+    @Test
+    public void reorderChildrenSinglePositionFirst() throws Exception {
+        executeQuery(buildReorderChildNodesQuery(ReorderedChildrenPosition.FIRST, "testSubList3"));
+        validateChildNodesOrder("testSubList3", "testSubList1", "testSubList2", "testNode");
+    }
+
+    @Test
+    public void reorderChildrenSinglePositionLast() throws Exception {
+        executeQuery(buildReorderChildNodesQuery(ReorderedChildrenPosition.LAST, "testSubList2"));
+        validateChildNodesOrder("testSubList1", "testSubList3", "testNode", "testSubList2");
+    }
+
+    // validateChildNodesOrder("testSubList1", "testSubList2", "testSubList3", "testNode");
 }
