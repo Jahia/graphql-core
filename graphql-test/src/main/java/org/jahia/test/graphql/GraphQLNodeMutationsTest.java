@@ -1305,5 +1305,23 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         validateChildNodesOrder("testSubList1", "testSubList3", "testNode", "testSubList2");
     }
 
-    // validateChildNodesOrder("testSubList1", "testSubList2", "testSubList3", "testNode");
+    @Test
+    public void executionStrategyNoSaveOnError() throws Exception {
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateExisting: mutateNode(pathOrId: \"/testList/testSubList1\") {\n" +
+                "      rename(name: \"testRenamed\")\n" +
+                "    }\n" +
+                "    mutateNonExisting: mutateNode(pathOrId: \"/testList/testSubListX\") {\n" +
+                "      rename(name: \"testRenamedX\")\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        inJcr(session -> {
+            assertTrue(session.itemExists("/testList/testSubList1"));
+            assertFalse(session.itemExists("/testList/testRenamed"));
+            return null;
+        });
+    }
 }

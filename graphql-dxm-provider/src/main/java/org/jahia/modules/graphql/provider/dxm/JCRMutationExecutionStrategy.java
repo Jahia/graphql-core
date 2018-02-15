@@ -64,7 +64,8 @@ public class JCRMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
     @Override
     protected CompletableFuture<ExecutionResult> completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, Object fetchedValue) {
         CompletableFuture<ExecutionResult> result = super.completeField(executionContext, parameters, fetchedValue);
-        if (fetchedValue instanceof GqlJcrMutation) {
+        if (fetchedValue instanceof GqlJcrMutation && executionContext.getErrors().isEmpty()) {
+            // we only do save if there were no errors on execution
             ((GqlJcrMutation) fetchedValue).save();
         }
         return result;
