@@ -46,9 +46,13 @@ package org.jahia.modules.graphql.provider.dxm.node;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
-import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.*;
 import org.apache.commons.collections4.Predicate;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluationEnvironment;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
+import org.jahia.modules.graphql.provider.dxm.predicate.MulticriteriaEvaluation;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
@@ -64,6 +68,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+
+import static graphql.schema.DataFetchingEnvironmentBuilder.newDataFetchingEnvironment;
 
 /**
  * GraphQL representation of a JCR node - generic implementation.
@@ -202,13 +208,20 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     public DXPaginatedData<GqlJcrNode> getChildren(@GraphQLName("names") Collection<String> names,
                                                    @GraphQLName("typesFilter") NodeTypesInput typesFilter,
                                                    @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter,
+                                                   @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
                                                    DataFetchingEnvironment environment) {
         List<GqlJcrNode> children = new LinkedList<GqlJcrNode>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
+
+            Predicate<Object> fieldPredicate = FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluationEnvironment.buildEnvironmentForConnection(environment));
+
             NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter), false, child-> {
                 try {
-                    children.add(SpecializedTypesHandler.getNode(child));
+                    GqlJcrNode node = SpecializedTypesHandler.getNode(child);
+                    if (fieldPredicate.evaluate(node)) {
+                        children.add(node);
+                    }
                 } catch (RepositoryException e) {
                     throw new RuntimeException(e);
                 }

@@ -46,6 +46,8 @@ package org.jahia.modules.graphql.provider.dxm.node;
 import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.MulticriteriaEvaluation;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -152,6 +154,7 @@ public interface GqlJcrNode {
     DXPaginatedData<GqlJcrNode> getChildren(@GraphQLName("names") @GraphQLDescription("Filter of child nodes by their names; null to avoid such filtering") Collection<String> names,
                                             @GraphQLName("typesFilter") @GraphQLDescription("Filter of child nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
                                             @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter,
+                                            @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values")  FieldFiltersInput fieldFilter,
                                             DataFetchingEnvironment environment)
     throws GqlJcrWrongInputException;
 
@@ -217,30 +220,6 @@ public interface GqlJcrNode {
     @GraphQLField
     @GraphQLDescription("GraphQL representation of this node in certain workspace")
     GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace);
-
-    /**
-     * A way to evaluate a criteria consisting of multiple sub-criteria.
-     */
-    enum MulticriteriaEvaluation {
-
-        /**
-         * The result criteria evaluates positive iff all sub-criteria evaluate positive.
-         */
-        @GraphQLDescription("The result criteria evaluates positive iff all sub-criteria evaluate positive")
-        ALL,
-
-        /**
-         * The result criteria evaluates positive if any sub-criteria evaluates positive.
-         */
-        @GraphQLDescription("The result criteria evaluates positive if any sub-criteria evaluates positive")
-        ANY,
-
-        /**
-         * The result criteria evaluates positive if no sub-criteria evaluates positive.
-         */
-        @GraphQLDescription("The result criteria evaluates positive if no sub-criteria evaluates positive")
-        NONE
-    }
 
     /**
      * Nodes filter based on their types.

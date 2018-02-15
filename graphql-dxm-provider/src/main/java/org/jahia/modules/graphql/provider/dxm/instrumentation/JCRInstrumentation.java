@@ -43,18 +43,27 @@
  */
 package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
+import graphql.execution.ExecutionContext;
 import graphql.execution.instrumentation.NoOpInstrumentation;
+import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
-import graphql.schema.*;
+import graphql.language.SelectionSet;
+import graphql.schema.DataFetcher;
+import graphql.servlet.GraphQLContext;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * JCR instrumentation implementation
  */
 public class JCRInstrumentation extends NoOpInstrumentation {
 
-    DXGraphQLConfig dxGraphQLConfig;
+    public static final String GRAPHQL_VARIABLES = "graphQLVariables";
+
+    private DXGraphQLConfig dxGraphQLConfig;
 
     JCRInstrumentation(DXGraphQLConfig dxGraphQLConfig) {
         super();
@@ -65,4 +74,15 @@ public class JCRInstrumentation extends NoOpInstrumentation {
     public DataFetcher<?> instrumentDataFetcher(DataFetcher<?> dataFetcher, InstrumentationFieldFetchParameters parameters) {
         return super.instrumentDataFetcher(new GqlJcrPermissionDataFetcher<>(dataFetcher, dxGraphQLConfig.getPermissions()), parameters);
     }
+
+    @Override
+    public ExecutionContext instrumentExecutionContext(ExecutionContext executionContext, InstrumentationExecutionParameters parameters) {
+        // Stores variable in request attribute for future usage, return context unmodified
+        GraphQLContext context = (GraphQLContext) executionContext.getContext();
+        if (context.getRequest().isPresent()) {
+            context.getRequest().get().setAttribute(GRAPHQL_VARIABLES, executionContext.getVariables());
+        }
+        return super.instrumentExecutionContext(executionContext, parameters);
+    }
+
 }

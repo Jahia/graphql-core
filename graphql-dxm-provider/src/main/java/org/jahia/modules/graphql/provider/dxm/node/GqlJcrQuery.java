@@ -46,8 +46,12 @@ package org.jahia.modules.graphql.provider.dxm.node;
 import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.collections4.Predicate;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluationEnvironment;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
@@ -206,9 +210,13 @@ public class GqlJcrQuery {
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("Get GraphQL representations of nodes using a query language supported by JCR")
     public DXPaginatedData<GqlJcrNode> getNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
-                                                              @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage, DataFetchingEnvironment environment)
+                                                       @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage,
+                                                       @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                                       DataFetchingEnvironment environment)
             throws BaseGqlClientException {
         try {
+            Predicate<Object> fieldPredicate = FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluationEnvironment.buildEnvironmentForConnection(environment));
+
             PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
             List<GqlJcrNode> result = new LinkedList<>();
             QueryManagerWrapper queryManager = getSession().getWorkspace().getQueryManager();
@@ -216,7 +224,10 @@ public class GqlJcrQuery {
             JCRNodeIteratorWrapper nodes = q.execute().getNodes();
             while (nodes.hasNext()) {
                 JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();
-                result.add(SpecializedTypesHandler.getNode(node));
+                GqlJcrNode gqlJcrNode = SpecializedTypesHandler.getNode(node);
+                if (fieldPredicate.evaluate(gqlJcrNode)) {
+                    result.add(gqlJcrNode);
+                }
             }
             // todo: naive implementation of the pagination, could be improved in some cases by setting limit/offset in query
             return PaginationHelper.paginate(result, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
