@@ -43,19 +43,21 @@
  */
 package org.jahia.modules.graphql.provider.dxm.service.vanity;
 
+import static org.jahia.services.seo.jcr.VanityUrlManager.VANITYURLMAPPINGS_NODE;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+
+import javax.jcr.RepositoryException;
+
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.services.content.JCRNodeIteratorWrapper;
+
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
-import org.jahia.services.content.JCRNodeIteratorWrapper;
-import org.jahia.services.content.JCRNodeWrapper;
-
-import javax.jcr.RepositoryException;
-import java.util.Collection;
-import java.util.LinkedList;
-
-import static org.jahia.services.seo.jcr.VanityUrlManager.VANITYURLMAPPINGS_NODE;
 
 /**
  * Node extension for vanity URL.
@@ -66,41 +68,49 @@ public class VanityUrlJCRNodeExtensions {
 
     private GqlJcrNode node;
 
+    /**
+     * Initializes an instance of this class.
+     * 
+     * @param node the corresponding GraphQL node
+     */
     public VanityUrlJCRNodeExtensions(GqlJcrNode node) {
         this.node = node;
     }
 
     /**
-     * Get vanity url from the current node filtered by the parameters
-     * @param languages an array of languages to filter
-     * @param onlyActive get only active vanity urls
-     * @param onlyDefault get only default vanity urls
-     * @return a list of vanity urls
+     * Get vanity URLs from the current node filtered by the parameters.
+     * 
+     * @param languages a collection of languages to retrieve the corresponding vanity URLs
+     * @param onlyActive if <code>true</code>, get only active vanity URLs
+     * @param onlyDefault if <code>true</code>, get only default vanity URLs
+     * @return a collection of matching vanity URLs
      */
-    @SuppressWarnings("unchecked")
     @GraphQLField
     @GraphQLName("vanityUrls")
-    @GraphQLDescription("return vanity urls")
-    public Collection<GqlJcrVanityUrl> getVanityUrls(@GraphQLName("languages") Collection<String>  languages, @GraphQLName("onlyActive") Boolean onlyActive, @GraphQLName("onlyDefault") Boolean onlyDefault ) {
+    @GraphQLDescription("Get vanity URLs from the current node filtered by the parameters")
+    public Collection<GqlJcrVanityUrl> getVanityUrls(@GraphQLName("languages") Collection<String> languages,
+            @GraphQLName("onlyActive") Boolean onlyActive, @GraphQLName("onlyDefault") Boolean onlyDefault) {
+        Collection<GqlJcrVanityUrl> result = null;
         try {
-            Collection<GqlJcrVanityUrl> vanityUrls = new LinkedList<>();
             if (node.getNode().hasNode(VANITYURLMAPPINGS_NODE)) {
+                boolean getOnlyActive = onlyActive != null && onlyActive.booleanValue();
+                boolean getOnlyDefault = onlyDefault != null && onlyDefault.booleanValue();
+                Collection<GqlJcrVanityUrl> vanityUrls = new LinkedList<>();
                 JCRNodeIteratorWrapper urls = node.getNode().getNode(VANITYURLMAPPINGS_NODE).getNodes();
-                urls.forEachRemaining(vanityUrl -> {
-                    GqlJcrVanityUrl gqlVanityUrl = new GqlJcrVanityUrl((JCRNodeWrapper) vanityUrl);
-                    try {
-                        if ((languages == null || languages.contains(gqlVanityUrl.getLanguage())) && ((onlyActive != null && !onlyActive) || gqlVanityUrl.isActive()) && ((onlyDefault != null && !onlyDefault) || gqlVanityUrl.isDefault())) {
-                            vanityUrls.add(gqlVanityUrl);
-                        }
-                    } catch (RepositoryException e) {
-                        throw new RuntimeException(e);
+                urls.forEach(vanityUrl -> {
+                    GqlJcrVanityUrl gqlVanityUrl = new GqlJcrVanityUrl(vanityUrl);
+                    if ((languages == null || languages.contains(gqlVanityUrl.getLanguage()))
+                            && (!getOnlyActive || gqlVanityUrl.isActive())
+                            && (!getOnlyDefault || gqlVanityUrl.isDefault())) {
+                        vanityUrls.add(gqlVanityUrl);
                     }
                 });
+                result = vanityUrls;
             }
-            return vanityUrls;
-
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
+
+        return result != null ? result : Collections.emptyList();
     }
 }

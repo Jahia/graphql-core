@@ -68,7 +68,8 @@ import static org.jahia.services.seo.jcr.VanityUrlManager.JAHIANT_VANITYURL;
 /**
  * Site Extension for vanity URL.
  */
-@GraphQLTypeExtension(GqlJcrSite.class)
+// NOTE: this extension is currently disabled as no direct use case for it exist 
+//@GraphQLTypeExtension(GqlJcrSite.class)
 @GraphQLDescription("Site Extension for vanity URL")
 public class VanityUrlJCRSiteExtensions {
 
