@@ -138,17 +138,16 @@ public class FieldEvaluator {
             Map<String, List<Field>> fields = null;
             if (environment.getSelectionSet() != null) {
                 fields = environment.getSelectionSet().get();
-                Field returnedField = null;
                 if (fields.containsKey("nodes")) {
                     // First look in { nodes } selection set
                     List<Field> nodeFields = fields.get("nodes");
-                    returnedField = getField(fieldCollector.collectFields(parameters, nodeFields), name);
+                    return getField(fieldCollector.collectFields(parameters, nodeFields), name);
                 } else if (fields.containsKey("edges")) {
                     // If no "nodes" was found, try to look into { edges { node } } selection set
                     List<Field> edgeFields = fields.get("edges");
                     fields = fieldCollector.collectFields(parameters, edgeFields);
                     if (fields.containsKey("node")) {
-                        returnedField = getField(fieldCollector.collectFields(parameters, fields.get("node")), name);
+                        return getField(fieldCollector.collectFields(parameters, fields.get("node")), name);
                     }
                 }
             }
