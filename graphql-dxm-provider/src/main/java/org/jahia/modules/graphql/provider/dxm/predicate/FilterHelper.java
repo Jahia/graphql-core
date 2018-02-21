@@ -120,7 +120,7 @@ public class FilterHelper {
 
         ALGORITHM_BY_EVALUATION.put(FieldEvaluation.MATCHES, ((source, fieldName, fieldValue, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
-            return value != null && value.toString().matches(fieldValue);
+            return value != null && fieldValue != null && value.toString().matches(fieldValue);
         }));
     }
 
