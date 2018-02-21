@@ -68,13 +68,15 @@ public class FieldEvaluator {
     private GraphQLType type;
     private FieldFinder fieldFinder;
     private Map<String, Object> variables;
+    private GraphQLContext context;
 
     private static FieldCollector fieldCollector = new FieldCollector();
 
-    public FieldEvaluator(GraphQLType type, FieldFinder fieldFinder, Map<String, Object> variables) {
+    public FieldEvaluator(GraphQLType type, FieldFinder fieldFinder, Map<String, Object> variables, GraphQLContext context) {
         this.type = type;
         this.fieldFinder = fieldFinder;
         this.variables = variables;
+        this.context = context;
     }
 
     @FunctionalInterface
@@ -104,7 +106,7 @@ public class FieldEvaluator {
             return null;
         };
 
-        return new FieldEvaluator(type, fieldFinder, getVariables(environment));
+        return new FieldEvaluator(type, fieldFinder, getVariables(environment), environment.getContext());
     }
 
     /**
@@ -136,23 +138,24 @@ public class FieldEvaluator {
             Map<String, List<Field>> fields = null;
             if (environment.getSelectionSet() != null) {
                 fields = environment.getSelectionSet().get();
+                Field returnedField = null;
                 if (fields.containsKey("nodes")) {
                     // First look in { nodes } selection set
                     List<Field> nodeFields = fields.get("nodes");
-                    return getField(fieldCollector.collectFields(parameters, nodeFields), name);
+                    returnedField = getField(fieldCollector.collectFields(parameters, nodeFields), name);
                 } else if (fields.containsKey("edges")) {
                     // If no "nodes" was found, try to look into { edges { node } } selection set
                     List<Field> edgeFields = fields.get("edges");
                     fields = fieldCollector.collectFields(parameters, edgeFields);
                     if (fields.containsKey("node")) {
-                        return getField(fieldCollector.collectFields(parameters, fields.get("node")), name);
+                        returnedField = getField(fieldCollector.collectFields(parameters, fields.get("node")), name);
                     }
                 }
             }
             return null;
         };
 
-        return new FieldEvaluator(type, fieldFinder, variables);
+        return new FieldEvaluator(type, fieldFinder, variables, environment.getContext());
     }
 
     private static Map<String, Object> getVariables(DataFetchingEnvironment environment) {
@@ -206,7 +209,7 @@ public class FieldEvaluator {
             return null;
         }
 
-        DataFetchingEnvironmentBuilder fieldEnv = newDataFetchingEnvironment().source(source);
+        DataFetchingEnvironmentBuilder fieldEnv = newDataFetchingEnvironment().source(source).context(context);
 
         // Try to find field in selection set to reuse alias/arguments
         Field field = fieldFinder.find(objectType, fieldName);
@@ -220,6 +223,7 @@ public class FieldEvaluator {
             ValuesResolver valuesResolver = new ValuesResolver();
             Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), variables);
             fieldEnv.arguments(argumentValues);
+            fieldEnv.fieldType(fieldDefinition.getType());
             return fieldDefinition.getDataFetcher().get(fieldEnv.build());
         }
 
@@ -231,6 +235,4 @@ public class FieldEvaluator {
         }
         return fieldDefinition.getDataFetcher().get(fieldEnv.build());
     }
-
-
 }

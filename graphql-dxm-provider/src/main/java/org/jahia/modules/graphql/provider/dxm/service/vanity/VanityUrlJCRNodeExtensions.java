@@ -43,21 +43,23 @@
  */
 package org.jahia.modules.graphql.provider.dxm.service.vanity;
 
-import static org.jahia.services.seo.jcr.VanityUrlManager.VANITYURLMAPPINGS_NODE;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-
-import javax.jcr.RepositoryException;
-
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
-import org.jahia.services.content.JCRNodeIteratorWrapper;
-
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import graphql.schema.DataFetchingEnvironment;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
+import org.jahia.services.content.JCRNodeIteratorWrapper;
+
+import javax.jcr.RepositoryException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+
+import static org.jahia.services.seo.jcr.VanityUrlManager.VANITYURLMAPPINGS_NODE;
 
 /**
  * Node extension for vanity URL.
@@ -89,13 +91,15 @@ public class VanityUrlJCRNodeExtensions {
     @GraphQLName("vanityUrls")
     @GraphQLDescription("Get vanity URLs from the current node filtered by the parameters")
     public Collection<GqlJcrVanityUrl> getVanityUrls(@GraphQLName("languages") Collection<String> languages,
-            @GraphQLName("onlyActive") Boolean onlyActive, @GraphQLName("onlyDefault") Boolean onlyDefault) {
-        Collection<GqlJcrVanityUrl> result = null;
+                                                     @GraphQLName("onlyActive") Boolean onlyActive,
+                                                     @GraphQLName("onlyDefault") Boolean onlyDefault,
+                                                     @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+        List<GqlJcrVanityUrl> result = null;
         try {
             if (node.getNode().hasNode(VANITYURLMAPPINGS_NODE)) {
                 boolean getOnlyActive = onlyActive != null && onlyActive.booleanValue();
                 boolean getOnlyDefault = onlyDefault != null && onlyDefault.booleanValue();
-                Collection<GqlJcrVanityUrl> vanityUrls = new LinkedList<>();
+                List<GqlJcrVanityUrl> vanityUrls = new LinkedList<>();
                 JCRNodeIteratorWrapper urls = node.getNode().getNode(VANITYURLMAPPINGS_NODE).getNodes();
                 urls.forEach(vanityUrl -> {
                     GqlJcrVanityUrl gqlVanityUrl = new GqlJcrVanityUrl(vanityUrl);
@@ -111,6 +115,7 @@ public class VanityUrlJCRNodeExtensions {
             throw new RuntimeException(e);
         }
 
-        return result != null ? result : Collections.emptyList();
+        List<GqlJcrVanityUrl> gqlJcrVanityUrls = result != null ? result : Collections.emptyList();
+        return FilterHelper.filterList(gqlJcrVanityUrls, fieldFilter, environment);
     }
 }

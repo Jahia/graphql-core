@@ -80,7 +80,10 @@ public class FilterHelper {
         EMPTY,
 
         @GraphQLDescription("The field value is not empty - if a list, must contains at least one item")
-        NOT_EMPTY
+        NOT_EMPTY,
+
+        @GraphQLDescription("he property value is matches from given regexp")
+        MATCHES
     }
 
     private static HashMap<FieldEvaluation, FieldEvaluationAlgorithm> ALGORITHM_BY_EVALUATION = new HashMap<>();
@@ -114,6 +117,11 @@ public class FilterHelper {
         ALGORITHM_BY_EVALUATION.put(FieldEvaluation.NOT_EMPTY, ((source, fieldName, fieldValue, environment) ->
                 !ALGORITHM_BY_EVALUATION.get(FieldEvaluation.EMPTY).evaluate(source, fieldName, fieldValue, environment)
         ));
+
+        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.MATCHES, ((source, fieldName, fieldValue, environment) -> {
+            Object value = environment.getFieldValue(source, fieldName);
+            return value != null && value.toString().matches(fieldValue);
+        }));
     }
 
     /**
@@ -143,14 +151,14 @@ public class FilterHelper {
     }
 
     public static <T> List<T> filterList(List<T> collection, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
-        if (fieldFilter == null) {
+        if (fieldFilter == null || fieldFilter.getFilters().isEmpty()) {
             return collection;
         }
         return collection.stream().filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment))).collect(Collectors.toList());
     }
 
     public static <T> List<T> filterConnection(List<T> collection, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
-        if (fieldFilter == null) {
+        if (fieldFilter == null || fieldFilter.getFilters().isEmpty()) {
             return collection;
         }
         return collection.stream().filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment))).collect(Collectors.toList());

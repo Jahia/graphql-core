@@ -53,7 +53,7 @@ import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 public class QueryExtensions {
 
     @GraphQLField
-    public static String testExtension(@GraphQLName("arg") String arg) {
+    public static String testQueryExtension(@GraphQLName("arg") String arg) {
         return "test " + arg;
     }
 
