@@ -60,17 +60,16 @@ public class FilterHelper {
 
     enum FieldEvaluation {
 
-
         /**
          * The field value is equal to given one.
          */
-        @GraphQLDescription("The property value is equal to given one")
+        @GraphQLDescription("The field value is equal to given one")
         EQUAL,
 
         /**
          * The field value is different from given one.
          */
-        @GraphQLDescription("The property value is different from given one")
+        @GraphQLDescription("The field value is different from given one")
         DIFFERENT,
 
         /**
@@ -79,10 +78,10 @@ public class FilterHelper {
         @GraphQLDescription("The field value is empty - either null value, or no items for a list")
         EMPTY,
 
-        @GraphQLDescription("The field value is not empty - if a list, must contains at least one item")
+        @GraphQLDescription("The field value is not empty - if a list, must contain at least one item")
         NOT_EMPTY,
 
-        @GraphQLDescription("he property value is matches from given regexp")
+        @GraphQLDescription("The property value matches given regexp")
         MATCHES
     }
 
@@ -106,9 +105,9 @@ public class FilterHelper {
         ALGORITHM_BY_EVALUATION.put(FieldEvaluation.EMPTY, ((source, fieldName, fieldValue, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
             if (value instanceof Connection) {
-                return ((Connection) value).getEdges().size() == 0;
+                return ((Connection<?>) value).getEdges().size() == 0;
             } else if (value instanceof Collection) {
-                return ((Collection) value).size() == 0;
+                return ((Collection<?>) value).size() == 0;
             } else {
                 return value == null;
             }
@@ -150,18 +149,17 @@ public class FilterHelper {
         return fieldPredicate;
     }
 
-    public static <T> List<T> filterList(List<T> collection, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+    public static <T> List<T> filterList(List<T> list, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
         if (fieldFilter == null || fieldFilter.getFilters().isEmpty()) {
-            return collection;
+            return list;
         }
-        return collection.stream().filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment))).collect(Collectors.toList());
+        return list.stream().filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment))).collect(Collectors.toList());
     }
 
-    public static <T> List<T> filterConnection(List<T> collection, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+    public static <T> List<T> filterConnection(List<T> list, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
         if (fieldFilter == null || fieldFilter.getFilters().isEmpty()) {
-            return collection;
+            return list;
         }
-        return collection.stream().filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment))).collect(Collectors.toList());
+        return list.stream().filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment))).collect(Collectors.toList());
     }
-
 }

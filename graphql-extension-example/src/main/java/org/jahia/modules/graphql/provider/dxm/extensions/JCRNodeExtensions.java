@@ -59,8 +59,7 @@ public class JCRNodeExtensions {
     }
 
     @GraphQLField
-    public  String testNodeExtension(@GraphQLName("arg") String arg) {
+    public String testExtension(@GraphQLName("arg") String arg) {
         return "test " + node.getName() + " - " + arg;
     }
-
 }

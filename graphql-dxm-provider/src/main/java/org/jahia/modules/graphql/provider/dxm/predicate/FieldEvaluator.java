@@ -157,6 +157,7 @@ public class FieldEvaluator {
         return new FieldEvaluator(type, fieldFinder, variables, environment.getContext());
     }
 
+    @SuppressWarnings("unchecked")
     private static Map<String, Object> getVariables(DataFetchingEnvironment environment) {
         GraphQLContext context = environment.getContext();
         Map<String, Object> variables = null;
@@ -166,6 +167,7 @@ public class FieldEvaluator {
         return variables;
     }
 
+    @SuppressWarnings("unchecked")
     private static Map<String, FragmentDefinition> getFragmentDefinitions(DataFetchingEnvironment environment) {
         GraphQLContext context = environment.getContext();
         Map<String, FragmentDefinition> fragments = null;

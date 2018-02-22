@@ -72,7 +72,7 @@ public class VanityUrlJCRNodeExtensions {
 
     /**
      * Initializes an instance of this class.
-     * 
+     *
      * @param node the corresponding GraphQL node
      */
     public VanityUrlJCRNodeExtensions(GqlJcrNode node) {
@@ -81,7 +81,7 @@ public class VanityUrlJCRNodeExtensions {
 
     /**
      * Get vanity URLs from the current node filtered by the parameters.
-     * 
+     *
      * @param languages a collection of languages to retrieve the corresponding vanity URLs
      * @param onlyActive if <code>true</code>, get only active vanity URLs
      * @param onlyDefault if <code>true</code>, get only default vanity URLs
@@ -93,29 +93,31 @@ public class VanityUrlJCRNodeExtensions {
     public Collection<GqlJcrVanityUrl> getVanityUrls(@GraphQLName("languages") Collection<String> languages,
                                                      @GraphQLName("onlyActive") Boolean onlyActive,
                                                      @GraphQLName("onlyDefault") Boolean onlyDefault,
-                                                     @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
-        List<GqlJcrVanityUrl> result = null;
+                                                     @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
+                                                     DataFetchingEnvironment environment) {
+
+        JCRNodeIteratorWrapper vanityUrls;
         try {
-            if (node.getNode().hasNode(VANITYURLMAPPINGS_NODE)) {
-                boolean getOnlyActive = onlyActive != null && onlyActive.booleanValue();
-                boolean getOnlyDefault = onlyDefault != null && onlyDefault.booleanValue();
-                List<GqlJcrVanityUrl> vanityUrls = new LinkedList<>();
-                JCRNodeIteratorWrapper urls = node.getNode().getNode(VANITYURLMAPPINGS_NODE).getNodes();
-                urls.forEach(vanityUrl -> {
-                    GqlJcrVanityUrl gqlVanityUrl = new GqlJcrVanityUrl(vanityUrl);
-                    if ((languages == null || languages.contains(gqlVanityUrl.getLanguage()))
-                            && (!getOnlyActive || gqlVanityUrl.isActive())
-                            && (!getOnlyDefault || gqlVanityUrl.isDefault())) {
-                        vanityUrls.add(gqlVanityUrl);
-                    }
-                });
-                result = vanityUrls;
+            if (!node.getNode().hasNode(VANITYURLMAPPINGS_NODE)) {
+                return Collections.emptyList();
             }
+            vanityUrls = node.getNode().getNode(VANITYURLMAPPINGS_NODE).getNodes();
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
 
-        List<GqlJcrVanityUrl> gqlJcrVanityUrls = result != null ? result : Collections.emptyList();
-        return FilterHelper.filterList(gqlJcrVanityUrls, fieldFilter, environment);
+        boolean getOnlyActive = Boolean.TRUE.equals(onlyActive);
+        boolean getOnlyDefault = Boolean.TRUE.equals(onlyDefault);
+        List<GqlJcrVanityUrl> result = new LinkedList<>();
+        vanityUrls.forEach(vanityUrl -> {
+            GqlJcrVanityUrl gqlVanityUrl = new GqlJcrVanityUrl(vanityUrl);
+            if ((languages == null || languages.contains(gqlVanityUrl.getLanguage()))
+                    && (!getOnlyActive || gqlVanityUrl.isActive())
+                    && (!getOnlyDefault || gqlVanityUrl.isDefault())) {
+                result.add(gqlVanityUrl);
+            }
+        });
+
+        return FilterHelper.filterList(result, fieldFilter, environment);
     }
 }
