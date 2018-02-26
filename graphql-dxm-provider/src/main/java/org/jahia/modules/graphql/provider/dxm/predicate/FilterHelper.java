@@ -55,7 +55,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class FilterHelper {
@@ -87,10 +86,7 @@ public class FilterHelper {
         CONTAINS,
 
         @GraphQLDescription("The property value contains given String ignoring the case")
-        CONTAINS_IGNORE_CASE,
-
-        @GraphQLDescription("The property value matches given regexp")
-        MATCHES
+        CONTAINS_IGNORE_CASE
     }
 
     private static HashMap<FieldEvaluation, FieldEvaluationAlgorithm> ALGORITHM_BY_EVALUATION = new HashMap<>();
@@ -133,11 +129,6 @@ public class FilterHelper {
         ALGORITHM_BY_EVALUATION.put(FieldEvaluation.CONTAINS_IGNORE_CASE, ((source, fieldName, fieldValue, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
             return StringUtils.containsIgnoreCase(value.toString(), fieldValue);
-        }));
-
-        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.MATCHES, ((source, fieldName, fieldValue, environment) -> {
-            Object value = environment.getFieldValue(source, fieldName);
-            return value != null && fieldValue != null && Pattern.quote(value.toString()).matches(fieldValue);
         }));
     }
 
