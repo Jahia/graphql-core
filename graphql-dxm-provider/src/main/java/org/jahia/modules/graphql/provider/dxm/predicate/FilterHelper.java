@@ -83,14 +83,14 @@ public class FilterHelper {
         @GraphQLDescription("The field value is not empty - if a list, must contain at least one item")
         NOT_EMPTY,
 
-        @GraphQLDescription("The property value matches given regexp")
-        MATCHES,
-
         @GraphQLDescription("The property value contains given String ")
         CONTAINS,
 
         @GraphQLDescription("The property value contains given String ignoring the case")
-        CONTAINS_IGNORE_CASE
+        CONTAINS_IGNORE_CASE,
+
+        @GraphQLDescription("The property value matches given regexp")
+        MATCHES
     }
 
     private static HashMap<FieldEvaluation, FieldEvaluationAlgorithm> ALGORITHM_BY_EVALUATION = new HashMap<>();
@@ -125,19 +125,19 @@ public class FilterHelper {
                 !ALGORITHM_BY_EVALUATION.get(FieldEvaluation.EMPTY).evaluate(source, fieldName, fieldValue, environment)
         ));
 
-        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.MATCHES, ((source, fieldName, fieldValue, environment) -> {
-            Object value = environment.getFieldValue(source, fieldName);
-            return value != null && fieldValue != null && Pattern.quote(value.toString()).matches(fieldValue);
-        }));
-
         ALGORITHM_BY_EVALUATION.put(FieldEvaluation.CONTAINS, ((source, fieldName, fieldValue, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
-            return value != null && fieldValue != null && StringUtils.contains(value.toString(), fieldValue);
+            return StringUtils.contains(value.toString(), fieldValue);
         }));
 
         ALGORITHM_BY_EVALUATION.put(FieldEvaluation.CONTAINS_IGNORE_CASE, ((source, fieldName, fieldValue, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
-            return value != null && fieldValue != null && StringUtils.containsIgnoreCase(value.toString(), fieldValue);
+            return StringUtils.containsIgnoreCase(value.toString(), fieldValue);
+        }));
+
+        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.MATCHES, ((source, fieldName, fieldValue, environment) -> {
+            Object value = environment.getFieldValue(source, fieldName);
+            return value != null && fieldValue != null && Pattern.quote(value.toString()).matches(fieldValue);
         }));
     }
 
