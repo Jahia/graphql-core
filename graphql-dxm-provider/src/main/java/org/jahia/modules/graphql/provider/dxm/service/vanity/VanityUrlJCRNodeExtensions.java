@@ -91,8 +91,6 @@ public class VanityUrlJCRNodeExtensions {
     @GraphQLName("vanityUrls")
     @GraphQLDescription("Get vanity URLs from the current node filtered by the parameters")
     public Collection<GqlJcrVanityUrl> getVanityUrls(@GraphQLName("languages") Collection<String> languages,
-                                                     @GraphQLName("onlyActive") Boolean onlyActive,
-                                                     @GraphQLName("onlyDefault") Boolean onlyDefault,
                                                      @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
                                                      DataFetchingEnvironment environment) {
 
@@ -106,14 +104,10 @@ public class VanityUrlJCRNodeExtensions {
             throw new RuntimeException(e);
         }
 
-        boolean getOnlyActive = Boolean.TRUE.equals(onlyActive);
-        boolean getOnlyDefault = Boolean.TRUE.equals(onlyDefault);
         List<GqlJcrVanityUrl> result = new LinkedList<>();
         vanityUrls.forEach(vanityUrl -> {
             GqlJcrVanityUrl gqlVanityUrl = new GqlJcrVanityUrl(vanityUrl);
-            if ((languages == null || languages.contains(gqlVanityUrl.getLanguage()))
-                    && (!getOnlyActive || gqlVanityUrl.isActive())
-                    && (!getOnlyDefault || gqlVanityUrl.isDefault())) {
+            if (languages == null || languages.contains(gqlVanityUrl.getLanguage())) {
                 result.add(gqlVanityUrl);
             }
         });
