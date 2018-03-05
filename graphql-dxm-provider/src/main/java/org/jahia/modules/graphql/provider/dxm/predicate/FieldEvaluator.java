@@ -45,6 +45,8 @@
 
 package org.jahia.modules.graphql.provider.dxm.predicate;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import graphql.TypeResolutionEnvironment;
 import graphql.execution.FieldCollector;
 import graphql.execution.FieldCollectorParameters;
@@ -69,6 +71,8 @@ public class FieldEvaluator {
     private FieldFinder fieldFinder;
     private Map<String, Object> variables;
     private GraphQLContext context;
+
+    private static final String FIELD_NAME_SEPARATOR = ".";
 
     private static FieldCollector fieldCollector = new FieldCollector();
 
@@ -205,6 +209,23 @@ public class FieldEvaluator {
      * @return The value, as returned by the DataFetcher
      */
     public Object getFieldValue(Object source, String fieldName) {
+        List<String> fields = Splitter.on(FIELD_NAME_SEPARATOR).splitToList(fieldName);
+        String nextField = null;
+        if (fields.size() > 1) {
+            fieldName = fields.get(0);
+            nextField = Joiner.on(FIELD_NAME_SEPARATOR).join(fields.subList(1, fields.size()));
+        }
+
+        Object field = getField(source, fieldName);
+
+        if (nextField != null && field != null) {
+            return getFieldValue(field, nextField);
+        } else {
+            return field;
+        }
+    }
+
+    public Object getField(Object source, String fieldName) {
         GraphQLObjectType objectType = getObjectType(source);
         if (objectType == null) {
             return null;
