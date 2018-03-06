@@ -123,12 +123,12 @@ public class FilterHelper {
 
         ALGORITHM_BY_EVALUATION.put(FieldEvaluation.CONTAINS, ((source, fieldName, fieldValue, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
-            return StringUtils.contains(value.toString(), fieldValue);
+            return value != null && StringUtils.contains(value.toString(), fieldValue);
         }));
 
         ALGORITHM_BY_EVALUATION.put(FieldEvaluation.CONTAINS_IGNORE_CASE, ((source, fieldName, fieldValue, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
-            return StringUtils.containsIgnoreCase(value.toString(), fieldValue);
+            return value != null && StringUtils.containsIgnoreCase(value.toString(), fieldValue);
         }));
     }
 

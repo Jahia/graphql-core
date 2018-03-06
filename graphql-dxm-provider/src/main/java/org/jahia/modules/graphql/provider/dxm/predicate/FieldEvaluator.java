@@ -53,6 +53,7 @@ import graphql.execution.FieldCollectorParameters;
 import graphql.execution.ValuesResolver;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
+import graphql.language.SelectionSet;
 import graphql.schema.*;
 import graphql.servlet.GraphQLContext;
 
@@ -70,17 +71,17 @@ public class FieldEvaluator {
     private GraphQLType type;
     private FieldFinder fieldFinder;
     private Map<String, Object> variables;
-    private GraphQLContext context;
+    private DataFetchingEnvironment environment;
 
     private static final String FIELD_NAME_SEPARATOR = ".";
 
     private static FieldCollector fieldCollector = new FieldCollector();
 
-    public FieldEvaluator(GraphQLType type, FieldFinder fieldFinder, Map<String, Object> variables, GraphQLContext context) {
+    private FieldEvaluator(GraphQLType type, FieldFinder fieldFinder, Map<String, Object> variables, DataFetchingEnvironment environment) {
         this.type = type;
         this.fieldFinder = fieldFinder;
         this.variables = variables;
-        this.context = context;
+        this.environment = environment;
     }
 
     @FunctionalInterface
@@ -90,6 +91,7 @@ public class FieldEvaluator {
 
     /**
      * Build an environment for a List type field
+     *
      * @param environment The DataFetchingEnvironment of the Connection field data fetcher
      * @return A FieldEvaluator instance
      */
@@ -99,7 +101,7 @@ public class FieldEvaluator {
         if (fieldType instanceof GraphQLNonNull) {
             fieldType = (GraphQLOutputType) ((GraphQLNonNull) fieldType).getWrappedType();
         }
-        GraphQLList list = (GraphQLList)fieldType;
+        GraphQLList list = (GraphQLList) fieldType;
         GraphQLType type = list.getWrappedType();
 
         // Extract selection set
@@ -110,11 +112,12 @@ public class FieldEvaluator {
             return null;
         };
 
-        return new FieldEvaluator(type, fieldFinder, getVariables(environment), environment.getContext());
+        return new FieldEvaluator(type, fieldFinder, getVariables(environment), environment);
     }
 
     /**
      * Build an environment for a Connection type field
+     *
      * @param environment The DataFetchingEnvironment of the Connection field data fetcher
      * @return A FieldEvaluator instance
      */
@@ -158,7 +161,7 @@ public class FieldEvaluator {
             return null;
         };
 
-        return new FieldEvaluator(type, fieldFinder, variables, environment.getContext());
+        return new FieldEvaluator(type, fieldFinder, variables, environment);
     }
 
     @SuppressWarnings("unchecked")
@@ -204,8 +207,8 @@ public class FieldEvaluator {
     /**
      * Evaluate a field value on a given object
      *
-     * @param source      The source object on which we will get the field value
-     * @param fieldName   The field name or alias
+     * @param source    The source object on which we will get the field value
+     * @param fieldName The field name or alias
      * @return The value, as returned by the DataFetcher
      */
     public Object getFieldValue(Object source, String fieldName) {
@@ -216,45 +219,64 @@ public class FieldEvaluator {
             nextField = Joiner.on(FIELD_NAME_SEPARATOR).join(fields.subList(1, fields.size()));
         }
 
-        Object field = getField(source, fieldName);
-
-        if (nextField != null && field != null) {
-            return getFieldValue(field, nextField);
-        } else {
-            return field;
-        }
-    }
-
-    public Object getField(Object source, String fieldName) {
         GraphQLObjectType objectType = getObjectType(source);
         if (objectType == null) {
             return null;
         }
 
-        DataFetchingEnvironmentBuilder fieldEnv = newDataFetchingEnvironment().source(source).context(context);
+        DataFetchingEnvironmentBuilder fieldEnv = newDataFetchingEnvironment().source(source).context(environment.getContext()).graphQLSchema(environment.getGraphQLSchema());
 
         // Try to find field in selection set to reuse alias/arguments
         Field field = fieldFinder.find(objectType, fieldName);
+        GraphQLFieldDefinition fieldDefinition;
         if (field != null) {
-            GraphQLFieldDefinition fieldDefinition = objectType.getFieldDefinition(field.getName());
-            if (fieldDefinition == null) {
-                // Definition not present on current type (can be a field in a non-matching fragment), returns null
-                return null;
+            fieldDefinition = objectType.getFieldDefinition(field.getName());
+            if (fieldDefinition != null) {
+                ValuesResolver valuesResolver = new ValuesResolver();
+                Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), variables);
+                fieldEnv.arguments(argumentValues);
+                fieldEnv.fieldType(fieldDefinition.getType());
             }
-
-            ValuesResolver valuesResolver = new ValuesResolver();
-            Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), variables);
-            fieldEnv.arguments(argumentValues);
-            fieldEnv.fieldType(fieldDefinition.getType());
-            return fieldDefinition.getDataFetcher().get(fieldEnv.build());
+        } else {
+            // Otherwise, directly look in field definitions
+            fieldDefinition = objectType.getFieldDefinition(fieldName);
         }
 
-        // Otherwise, directly look in field definitions
-        GraphQLFieldDefinition fieldDefinition = objectType.getFieldDefinition(fieldName);
         if (fieldDefinition == null) {
             // Definition not present on current type (can be a field in a non-matching fragment), returns null
             return null;
         }
-        return fieldDefinition.getDataFetcher().get(fieldEnv.build());
+        Object value = fieldDefinition.getDataFetcher().get(fieldEnv.build());
+
+        if (nextField != null && value != null) {
+            return forSubField(fieldDefinition.getType(), field != null ? field.getSelectionSet() : null).getFieldValue(value, nextField);
+        } else {
+            return value;
+        }
     }
+
+    private FieldEvaluator forSubField(GraphQLOutputType fieldType, SelectionSet selectionSet) {
+        if (fieldType instanceof GraphQLNonNull) {
+            fieldType = (GraphQLOutputType) ((GraphQLNonNull) fieldType).getWrappedType();
+        }
+
+        // Extract selection set
+        FieldFinder fieldFinder = (objectType, name) -> {
+            if (selectionSet != null) {
+                FieldCollectorParameters parameters = FieldCollectorParameters.newParameters()
+                        .objectType(objectType)
+                        .variables(getVariables(environment))
+                        .fragments(getFragmentDefinitions(environment))
+                        .schema(environment.getGraphQLSchema())
+                        .build();
+
+                return getField(fieldCollector.collectFields(parameters, selectionSet), name);
+            }
+            return null;
+        };
+
+        return new FieldEvaluator(fieldType, fieldFinder, getVariables(environment), environment);
+    }
+
+
 }
