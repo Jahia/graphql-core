@@ -48,6 +48,7 @@ package org.jahia.modules.graphql.provider.dxm.predicate;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import graphql.TypeResolutionEnvironment;
+import graphql.execution.ExecutionTypeInfo;
 import graphql.execution.FieldCollector;
 import graphql.execution.FieldCollectorParameters;
 import graphql.execution.ValuesResolver;
@@ -224,7 +225,14 @@ public class FieldEvaluator {
             return null;
         }
 
-        DataFetchingEnvironmentBuilder fieldEnv = newDataFetchingEnvironment().source(source).context(environment.getContext()).graphQLSchema(environment.getGraphQLSchema());
+        DataFetchingEnvironmentBuilder fieldEnv = newDataFetchingEnvironment()
+                .source(source)
+                .parentType(objectType)
+                .context(environment.getContext())
+                .root(environment.getRoot())
+                .executionId(environment.getExecutionId())
+                .fragmentsByName(environment.getFragmentsByName())
+                .graphQLSchema(environment.getGraphQLSchema());
 
         // Try to find field in selection set to reuse alias/arguments
         Field field = fieldFinder.find(objectType, fieldName);
@@ -235,7 +243,6 @@ public class FieldEvaluator {
                 ValuesResolver valuesResolver = new ValuesResolver();
                 Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), variables);
                 fieldEnv.arguments(argumentValues);
-                fieldEnv.fieldType(fieldDefinition.getType());
             }
         } else {
             // Otherwise, directly look in field definitions
@@ -246,6 +253,13 @@ public class FieldEvaluator {
             // Definition not present on current type (can be a field in a non-matching fragment), returns null
             return null;
         }
+        fieldEnv.fieldDefinition(fieldDefinition);
+        fieldEnv.fieldType(fieldDefinition.getType());
+        fieldEnv.fieldTypeInfo(ExecutionTypeInfo.newTypeInfo()
+                .fieldDefinition(fieldDefinition)
+                .type(fieldDefinition.getType())
+                .build());
+
         Object value = fieldDefinition.getDataFetcher().get(fieldEnv.build());
 
         if (nextField != null && value != null) {
