@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -43,26 +43,54 @@
  */
 package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
+import graphql.execution.ExecutionContext;
 import graphql.execution.instrumentation.NoOpInstrumentation;
+import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
 import graphql.schema.*;
+import graphql.servlet.GraphQLContext;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
+import org.jahia.modules.securityfilter.PermissionService;
 
 /**
  * JCR instrumentation implementation
  */
 public class JCRInstrumentation extends NoOpInstrumentation {
 
-    DXGraphQLConfig dxGraphQLConfig;
+    public static final String GRAPHQL_VARIABLES = "graphQLVariables";
+    public static final String FRAGMENTS_BY_NAME = "fragmentsByName";
+    public static final String PERMISSION_SERVICE = "fragmentsByName";
 
-    JCRInstrumentation(DXGraphQLConfig dxGraphQLConfig) {
+    private DXGraphQLConfig dxGraphQLConfig;
+
+    private PermissionService permissionService;
+
+    JCRInstrumentation(DXGraphQLConfig dxGraphQLConfig, PermissionService permissionService) {
         super();
         this.dxGraphQLConfig = dxGraphQLConfig;
+        this.permissionService = permissionService;
     }
 
     @Override
     public DataFetcher<?> instrumentDataFetcher(DataFetcher<?> dataFetcher, InstrumentationFieldFetchParameters parameters) {
         return super.instrumentDataFetcher(new GqlJcrPermissionDataFetcher<>(dataFetcher, dxGraphQLConfig.getPermissions()), parameters);
     }
+
+    @Override
+    public ExecutionContext instrumentExecutionContext(ExecutionContext executionContext, InstrumentationExecutionParameters parameters) {
+        // Stores variable and fragments in request attribute for future usage, return context unmodified
+        GraphQLContext context = (GraphQLContext) executionContext.getContext();
+        if (context.getRequest().isPresent()) {
+            HttpServletRequest servletRequest = context.getRequest().get();
+            servletRequest.setAttribute(GRAPHQL_VARIABLES, executionContext.getVariables());
+            servletRequest.setAttribute(FRAGMENTS_BY_NAME, executionContext.getFragmentsByName());
+            servletRequest.setAttribute(PERMISSION_SERVICE, permissionService);
+        }
+        return super.instrumentExecutionContext(executionContext, parameters);
+    }
+
 }

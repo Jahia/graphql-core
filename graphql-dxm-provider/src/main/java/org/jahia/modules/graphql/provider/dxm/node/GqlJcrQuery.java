@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -51,6 +51,7 @@ import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
+import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
 
@@ -212,7 +213,9 @@ public class GqlJcrQuery {
             JCRNodeIteratorWrapper nodes = q.execute().getNodes();
             while (nodes.hasNext()) {
                 JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();
-                result.add(SpecializedTypesHandler.getNode(node));
+                if (PermissionHelper.hasPermission(node, environment)) {
+                    result.add(SpecializedTypesHandler.getNode(node));
+                }
             }
             // todo: naive implementation of the pagination, could be improved in some cases by setting limit/offset in query
             return PaginationHelper.paginate(result, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);

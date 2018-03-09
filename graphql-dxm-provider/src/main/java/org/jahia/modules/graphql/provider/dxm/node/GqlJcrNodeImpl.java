@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -53,7 +53,11 @@ import org.apache.commons.collections4.functors.TruePredicate;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
-import org.jahia.services.content.*;
+import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
+import org.jahia.services.content.JCRItemWrapper;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRPropertyWrapper;
+import org.jahia.services.content.JCRSessionFactory;
 
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
@@ -200,7 +204,13 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrNode> children = new LinkedList<GqlJcrNode>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
-            collectDescendants(node, getNodesPredicate(names, typesFilter, propertiesFilter), false, children);
+            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, environment), false, child-> {
+                try {
+                    children.add(SpecializedTypesHandler.getNode(child));
+                } catch (RepositoryException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -216,7 +226,13 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrNode> descendants = new LinkedList<GqlJcrNode>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
-            collectDescendants(node, getNodesPredicate(null, typesFilter, propertiesFilter), true, descendants);
+            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, environment), true, descendant -> {
+                try {
+                    descendants.add(SpecializedTypesHandler.getNode(descendant));
+                } catch (RepositoryException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -259,7 +275,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     @Override
     @GraphQLNonNull
-    public List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") String upToPath) {
+    public List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") String upToPath,
+                                         DataFetchingEnvironment environment) {
 
         String upToPathNormalized;
         if (upToPath != null) {
@@ -279,9 +296,12 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrNode> ancestors = new LinkedList<GqlJcrNode>();
         try {
             for (JCRItemWrapper jcrAncestor : node.getAncestors()) {
-                String ancestorPathNormalized = normalizePath(jcrAncestor.getPath());
-                if (ancestorPathNormalized.startsWith(upToPathNormalized)) {
-                    ancestors.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) jcrAncestor));
+                JCRNodeWrapper ancestorNode = (JCRNodeWrapper) jcrAncestor;
+                if (PermissionHelper.hasPermission(ancestorNode, environment)) {
+                    String ancestorPathNormalized = normalizePath(jcrAncestor.getPath());
+                    if (ancestorPathNormalized.startsWith(upToPathNormalized)) {
+                        ancestors.add(SpecializedTypesHandler.getNode(ancestorNode));
+                    }
                 }
             }
         } catch (RepositoryException e) {
@@ -307,21 +327,23 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrProperty> references = new LinkedList<GqlJcrProperty>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
-            collectReferences(node.getReferences(), references);
-            collectReferences(node.getWeakReferences(), references);
+            collectReferences(node.getReferences(), references, environment);
+            collectReferences(node.getWeakReferences(), references, environment);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
         return PaginationHelper.paginate(references, p -> PaginationHelper.encodeCursor(p.getNode().getUuid() + "/" + p.getName()), arguments);
     }
 
-    private void collectReferences(PropertyIterator references, Collection<GqlJcrProperty> gqlReferences) throws RepositoryException {
+    private void collectReferences(PropertyIterator references, Collection<GqlJcrProperty> gqlReferences, DataFetchingEnvironment environment) throws RepositoryException {
         while (references.hasNext()) {
             JCRPropertyWrapper reference = (JCRPropertyWrapper) references.nextProperty();
-            JCRNodeWrapper referencingNode = (JCRNodeWrapper) reference.getParent();
-            GqlJcrNode gqlReferencingNode = SpecializedTypesHandler.getNode(referencingNode);
-            GqlJcrProperty gqlReference = gqlReferencingNode.getProperty(reference.getName(), reference.getLocale());
-            gqlReferences.add(gqlReference);
+            JCRNodeWrapper referencingNode = reference.getParent();
+            if (PermissionHelper.hasPermission(referencingNode, environment)) {
+                GqlJcrNode gqlReferencingNode = SpecializedTypesHandler.getNode(referencingNode);
+                GqlJcrProperty gqlReference = gqlReferencingNode.getProperty(reference.getName(), reference.getLocale());
+                gqlReferences.add(gqlReference);
+            }
         }
     }
 

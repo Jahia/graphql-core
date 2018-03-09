@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -48,16 +48,20 @@ import org.apache.commons.collections4.functors.AllPredicate;
 import org.apache.commons.collections4.functors.AnyPredicate;
 import org.apache.commons.collections4.functors.NonePredicate;
 import org.apache.commons.collections4.functors.TruePredicate;
+import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.LanguageCodeConverters;
+
+import graphql.schema.DataFetchingEnvironment;
 
 import javax.jcr.RepositoryException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 public class NodeHelper {
 
@@ -192,6 +196,36 @@ public class NodeHelper {
         Locale locale = LanguageCodeConverters.languageCodeToLocale(language);
         JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(workspace, locale);
         return session.getNodeByIdentifier(node.getIdentifier());
+    }
+
+    static void collectDescendants(JCRNodeWrapper node, Predicate<JCRNodeWrapper> predicate, boolean recurse, Consumer<JCRNodeWrapper> consumer) throws RepositoryException {
+        for (JCRNodeWrapper child : node.getNodes()) {
+            if (predicate.evaluate(child)) {
+                consumer.accept(child);
+            }
+            if (recurse) {
+                collectDescendants(child, predicate, true, consumer);
+            }
+        }
+    }
+
+    static Predicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final GqlJcrNode.NodeTypesInput typesFilter, final GqlJcrNode.NodePropertiesInput propertiesFilter, DataFetchingEnvironment environment) {
+
+        Predicate<JCRNodeWrapper> namesPredicate;
+        if (names == null) {
+            namesPredicate = TruePredicate.truePredicate();
+        } else {
+            namesPredicate = (node) -> names.contains(node.getName());
+        }
+
+        Predicate<JCRNodeWrapper> typesPredicate = getTypesPredicate(typesFilter);
+
+        Predicate<JCRNodeWrapper> propertiesPredicate = getPropertiesPredicate(propertiesFilter);
+
+        Predicate<JCRNodeWrapper> permissionPredicate = PermissionHelper.getPermissionPredicate(environment);
+
+        @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = AllPredicate.allPredicate(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate, permissionPredicate);
+        return result;
     }
 
     private interface PropertyEvaluationAlgorithm {

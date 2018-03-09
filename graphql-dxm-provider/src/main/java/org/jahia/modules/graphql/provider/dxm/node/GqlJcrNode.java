@@ -182,7 +182,8 @@ public interface GqlJcrNode {
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the ancestor nodes of the JCR node, top down direction")
-    List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") @GraphQLDescription("The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes") String upToPath)
+    List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") @GraphQLDescription("The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes") String upToPath,
+                                  DataFetchingEnvironment environment)
     throws GqlJcrWrongInputException;
 
     /**
