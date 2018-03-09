@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -51,6 +51,7 @@ import graphql.schema.DataFetcher;
 import graphql.servlet.GraphQLContext;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
+import org.jahia.modules.securityfilter.PermissionService;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -61,12 +62,16 @@ public class JCRInstrumentation extends NoOpInstrumentation {
 
     public static final String GRAPHQL_VARIABLES = "graphQLVariables";
     public static final String FRAGMENTS_BY_NAME = "fragmentsByName";
+    public static final String PERMISSION_SERVICE = "fragmentsByName";
 
     private DXGraphQLConfig dxGraphQLConfig;
 
-    JCRInstrumentation(DXGraphQLConfig dxGraphQLConfig) {
+    private PermissionService permissionService;
+
+    JCRInstrumentation(DXGraphQLConfig dxGraphQLConfig, PermissionService permissionService) {
         super();
         this.dxGraphQLConfig = dxGraphQLConfig;
+        this.permissionService = permissionService;
     }
 
     @Override
@@ -82,6 +87,7 @@ public class JCRInstrumentation extends NoOpInstrumentation {
             HttpServletRequest servletRequest = context.getRequest().get();
             servletRequest.setAttribute(GRAPHQL_VARIABLES, executionContext.getVariables());
             servletRequest.setAttribute(FRAGMENTS_BY_NAME, executionContext.getFragmentsByName());
+            servletRequest.setAttribute(PERMISSION_SERVICE, permissionService);
         }
         return super.instrumentExecutionContext(executionContext, parameters);
     }

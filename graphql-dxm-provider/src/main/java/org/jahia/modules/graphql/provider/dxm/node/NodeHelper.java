@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -43,8 +43,10 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.predicate.MulticriteriaEvaluation;
 import org.jahia.modules.graphql.provider.dxm.predicate.PredicateHelper;
+import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -194,7 +196,7 @@ public class NodeHelper {
         }
     }
 
-    static Predicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final GqlJcrNode.NodeTypesInput typesFilter, final GqlJcrNode.NodePropertiesInput propertiesFilter) {
+    static Predicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final GqlJcrNode.NodeTypesInput typesFilter, final GqlJcrNode.NodePropertiesInput propertiesFilter, DataFetchingEnvironment environment) {
 
         Predicate<JCRNodeWrapper> namesPredicate;
         if (names == null) {
@@ -207,7 +209,9 @@ public class NodeHelper {
 
         Predicate<JCRNodeWrapper> propertiesPredicate = getPropertiesPredicate(propertiesFilter);
 
-        @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = PredicateHelper.allPredicates(Arrays.asList(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate));
+        Predicate<JCRNodeWrapper> permissionPredicate = PermissionHelper.getPermissionPredicate(environment);
+
+        @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = PredicateHelper.allPredicates(Arrays.asList(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate, permissionPredicate));
         return result;
     }
 
