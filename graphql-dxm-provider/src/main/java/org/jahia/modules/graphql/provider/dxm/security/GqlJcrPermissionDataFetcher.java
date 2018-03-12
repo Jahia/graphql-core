@@ -66,6 +66,7 @@ public class GqlJcrPermissionDataFetcher<T> implements DataFetcher<T> {
 
     @Override
     public T get(DataFetchingEnvironment environment) {
+
         // check permission
         GqlJcrPermissionChecker.checkPermissions(environment.getParentType(), environment.getFields(), permissions);
 
@@ -73,9 +74,9 @@ public class GqlJcrPermissionDataFetcher<T> implements DataFetcher<T> {
         T res = originalDataFetcher.get(environment);
 
         if (res instanceof GqlJcrNode) {
-            JCRNodeWrapper jcrNodeWrapper = ((GqlJcrNode) res).getNode();
-            if (!PermissionHelper.hasPermission(jcrNodeWrapper, environment)) {
-                throw new GqlAccessDeniedException("");
+            JCRNodeWrapper jcrNode = ((GqlJcrNode) res).getNode();
+            if (!PermissionHelper.hasPermission(jcrNode, environment)) {
+                throw new GqlAccessDeniedException("Access denied to the node: " + jcrNode.getPath());
             }
         }
 
