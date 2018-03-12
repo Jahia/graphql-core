@@ -169,7 +169,7 @@ public class NodeHelper {
 
     /**
      * Retrieves the JCR node using localized session. If <code>language</code> is <code>null</code>, returns the node itself.
-     * 
+     *
      * @param node the node to be retrieved in a localized session
      * @param language the language of the localized session to use
      * @return the JCR node using localized session. If <code>language</code> is <code>null</code>, returns the node itself
@@ -206,19 +206,14 @@ public class NodeHelper {
         }
 
         Predicate<JCRNodeWrapper> typesPredicate = getTypesPredicate(typesFilter);
-
         Predicate<JCRNodeWrapper> propertiesPredicate = getPropertiesPredicate(propertiesFilter);
-
         Predicate<JCRNodeWrapper> permissionPredicate = PermissionHelper.getPermissionPredicate(environment);
 
-        @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = PredicateHelper.allPredicates(Arrays.asList(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate, permissionPredicate));
+        Predicate<JCRNodeWrapper> result = PredicateHelper.allPredicates(Arrays.asList(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate, permissionPredicate));
         return result;
     }
 
     private interface PropertyEvaluationAlgorithm {
         boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue);
     }
-
-
-
 }

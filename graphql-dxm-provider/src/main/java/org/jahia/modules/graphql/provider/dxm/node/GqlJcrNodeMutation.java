@@ -92,6 +92,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
      * Default value supplier for {@link ReorderedChildrenPosition}.
      */
     public static class ReorderedChildrenPositionDefaultValue implements Supplier<Object> {
+
         @Override
         public ReorderedChildrenPosition get() {
             return ReorderedChildrenPosition.INPLACE;
@@ -142,7 +143,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
                                        @GraphQLName("mixins") @GraphQLDescription("The collection of mixin type names") Collection<String> mixins,
                                        @GraphQLName("properties") Collection<GqlJcrPropertyInput> properties,
                                        @GraphQLName("children") Collection<GqlJcrNodeInput> children)
-            throws BaseGqlClientException {
+    throws BaseGqlClientException {
         GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, mixins, properties, children);
         return new GqlJcrNodeMutation(addNode(jcrNode, node));
     }
@@ -197,7 +198,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     public Collection<GqlJcrNodeMutation> mutateDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") GqlJcrNode.NodeTypesInput typesFilter,
                                                             @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter,
                                                             DataFetchingEnvironment environment)
-            throws BaseGqlClientException {
+    throws BaseGqlClientException {
         List<GqlJcrNodeMutation> descendants = new LinkedList<>();
         try {
             NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, environment),
@@ -223,7 +224,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
                                                          @GraphQLName("typesFilter") @GraphQLDescription("Filter of child nodes by their types; null to avoid such filtering") GqlJcrNode.NodeTypesInput typesFilter,
                                                          @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter,
                                                          DataFetchingEnvironment environment)
-            throws BaseGqlClientException {
+    throws BaseGqlClientException {
         List<GqlJcrNodeMutation> children = new LinkedList<>();
         try {
             NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, environment),
@@ -427,7 +428,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     public boolean reorderChildren(
             @GraphQLName("names") @GraphQLNonNull @GraphQLDescription("List of child node names in the desired order") List<String> names,
             @GraphQLName("position") @GraphQLDefaultValue(ReorderedChildrenPositionDefaultValue.class) @GraphQLDescription("The target position of reordered child nodes. The default value is inplace.") ReorderedChildrenPosition position)
-            throws BaseGqlClientException {
+    throws BaseGqlClientException {
 
         validateChildNamesToReorder(names, position);
 
