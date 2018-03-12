@@ -62,7 +62,7 @@ public class JCRInstrumentation extends NoOpInstrumentation {
 
     public static final String GRAPHQL_VARIABLES = "graphQLVariables";
     public static final String FRAGMENTS_BY_NAME = "fragmentsByName";
-    public static final String PERMISSION_SERVICE = "fragmentsByName";
+    public static final String PERMISSION_SERVICE = "permissionService";
 
     private DXGraphQLConfig dxGraphQLConfig;
 
