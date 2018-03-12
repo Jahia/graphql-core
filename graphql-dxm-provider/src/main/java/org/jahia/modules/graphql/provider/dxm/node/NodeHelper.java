@@ -219,9 +219,7 @@ public class NodeHelper {
         }
 
         Predicate<JCRNodeWrapper> typesPredicate = getTypesPredicate(typesFilter);
-
         Predicate<JCRNodeWrapper> propertiesPredicate = getPropertiesPredicate(propertiesFilter);
-
         Predicate<JCRNodeWrapper> permissionPredicate = PermissionHelper.getPermissionPredicate(environment);
 
         @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = AllPredicate.allPredicate(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate, permissionPredicate);
@@ -231,7 +229,4 @@ public class NodeHelper {
     private interface PropertyEvaluationAlgorithm {
         boolean evaluate(JCRNodeWrapper node, String language, String propertyName, String propertyValue);
     }
-
-
-
 }

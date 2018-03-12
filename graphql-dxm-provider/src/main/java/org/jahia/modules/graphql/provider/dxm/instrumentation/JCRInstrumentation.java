@@ -66,11 +66,9 @@ public class JCRInstrumentation extends NoOpInstrumentation {
     public static final String PERMISSION_SERVICE = "permissionService";
 
     private DXGraphQLConfig dxGraphQLConfig;
-
     private PermissionService permissionService;
 
     JCRInstrumentation(DXGraphQLConfig dxGraphQLConfig, PermissionService permissionService) {
-        super();
         this.dxGraphQLConfig = dxGraphQLConfig;
         this.permissionService = permissionService;
     }
@@ -92,5 +90,4 @@ public class JCRInstrumentation extends NoOpInstrumentation {
         }
         return super.instrumentExecutionContext(executionContext, parameters);
     }
-
 }

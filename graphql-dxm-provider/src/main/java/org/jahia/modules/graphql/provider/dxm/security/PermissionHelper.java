@@ -59,9 +59,7 @@ import javax.jcr.RepositoryException;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Optional;
 
-
 public class PermissionHelper {
-
 
     public static Predicate<JCRNodeWrapper> getPermissionPredicate(DataFetchingEnvironment environment) {
         return (node) -> hasPermission(node, environment);
@@ -79,5 +77,4 @@ public class PermissionHelper {
         }
         return true;
     }
-
 }

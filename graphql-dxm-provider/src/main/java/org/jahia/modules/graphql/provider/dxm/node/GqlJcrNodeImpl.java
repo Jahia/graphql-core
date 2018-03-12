@@ -69,12 +69,11 @@ import java.util.*;
 @GraphQLName("GenericJCRNode")
 public class GqlJcrNodeImpl implements GqlJcrNode {
 
+    public static final List<String> DEFAULT_EXCLUDED_CHILDREN = Arrays.asList("jnt:translation");
+    public static final Predicate<JCRNodeWrapper> DEFAULT_CHILDREN_PREDICATE = NodeHelper.getTypesPredicate(new NodeTypesInput(MulticriteriaEvaluation.NONE, DEFAULT_EXCLUDED_CHILDREN));
 
     private JCRNodeWrapper node;
     private String type;
-
-    public static final List<String> DEFAULT_EXCLUDED_CHILDREN = Arrays.asList("jnt:translation");
-    public static final Predicate<JCRNodeWrapper> DEFAULT_CHILDREN_PREDICATE = NodeHelper.getTypesPredicate(new NodeTypesInput(MulticriteriaEvaluation.NONE, DEFAULT_EXCLUDED_CHILDREN));
 
     /**
      * Create an instance that represents a JCR node to GraphQL.
@@ -204,7 +203,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrNode> children = new LinkedList<GqlJcrNode>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
-            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, environment), false, child-> {
+            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, environment), false, child -> {
                 try {
                     children.add(SpecializedTypesHandler.getNode(child));
                 } catch (RepositoryException e) {
