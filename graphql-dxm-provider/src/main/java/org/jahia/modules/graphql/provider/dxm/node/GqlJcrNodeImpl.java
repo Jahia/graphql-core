@@ -286,12 +286,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrNode> ancestors = new LinkedList<GqlJcrNode>();
         try {
             for (JCRItemWrapper jcrAncestor : node.getAncestors()) {
-                JCRNodeWrapper ancestorNode = (JCRNodeWrapper) jcrAncestor;
-                if (PermissionHelper.hasPermission(ancestorNode, environment)) {
-                    String ancestorPathNormalized = normalizePath(jcrAncestor.getPath());
-                    if (ancestorPathNormalized.startsWith(upToPathNormalized)) {
-                        ancestors.add(SpecializedTypesHandler.getNode(ancestorNode));
-                    }
+                String ancestorPathNormalized = normalizePath(jcrAncestor.getPath());
+                if (ancestorPathNormalized.startsWith(upToPathNormalized)) {
+                    ancestors.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) jcrAncestor));
                 }
             }
         } catch (RepositoryException e) {

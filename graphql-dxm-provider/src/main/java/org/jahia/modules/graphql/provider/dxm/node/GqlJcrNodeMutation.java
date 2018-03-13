@@ -45,7 +45,6 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import com.google.common.collect.Lists;
 import graphql.annotations.annotationTypes.*;
-import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
@@ -196,13 +195,11 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing descendant nodes, based on filters passed as parameter")
     public Collection<GqlJcrNodeMutation> mutateDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") GqlJcrNode.NodeTypesInput typesFilter,
-                                                            @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter,
-                                                            DataFetchingEnvironment environment)
+                                                            @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter)
     throws BaseGqlClientException {
         List<GqlJcrNodeMutation> descendants = new LinkedList<>();
         try {
-            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, environment),
-                    true, descendant -> descendants.add(new GqlJcrNodeMutation(descendant)));
+            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, null), true, descendant -> descendants.add(new GqlJcrNodeMutation(descendant)));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -222,13 +219,11 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     @GraphQLDescription("Mutates a set of existing direct sub nodes, based on filters passed as parameter")
     public Collection<GqlJcrNodeMutation> mutateChildren(@GraphQLName("names") @GraphQLDescription("Filter of child nodes by their names; null to avoid such filtering") Collection<String> names,
                                                          @GraphQLName("typesFilter") @GraphQLDescription("Filter of child nodes by their types; null to avoid such filtering") GqlJcrNode.NodeTypesInput typesFilter,
-                                                         @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter,
-                                                         DataFetchingEnvironment environment)
+                                                         @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter)
     throws BaseGqlClientException {
         List<GqlJcrNodeMutation> children = new LinkedList<>();
         try {
-            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, environment),
-                    false, child -> children.add(new GqlJcrNodeMutation(child)));
+            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, null), false, child -> children.add(new GqlJcrNodeMutation(child)));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }

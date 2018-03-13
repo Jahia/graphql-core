@@ -165,8 +165,6 @@ public class NodeHelper {
         }
     }
 
-
-
     /**
      * Retrieves the JCR node using localized session. If <code>language</code> is <code>null</code>, returns the node itself.
      *
@@ -207,7 +205,13 @@ public class NodeHelper {
 
         Predicate<JCRNodeWrapper> typesPredicate = getTypesPredicate(typesFilter);
         Predicate<JCRNodeWrapper> propertiesPredicate = getPropertiesPredicate(propertiesFilter);
-        Predicate<JCRNodeWrapper> permissionPredicate = PermissionHelper.getPermissionPredicate(environment);
+
+        Predicate<JCRNodeWrapper> permissionPredicate;
+        if (environment == null) {
+            permissionPredicate = PredicateHelper.truePredicate();
+        } else {
+            permissionPredicate = (node) -> PermissionHelper.hasPermission(node, environment);
+        }
 
         Predicate<JCRNodeWrapper> result = PredicateHelper.allPredicates(Arrays.asList(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate, permissionPredicate));
         return result;
