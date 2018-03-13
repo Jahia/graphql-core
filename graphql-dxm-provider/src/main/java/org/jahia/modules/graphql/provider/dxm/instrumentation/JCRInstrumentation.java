@@ -50,11 +50,13 @@ import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchPar
 import graphql.schema.*;
 import graphql.servlet.GraphQLContext;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
 import org.jahia.modules.securityfilter.PermissionService;
+
+import java.util.Optional;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * JCR instrumentation implementation
@@ -80,14 +82,19 @@ public class JCRInstrumentation extends NoOpInstrumentation {
 
     @Override
     public ExecutionContext instrumentExecutionContext(ExecutionContext executionContext, InstrumentationExecutionParameters parameters) {
-        // Stores variable and fragments in request attribute for future usage, return context unmodified
-        GraphQLContext context = (GraphQLContext) executionContext.getContext();
-        if (context.getRequest().isPresent()) {
-            HttpServletRequest servletRequest = context.getRequest().get();
-            servletRequest.setAttribute(GRAPHQL_VARIABLES, executionContext.getVariables());
-            servletRequest.setAttribute(FRAGMENTS_BY_NAME, executionContext.getFragmentsByName());
-            servletRequest.setAttribute(PERMISSION_SERVICE, permissionService);
+
+        executionContext = super.instrumentExecutionContext(executionContext, parameters);
+
+        Optional<HttpServletRequest> request = ((GraphQLContext) executionContext.getContext()).getRequest();
+        if (!request.isPresent()) {
+            // Only the case with integration tests.
+            return executionContext;
         }
-        return super.instrumentExecutionContext(executionContext, parameters);
+
+        HttpServletRequest servletRequest = request.get();
+        servletRequest.setAttribute(GRAPHQL_VARIABLES, executionContext.getVariables());
+        servletRequest.setAttribute(FRAGMENTS_BY_NAME, executionContext.getFragmentsByName());
+        servletRequest.setAttribute(PERMISSION_SERVICE, permissionService);
+        return executionContext;
     }
 }

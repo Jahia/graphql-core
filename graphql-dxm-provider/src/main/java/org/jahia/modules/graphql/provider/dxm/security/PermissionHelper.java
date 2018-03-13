@@ -49,7 +49,6 @@ import graphql.ErrorType;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.servlet.GraphQLContext;
 
-import org.apache.commons.collections4.Predicate;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.instrumentation.JCRInstrumentation;
 import org.jahia.modules.securityfilter.PermissionService;
@@ -61,20 +60,19 @@ import java.util.Optional;
 
 public class PermissionHelper {
 
-    public static Predicate<JCRNodeWrapper> getPermissionPredicate(DataFetchingEnvironment environment) {
-        return (node) -> hasPermission(node, environment);
-    }
-
     public static boolean hasPermission(JCRNodeWrapper node, DataFetchingEnvironment environment) {
+
         Optional<HttpServletRequest> request = ((GraphQLContext) environment.getContext()).getRequest();
-        if (request.isPresent()) {
-            PermissionService service = (PermissionService) request.get().getAttribute(JCRInstrumentation.PERMISSION_SERVICE);
-            try {
-                return service.hasPermission("graphql." + environment.getParentType().getName() + "." + environment.getFieldDefinition().getName(), node);
-            } catch (RepositoryException e) {
-                throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
-            }
+        if (!request.isPresent()) {
+            // Only the case with integration tests.
+            return true;
         }
-        return true;
+
+        PermissionService service = (PermissionService) request.get().getAttribute(JCRInstrumentation.PERMISSION_SERVICE);
+        try {
+            return service.hasPermission("graphql." + environment.getParentType().getName() + "." + environment.getFieldDefinition().getName(), node);
+        } catch (RepositoryException e) {
+            throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
+        }
     }
 }

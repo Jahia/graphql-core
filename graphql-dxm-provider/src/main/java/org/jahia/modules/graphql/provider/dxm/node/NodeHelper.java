@@ -186,8 +186,6 @@ public class NodeHelper {
         }
     }
 
-
-
     public static JCRNodeWrapper getNodeInLanguage(JCRNodeWrapper node, String language) throws RepositoryException {
         if (language == null) {
             return node;
@@ -220,7 +218,13 @@ public class NodeHelper {
 
         Predicate<JCRNodeWrapper> typesPredicate = getTypesPredicate(typesFilter);
         Predicate<JCRNodeWrapper> propertiesPredicate = getPropertiesPredicate(propertiesFilter);
-        Predicate<JCRNodeWrapper> permissionPredicate = PermissionHelper.getPermissionPredicate(environment);
+
+        Predicate<JCRNodeWrapper> permissionPredicate;
+        if (environment == null) {
+            permissionPredicate = TruePredicate.truePredicate();
+        } else {
+            permissionPredicate = (node) -> PermissionHelper.hasPermission(node, environment);
+        }
 
         @SuppressWarnings("unchecked") Predicate<JCRNodeWrapper> result = AllPredicate.allPredicate(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate, permissionPredicate);
         return result;
