@@ -46,7 +46,6 @@ package org.jahia.modules.graphql.provider.dxm.instrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.servlet.InstrumentationProvider;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
-import org.jahia.modules.securityfilter.PermissionService;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -57,20 +56,14 @@ import org.osgi.service.component.annotations.Reference;
 public class JCRInstrumentationProvider implements InstrumentationProvider {
 
     private DXGraphQLConfig dxGraphQLConfig;
-    private PermissionService permissionService;
 
     @Reference
     public void bindDxGraphQLConfig(DXGraphQLConfig dxGraphQLConfig) {
         this.dxGraphQLConfig = dxGraphQLConfig;
     }
 
-    @Reference
-    public void bindPermissionService(PermissionService permissionService) {
-        this.permissionService = permissionService;
-    }
-
     @Override
     public Instrumentation getInstrumentation() {
-        return new JCRInstrumentation(dxGraphQLConfig, permissionService);
+        return new JCRInstrumentation(dxGraphQLConfig);
     }
 }

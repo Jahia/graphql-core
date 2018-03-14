@@ -47,32 +47,37 @@ package org.jahia.modules.graphql.provider.dxm.security;
 
 import graphql.ErrorType;
 import graphql.schema.DataFetchingEnvironment;
-import graphql.servlet.GraphQLContext;
 
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
-import org.jahia.modules.graphql.provider.dxm.instrumentation.JCRInstrumentation;
 import org.jahia.modules.securityfilter.PermissionService;
+import org.jahia.osgi.FrameworkService;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.osgi.util.tracker.ServiceTracker;
 
 import javax.jcr.RepositoryException;
-import javax.servlet.http.HttpServletRequest;
-import java.util.Optional;
 
 public class PermissionHelper {
 
+    private static volatile ServiceTracker<PermissionService, PermissionService> permissionServiceTracker;
+
     public static boolean hasPermission(JCRNodeWrapper node, DataFetchingEnvironment environment) {
-
-        Optional<HttpServletRequest> request = ((GraphQLContext) environment.getContext()).getRequest();
-        if (!request.isPresent()) {
-            // Only the case with integration tests.
-            return true;
-        }
-
-        PermissionService service = (PermissionService) request.get().getAttribute(JCRInstrumentation.PERMISSION_SERVICE);
+        PermissionService permissionService = getPermissionService();
         try {
-            return service.hasPermission("graphql." + environment.getParentType().getName() + "." + environment.getFieldDefinition().getName(), node);
+            return permissionService.hasPermission("graphql." + environment.getParentType().getName() + "." + environment.getFieldDefinition().getName(), node);
         } catch (RepositoryException e) {
             throw new BaseGqlClientException(e, ErrorType.DataFetchingException);
         }
+    }
+
+    private static PermissionService getPermissionService() {
+        if (permissionServiceTracker == null) {
+            synchronized (PermissionHelper.class) {
+                if (permissionServiceTracker == null) {
+                    permissionServiceTracker = new ServiceTracker<>(FrameworkService.getBundleContext(), PermissionService.class, null);
+                    permissionServiceTracker.open();
+                }
+            }
+        }
+        return permissionServiceTracker.getService();
     }
 }
