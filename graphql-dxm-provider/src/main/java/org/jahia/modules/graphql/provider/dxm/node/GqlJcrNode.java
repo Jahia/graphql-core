@@ -168,7 +168,7 @@ public interface GqlJcrNode {
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the descendant nodes, according to parameters passed")
     DXPaginatedData<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
-                                    @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter,
+                                               @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter,
                                                DataFetchingEnvironment environment)
     throws GqlJcrWrongInputException;
 

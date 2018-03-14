@@ -243,5 +243,4 @@ public class GqlJcrQuery {
             return SQL2;
         }
     }
-
 }
