@@ -43,24 +43,169 @@
  */
 package org.jahia.test.graphql;
 
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Properties;
+
+import javax.jcr.RepositoryException;
+
+import org.jahia.api.Constants;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.usermanager.JahiaUser;
+import org.jahia.services.usermanager.JahiaUserManagerService;
+import org.json.JSONArray;
 import org.json.JSONObject;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class GraphQLPermissionsTest extends GraphQLTestSupport {
 
+    private static JahiaUser user;
+    private static JahiaUser currentUserBackup;
+
+    @BeforeClass
+    public static void oneTimeSetup() throws Exception {
+
+        GraphQLTestSupport.init();
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+
+            user = JahiaUserManagerService.getInstance().createUser("testUser", null, "testPassword", new Properties(), session).getJahiaUser();
+
+            JCRNodeWrapper node = addTestNodeWithUserRoles(session.getNode("/"), "jnt:contentList", "testList", user, true);
+            addTestNodeWithUserRoles(node, "jnt:contentList", "testSubList1", user, false);
+            JCRNodeWrapper subNode2 = addTestNodeWithUserRoles(node, "jnt:contentList", "testSubList2", user, true);
+            JCRNodeWrapper ref1 = addTestNodeWithUserRoles(node, "jnt:contentReference", "reference1", user, false);
+            JCRNodeWrapper ref2 = addTestNodeWithUserRoles(node, "jnt:contentReference", "reference2", user, true);
+            ref1.setProperty("j:node", subNode2);
+            ref2.setProperty("j:node", subNode2);
+
+            session.save();
+            return null;
+        });
+
+        JCRSessionFactory sessionFactory = JCRSessionFactory.getInstance();
+        currentUserBackup = sessionFactory.getCurrentUser();
+        sessionFactory.setCurrentUser(user);
+    }
+
+    @AfterClass
+    public static void oneTimeTearDown() throws Exception {
+
+        JCRSessionFactory.getInstance().setCurrentUser(currentUserBackup);
+        GraphQLTestSupport.removeTestNodes();
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+            JahiaUserManagerService.getInstance().deleteUser(user.getLocalPath(), session);
+            session.save();
+            return null;
+        });
+    }
+
+    private static JCRNodeWrapper addTestNodeWithUserRoles(JCRNodeWrapper parent, String type, String name, JahiaUser user, boolean grantOwnerRole) throws RepositoryException {
+
+        JCRNodeWrapper node = parent.addNode(name, type);
+        node.setAclInheritanceBreak(true);
+        String principalKey = "u:" + user.getUsername();
+        node.grantRoles(principalKey, Collections.singleton("privileged"));
+        if (grantOwnerRole) {
+            node.grantRoles(principalKey, Collections.singleton("owner"));
+        }
+
+        // Don't want to be able to read the ACL node.
+        node.getNode(Constants.ACL).setAclInheritanceBreak(true);
+
+        return node;
+    }
+
+
     @Test
-    public void shouldGetErrorNotRetrieveRootNode() throws Exception {
+    public void shouldGetErrorNotRetrieveProtectedNode() throws Exception {
 
         JSONObject result = executeQuery(""
                 + "{"
                 + "    jcr {"
-                + "        nodeByPath(path: \"/\") {"
+                + "        nodeByPath(path: \"/testList/testSubList1\") {"
                 + "            uuid"
                 + "        }"
                 + "    }"
                 + "}"
         );
 
-        validateError(result, "Access denied");
+        validateError(result, "Permission denied");
+    }
+
+    @Test
+    public void shouldRetrieveFilteredChildNodes() throws Exception {
+
+        JSONObject result = executeQuery(""
+                + "{"
+                + "    jcr {"
+                + "        nodeByPath(path: \"/testList\") {"
+                + "            children {"
+                + "                nodes {"
+                + "                    name"
+                + "                }"
+                + "            }"
+                + "        }"
+                + "    }"
+                + "}"
+        );
+
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
+        Assert.assertEquals(2, children.length());
+        validateNode(children.getJSONObject(0), "testSubList2");
+        validateNode(children.getJSONObject(1), "reference2");
+    }
+
+    @Test
+    public void shouldRetrieveFilteredDescendantNodes() throws Exception {
+
+        JSONObject result = executeQuery(""
+                + "{"
+                + "    jcr {"
+                + "        nodeByPath(path: \"/testList\") {"
+                + "            descendants {"
+                + "                nodes {"
+                + "                    name"
+                + "                }"
+                + "            }"
+                + "        }"
+                + "    }"
+                + "}"
+        );
+
+        JSONArray descendants = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("descendants").getJSONArray("nodes");
+        Assert.assertEquals(2, descendants.length());
+        validateNode(descendants.getJSONObject(0), "testSubList2");
+        validateNode(descendants.getJSONObject(1), "reference2");
+    }
+
+    @Test
+    public void shouldRetrieveFilteredReferences() throws Exception {
+
+        JSONObject result = executeQuery(""
+                + "{"
+                + "    jcr {"
+                + "        nodeByPath(path: \"/testList/testSubList2\") {"
+                + "            references {"
+                + "                nodes {"
+                + "                    node {"
+                + "                        name"
+                + "                    }"
+                + "                }"
+                + "            }"
+                + "        }"
+                + "    }"
+                + "}"
+        );
+
+        JSONArray references = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("references").getJSONArray("nodes");
+        Assert.assertEquals(1, references.length());
+        validateNode(references.getJSONObject(0).getJSONObject("node"), "reference2");
     }
 }
