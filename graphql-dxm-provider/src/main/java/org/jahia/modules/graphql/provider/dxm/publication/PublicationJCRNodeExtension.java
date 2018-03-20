@@ -48,17 +48,12 @@ package org.jahia.modules.graphql.provider.dxm.publication;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
-import org.jahia.ajax.gwt.client.data.publication.GWTJahiaPublicationInfo;
-import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.*;
 
-import javax.jcr.RepositoryException;
-import java.util.Collections;
-import java.util.Set;
-
 /**
- * Extensions for JCRNode
+ * Publication extensions for JCRNode
  */
 @GraphQLTypeExtension(GqlJcrNode.class)
 public class PublicationJCRNodeExtension {
@@ -71,79 +66,17 @@ public class PublicationJCRNodeExtension {
 
     @GraphQLField
     public GqlPublicationInfo getAggregatedPublicationInfo(@GraphQLName("language") String language,
-                                                           @GraphQLName("includesSubNodes") Boolean includesSubNodes,
-                                                           @GraphQLName("includesReferences") Boolean includesReferences) {
-        try {
-            JCRPublicationService publicationService = JCRPublicationService.getInstance();
-            if (includesSubNodes == null) {
-                includesSubNodes = false;
-            }
-            if (includesReferences == null) {
-                includesReferences = false;
-            }
-            JCRNodeWrapper node = gqlJcrNode.getNode();
-            PublicationInfo pubInfo = publicationService.getPublicationInfo(node.getIdentifier(), Collections.singleton(language), includesReferences, includesSubNodes, false, Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE).get(0);
-            if (!includesSubNodes) {
-                // We don't include subnodes, but we still need the translation nodes to get the correct status
-                final JCRSessionWrapper unlocalizedSession = JCRSessionFactory.getInstance().getCurrentUserSession();
+                                                           @GraphQLName("includeSubNodes") Boolean includeSubNodes,
+                                                           @GraphQLName("includeReferences") Boolean includeReferences) {
 
-                final JCRNodeWrapper nodeByIdentifier = unlocalizedSession.getNodeByIdentifier(node.getIdentifier());
-                String langNodeName = "j:translation_" + language;
-                if (nodeByIdentifier.hasNode(langNodeName)) {
-                    JCRNodeWrapper next = nodeByIdentifier.getNode(langNodeName);
-                    PublicationInfo translationInfo = publicationService.getPublicationInfo(next.getIdentifier(), Collections.singleton(language), includesReferences, false, false, Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE).get(0);
-                    pubInfo.getRoot().addChild(translationInfo.getRoot());
-                }
-            }
+        JCRPublicationInfoAggregationService publicationInfoAggregationService = BundleUtils.getOsgiService(JCRPublicationInfoAggregationService.class, null);
+        JCRPublicationInfoAggregationService.AggregatedPublicationInfo aggregatedInfo = publicationInfoAggregationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, includeSubNodes, includeReferences);
 
-            GqlPublicationInfo gqlPublicationInfo = new GqlPublicationInfo(pubInfo.getRoot().getUuid(), GqlPublicationStatus.fromValue(pubInfo.getRoot().getStatus()));
+        GqlPublicationInfo result = new GqlPublicationInfo(GqlPublicationStatus.fromStatusValue(aggregatedInfo.getPublicationStatus()));
+        result.setLocked(aggregatedInfo.isLocked());
+        result.setWorkInProgress(aggregatedInfo.isWorkInProgress());
+        result.setAllowedToPublishWithoutWorkflow(aggregatedInfo.isAllowedToPublishWithoutWorkflow());
 
-            String translationNodeName = pubInfo.getRoot().getChildren().size() > 0 ? "/j:translation_"+language : null;
-            for (PublicationInfoNode sub : pubInfo.getRoot().getChildren()) {
-                if (sub.getPath().contains(translationNodeName)) {
-                    if (sub.getStatus() > gqlPublicationInfo.getStatus().getValue()) {
-                        gqlPublicationInfo.setStatus(GqlPublicationStatus.fromValue(sub.getStatus()));
-                    }
-                    if (gqlPublicationInfo.getStatus().getValue() == GWTJahiaPublicationInfo.UNPUBLISHED && sub.getStatus() != GWTJahiaPublicationInfo.UNPUBLISHED) {
-                        gqlPublicationInfo.setStatus(GqlPublicationStatus.fromValue(sub.getStatus()));
-                    }
-                    if (sub.isLocked()) {
-                        gqlPublicationInfo.setLocked(true);
-                    }
-                    if (sub.isWorkInProgress()) {
-                        gqlPublicationInfo.setWorkInProgress(true);
-                    }
-                }
-            }
-
-            gqlPublicationInfo.setAllowedToPublishWithoutWorkflow(node.hasPermission("publish"));
-//            gqlPublicationInfo.setIsNonRootMarkedForDeletion(gqlPublicationInfo.getStatus() == GWTJahiaPublicationInfo.MARKED_FOR_DELETION && !node.isNodeType("jmix:markedForDeletionRoot"));
-
-            if (gqlPublicationInfo.getStatus().getValue() == GWTJahiaPublicationInfo.PUBLISHED) {
-                // the item status is published: check if the tree status or references are modified or unpublished
-                Set<Integer> status = pubInfo.getTreeStatus(language);
-                boolean overrideStatus = !status.isEmpty()
-                        && Collections.max(status) > GWTJahiaPublicationInfo.PUBLISHED;
-                if (!overrideStatus) {
-                    // check references
-                    for (PublicationInfo refInfo : pubInfo.getAllReferences()) {
-                        status = refInfo.getTreeStatus(language);
-                        if (!status.isEmpty() && Collections.max(status) > GWTJahiaPublicationInfo.PUBLISHED) {
-                            overrideStatus = true;
-                            break;
-                        }
-                    }
-                }
-                if (overrideStatus) {
-                    gqlPublicationInfo.setStatus(GqlPublicationStatus.fromValue(GWTJahiaPublicationInfo.MODIFIED));
-                }
-            }
-
-            return gqlPublicationInfo;
-        } catch (RepositoryException e) {
-            throw new RuntimeException(e);
-        }
-
+        return result;
     }
-
 }

@@ -40,7 +40,7 @@
  *
  *      If you are unsure which license is appropriate for your use,
  *      please contact the sales department at sales@jahia.com.
- *      
+ *
  */
 
 package org.jahia.modules.graphql.provider.dxm.publication;
@@ -48,12 +48,12 @@ package org.jahia.modules.graphql.provider.dxm.publication;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.services.content.PublicationInfo;
 
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
 @GraphQLName("PublicationStatus")
 public enum GqlPublicationStatus {
+
     PUBLISHED(PublicationInfo.PUBLISHED),
     MODIFIED(PublicationInfo.MODIFIED),
     NOT_PUBLISHED(PublicationInfo.NOT_PUBLISHED),
@@ -66,28 +66,27 @@ public enum GqlPublicationStatus {
     DELETED(PublicationInfo.DELETED),
     MARKED_FOR_DELETION(PublicationInfo.MARKED_FOR_DELETION);
 
-    private int value;
-
-    private static final Map<Integer,GqlPublicationStatus> lookup = new HashMap<Integer,GqlPublicationStatus>();
-
+    private static final Map<Integer, GqlPublicationStatus> PUBLICATION_STATUS_BY_STATUS_VALUE = new HashMap<Integer,GqlPublicationStatus>();
     static {
-        for(GqlPublicationStatus s : EnumSet.allOf(GqlPublicationStatus.class))
-            lookup.put(s.getValue(), s);
-    }
-
-    GqlPublicationStatus(int value) {
-        this.value = value;
-    }
-
-    public static GqlPublicationStatus fromValue(int type) {
-        if (lookup.containsKey(type)) {
-            return lookup.get(type);
+        for (GqlPublicationStatus publicationStatus : GqlPublicationStatus.values()) {
+            PUBLICATION_STATUS_BY_STATUS_VALUE.put(publicationStatus.getStatusValue(), publicationStatus);
         }
-        throw new IllegalArgumentException("unknown type: " + type);
     }
 
-    public int getValue() {
-        return value;
+    private int statusValue;
+
+    private GqlPublicationStatus(int statusValue) {
+        this.statusValue = statusValue;
     }
 
+    public static GqlPublicationStatus fromStatusValue(int statusValue) {
+        if (PUBLICATION_STATUS_BY_STATUS_VALUE.containsKey(statusValue)) {
+            return PUBLICATION_STATUS_BY_STATUS_VALUE.get(statusValue);
+        }
+        throw new IllegalArgumentException("Unknown publication status value: " + statusValue);
+    }
+
+    public int getStatusValue() {
+        return statusValue;
+    }
 }

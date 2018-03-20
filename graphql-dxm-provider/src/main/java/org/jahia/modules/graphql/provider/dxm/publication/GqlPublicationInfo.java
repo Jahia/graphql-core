@@ -49,24 +49,18 @@ import graphql.annotations.annotationTypes.GraphQLField;
 
 public class GqlPublicationInfo {
 
-    private String identifier;
     private GqlPublicationStatus status;
     private Boolean locked;
     private Boolean workInProgress;
     private Boolean isAllowedToPublishWithoutWorkflow;
 
-    public GqlPublicationInfo(String identifier, GqlPublicationStatus status) {
-        this.identifier = identifier;
+    public GqlPublicationInfo(GqlPublicationStatus status) {
         this.status = status;
     }
 
     @GraphQLField
     public GqlPublicationStatus getStatus() {
         return status;
-    }
-
-    public void setStatus(GqlPublicationStatus status) {
-        this.status = status;
     }
 
     @GraphQLField
