@@ -69,7 +69,7 @@ public enum GqlPublicationStatus {
     private static final Map<Integer, GqlPublicationStatus> PUBLICATION_STATUS_BY_STATUS_VALUE = new HashMap<Integer,GqlPublicationStatus>();
     static {
         for (GqlPublicationStatus publicationStatus : GqlPublicationStatus.values()) {
-            PUBLICATION_STATUS_BY_STATUS_VALUE.put(publicationStatus.getStatusValue(), publicationStatus);
+            PUBLICATION_STATUS_BY_STATUS_VALUE.put(publicationStatus.statusValue, publicationStatus);
         }
     }
 
@@ -84,9 +84,5 @@ public enum GqlPublicationStatus {
             return PUBLICATION_STATUS_BY_STATUS_VALUE.get(statusValue);
         }
         throw new IllegalArgumentException("Unknown publication status value: " + statusValue);
-    }
-
-    public int getStatusValue() {
-        return statusValue;
     }
 }

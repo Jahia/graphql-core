@@ -45,12 +45,17 @@
 
 package org.jahia.modules.graphql.provider.dxm.publication;
 
+import graphql.annotations.annotationTypes.GraphQLDefaultValue;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.osgi.BundleUtils;
-import org.jahia.services.content.*;
+import org.jahia.services.content.JCRPublicationInfoAggregationService;
 
 /**
  * Publication extensions for JCRNode
@@ -65,18 +70,37 @@ public class PublicationJCRNodeExtension {
     }
 
     @GraphQLField
-    public GqlPublicationInfo getAggregatedPublicationInfo(@GraphQLName("language") String language,
-                                                           @GraphQLName("includeSubNodes") Boolean includeSubNodes,
-                                                           @GraphQLName("includeReferences") Boolean includeReferences) {
+    @GraphQLNonNull
+    public GqlPublicationInfo getAggregatedPublicationInfo(
+        @GraphQLName("language") @GraphQLNonNull String language,
+        @GraphQLName("includeSubNodes") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includeSubNodes,
+        @GraphQLName("includeReferences") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includeReferences
+    ) throws BaseGqlClientException {
 
         JCRPublicationInfoAggregationService publicationInfoAggregationService = BundleUtils.getOsgiService(JCRPublicationInfoAggregationService.class, null);
-        JCRPublicationInfoAggregationService.AggregatedPublicationInfo aggregatedInfo = publicationInfoAggregationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, includeSubNodes, includeReferences);
+        final JCRPublicationInfoAggregationService.AggregatedPublicationInfo aggregatedInfo = publicationInfoAggregationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, includeSubNodes, includeReferences);
 
-        GqlPublicationInfo result = new GqlPublicationInfo(GqlPublicationStatus.fromStatusValue(aggregatedInfo.getPublicationStatus()));
-        result.setLocked(aggregatedInfo.isLocked());
-        result.setWorkInProgress(aggregatedInfo.isWorkInProgress());
-        result.setAllowedToPublishWithoutWorkflow(aggregatedInfo.isAllowedToPublishWithoutWorkflow());
+        return new GqlPublicationInfo() {
 
-        return result;
+            @Override
+            public GqlPublicationStatus getPublicationStatus() {
+                return GqlPublicationStatus.fromStatusValue(aggregatedInfo.getPublicationStatus());
+            }
+
+            @Override
+            public boolean isLocked() {
+                return aggregatedInfo.isLocked();
+            }
+
+            @Override
+            public boolean isWorkInProgress() {
+                return aggregatedInfo.isWorkInProgress();
+            }
+
+            @Override
+            public boolean isAllowedToPublishWithoutWorkflow() {
+                return aggregatedInfo.isAllowedToPublishWithoutWorkflow();
+            }
+        };
     }
 }

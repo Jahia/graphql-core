@@ -46,47 +46,20 @@
 package org.jahia.modules.graphql.provider.dxm.publication;
 
 import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 
-public class GqlPublicationInfo {
-
-    private GqlPublicationStatus status;
-    private Boolean locked;
-    private Boolean workInProgress;
-    private Boolean isAllowedToPublishWithoutWorkflow;
-
-    public GqlPublicationInfo(GqlPublicationStatus status) {
-        this.status = status;
-    }
+public interface GqlPublicationInfo {
 
     @GraphQLField
-    public GqlPublicationStatus getStatus() {
-        return status;
-    }
+    @GraphQLNonNull
+    GqlPublicationStatus getPublicationStatus();
 
     @GraphQLField
-    public Boolean getLocked() {
-        return locked;
-    }
-
-    public void setLocked(Boolean locked) {
-        this.locked = locked;
-    }
+    public boolean isLocked();
 
     @GraphQLField
-    public Boolean getWorkInProgress() {
-        return workInProgress;
-    }
-
-    public void setWorkInProgress(Boolean workInProgress) {
-        this.workInProgress = workInProgress;
-    }
+    public boolean isWorkInProgress();
 
     @GraphQLField
-    public Boolean getAllowedToPublishWithoutWorkflow() {
-        return isAllowedToPublishWithoutWorkflow;
-    }
-
-    public void setAllowedToPublishWithoutWorkflow(Boolean allowedToPublishWithoutWorkflow) {
-        isAllowedToPublishWithoutWorkflow = allowedToPublishWithoutWorkflow;
-    }
+    public boolean isAllowedToPublishWithoutWorkflow();
 }
