@@ -42,43 +42,77 @@
  *      please contact the sales department at sales@jahia.com.
  *
  */
-
 package org.jahia.modules.graphql.provider.dxm.publication;
 
 import graphql.annotations.annotationTypes.GraphQLDefaultValue;
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 
-import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import javax.jcr.RepositoryException;
+
+import org.jahia.api.Constants;
+import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
+import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRPublicationInfoAggregationService;
+import org.jahia.services.content.JCRSessionWrapper;
 
 /**
- * Publication extensions for JCRNode
+ * Publication extensions for the JCR node.
+ *
+ * These extensions can only be applied to a node from EDIT workspace, not LIVE.
  */
 @GraphQLTypeExtension(GqlJcrNode.class)
 public class PublicationJCRNodeExtension {
 
     private GqlJcrNode gqlJcrNode;
 
-    public PublicationJCRNodeExtension(GqlJcrNode node) {
+    /**
+     * Create an publication extension instance.
+     *
+     * @param node JCR node representation to apply the extension to
+     * @throws GqlJcrWrongInputException In case the parameter represents a node from LIVE rather than EDIT workspace
+     */
+    public PublicationJCRNodeExtension(GqlJcrNode node) throws GqlJcrWrongInputException {
+
+        JCRSessionWrapper session;
+        try {
+            session = node.getNode().getSession();
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
+        if (!session.getWorkspace().getName().equals(Constants.EDIT_WORKSPACE)) {
+            throw new GqlJcrWrongInputException("Publication fields can only be used with nodes from " + NodeQueryExtensions.Workspace.EDIT + " workspace");
+        }
+
         this.gqlJcrNode = node;
     }
 
+    /**
+     * Retrieve aggregated publication info about the JCR node.
+     *
+     * @param language Publication language
+     * @param subNodes Whether to take sub-nodes of the node into account when calculating the aggregated publication status
+     * @param references Whether to take references into account when calculating the aggregated publication status
+     * @return Aggregated publication info about the node
+     */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLDescription("Aggregated publication info about the JCR node")
     public GqlPublicationInfo getAggregatedPublicationInfo(
-        @GraphQLName("language") @GraphQLNonNull String language,
-        @GraphQLName("includeSubNodes") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includeSubNodes,
-        @GraphQLName("includeReferences") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includeReferences
-    ) throws BaseGqlClientException {
+        @GraphQLName("language") @GraphQLNonNull @GraphQLDescription("Publication language") String language,
+        @GraphQLName("subNodes") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLDescription("Whether to take sub-nodes into account when calculating the aggregated publication status") boolean subNodes,
+        @GraphQLName("references") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLDescription("Whether to take references into account when calculating the aggregated publication status") boolean references
+    ) {
 
         JCRPublicationInfoAggregationService publicationInfoAggregationService = BundleUtils.getOsgiService(JCRPublicationInfoAggregationService.class, null);
-        final JCRPublicationInfoAggregationService.AggregatedPublicationInfo aggregatedInfo = publicationInfoAggregationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, includeSubNodes, includeReferences);
+        final JCRPublicationInfoAggregationService.AggregatedPublicationInfo aggregatedInfo = publicationInfoAggregationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, subNodes, references);
 
         return new GqlPublicationInfo() {
 

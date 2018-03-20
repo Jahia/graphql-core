@@ -42,7 +42,6 @@
  *      please contact the sales department at sales@jahia.com.
  *
  */
-
 package org.jahia.modules.graphql.provider.dxm.publication;
 
 import graphql.annotations.annotationTypes.GraphQLName;
@@ -51,6 +50,9 @@ import org.jahia.services.content.PublicationInfo;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Possible publication statuses of the JCR node.
+ */
 @GraphQLName("PublicationStatus")
 public enum GqlPublicationStatus {
 
@@ -79,7 +81,14 @@ public enum GqlPublicationStatus {
         this.statusValue = statusValue;
     }
 
-    public static GqlPublicationStatus fromStatusValue(int statusValue) {
+    /**
+     * Convert an integer publication status value (see PublicationInfo status constants) into corresponding enum value
+     *
+     * @param statusValue Integer publication status value
+     * @return Enum publication status value corresponding to the integer one passed
+     * @throws IllegalArgumentException In case wrong integer status value is passed
+     */
+    public static GqlPublicationStatus fromStatusValue(int statusValue) throws IllegalArgumentException {
         if (PUBLICATION_STATUS_BY_STATUS_VALUE.containsKey(statusValue)) {
             return PUBLICATION_STATUS_BY_STATUS_VALUE.get(statusValue);
         }

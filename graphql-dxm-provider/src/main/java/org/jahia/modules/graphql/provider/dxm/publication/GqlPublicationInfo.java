@@ -42,24 +42,43 @@
  *      please contact the sales department at sales@jahia.com.
  *
  */
-
 package org.jahia.modules.graphql.provider.dxm.publication;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 
+/**
+ * Aggregated publication info about a JCR node.
+ */
 public interface GqlPublicationInfo {
 
+    /**
+     * @return Aggregated publication status of the node
+     */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLDescription("Aggregated publication status of the node")
     GqlPublicationStatus getPublicationStatus();
 
+    /**
+     * @return Aggregated locked status of the node
+     */
     @GraphQLField
+    @GraphQLDescription("Aggregated locked status of the node")
     public boolean isLocked();
 
+    /**
+     * @return Aggregated work-in-progress status of the node
+     */
     @GraphQLField
+    @GraphQLDescription("Aggregated work-in-progress status of the node")
     public boolean isWorkInProgress();
 
+    /**
+     * @return Whether current user is allowed to publish the node omitting any workflows
+     */
     @GraphQLField
+    @GraphQLDescription("Whether current user is allowed to publish the node omitting any workflows")
     public boolean isAllowedToPublishWithoutWorkflow();
 }
