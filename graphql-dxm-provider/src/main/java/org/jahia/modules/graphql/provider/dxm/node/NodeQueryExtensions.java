@@ -99,7 +99,7 @@ public class NodeQueryExtensions {
     @GraphQLName("jcr")
     @GraphQLDescription("JCR Queries")
     public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either EDIT, LIVE, or null to use EDIT by default") Workspace workspace) {
-        return new GqlJcrQuery(workspace != null ? workspace.getValue() : null);
+        return new GqlJcrQuery(workspace != null ? workspace : Workspace.EDIT);
     }
 
 }

@@ -82,6 +82,14 @@ public interface GqlJcrNode {
     String getUuid();
 
     /**
+     * @return Get the workspace of the query
+     */
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("Get the workspace of the query")
+    NodeQueryExtensions.Workspace getWorkspace();
+
+    /**
      * @return The name of the JCR node this object represents
      */
     @GraphQLField

@@ -47,6 +47,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
@@ -124,6 +125,16 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     public String getUuid() {
         try {
             return node.getIdentifier();
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    @GraphQLNonNull
+    public NodeQueryExtensions.Workspace getWorkspace() {
+        try {
+            return Constants.LIVE_WORKSPACE.equals(node.getSession().getWorkspace().getName()) ? NodeQueryExtensions.Workspace.LIVE : NodeQueryExtensions.Workspace.EDIT;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }

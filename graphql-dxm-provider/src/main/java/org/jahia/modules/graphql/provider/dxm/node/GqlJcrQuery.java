@@ -74,9 +74,9 @@ import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLangu
 @GraphQLDescription("JCR Queries")
 public class GqlJcrQuery {
 
-    private String workspace;
+    private NodeQueryExtensions.Workspace workspace;
 
-    public GqlJcrQuery(String workspace) {
+    public GqlJcrQuery(NodeQueryExtensions.Workspace workspace) {
         this.workspace = workspace;
     }
 
@@ -110,6 +110,16 @@ public class GqlJcrQuery {
         public String getJcrQueryLanguage() {
             return jcrQueryLanguage;
         }
+    }
+
+    /**
+     * @return Get the workspace of the query
+     */
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("Get the workspace of the query")
+    public NodeQueryExtensions.Workspace getWorkspace() {
+        return workspace;
     }
 
     /**
@@ -241,7 +251,7 @@ public class GqlJcrQuery {
     }
 
     private JCRSessionWrapper getSession() throws RepositoryException {
-        return JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
+        return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue());
     }
 
     public static class QueryLanguageDefaultValue implements Supplier<Object> {
