@@ -18,6 +18,7 @@
                 <value>org.jahia.test.graphql.GraphQLWorkspaceTest</value>
                 <value>org.jahia.test.graphql.GraphQLNodeMutationsTest</value>
                 <value>org.jahia.test.graphql.GraphQLPermissionsTest</value>
+                <value>org.jahia.test.graphql.GraphQLPublicationTest</value>
             </list>
         </property>
     </bean>
