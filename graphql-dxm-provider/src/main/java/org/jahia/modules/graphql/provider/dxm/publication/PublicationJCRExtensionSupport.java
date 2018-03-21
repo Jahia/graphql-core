@@ -44,58 +44,34 @@
  */
 package org.jahia.modules.graphql.provider.dxm.publication;
 
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
-import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import javax.jcr.RepositoryException;
+
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
-import org.jahia.services.content.JCRPublicationService;
-import org.jahia.services.content.PublicationInfo;
-
-import javax.jcr.RepositoryException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
+import org.jahia.services.content.JCRSessionWrapper;
 
 /**
- * Publication mutation extensions for JCR node.
+ * Contains resources commonly used by GraphQL JCR publication extensions internally.
  */
-@GraphQLTypeExtension(GqlJcrNodeMutation.class)
-public class PublicationJCRNodeMutationExtension extends PublicationJCRExtensionSupport {
-
-    private GqlJcrNodeMutation nodeMutation;
+public class PublicationJCRExtensionSupport {
 
     /**
-     * Create a publication mutation extension instance.
+     * Verify that a node belongs to the EDIT workspace; throw an exception if not.
      *
-     * @param nodeMutation JCR node mutation to apply the extension to
-     * @throws GqlJcrWrongInputException In case the parameter represents a node from LIVE rather than EDIT workspace
+     * @param node The node to check
      */
-    public PublicationJCRNodeMutationExtension(GqlJcrNodeMutation nodeMutation) throws GqlJcrWrongInputException {
-        validateNodeWorkspace(nodeMutation.getNode());
-        this.nodeMutation = nodeMutation;
-    }
-
-    /**
-     * Publish the node in certain languages.
-     *
-     * @param languages Languages to publish the node in
-     * @return Always true
-     */
-    @GraphQLField
-    @GraphQLDescription("Publish the node in certain languages")
-    public boolean publish(@GraphQLName("languages") @GraphQLNonNull @GraphQLDescription("Languages to publish the node in") Collection<String> languages) {
+    protected static void validateNodeWorkspace(GqlJcrNode node) {
+        JCRSessionWrapper session;
         try {
-            JCRPublicationService publicationService = JCRPublicationService.getInstance();
-            List<PublicationInfo> infos = publicationService.getPublicationInfo(nodeMutation.getNode().getNode().getIdentifier(), new HashSet<>(languages), false, false, false, Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE);
-            publicationService.publishByInfoList(infos, Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE, null);
+            session = node.getNode().getSession();
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
-        return true;
+        if (!session.getWorkspace().getName().equals(Constants.EDIT_WORKSPACE)) {
+            throw new GqlJcrWrongInputException("Publication fields can only be used with nodes from " + NodeQueryExtensions.Workspace.EDIT + " workspace");
+        }
     }
 }

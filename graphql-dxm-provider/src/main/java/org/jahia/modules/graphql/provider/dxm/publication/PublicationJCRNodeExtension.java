@@ -51,17 +51,11 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 
-import javax.jcr.RepositoryException;
-
-import org.jahia.api.Constants;
-import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
-import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRPublicationInfoAggregationService;
-import org.jahia.services.content.JCRSessionWrapper;
 
 /**
  * Publication extensions for the JCR node.
@@ -69,28 +63,18 @@ import org.jahia.services.content.JCRSessionWrapper;
  * These extensions can only be applied to a node from EDIT workspace, not LIVE.
  */
 @GraphQLTypeExtension(GqlJcrNode.class)
-public class PublicationJCRNodeExtension {
+public class PublicationJCRNodeExtension extends PublicationJCRExtensionSupport {
 
     private GqlJcrNode gqlJcrNode;
 
     /**
-     * Create an publication extension instance.
+     * Create a publication extension instance.
      *
      * @param node JCR node representation to apply the extension to
      * @throws GqlJcrWrongInputException In case the parameter represents a node from LIVE rather than EDIT workspace
      */
     public PublicationJCRNodeExtension(GqlJcrNode node) throws GqlJcrWrongInputException {
-
-        JCRSessionWrapper session;
-        try {
-            session = node.getNode().getSession();
-        } catch (RepositoryException e) {
-            throw new JahiaRuntimeException(e);
-        }
-        if (!session.getWorkspace().getName().equals(Constants.EDIT_WORKSPACE)) {
-            throw new GqlJcrWrongInputException("Publication fields can only be used with nodes from " + NodeQueryExtensions.Workspace.EDIT + " workspace");
-        }
-
+        validateNodeWorkspace(node);
         this.gqlJcrNode = node;
     }
 
