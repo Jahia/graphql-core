@@ -51,11 +51,16 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 
+import javax.jcr.RepositoryException;
+
+import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRPublicationInfoAggregationService;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
 
 /**
  * Publication extensions for the JCR node.
@@ -96,7 +101,15 @@ public class PublicationJCRNodeExtension extends PublicationJCRExtensionSupport 
     ) {
 
         JCRPublicationInfoAggregationService publicationInfoAggregationService = BundleUtils.getOsgiService(JCRPublicationInfoAggregationService.class, null);
-        final JCRPublicationInfoAggregationService.AggregatedPublicationInfo aggregatedInfo = publicationInfoAggregationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, subNodes, references);
+
+        JCRSessionWrapper session;
+        try {
+            session = JCRSessionFactory.getInstance().getCurrentUserSession();
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
+
+        final JCRPublicationInfoAggregationService.AggregatedPublicationInfo aggregatedInfo = publicationInfoAggregationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, subNodes, references, session);
 
         return new GqlPublicationInfo() {
 
