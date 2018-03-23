@@ -92,8 +92,6 @@ public class CorsFilter implements Filter {
                         response.setHeader("Access-Control-Allow-Credentials", "true");
                         response.addHeader("Access-Control-Allow-Headers", "content-type");
                     }
-                } else {
-                    return;
                 }
             }
         }
