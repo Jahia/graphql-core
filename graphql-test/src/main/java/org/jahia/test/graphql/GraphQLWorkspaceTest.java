@@ -166,4 +166,55 @@ public class GraphQLWorkspaceTest extends GraphQLTestSupport {
         validateNode(subList2Default, "testSubList2");
         Assert.assertEquals(JSONObject.NULL, subList1Live);
     }
+
+    @Test
+    public void shouldRetrieveEDITWorkspaceFields() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "      workspace"
+                + "      testSubList3:nodeByPath(path: \"/testList/testSubList3\") {"
+                + "        name"
+                + "        workspace"
+                + "        nodeInWorkspace(workspace:LIVE) {"
+                + "          name"
+                + "          workspace"
+                + "        }"
+                + "      }"
+                + "    }"
+                + "}");
+
+        JSONObject subList3Default = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("testSubList3");
+        JSONObject subList1Live = subList3Default.getJSONObject("nodeInWorkspace");
+
+        Assert.assertEquals(result.getJSONObject("data").getJSONObject("jcr").getString("workspace"), "EDIT");
+        Assert.assertEquals(subList3Default.getString("workspace"), "EDIT");
+        Assert.assertEquals(subList1Live.getString("workspace"), "LIVE");
+    }
+
+    @Test
+    public void shouldRetrieveLIVEWorkspaceFields() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr(workspace:LIVE) {"
+                + "      workspace"
+                + "      testSubList1:nodeByPath(path: \"/testList/testSubList1\") {"
+                + "        name"
+                + "        workspace"
+                + "        nodeInWorkspace(workspace:EDIT) {"
+                + "          name"
+                + "          workspace"
+                + "        }"
+                + "      }"
+                + "    }"
+                + "}");
+
+
+        JSONObject subList1Live = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("testSubList1");
+        JSONObject subList3Default = subList1Live.getJSONObject("nodeInWorkspace");
+
+        Assert.assertEquals(result.getJSONObject("data").getJSONObject("jcr").getString("workspace"), "LIVE");
+        Assert.assertEquals(subList3Default.getString("workspace"), "EDIT");
+        Assert.assertEquals(subList1Live.getString("workspace"), "LIVE");
+    }
 }
