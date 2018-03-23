@@ -51,6 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * OSGI managed service that handle the graphql configuration file and load the different properties
@@ -63,8 +64,13 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLConfig.class);
     private final static String PERMISSION_PREFIX = "permission.";
 
+    private final static String CORS_ORIGINS = "http.cors.allow-origin";
+
     private Map<String, List<String>> keysByPid = new HashMap<>();
     private Map<String, String> permissions = new HashMap<>();
+
+    private Set<String> corsOrigins = new HashSet<>();
+    private Map<String, Set<String>> corsOriginByPid = new HashMap<>();
 
     @Override
     public String getName() {
@@ -82,6 +88,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
         ArrayList<String> keysForPid = new ArrayList<>();
         keysByPid.put(pid, keysForPid);
+        corsOriginByPid.remove(pid);
+
         // parse properties
         Enumeration<String> keys = properties.keys();
         while (keys.hasMoreElements()) {
@@ -102,11 +110,15 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                     // store the key for the permission configuration
                     keysForPid.add(key);
                 }
+            } else if (key.equals(CORS_ORIGINS)) {
+                corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split((String)properties.get(CORS_ORIGINS)," ,"))));
             } else {
                 // store other properties than permission configuration
                 keysForPid.add(key);
             }
         }
+
+        corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
     }
 
     @Override
@@ -117,6 +129,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 // parse permissions ( permission format is like: permission.Query.nodesByQuery = privileged )
                 if (key.startsWith(PERMISSION_PREFIX)) {
                     permissions.remove(key.substring(PERMISSION_PREFIX.length()));
+                } else if (key.equals(CORS_ORIGINS)) {
+                    corsOriginByPid.remove(pid);
+                    corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
                 }
             }
             keysByPid.remove(pid);
@@ -126,5 +141,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     public Map<String, String> getPermissions() {
         return permissions;
+    }
+
+    public Set<String> getCorsOrigins() {
+        return corsOrigins;
     }
 }
