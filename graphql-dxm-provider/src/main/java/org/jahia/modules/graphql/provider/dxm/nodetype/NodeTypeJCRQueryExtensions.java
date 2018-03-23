@@ -97,7 +97,7 @@ public class NodeTypeJCRQueryExtensions {
                 .limit(nodeTypes.getSize())
                 .filter(n -> (n.isMixin() && (input == null || input.getIncludeMixins())) || (!n.isMixin() && (input == null || input.getIncludeNonMixins())))
                 .map(GqlJcrNodeType::new)
-                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)))
                 .collect(Collectors.toList());
 
         return PaginationHelper.paginate(mapped, GqlJcrNodeType::getName, arguments);
