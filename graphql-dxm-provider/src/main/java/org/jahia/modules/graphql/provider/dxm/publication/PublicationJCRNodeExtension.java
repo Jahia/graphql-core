@@ -58,7 +58,7 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.osgi.BundleUtils;
-import org.jahia.services.content.JCRPublicationInfoAggregationService;
+import org.jahia.services.content.PublicationService;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 
@@ -100,7 +100,7 @@ public class PublicationJCRNodeExtension extends PublicationJCRExtensionSupport 
         @GraphQLName("references") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLDescription("Whether to take references into account when calculating the aggregated publication status") boolean references
     ) {
 
-        JCRPublicationInfoAggregationService publicationInfoAggregationService = BundleUtils.getOsgiService(JCRPublicationInfoAggregationService.class, null);
+        PublicationService publicationService = BundleUtils.getOsgiService(PublicationService.class, null);
 
         JCRSessionWrapper session;
         try {
@@ -109,7 +109,7 @@ public class PublicationJCRNodeExtension extends PublicationJCRExtensionSupport 
             throw new JahiaRuntimeException(e);
         }
 
-        final JCRPublicationInfoAggregationService.AggregatedPublicationInfo aggregatedInfo = publicationInfoAggregationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, subNodes, references, session);
+        final PublicationService.AggregatedPublicationInfo aggregatedInfo = publicationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, subNodes, references, session);
 
         return new GqlPublicationInfo() {
 

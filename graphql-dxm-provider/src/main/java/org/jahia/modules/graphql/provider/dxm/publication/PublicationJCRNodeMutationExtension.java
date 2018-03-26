@@ -49,17 +49,17 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
-import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
-import org.jahia.services.content.JCRPublicationService;
-import org.jahia.services.content.PublicationInfo;
+import org.jahia.osgi.BundleUtils;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.PublicationService;
 
 import javax.jcr.RepositoryException;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import java.util.Collections;
 
 /**
  * Publication mutation extensions for JCR node.
@@ -89,13 +89,20 @@ public class PublicationJCRNodeMutationExtension extends PublicationJCRExtension
     @GraphQLField
     @GraphQLDescription("Publish the node in certain languages")
     public boolean publish(@GraphQLName("languages") @GraphQLNonNull @GraphQLDescription("Languages to publish the node in") Collection<String> languages) {
+
+        PublicationService publicationService = BundleUtils.getOsgiService(PublicationService.class, null);
+
+        String uuid;
+        JCRSessionWrapper session;
         try {
-            JCRPublicationService publicationService = JCRPublicationService.getInstance();
-            List<PublicationInfo> infos = publicationService.getPublicationInfo(nodeMutation.getNode().getNode().getIdentifier(), new HashSet<>(languages), false, false, false, Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE);
-            publicationService.publishByInfoList(infos, Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE, null);
+            uuid = nodeMutation.getNode().getNode().getIdentifier();
+            session = JCRSessionFactory.getInstance().getCurrentUserSession();
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
+
+        publicationService.publish(Collections.singleton(uuid), languages, session);
+
         return true;
     }
 }
