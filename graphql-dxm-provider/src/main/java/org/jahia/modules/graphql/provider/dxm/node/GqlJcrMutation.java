@@ -46,6 +46,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.DXGraphQLFieldCompleter;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
@@ -59,7 +60,7 @@ import java.util.*;
  */
 @GraphQLName("JCRMutation")
 @GraphQLDescription("JCR Mutations")
-public class GqlJcrMutation extends GqlJcrMutationSupport {
+public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFieldCompleter {
 
     private String workspace;
 
@@ -240,20 +241,21 @@ public class GqlJcrMutation extends GqlJcrMutationSupport {
         return true;
     }
 
-    /**
-     * Saves the changes in the current JCR session.
-     */
-    public void save() {
+    private JCRSessionWrapper getSession() {
         try {
-            getSession().save();
+            return JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
     }
 
-    private JCRSessionWrapper getSession() {
+    /**
+     * Saves the changes in the current JCR session.
+     */
+    @Override
+    public void completeField() {
         try {
-            return JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
+            getSession().save();
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }

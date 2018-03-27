@@ -47,48 +47,36 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
-import org.apache.commons.collections.CollectionUtils;
 import org.jahia.exceptions.JahiaRuntimeException;
-import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.seo.jcr.VanityUrlManager;
-import org.jahia.services.seo.jcr.VanityUrlService;
 
 import javax.jcr.RepositoryException;
-import java.util.Set;
 
-@GraphQLName("VanityUrlMutation")
-public class GqlJcrVanityUrlMutation {
+@GraphQLName("VanityUrlMappingMutation")
+public class GqlVanityUrlMappingMutation {
 
-    private Set<JCRNodeWrapper> vanityUrlNodes;
-    private JCRSessionWrapper session;
+    private JCRNodeWrapper vanityUrlNode;
 
     /**
      * Create a vanity url mutation extension instance.
      *
-     * @param vanityUrlNodes The JCR vanity url nodes
-     * @param session The current session
+     * @param vanityUrlNode The JCR vanity url node
      */
-    public GqlJcrVanityUrlMutation(Set<JCRNodeWrapper> vanityUrlNodes, JCRSessionWrapper session) {
-        this.vanityUrlNodes = vanityUrlNodes;
-        this.session = session;
+    public GqlVanityUrlMappingMutation(JCRNodeWrapper vanityUrlNode) {
+        this.vanityUrlNode = vanityUrlNode;
     }
 
     /**
      * Move the vanity url to the given targeted node
      * @param target the target node
-     * @return "true" in case the move of the vanity urls succeeded
+     * @return "true" in case the move of the vanity url succeeded
      */
     @GraphQLField
     public boolean move(@GraphQLName("target") @GraphQLNonNull @GraphQLDescription("The path of the target node") String target) {
-        if (CollectionUtils.isEmpty(vanityUrlNodes)) {
-            return true;
-        }
-
         try {
-            JCRNodeWrapper targetNode = session.getNode(target);
+            JCRNodeWrapper targetNode = vanityUrlNode.getSession().getNode(target);
 
             // add mixin if necessary
             if (!targetNode.isNodeType(VanityUrlManager.JAHIAMIX_VANITYURLMAPPED)) {
@@ -100,22 +88,15 @@ public class GqlJcrVanityUrlMutation {
                     targetNode.getNode(VanityUrlManager.VANITYURLMAPPINGS_NODE) :
                     targetNode.addNode(VanityUrlManager.VANITYURLMAPPINGS_NODE, VanityUrlManager.JAHIANT_VANITYURLS);
 
-            for (JCRNodeWrapper vanityUrlNode : vanityUrlNodes) {
+            // Do not move vanity already in place
+            if (!vanityUrlNode.getPath().startsWith(targetMappings.getPath())) {
 
-                // Do not move vanity already in place
-                if (!vanityUrlNode.getPath().startsWith(targetMappings.getPath())) {
-
-                    // reset "default" property on moved vanity
-                    vanityUrlNode.setProperty(VanityUrlManager.PROPERTY_DEFAULT, false);
-                    session.move(vanityUrlNode.getPath(), targetMappings.getPath() + "/" + JCRContentUtils.findAvailableNodeName(targetMappings, vanityUrlNode.getName()));
-                }
+                // reset "default" property on moved vanity
+                vanityUrlNode.setProperty(VanityUrlManager.PROPERTY_DEFAULT, false);
+                vanityUrlNode.getSession().move(vanityUrlNode.getPath(), targetMappings.getPath() + "/" + JCRContentUtils.findAvailableNodeName(targetMappings, vanityUrlNode.getName()));
             }
 
-            // flush the cache and save
-            BundleUtils.getOsgiService(VanityUrlService.class, null).flushCaches();
-            session.save();
             return true;
-
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }

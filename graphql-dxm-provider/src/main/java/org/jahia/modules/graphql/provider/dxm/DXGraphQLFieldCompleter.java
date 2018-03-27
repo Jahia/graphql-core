@@ -43,33 +43,13 @@
  */
 package org.jahia.modules.graphql.provider.dxm;
 
-import graphql.ExecutionResult;
-import graphql.execution.*;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutation;
-
-import java.util.concurrent.CompletableFuture;
-
 /**
- * Extends some aspects of the standard strategy.
+ * Interface used by DX GraphQL item when then need to do custom code during field completion
  */
-public class JCRMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
-
-    public JCRMutationExecutionStrategy(DataFetcherExceptionHandler exceptionHandler) {
-        super(exceptionHandler);
-    }
+public interface DXGraphQLFieldCompleter {
 
     /**
-     * Extend the standard behavior to complete any GqlJcrMutation field via persisting any changes made to JCR during its execution.
+     * Perform custom operation when the field is completed, generally allow to persist any changes made to JCR during the field execution.
      */
-    @Override
-    protected CompletableFuture<ExecutionResult> completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, Object fetchedValue) {
-        CompletableFuture<ExecutionResult> result = super.completeField(executionContext, parameters, fetchedValue);
-
-        if (fetchedValue instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
-            // we only complete field if there were no errors on execution
-            ((DXGraphQLFieldCompleter) fetchedValue).completeField();
-        }
-
-        return result;
-    }
+    void completeField();
 }
