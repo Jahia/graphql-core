@@ -48,6 +48,7 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.seo.jcr.VanityUrlManager;
@@ -65,6 +66,13 @@ public class GqlVanityUrlMappingMutation {
      * @param vanityUrlNode The JCR vanity url node
      */
     public GqlVanityUrlMappingMutation(JCRNodeWrapper vanityUrlNode) {
+        try {
+            if (!vanityUrlNode.isNodeType(VanityUrlManager.JAHIANT_VANITYURL)) {
+                throw new GqlJcrWrongInputException("Vanity url field can only be used on Vanity url nodes, node: " + vanityUrlNode.getPath() + " is not a Vanity URL node");
+            }
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
         this.vanityUrlNode = vanityUrlNode;
     }
 
@@ -91,14 +99,26 @@ public class GqlVanityUrlMappingMutation {
             // Do not move vanity already in place
             if (!vanityUrlNode.getPath().startsWith(targetMappings.getPath())) {
 
+                JCRNodeWrapper sourceNode = vanityUrlNode.getParent();
+
                 // reset "default" property on moved vanity
                 vanityUrlNode.setProperty(VanityUrlManager.PROPERTY_DEFAULT, false);
                 vanityUrlNode.getSession().move(vanityUrlNode.getPath(), targetMappings.getPath() + "/" + JCRContentUtils.findAvailableNodeName(targetMappings, vanityUrlNode.getName()));
+
+                // clean nodes if necessary
+                cleanVanityUrlParentNodes(sourceNode);
             }
 
             return true;
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
+        }
+    }
+
+    private void cleanVanityUrlParentNodes(JCRNodeWrapper vanityUrlParentNode) throws RepositoryException {
+        if (vanityUrlParentNode.getNodes().getSize() == 0) {
+            vanityUrlParentNode.getParent().removeMixin(VanityUrlManager.JAHIAMIX_VANITYURLMAPPED);
+            vanityUrlParentNode.remove();
         }
     }
 }
