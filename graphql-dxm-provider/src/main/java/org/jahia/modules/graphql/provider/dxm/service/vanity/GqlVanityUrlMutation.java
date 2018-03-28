@@ -45,11 +45,13 @@
 
 package org.jahia.modules.graphql.provider.dxm.service.vanity;
 
-import graphql.annotations.annotationTypes.*;
+import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLFieldCompleter;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutation;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.osgi.BundleUtils;
@@ -58,14 +60,15 @@ import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.seo.jcr.VanityUrlService;
 
 import javax.jcr.RepositoryException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 /**
  * Extensions for JCRNodeMutation
  */
 @GraphQLName("VanityUrlMutation")
-@GraphQLDescription("Mutations on a JCR node")
+@GraphQLDescription("Vanity URL Mutation")
 public class GqlVanityUrlMutation extends GqlJcrMutationSupport implements DXGraphQLFieldCompleter {
 
     /**
@@ -75,7 +78,8 @@ public class GqlVanityUrlMutation extends GqlJcrMutationSupport implements DXGra
      * @throws GqlJcrWrongInputException In case the parameter is not a vanity node
      */
     @GraphQLField
-    public static Collection<GqlVanityUrlMappingMutation> mutateVanityUrls(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or ids ofs the vanity urls to mutate") Collection<String> pathsOrIds) throws GqlJcrWrongInputException {
+    @GraphQLDescription("Vanity URL Mutation")
+    public static Collection<GqlVanityUrlMappingMutation> mutateVanityUrls(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or ids of the vanity urls to mutate") Collection<String> pathsOrIds) throws GqlJcrWrongInputException {
         return new HashSet<>(pathsOrIds).stream().map((pathOrId) -> new GqlVanityUrlMappingMutation(getNodeFromPathOrId(getSession(), pathOrId))).collect(Collectors.toList());
     }
 

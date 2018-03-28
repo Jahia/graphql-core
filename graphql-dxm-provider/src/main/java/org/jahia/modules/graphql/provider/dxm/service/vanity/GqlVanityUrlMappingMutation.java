@@ -82,6 +82,7 @@ public class GqlVanityUrlMappingMutation {
      * @return "true" in case the move of the vanity url succeeded
      */
     @GraphQLField
+    @GraphQLDescription("move vanity urls to the targeted path")
     public boolean move(@GraphQLName("target") @GraphQLNonNull @GraphQLDescription("The path of the target node") String target) {
         try {
             JCRNodeWrapper targetNode = vanityUrlNode.getSession().getNode(target);
