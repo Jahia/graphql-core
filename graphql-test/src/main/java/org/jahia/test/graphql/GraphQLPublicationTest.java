@@ -43,9 +43,10 @@
  */
 package org.jahia.test.graphql;
 
-import java.util.Locale;
+import javax.jcr.PathNotFoundException;
 
 import org.jahia.api.Constants;
+import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.services.content.JCRTemplate;
 import org.json.JSONObject;
 import org.junit.AfterClass;
@@ -55,12 +56,14 @@ import org.junit.Test;
 
 public class GraphQLPublicationTest extends GraphQLTestSupport {
 
+    private static final long TIMEOUT_WAITING_FOR_PUBLICATION = 60000;
+
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
 
         GraphQLTestSupport.init();
 
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
             session.getNode("/").addNode("testList", "jnt:contentList");
             session.save();
             return null;
@@ -87,7 +90,8 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
                 + "		       }"
                 + "        }"
                 + "    }"
-                + "}");
+                + "}"
+        );
 
         JSONObject info = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("aggregatedPublicationInfo");
 
@@ -109,8 +113,49 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
                 + "		       }"
                 + "        }"
                 + "    }"
-                + "}");
+                + "}"
+        );
 
         validateError(result, "Publication fields can only be used with nodes from EDIT workspace");
+    }
+
+    @Test
+    public void shouldPublish() throws Exception {
+
+        JSONObject result = executeQuery(""
+                + "mutation {"
+                + "    jcr {"
+                + "        mutateNode(pathOrId: \"/testList\") {"
+                + "            publish(languages: [\"en\"])"
+                + "        }"
+                + "    }"
+                + "}"
+        );
+
+        JSONObject mutationResult = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode");
+        Assert.assertTrue(mutationResult.getBoolean("publish"));
+
+        // Wait until the node is published via a background job.
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.LIVE_WORKSPACE, null, session -> {
+            long startedWaitingAt = System.currentTimeMillis();
+            do {
+                if (System.currentTimeMillis() - startedWaitingAt > TIMEOUT_WAITING_FOR_PUBLICATION) {
+                    Assert.fail("Timeout waiting for node to be published");
+                }
+                try {
+                    session.getNode("/testList");
+                    break;
+                } catch (PathNotFoundException e) {
+                    // Continue waiting: the node hasn't been published yet.
+                }
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new JahiaRuntimeException(e);
+                }
+            } while (true);
+            return null;
+        });
     }
 }

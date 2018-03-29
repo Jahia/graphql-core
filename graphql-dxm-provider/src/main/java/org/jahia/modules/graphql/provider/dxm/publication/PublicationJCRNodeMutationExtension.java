@@ -55,7 +55,7 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.PublicationService;
+import org.jahia.services.content.ComplexPublicationService;
 
 import javax.jcr.RepositoryException;
 import java.util.Collection;
@@ -90,7 +90,7 @@ public class PublicationJCRNodeMutationExtension extends PublicationJCRExtension
     @GraphQLDescription("Publish the node in certain languages")
     public boolean publish(@GraphQLName("languages") @GraphQLNonNull @GraphQLDescription("Languages to publish the node in") Collection<String> languages) {
 
-        PublicationService publicationService = BundleUtils.getOsgiService(PublicationService.class, null);
+        ComplexPublicationService publicationService = BundleUtils.getOsgiService(ComplexPublicationService.class, null);
 
         String uuid;
         JCRSessionWrapper session;
