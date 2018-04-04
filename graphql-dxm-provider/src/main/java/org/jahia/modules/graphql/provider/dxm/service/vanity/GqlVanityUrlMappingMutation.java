@@ -107,7 +107,7 @@ public class GqlVanityUrlMappingMutation {
                 vanityUrlNode.getSession().move(vanityUrlNode.getPath(), targetMappings.getPath() + "/" + JCRContentUtils.findAvailableNodeName(targetMappings, vanityUrlNode.getName()));
 
                 // clean nodes if necessary
-                // TODO clean, we can't clean
+                // TODO clean, we can't clean because for now we use the mixin to found node that do not have vanity anymore in default but may be still in live
                 // cleanVanityUrlParentNodes(sourceNode);
             }
 
