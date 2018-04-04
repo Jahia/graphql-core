@@ -107,7 +107,8 @@ public class GqlVanityUrlMappingMutation {
                 vanityUrlNode.getSession().move(vanityUrlNode.getPath(), targetMappings.getPath() + "/" + JCRContentUtils.findAvailableNodeName(targetMappings, vanityUrlNode.getName()));
 
                 // clean nodes if necessary
-                cleanVanityUrlParentNodes(sourceNode);
+                // TODO clean, we can't clean
+                // cleanVanityUrlParentNodes(sourceNode);
             }
 
             return true;
