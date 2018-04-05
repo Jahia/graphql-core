@@ -63,7 +63,7 @@ public class PublicationJCRExtensionSupport {
      *
      * @param node The node to check
      */
-    protected static void validateNodeWorkspace(GqlJcrNode node) {
+    protected void validateNodeWorkspace(GqlJcrNode node) {
         JCRSessionWrapper session;
         try {
             session = node.getNode().getSession();

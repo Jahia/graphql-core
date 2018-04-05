@@ -88,7 +88,7 @@ public class PublicationJCRNodeMutationExtension extends PublicationJCRExtension
      */
     @GraphQLField
     @GraphQLDescription("Publish the node in certain languages")
-    public boolean publish(@GraphQLName("languages") @GraphQLNonNull @GraphQLDescription("Languages to publish the node in") Collection<String> languages) {
+    public boolean publish(@GraphQLName("languages") @GraphQLDescription("Languages to publish the node in") Collection<String> languages) {
 
         ComplexPublicationService publicationService = BundleUtils.getOsgiService(ComplexPublicationService.class, null);
 
