@@ -95,6 +95,17 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     /**
+     * Returns the node targeted by this vanity url
+     *
+     * @return the node
+     */
+    @GraphQLField
+    @GraphQLDescription("the node targeted by this vanity url")
+    public GqlJcrNode getTargetNode() {
+        return getParent().getParent();
+    }
+
+    /**
      * Returns true if the URL mapping is activated or false if it is not activated.
      * 
      * @return true if the URL mapping is activated or false if it is not activated
