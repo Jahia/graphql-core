@@ -128,8 +128,9 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             }
 
             // vanity source node should be cleaned
-            Assert.assertFalse(page1.isNodeType(VanityUrlManager.JAHIAMIX_VANITYURLMAPPED));
-            Assert.assertFalse(page1.hasNode(VanityUrlManager.VANITYURLMAPPINGS_NODE));
+            // TODO clean, we can't clean because for now we use the mixin to found node that do not have vanity anymore in default but may be still in live
+            // Assert.assertFalse(page1.isNodeType(VanityUrlManager.JAHIAMIX_VANITYURLMAPPED));
+            // Assert.assertFalse(page1.hasNode(VanityUrlManager.VANITYURLMAPPINGS_NODE));
         } finally {
             session.getNode(getPagePath("page1")).remove();
             session.getNode(getPagePath("page2")).remove();
@@ -189,10 +190,11 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             }
 
             // vanity source node should be cleaned
-            Assert.assertFalse(page1.isNodeType(VanityUrlManager.JAHIAMIX_VANITYURLMAPPED));
-            Assert.assertFalse(page1.hasNode(VanityUrlManager.VANITYURLMAPPINGS_NODE));
-            Assert.assertFalse(page2.isNodeType(VanityUrlManager.JAHIAMIX_VANITYURLMAPPED));
-            Assert.assertFalse(page2.hasNode(VanityUrlManager.VANITYURLMAPPINGS_NODE));
+            // TODO clean, we can't clean because for now we use the mixin to found node that do not have vanity anymore in default but may be still in live
+            // Assert.assertFalse(page1.isNodeType(VanityUrlManager.JAHIAMIX_VANITYURLMAPPED));
+            // Assert.assertFalse(page1.hasNode(VanityUrlManager.VANITYURLMAPPINGS_NODE));
+            // Assert.assertFalse(page2.isNodeType(VanityUrlManager.JAHIAMIX_VANITYURLMAPPED));
+            // Assert.assertFalse(page2.hasNode(VanityUrlManager.VANITYURLMAPPINGS_NODE));
         } finally {
             session.getNode(getPagePath("page3")).remove();
             session.getNode(getPagePath("page4")).remove();
