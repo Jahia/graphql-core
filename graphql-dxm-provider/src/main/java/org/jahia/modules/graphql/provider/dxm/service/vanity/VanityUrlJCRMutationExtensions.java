@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -44,26 +44,36 @@
 package org.jahia.modules.graphql.provider.dxm.service.vanity;
 
 import graphql.annotations.annotationTypes.*;
-import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutation;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 
-import javax.jcr.RepositoryException;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.stream.Collectors;
 
 /**
  * A mutation extension that adds a possibility to modify Vanity URLs.
  */
-@GraphQLTypeExtension(DXGraphQLProvider.Mutation.class)
+@GraphQLTypeExtension(GqlJcrMutation.class)
 @GraphQLDescription("A mutation extension that adds a possibility to modify Vanity URLs")
-public class VanityUrlMutationExtensions {
+public class VanityUrlJCRMutationExtensions extends GqlJcrMutationSupport {
+
+    private GqlJcrMutation mutation;
+
+    public VanityUrlJCRMutationExtensions(GqlJcrMutation mutation) {
+        this.mutation = mutation;
+    }
 
     /**
-     * Root for all Vanity URL mutations.
-     *
-     * @return GraphQL root object for Vanity URL related mutations
+     * Mutate multiple vanities at the same time
+     * @param pathsOrIds paths or ids of vanities node to mutate
+     * @return the Mutation
+     * @throws GqlJcrWrongInputException In case the parameter is not a vanity node
      */
     @GraphQLField
-    @GraphQLName("vanityUrl")
     @GraphQLDescription("Vanity URL Mutation")
-    public static GqlVanityUrlMutation getVanityUrl() {
-        return new GqlVanityUrlMutation();
+    public Collection<GqlVanityUrlMappingMutation> mutateVanityUrls(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or ids of the vanity urls to mutate") Collection<String> pathsOrIds) throws GqlJcrWrongInputException {
+        return new HashSet<>(pathsOrIds).stream().map((pathOrId) -> new GqlVanityUrlMappingMutation(getNodeFromPathOrId(mutation.getSession(), pathOrId))).collect(Collectors.toList());
     }
 }

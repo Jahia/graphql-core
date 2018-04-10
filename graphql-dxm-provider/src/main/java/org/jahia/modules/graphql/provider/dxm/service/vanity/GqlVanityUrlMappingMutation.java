@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -49,16 +49,24 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.seo.VanityUrl;
 import org.jahia.services.seo.jcr.VanityUrlManager;
+import org.jahia.services.seo.jcr.VanityUrlService;
 
 import javax.jcr.RepositoryException;
+import java.util.List;
 
 @GraphQLName("VanityUrlMappingMutation")
 public class GqlVanityUrlMappingMutation {
 
     private JCRNodeWrapper vanityUrlNode;
+    private JCRNodeWrapper targetNode;
+
+    private VanityUrlService vanityUrlvanityUrlService;
+
 
     /**
      * Create a vanity url mutation extension instance.
@@ -70,10 +78,39 @@ public class GqlVanityUrlMappingMutation {
             if (!vanityUrlNode.isNodeType(VanityUrlManager.JAHIANT_VANITYURL)) {
                 throw new GqlJcrWrongInputException("Vanity url field can only be used on Vanity url nodes, node: " + vanityUrlNode.getPath() + " is not a Vanity URL node");
             }
+            this.vanityUrlvanityUrlService = BundleUtils.getOsgiService(VanityUrlService.class, null);
+            this.vanityUrlNode = vanityUrlNode;
+            this.targetNode = vanityUrlNode.getParent().getParent();
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
-        this.vanityUrlNode = vanityUrlNode;
+    }
+
+    @GraphQLField
+    public boolean update(@GraphQLName("active") @GraphQLDescription("The value to set") Boolean active,
+                          @GraphQLName("defaultMapping") @GraphQLDescription("The value to set") Boolean defaultMapping,
+                          @GraphQLName("language") @GraphQLDescription("The value to set") String language,
+                          @GraphQLName("url") @GraphQLDescription("The value to set") String url) {
+        try {
+            VanityUrl vanityUrl = getVanityUrlObject();
+            if (active != null) {
+                vanityUrl.setActive(active);
+            }
+            if (defaultMapping != null) {
+                vanityUrl.setDefaultMapping(defaultMapping);
+            }
+            if (language != null) {
+                vanityUrl.setLanguage(language);
+            }
+            if (url != null) {
+                vanityUrl.setUrl(url);
+            }
+            vanityUrlvanityUrlService.saveVanityUrlMapping(targetNode, vanityUrl, false);
+
+            return true;
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
     }
 
     /**
@@ -111,11 +148,24 @@ public class GqlVanityUrlMappingMutation {
                 // cleanVanityUrlParentNodes(sourceNode);
             }
 
+            BundleUtils.getOsgiService(VanityUrlService.class, null).flushCaches();
+
             return true;
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
     }
+
+    private VanityUrl getVanityUrlObject() throws RepositoryException {
+        List<VanityUrl> vanityUrls = vanityUrlvanityUrlService.getVanityUrls(targetNode, null, vanityUrlNode.getSession());
+        for (VanityUrl vanityUrl : vanityUrls) {
+            if (vanityUrl.getIdentifier().equals(vanityUrlNode.getIdentifier())) {
+                return vanityUrl;
+            }
+        }
+        throw new JahiaRuntimeException("Vanity url not found");
+    }
+
 
     private void cleanVanityUrlParentNodes(JCRNodeWrapper vanityUrlParentNode) throws RepositoryException {
         if (vanityUrlParentNode.getNodes().getSize() == 0) {
