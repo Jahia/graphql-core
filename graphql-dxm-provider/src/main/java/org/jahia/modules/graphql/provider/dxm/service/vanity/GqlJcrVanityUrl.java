@@ -100,7 +100,7 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
      * @return The node targeted by this vanity URL
      */
     @GraphQLField
-    @GraphQLDescription("The node targeted by this vanity url")
+    @GraphQLDescription("The node targeted by this vanity URL")
     public GqlJcrNode getTargetNode() {
         return getParent().getParent();
     }
