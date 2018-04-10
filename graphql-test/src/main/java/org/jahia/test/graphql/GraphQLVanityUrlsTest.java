@@ -43,6 +43,7 @@
  */
 package org.jahia.test.graphql;
 
+import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRCallback;
@@ -50,7 +51,6 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.seo.VanityUrl;
-import org.jahia.services.seo.jcr.VanityUrlManager;
 import org.jahia.services.seo.jcr.VanityUrlService;
 import org.jahia.test.TestHelper;
 import org.json.JSONArray;
@@ -91,6 +91,137 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
         }
     }
 
+    @Before
+    public void before() throws Exception {
+        JCRTemplate.getInstance().getSessionFactory().closeAllSessions();
+        session = JCRTemplate.getInstance().getSessionFactory().getCurrentSystemSession(Constants.EDIT_WORKSPACE, Locale.ENGLISH, null);
+    }
+
+    @Test
+    public void setDefaultVanity() throws Exception {
+        createPage("page1");
+
+        try {
+            VanityUrl vanity1 = createVanity(true, true, "/vanity1");
+            VanityUrl vanity2 = createVanity(true, false, "/vanity2");
+
+            List<VanityUrl> vanityUrls = new ArrayList<>();
+            vanityUrls.add(vanity1);
+            vanityUrls.add(vanity2);
+
+            JCRNodeWrapper page1 = session.getNode(getPagePath("page1"));
+            vanityUrlService.saveVanityUrlMappings(page1, vanityUrls, Collections.singleton("en"));
+            vanityUrls = vanityUrlService.getVanityUrls(page1, null, session);
+
+            vanity2 = vanityUrls.stream().filter((v)->v.getUrl().equals("/vanity2")).findFirst().get();
+
+            Assert.assertFalse("Vanity url is default", vanity2.isDefaultMapping());
+
+            updateVanity(Arrays.asList(vanity2), true, null, null, null);
+
+            vanityUrls = vanityUrlService.getVanityUrls(page1, null, session);
+            vanity1 = vanityUrls.stream().filter((v)->v.getUrl().equals("/vanity1")).findFirst().get();
+            vanity2 = vanityUrls.stream().filter((v)->v.getUrl().equals("/vanity2")).findFirst().get();
+
+            Assert.assertTrue("Vanity url has not been updated", vanity2.isDefaultMapping());
+            Assert.assertFalse("Previous default url has not been updated",vanity1.isDefaultMapping());
+        } finally {
+            session.getNode(getPagePath("page1")).remove();
+            session.save();
+        }
+    }
+
+    @Test
+    public void setActiveVanity() throws Exception {
+        createPage("page1");
+
+        try {
+            VanityUrl vanity1 = createVanity(true, true, "/vanity1");
+            VanityUrl vanity2 = createVanity(true, false, "/vanity2");
+
+            List<VanityUrl> vanityUrls = new ArrayList<>();
+            vanityUrls.add(vanity1);
+            vanityUrls.add(vanity2);
+
+            JCRNodeWrapper page1 = session.getNode(getPagePath("page1"));
+            vanityUrlService.saveVanityUrlMappings(page1, vanityUrls, Collections.singleton("en"));
+            vanityUrls = vanityUrlService.getVanityUrls(page1, null, session);
+
+            vanity2 = vanityUrls.stream().filter((v)->v.getUrl().equals("/vanity2")).findFirst().get();
+
+            Assert.assertTrue("Vanity url is not active", vanity2.isActive());
+
+            updateVanity(Arrays.asList(vanity2), null, false, null, null);
+
+            vanityUrls = vanityUrlService.getVanityUrls(page1, null, session);
+            vanity2 = vanityUrls.stream().filter((v)->v.getUrl().equals("/vanity2")).findFirst().get();
+
+            Assert.assertFalse("Vanity url has not been updated", vanity2.isActive());
+        } finally {
+            session.getNode(getPagePath("page1")).remove();
+            session.save();
+        }
+    }
+
+    @Test
+    public void setLanguage() throws Exception {
+        createPage("page1");
+
+        try {
+            VanityUrl vanity1 = createVanity(true, true, "/vanity1");
+            VanityUrl vanity2 = createVanity(true, false, "/vanity2");
+
+            List<VanityUrl> vanityUrls = new ArrayList<>();
+            vanityUrls.add(vanity1);
+            vanityUrls.add(vanity2);
+
+            JCRNodeWrapper page1 = session.getNode(getPagePath("page1"));
+            vanityUrlService.saveVanityUrlMappings(page1, vanityUrls, Collections.singleton("en"));
+            vanityUrls = vanityUrlService.getVanityUrls(page1, null, session);
+
+            updateVanity(vanityUrls, true, null, null, "fr");
+
+            vanityUrls = vanityUrlService.getVanityUrls(page1, null, session);
+            for (VanityUrl vanityUrl : vanityUrls) {
+                Assert.assertEquals("fr", vanityUrl.getLanguage());
+            }
+        } finally {
+            session.getNode(getPagePath("page1")).remove();
+            session.save();
+        }
+    }
+
+    @Test
+    public void setMapping() throws Exception {
+        createPage("page1");
+
+        try {
+            VanityUrl vanity1 = createVanity(true, true, "/vanity1");
+            VanityUrl vanity2 = createVanity(true, false, "/vanity2");
+
+            List<VanityUrl> vanityUrls = new ArrayList<>();
+            vanityUrls.add(vanity1);
+            vanityUrls.add(vanity2);
+
+            JCRNodeWrapper page1 = session.getNode(getPagePath("page1"));
+            vanityUrlService.saveVanityUrlMappings(page1, vanityUrls, Collections.singleton("en"));
+            vanityUrls = vanityUrlService.getVanityUrls(page1, null, session);
+            vanity2 = vanityUrls.stream().filter((v)->v.getUrl().equals("/vanity2")).findFirst().get();
+
+            updateVanity(Arrays.asList(vanity2), true, null, "/vanity3", null);
+
+            vanityUrls = vanityUrlService.getVanityUrls(page1, null, session);
+            Assert.assertEquals(2, vanityUrls.size());
+            Assert.assertTrue(vanityUrls.stream().anyMatch((v)->v.getUrl().equals("/vanity3")));
+
+            JSONObject object = updateVanity(Arrays.asList(vanity2), true, null, "/vanity1", null);
+            Assert.assertEquals(1, object.getJSONArray("errors").length());
+        } finally {
+            session.getNode(getPagePath("page1")).remove();
+            session.save();
+        }
+    }
+
     @Test
     public void shouldMoveALLVanityUrlsFromOneSource() throws Exception {
         try {
@@ -108,7 +239,7 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             Assert.assertEquals(2, savedVanityUrls.size());
 
             JSONObject result = moveVanities(savedVanityUrls, getPagePath("page2"));
-            JSONArray mutations = result.getJSONObject("data").getJSONObject("vanityUrl").getJSONArray("mutateVanityUrls");
+            JSONArray mutations = result.getJSONObject("data").getJSONObject("jcr").getJSONArray("mutateVanityUrls");
 
             Assert.assertEquals(2, mutations.length());
             for (int i = 0; i < mutations.length(); i++) {
@@ -169,7 +300,7 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             allSaved.addAll(savedVanityUrls2);
 
             JSONObject result = moveVanities(allSaved, getPagePath("page5"));
-            JSONArray mutations = result.getJSONObject("data").getJSONObject("vanityUrl").getJSONArray("mutateVanityUrls");
+            JSONArray mutations = result.getJSONObject("data").getJSONObject("jcr").getJSONArray("mutateVanityUrls");
 
             Assert.assertEquals(4, mutations.length());
             for (int i = 0; i < mutations.length(); i++) {
@@ -221,7 +352,7 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             Assert.assertEquals(2, savedVanityUrls.size());
 
             JSONObject result = moveVanities(Collections.singletonList(savedVanityUrls.get(0)), getPagePath("page7"));
-            JSONArray mutations = result.getJSONObject("data").getJSONObject("vanityUrl").getJSONArray("mutateVanityUrls");
+            JSONArray mutations = result.getJSONObject("data").getJSONObject("jcr").getJSONArray("mutateVanityUrls");
 
             Assert.assertEquals(1, mutations.length());
             for (int i = 0; i < mutations.length(); i++) {
@@ -257,7 +388,7 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             session.save();
 
             JSONObject result = executeQuery("mutation {\n" +
-                    "  vanityUrl {\n" +
+                    "  jcr {\n" +
                     "    mutateVanityUrls(pathsOrIds: [\"" + getPagePath("page9") + "\"]) {\n" +
                     "      move(target: \"" + getPagePath("page8") + "\")\n" +
                     "    }\n" +
@@ -275,6 +406,41 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
 
     }
 
+    private JSONObject updateVanity(List<VanityUrl> vanityUrls, Boolean defaultMapping, Boolean active, String url, String language) throws Exception {
+
+        return JCRTemplate.getInstance().doExecuteWithSystemSession((JCRCallback<JSONObject>) session -> {
+            StringJoiner stringJoiner = new StringJoiner(",", "[", "]");
+            for (VanityUrl vanityUrl : vanityUrls) {
+                stringJoiner.add("\"" + vanityUrl.getIdentifier() + "\"");
+            }
+
+            List<String> params = new ArrayList<>();
+            if (defaultMapping != null) {
+                params.add("defaultMapping:"+defaultMapping);
+            }
+            if (active != null) {
+                params.add("active:"+active);
+            }
+            if (url != null) {
+                params.add("url:\""+url+"\"");
+            }
+            if (language != null) {
+                params.add("language:\""+language+"\"");
+            }
+            try {
+                return executeQuery("mutation {\n" +
+                        "  jcr {\n" +
+                        "    mutateVanityUrls(pathsOrIds: " + stringJoiner.toString() + ") {\n" +
+                        "      update(" + StringUtils.join(params, ",") + ")\n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "}");
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
     private JSONObject moveVanities(List<VanityUrl> vanityUrls, String target) throws Exception {
 
         return JCRTemplate.getInstance().doExecuteWithSystemSession((JCRCallback<JSONObject>) session -> {
@@ -285,7 +451,7 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
 
             try {
                 return executeQuery("mutation {\n" +
-                        "  vanityUrl {\n" +
+                        "  jcr {\n" +
                         "    mutateVanityUrls(pathsOrIds: " + stringJoiner.toString() + ") {\n" +
                         "      move(target: \"" + target + "\")\n" +
                         "    }\n" +

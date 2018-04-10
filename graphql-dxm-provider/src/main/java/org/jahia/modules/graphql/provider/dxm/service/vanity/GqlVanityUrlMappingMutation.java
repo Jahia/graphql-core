@@ -48,11 +48,13 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.modules.graphql.provider.dxm.GqlConstraintException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.seo.VanityUrl;
+import org.jahia.services.seo.jcr.NonUniqueUrlMappingException;
 import org.jahia.services.seo.jcr.VanityUrlManager;
 import org.jahia.services.seo.jcr.VanityUrlService;
 
@@ -108,6 +110,8 @@ public class GqlVanityUrlMappingMutation {
             vanityUrlvanityUrlService.saveVanityUrlMapping(targetNode, vanityUrl, false);
 
             return true;
+        } catch (NonUniqueUrlMappingException e) {
+            throw new GqlConstraintException(e);
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
