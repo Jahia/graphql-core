@@ -65,7 +65,7 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
 
     /**
      * Initializes an instance of this class.
-     * 
+     *
      * @param vanityNode the JCR node that corresponds to the vanity URL
      */
     public GqlJcrVanityUrl(JCRNodeWrapper vanityNode) {
@@ -74,7 +74,7 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
 
     /**
      * Returns the vanity URL.
-     * 
+     *
      * @return the vanity URL
      */
     @GraphQLField
@@ -85,7 +85,7 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
 
     /**
      * Returns the language of the content object to which the vanity URL maps to.
-     * 
+     *
      * @return language of the mapping
      */
     @GraphQLField
@@ -95,19 +95,19 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     /**
-     * Returns the node targeted by this vanity url
+     * Returns the node targeted by this vanity URL.
      *
-     * @return the node
+     * @return The node targeted by this vanity URL
      */
     @GraphQLField
-    @GraphQLDescription("the node targeted by this vanity url")
+    @GraphQLDescription("The node targeted by this vanity url")
     public GqlJcrNode getTargetNode() {
         return getParent().getParent();
     }
 
     /**
      * Returns true if the URL mapping is activated or false if it is not activated.
-     * 
+     *
      * @return true if the URL mapping is activated or false if it is not activated
      */
     @GraphQLField
@@ -122,7 +122,7 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
 
     /**
      * Returns true whether this URL mapping is the default one for the language.
-     * 
+     *
      * @return <code>true</code> whether this URL mapping is the default one for the language, otherwise <code>false</code>
      */
     @GraphQLField
