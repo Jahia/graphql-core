@@ -46,6 +46,8 @@ package org.jahia.modules.graphql.provider.dxm;
 import graphql.ErrorType;
 import org.jahia.exceptions.JahiaRuntimeException;
 
+import java.util.Map;
+
 /**
  * Base exception for the GraphQL errors.
  */
@@ -54,6 +56,7 @@ public class BaseGqlClientException extends JahiaRuntimeException {
     private static final long serialVersionUID = 2380023950503433037L;
 
     private ErrorType errorType;
+    private Map<String,Object> extensions;
 
     public BaseGqlClientException(ErrorType errorType) {
         this.errorType = errorType;
@@ -69,6 +72,12 @@ public class BaseGqlClientException extends JahiaRuntimeException {
         this.errorType = errorType;
     }
 
+    public BaseGqlClientException(String message, Throwable cause, ErrorType errorType, Map<String,Object> extensions) {
+        super(message, cause);
+        this.errorType = errorType;
+        this.extensions = extensions;
+    }
+
     public BaseGqlClientException(Throwable cause, ErrorType errorType) {
         super(cause);
         this.errorType = errorType;
@@ -76,5 +85,9 @@ public class BaseGqlClientException extends JahiaRuntimeException {
 
     public ErrorType getErrorType() {
         return errorType;
+    }
+
+    public Map<String, Object> getExtensions() {
+        return extensions;
     }
 }

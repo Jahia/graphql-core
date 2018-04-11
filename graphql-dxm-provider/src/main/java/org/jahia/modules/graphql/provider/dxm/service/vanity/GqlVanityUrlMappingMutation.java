@@ -59,7 +59,9 @@ import org.jahia.services.seo.jcr.VanityUrlManager;
 import org.jahia.services.seo.jcr.VanityUrlService;
 
 import javax.jcr.RepositoryException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @GraphQLName("VanityUrlMappingMutation")
 public class GqlVanityUrlMappingMutation {
@@ -111,7 +113,13 @@ public class GqlVanityUrlMappingMutation {
 
             return true;
         } catch (NonUniqueUrlMappingException e) {
-            throw new GqlConstraintException(e);
+            Map<String,Object> extensions = new HashMap<>();
+            extensions.put("type",e.getClass().getName());
+            extensions.put("existingNodePath",e.getExistingNodePath());
+            extensions.put("urlMapping",e.getUrlMapping());
+            extensions.put("workspace",e.getWorkspace());
+            extensions.put("nodePath",e.getNodePath());
+            throw new GqlConstraintException(e, extensions);
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }

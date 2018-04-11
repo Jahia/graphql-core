@@ -46,16 +46,49 @@
 package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.ErrorType;
+import graphql.GraphQLError;
+import graphql.language.SourceLocation;
 
+import java.util.List;
 import java.util.Map;
 
-public class GqlConstraintException extends BaseGqlClientException {
-    /**
-     * Create an exception instance.
-     *
-     * @param cause Cause if any
-     */
-    public GqlConstraintException(Throwable cause, Map<String,Object> extensions) {
-        super(cause.getMessage(), cause, ErrorType.DataFetchingException, extensions);
+public class GraphQLErrorWithExtensions implements GraphQLError {
+    private final String message;
+    private List<Object> path;
+    private List<SourceLocation> locations;
+    private ErrorType errorType;
+    private Map<String, Object> extensions;
+
+    public GraphQLErrorWithExtensions(String message, List<Object> path, List<SourceLocation> locations, ErrorType errorType, Map<String, Object> extensions) {
+        this.message = message;
+        this.path = path;
+        this.locations = locations;
+        this.errorType = errorType;
+        this.extensions = extensions;
+    }
+
+    @Override
+    public List<Object> getPath() {
+        return path;
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+
+    @Override
+    public List<SourceLocation> getLocations() {
+        return locations;
+    }
+
+    @Override
+    public ErrorType getErrorType() {
+        return errorType;
+    }
+
+    @Override
+    public Map<String, Object> getExtensions() {
+        return extensions;
     }
 }
