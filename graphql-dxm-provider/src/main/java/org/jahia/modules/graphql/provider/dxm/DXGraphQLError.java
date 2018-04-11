@@ -45,6 +45,9 @@
 
 package org.jahia.modules.graphql.provider.dxm;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import graphql.ErrorType;
 import graphql.GraphQLError;
 import graphql.language.SourceLocation;
@@ -52,19 +55,19 @@ import graphql.language.SourceLocation;
 import java.util.List;
 import java.util.Map;
 
-public class GraphQLErrorWithExtensions implements GraphQLError {
+public class DXGraphQLError implements GraphQLError {
     private final String message;
     private List<Object> path;
     private List<SourceLocation> locations;
     private ErrorType errorType;
-    private Map<String, Object> extensions;
+    private BaseGqlClientException exception;
 
-    public GraphQLErrorWithExtensions(String message, List<Object> path, List<SourceLocation> locations, ErrorType errorType, Map<String, Object> extensions) {
-        this.message = message;
+    public DXGraphQLError(BaseGqlClientException exception, List<Object> path, List<SourceLocation> locations) {
+        this.message = exception.getMessage();
         this.path = path;
         this.locations = locations;
-        this.errorType = errorType;
-        this.extensions = extensions;
+        this.errorType = exception.getErrorType();
+        this.exception = exception;
     }
 
     @Override
@@ -83,12 +86,23 @@ public class GraphQLErrorWithExtensions implements GraphQLError {
     }
 
     @Override
+    @JsonIgnore
     public ErrorType getErrorType() {
         return errorType;
     }
 
+    @JsonProperty("errorType")
+    public String getRealErrorType() {
+        if (errorType != null) {
+            return errorType.toString();
+        } else {
+            return exception.getClass().getSimpleName();
+        }
+    }
+
     @Override
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public Map<String, Object> getExtensions() {
-        return extensions;
+        return exception.getExtensions();
     }
 }

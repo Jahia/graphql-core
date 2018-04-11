@@ -45,8 +45,6 @@
 
 package org.jahia.modules.graphql.provider.dxm;
 
-import graphql.ErrorType;
-
 import java.util.Map;
 
 public class GqlConstraintException extends BaseGqlClientException {
@@ -56,6 +54,6 @@ public class GqlConstraintException extends BaseGqlClientException {
      * @param cause Cause if any
      */
     public GqlConstraintException(Throwable cause, Map<String,Object> extensions) {
-        super(cause.getMessage(), cause, ErrorType.DataFetchingException, extensions);
+        super(cause.getMessage(), cause, extensions);
     }
 }

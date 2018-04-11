@@ -72,6 +72,11 @@ public class BaseGqlClientException extends JahiaRuntimeException {
         this.errorType = errorType;
     }
 
+    public BaseGqlClientException(String message, Throwable cause, Map<String,Object> extensions) {
+        super(message, cause);
+        this.extensions = extensions;
+    }
+
     public BaseGqlClientException(String message, Throwable cause, ErrorType errorType, Map<String,Object> extensions) {
         super(message, cause);
         this.errorType = errorType;
