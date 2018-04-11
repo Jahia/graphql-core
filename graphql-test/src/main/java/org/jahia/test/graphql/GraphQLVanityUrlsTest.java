@@ -124,7 +124,7 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             vanity2 = vanityUrls.stream().filter((v)->v.getUrl().equals("/vanity2")).findFirst().get();
 
             Assert.assertTrue("Vanity url has not been updated", vanity2.isDefaultMapping());
-            Assert.assertFalse("Previous default url has not been updated",vanity1.isDefaultMapping());
+            Assert.assertFalse("Previous default url has not been updated", vanity1.isDefaultMapping());
         } finally {
             session.getNode(getPagePath("page1")).remove();
             session.save();
@@ -416,16 +416,16 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
 
             List<String> params = new ArrayList<>();
             if (defaultMapping != null) {
-                params.add("defaultMapping:"+defaultMapping);
+                params.add("defaultMapping:" + defaultMapping);
             }
             if (active != null) {
-                params.add("active:"+active);
+                params.add("active:" + active);
             }
             if (url != null) {
-                params.add("url:\""+url+"\"");
+                params.add("url:\"" + url + "\"");
             }
             if (language != null) {
-                params.add("language:\""+language+"\"");
+                params.add("language:\"" + language + "\"");
             }
             try {
                 return executeQuery("mutation {\n" +
@@ -482,9 +482,4 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
         vanityUrl.setUrl(url);
         return vanityUrl;
     }
-
 }
-
-
-
-

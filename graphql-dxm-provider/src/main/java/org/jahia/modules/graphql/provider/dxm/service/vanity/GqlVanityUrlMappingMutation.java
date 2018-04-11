@@ -68,21 +68,19 @@ public class GqlVanityUrlMappingMutation {
 
     private JCRNodeWrapper vanityUrlNode;
     private JCRNodeWrapper targetNode;
-
-    private VanityUrlService vanityUrlvanityUrlService;
-
+    private VanityUrlService vanityUrlService;
 
     /**
-     * Create a vanity url mutation extension instance.
+     * Create a vanity URL mutation extension instance.
      *
-     * @param vanityUrlNode The JCR vanity url node
+     * @param vanityUrlNode The vanity URL JCR node
      */
     public GqlVanityUrlMappingMutation(JCRNodeWrapper vanityUrlNode) {
         try {
             if (!vanityUrlNode.isNodeType(VanityUrlManager.JAHIANT_VANITYURL)) {
-                throw new GqlJcrWrongInputException("Vanity url field can only be used on Vanity url nodes, node: " + vanityUrlNode.getPath() + " is not a Vanity URL node");
+                throw new GqlJcrWrongInputException("Vanity URL field can only be used on vanity URL nodes, node: " + vanityUrlNode.getPath() + " is not a vanity URL node");
             }
-            this.vanityUrlvanityUrlService = BundleUtils.getOsgiService(VanityUrlService.class, null);
+            this.vanityUrlService = BundleUtils.getOsgiService(VanityUrlService.class, null);
             this.vanityUrlNode = vanityUrlNode;
             this.targetNode = vanityUrlNode.getParent().getParent();
         } catch (RepositoryException e) {
@@ -90,11 +88,23 @@ public class GqlVanityUrlMappingMutation {
         }
     }
 
+    /**
+     * Update the vanity URL.
+     *
+     * @param active Desired value of the active flag or null to keep existing value
+     * @param defaultMapping Desired value of the default flag or null to keep existing value
+     * @param language Desired vanity URL language or null to keep existing value
+     * @param url Desired URL value or null to keep existing value
+     * @return Always true
+     * @throws GqlConstraintException In case the desired values violate a vanity URL uniqueness constraint
+     */
     @GraphQLField
-    public boolean update(@GraphQLName("active") @GraphQLDescription("The value to set") Boolean active,
-                          @GraphQLName("defaultMapping") @GraphQLDescription("The value to set") Boolean defaultMapping,
-                          @GraphQLName("language") @GraphQLDescription("The value to set") String language,
-                          @GraphQLName("url") @GraphQLDescription("The value to set") String url) {
+    @GraphQLDescription("Update vanity URL")
+    public boolean update(@GraphQLName("active") @GraphQLDescription("Desired value of the active flag or null to keep existing value") Boolean active,
+                          @GraphQLName("defaultMapping") @GraphQLDescription("Desired value of the default flag or null to keep existing value") Boolean defaultMapping,
+                          @GraphQLName("language") @GraphQLDescription("Desired vanity URL language or null to keep existing value") String language,
+                          @GraphQLName("url") @GraphQLDescription("Desired URL value or null to keep existing value") String url
+    ) throws GqlConstraintException {
         try {
             VanityUrl vanityUrl = getVanityUrlObject();
             if (active != null) {
@@ -109,8 +119,7 @@ public class GqlVanityUrlMappingMutation {
             if (url != null) {
                 vanityUrl.setUrl(url);
             }
-            vanityUrlvanityUrlService.saveVanityUrlMapping(targetNode, vanityUrl, false);
-
+            vanityUrlService.saveVanityUrlMapping(targetNode, vanityUrl, false);
             return true;
         } catch (NonUniqueUrlMappingException e) {
             Map<String,Object> extensions = new HashMap<>();
@@ -126,12 +135,13 @@ public class GqlVanityUrlMappingMutation {
     }
 
     /**
-     * Move the vanity url to the given targeted node
-     * @param target the target node
-     * @return "true" in case the move of the vanity url succeeded
+     * Move the vanity URL to another node.
+     *
+     * @param target The target node
+     * @return Always true
      */
     @GraphQLField
-    @GraphQLDescription("move vanity urls to the targeted path")
+    @GraphQLDescription("Move the vanity URL to another node")
     public boolean move(@GraphQLName("target") @GraphQLNonNull @GraphQLDescription("The path of the target node") String target) {
         try {
             JCRNodeWrapper targetNode = vanityUrlNode.getSession().getNode(target);
@@ -148,8 +158,6 @@ public class GqlVanityUrlMappingMutation {
 
             // Do not move vanity already in place
             if (!vanityUrlNode.getPath().startsWith(targetMappings.getPath())) {
-
-                JCRNodeWrapper sourceNode = vanityUrlNode.getParent();
 
                 // reset "default" property on moved vanity
                 vanityUrlNode.setProperty(VanityUrlManager.PROPERTY_DEFAULT, false);
@@ -169,15 +177,14 @@ public class GqlVanityUrlMappingMutation {
     }
 
     private VanityUrl getVanityUrlObject() throws RepositoryException {
-        List<VanityUrl> vanityUrls = vanityUrlvanityUrlService.getVanityUrls(targetNode, null, vanityUrlNode.getSession());
+        List<VanityUrl> vanityUrls = vanityUrlService.getVanityUrls(targetNode, null, vanityUrlNode.getSession());
         for (VanityUrl vanityUrl : vanityUrls) {
             if (vanityUrl.getIdentifier().equals(vanityUrlNode.getIdentifier())) {
                 return vanityUrl;
             }
         }
-        throw new JahiaRuntimeException("Vanity url not found");
+        throw new IllegalStateException("Vanity URL node not found by UUID: " + vanityUrlNode.getIdentifier());
     }
-
 
     private void cleanVanityUrlParentNodes(JCRNodeWrapper vanityUrlParentNode) throws RepositoryException {
         if (vanityUrlParentNode.getNodes().getSize() == 0) {

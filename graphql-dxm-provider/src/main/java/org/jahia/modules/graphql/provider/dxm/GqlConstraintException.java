@@ -48,6 +48,9 @@ package org.jahia.modules.graphql.provider.dxm;
 import java.util.Map;
 
 public class GqlConstraintException extends BaseGqlClientException {
+
+    private static final long serialVersionUID = -5860673150767466560L;
+
     /**
      * Create an exception instance.
      *

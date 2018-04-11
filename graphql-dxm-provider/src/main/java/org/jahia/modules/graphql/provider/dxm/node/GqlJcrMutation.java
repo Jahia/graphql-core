@@ -43,7 +43,6 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-
 import graphql.annotations.annotationTypes.*;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
@@ -245,20 +244,17 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         return true;
     }
 
-
-
     /**
      * Get the list of all nodes that have been modified in this session since last save.
      *
      * @return the result of the operation
-     * @throws BaseGqlClientException in case of errors during undelete operation
      */
     @GraphQLField
     @GraphQLDescription("Get the list of all nodes that have been modified in this session since last save")
     public List<GqlJcrNode> getModifiedNodes() {
-        return getSession().getChangedNodes().stream().map((n) -> {
+        return getSession().getChangedNodes().stream().map((node) -> {
             try {
-                return SpecializedTypesHandler.getNode(n);
+                return SpecializedTypesHandler.getNode(node);
             } catch (RepositoryException e) {
                 throw new JahiaRuntimeException(e);
             }
