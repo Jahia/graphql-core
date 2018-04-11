@@ -46,6 +46,9 @@ package org.jahia.modules.graphql.provider.dxm;
 
 import java.util.Map;
 
+/**
+ * Indicates violation of a data integrity constraint by the GraphQL mutation.
+ */
 public class GqlConstraintViolationException extends BaseGqlClientException {
 
     private static final long serialVersionUID = -5860673150767466560L;

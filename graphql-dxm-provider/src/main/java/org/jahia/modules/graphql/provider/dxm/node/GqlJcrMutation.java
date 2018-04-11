@@ -245,13 +245,13 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     }
 
     /**
-     * Get the list of all nodes that have been modified in this session since last save.
+     * Get a collection of nodes that were modified by current GraphQL request.
      *
-     * @return the result of the operation
+     * @return A collection of nodes that were modified by current GraphQL request
      */
     @GraphQLField
-    @GraphQLDescription("Get the list of all nodes that have been modified in this session since last save")
-    public List<GqlJcrNode> getModifiedNodes() {
+    @GraphQLDescription("Get a collection of nodes that were modified by current GraphQL request")
+    public Collection<GqlJcrNode> getModifiedNodes() {
         return getSession().getChangedNodes().stream().map((node) -> {
             try {
                 return SpecializedTypesHandler.getNode(node);

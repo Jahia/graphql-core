@@ -168,7 +168,7 @@ public class GqlVanityUrlMappingMutation {
                 // cleanVanityUrlParentNodes(sourceNode);
             }
 
-            BundleUtils.getOsgiService(VanityUrlService.class, null).flushCaches();
+            vanityUrlService.flushCaches();
 
             return true;
         } catch (RepositoryException e) {
