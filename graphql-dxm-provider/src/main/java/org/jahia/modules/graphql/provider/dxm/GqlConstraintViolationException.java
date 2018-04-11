@@ -42,12 +42,11 @@
  *      please contact the sales department at sales@jahia.com.
  *
  */
-
 package org.jahia.modules.graphql.provider.dxm;
 
 import java.util.Map;
 
-public class GqlConstraintException extends BaseGqlClientException {
+public class GqlConstraintViolationException extends BaseGqlClientException {
 
     private static final long serialVersionUID = -5860673150767466560L;
 
@@ -56,7 +55,7 @@ public class GqlConstraintException extends BaseGqlClientException {
      *
      * @param cause Cause if any
      */
-    public GqlConstraintException(Throwable cause, Map<String,Object> extensions) {
+    public GqlConstraintViolationException(Throwable cause, Map<String,Object> extensions) {
         super(cause.getMessage(), cause, extensions);
     }
 }

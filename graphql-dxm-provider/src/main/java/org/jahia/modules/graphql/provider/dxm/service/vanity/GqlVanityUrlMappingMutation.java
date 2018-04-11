@@ -48,7 +48,7 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.jahia.exceptions.JahiaRuntimeException;
-import org.jahia.modules.graphql.provider.dxm.GqlConstraintException;
+import org.jahia.modules.graphql.provider.dxm.GqlConstraintViolationException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRContentUtils;
@@ -96,7 +96,7 @@ public class GqlVanityUrlMappingMutation {
      * @param language Desired vanity URL language or null to keep existing value
      * @param url Desired URL value or null to keep existing value
      * @return Always true
-     * @throws GqlConstraintException In case the desired values violate a vanity URL uniqueness constraint
+     * @throws GqlConstraintViolationException In case the desired values violate a vanity URL uniqueness constraint
      */
     @GraphQLField
     @GraphQLDescription("Update vanity URL")
@@ -104,7 +104,7 @@ public class GqlVanityUrlMappingMutation {
                           @GraphQLName("defaultMapping") @GraphQLDescription("Desired value of the default flag or null to keep existing value") Boolean defaultMapping,
                           @GraphQLName("language") @GraphQLDescription("Desired vanity URL language or null to keep existing value") String language,
                           @GraphQLName("url") @GraphQLDescription("Desired URL value or null to keep existing value") String url
-    ) throws GqlConstraintException {
+    ) throws GqlConstraintViolationException {
         try {
             VanityUrl vanityUrl = getVanityUrlObject();
             if (active != null) {
@@ -128,7 +128,7 @@ public class GqlVanityUrlMappingMutation {
             extensions.put("urlMapping",e.getUrlMapping());
             extensions.put("workspace",e.getWorkspace());
             extensions.put("nodePath",e.getNodePath());
-            throw new GqlConstraintException(e, extensions);
+            throw new GqlConstraintViolationException(e, extensions);
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
