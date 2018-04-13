@@ -54,14 +54,11 @@ import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.seo.VanityUrl;
-import org.jahia.services.seo.jcr.NonUniqueUrlMappingException;
 import org.jahia.services.seo.jcr.VanityUrlManager;
 import org.jahia.services.seo.jcr.VanityUrlService;
 
 import javax.jcr.RepositoryException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @GraphQLName("VanityUrlMappingMutation")
 public class GqlVanityUrlMappingMutation {
@@ -69,6 +66,7 @@ public class GqlVanityUrlMappingMutation {
     private JCRNodeWrapper vanityUrlNode;
     private JCRNodeWrapper targetNode;
     private VanityUrlService vanityUrlService;
+    private VanityUrlMutationService vanityUrlMutationService;
 
     /**
      * Create a vanity URL mutation extension instance.
@@ -83,6 +81,7 @@ public class GqlVanityUrlMappingMutation {
             this.vanityUrlService = BundleUtils.getOsgiService(VanityUrlService.class, null);
             this.vanityUrlNode = vanityUrlNode;
             this.targetNode = vanityUrlNode.getParent().getParent();
+            this.vanityUrlMutationService = new VanityUrlMutationService(targetNode, vanityUrlService);
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
@@ -106,29 +105,7 @@ public class GqlVanityUrlMappingMutation {
                           @GraphQLName("url") @GraphQLDescription("Desired URL value or null to keep existing value") String url
     ) throws GqlConstraintViolationException {
         try {
-            VanityUrl vanityUrl = getVanityUrlObject();
-            if (active != null) {
-                vanityUrl.setActive(active);
-            }
-            if (defaultMapping != null) {
-                vanityUrl.setDefaultMapping(defaultMapping);
-            }
-            if (language != null) {
-                vanityUrl.setLanguage(language);
-            }
-            if (url != null) {
-                vanityUrl.setUrl(url);
-            }
-            vanityUrlService.saveVanityUrlMapping(targetNode, vanityUrl, false);
-            return true;
-        } catch (NonUniqueUrlMappingException e) {
-            Map<String,Object> extensions = new HashMap<>();
-            extensions.put("type",e.getClass().getName());
-            extensions.put("existingNodePath",e.getExistingNodePath());
-            extensions.put("urlMapping",e.getUrlMapping());
-            extensions.put("workspace",e.getWorkspace());
-            extensions.put("nodePath",e.getNodePath());
-            throw new GqlConstraintViolationException(e, extensions);
+            return vanityUrlMutationService.updateAndSaveVanity(getVanityUrlObject(), active, defaultMapping, language, url);
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }

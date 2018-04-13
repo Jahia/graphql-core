@@ -1,3 +1,4 @@
+package org.jahia.modules.graphql.provider.dxm.service.vanity;
 /**
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
@@ -41,14 +42,8 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.graphql.provider.dxm.service.vanity;
-
-import graphql.annotations.annotationTypes.*;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.GqlConstraintViolationException;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
-import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.seo.VanityUrl;
 import org.jahia.services.seo.jcr.NonUniqueUrlMappingException;
@@ -58,23 +53,21 @@ import javax.jcr.RepositoryException;
 import java.util.HashMap;
 import java.util.Map;
 
-@GraphQLTypeExtension(GqlJcrNodeMutation.class)
-@GraphQLName("VanityUrlJCRNodeMutationExtensions")
-public class VanityUrlJCRNodeMutationExtensions  extends GqlJcrMutationSupport {
+/**
+ * Centralize vanity url related operations
+ */
+class VanityUrlMutationService {
 
-    private VanityUrlMutationService vanityUrlMutationService;
+    private JCRNodeWrapper targetNode;
+    private VanityUrlService vanityUrlService;
 
-    /**
-     * Initializes an instance of this class.
-     *
-     * @param node the corresponding GraphQL node
-     */
-    public VanityUrlJCRNodeMutationExtensions(GqlJcrNodeMutation node) {
-        this.vanityUrlMutationService = new VanityUrlMutationService(node.getNode().getNode(), BundleUtils.getOsgiService(VanityUrlService.class, null));
+    public VanityUrlMutationService(JCRNodeWrapper targetNode, VanityUrlService vanityUrlService) {
+        this.targetNode = targetNode;
+        this.vanityUrlService = vanityUrlService;
     }
 
     /**
-     * Add the vanity URL.
+     * update and save the vanity URL.
      *
      * @param active Desired value of the active flag or null to keep existing value
      * @param defaultMapping Desired value of the default flag or null to keep existing value
@@ -83,14 +76,32 @@ public class VanityUrlJCRNodeMutationExtensions  extends GqlJcrMutationSupport {
      * @return Always true
      * @throws GqlConstraintViolationException In case the desired values violate a vanity URL uniqueness constraint
      */
-    @GraphQLField
-    @GraphQLDescription("Add vanity URL")
-    @GraphQLName("addVanityUrl")
-    public boolean addVanityUrl(@GraphQLName("active") @GraphQLDescription("Desired value of the active flag or null to keep existing value") Boolean active,
-                          @GraphQLName("defaultMapping") @GraphQLNonNull @GraphQLDescription("Desired value of the default flag or null to keep existing value") Boolean defaultMapping,
-                          @GraphQLName("language") @GraphQLNonNull @GraphQLDescription("Desired vanity URL language or null to keep existing value") String language,
-                          @GraphQLName("url") @GraphQLNonNull @GraphQLDescription("Desired URL value or null to keep existing value") String url
-    ) throws GqlConstraintViolationException {
-        return vanityUrlMutationService.updateAndSaveVanity(new VanityUrl(), active, defaultMapping, language, url);
+    boolean updateAndSaveVanity(VanityUrl vanityUrl, Boolean active, Boolean defaultMapping, String language, String url) {
+        try {
+            if (active != null) {
+                vanityUrl.setActive(active);
+            }
+            if (defaultMapping != null) {
+                vanityUrl.setDefaultMapping(defaultMapping);
+            }
+            if (language != null) {
+                vanityUrl.setLanguage(language);
+            }
+            if (url != null) {
+                vanityUrl.setUrl(url);
+            }
+            vanityUrlService.saveVanityUrlMapping(targetNode, vanityUrl, false);
+            return true;
+        } catch (NonUniqueUrlMappingException e) {
+            Map<String,Object> extensions = new HashMap<>();
+            extensions.put("type",e.getClass().getName());
+            extensions.put("existingNodePath",e.getExistingNodePath());
+            extensions.put("urlMapping",e.getUrlMapping());
+            extensions.put("workspace",e.getWorkspace());
+            extensions.put("nodePath",e.getNodePath());
+            throw new GqlConstraintViolationException(e, extensions);
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
     }
 }
