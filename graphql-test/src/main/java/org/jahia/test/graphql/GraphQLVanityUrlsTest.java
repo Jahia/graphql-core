@@ -223,6 +223,42 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
     }
 
     @Test
+    public void shouldCreateVanityUrl() throws Exception {
+        try {
+            createPage("page10");
+            session.save();
+            VanityUrl v1 = createVanity(true, true, "/vanity1");
+            VanityUrl v2 = createVanity(true, false, "/vanity2");
+
+            JSONObject result = executeQuery("mutation {\n" +
+                    "  jcr {\n" +
+                    "    mutateNode(pathOrId: \"" +  getPagePath("page10") + "\") {\n" +
+                    "      add1: addVanityUrl(defaultMapping: " + v1.isDefaultMapping() +
+                    ", active: " + v1.isActive()  + ", url: \"" + v1.getUrl() + "\" " +
+                    ", language: \"" + v1.getLanguage() + "\")\n" +
+                    "      add2: addVanityUrl(defaultMapping: " + v2.isDefaultMapping() +
+                    ", active: " + v2.isActive()  + ", url: \"" + v2.getUrl() + "\" " +
+                    ", language: \"" + v2.getLanguage() + "\")\n" +
+                    "    }  \n" +
+                    "  }" +
+                    "}");
+
+            JCRNodeWrapper page10 = session.getNode(getPagePath("page10"));
+            List<VanityUrl> vanityUrls = vanityUrlService.getVanityUrls(page10, null, session);
+            Assert.assertEquals(2, vanityUrls.size());
+            VanityUrl vanity1 = vanityUrls.stream().filter((v)->v.getUrl().equals("/vanity1")).findFirst().get();
+            VanityUrl vanity2 = vanityUrls.stream().filter((v)->v.getUrl().equals("/vanity2")).findFirst().get();
+            Assert.assertTrue("Vanity url is not active", vanity2.isActive());
+            Assert.assertTrue("Vanity url is not default", vanity1.isDefaultMapping());
+
+        } finally {
+            session.getNode(getPagePath("page10")).remove();
+            session.save();
+        }
+
+    }
+
+    @Test
     public void shouldMoveALLVanityUrlsFromOneSource() throws Exception {
         try {
             createPage("page1");
