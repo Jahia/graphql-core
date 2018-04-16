@@ -51,11 +51,11 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 /**
  * GraphQL representation of a vanity URL.
  */
-@GraphQLName("VanityUrlInput")
+@GraphQLName("VanityUrl")
 public class GqlJcrVanityUrlInput {
 
-    private boolean active;
-    private boolean defaultMapping;
+    private Boolean active;
+    private Boolean defaultMapping;
     private String language;
     private String url;
     /**
@@ -107,7 +107,7 @@ public class GqlJcrVanityUrlInput {
      */
     @GraphQLField
     @GraphQLDescription("true if the URL mapping is activated or false if it is not activated")
-    public boolean isActive() {
+    public Boolean isActive() {
         return active;
     }
 
@@ -119,7 +119,7 @@ public class GqlJcrVanityUrlInput {
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("true whether this URL mapping is the default one for the language")
-    public boolean isDefaultMapping() {
+    public Boolean isDefaultMapping() {
         return defaultMapping;
     }
 }
