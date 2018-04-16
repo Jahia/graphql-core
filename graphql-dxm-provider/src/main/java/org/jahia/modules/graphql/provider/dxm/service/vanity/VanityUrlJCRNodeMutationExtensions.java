@@ -44,19 +44,13 @@
 package org.jahia.modules.graphql.provider.dxm.service.vanity;
 
 import graphql.annotations.annotationTypes.*;
-import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.GqlConstraintViolationException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
 import org.jahia.osgi.BundleUtils;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.seo.VanityUrl;
-import org.jahia.services.seo.jcr.NonUniqueUrlMappingException;
 import org.jahia.services.seo.jcr.VanityUrlService;
 
-import javax.jcr.RepositoryException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 @GraphQLTypeExtension(GqlJcrNodeMutation.class)
 @GraphQLName("VanityUrlJCRNodeMutationExtensions")
@@ -76,21 +70,14 @@ public class VanityUrlJCRNodeMutationExtensions  extends GqlJcrMutationSupport {
     /**
      * Add the vanity URL.
      *
-     * @param active Desired value of the active flag or null to keep existing value
-     * @param defaultMapping Desired value of the default flag or null to keep existing value
-     * @param language Desired vanity URL language or null to keep existing value
-     * @param url Desired URL value or null to keep existing value
+     * @param vanityUrlInputList list of vanity urls to create
      * @return Always true
      * @throws GqlConstraintViolationException In case the desired values violate a vanity URL uniqueness constraint
      */
     @GraphQLField
     @GraphQLDescription("Add vanity URL")
     @GraphQLName("addVanityUrl")
-    public boolean addVanityUrl(@GraphQLName("active") @GraphQLDescription("Desired value of the active flag or null to keep existing value") Boolean active,
-                          @GraphQLName("defaultMapping") @GraphQLNonNull @GraphQLDescription("Desired value of the default flag or null to keep existing value") Boolean defaultMapping,
-                          @GraphQLName("language") @GraphQLNonNull @GraphQLDescription("Desired vanity URL language or null to keep existing value") String language,
-                          @GraphQLName("url") @GraphQLNonNull @GraphQLDescription("Desired URL value or null to keep existing value") String url
-    ) throws GqlConstraintViolationException {
-        return vanityUrlMutationService.updateAndSaveVanity(new VanityUrl(), active, defaultMapping, language, url);
+    public boolean addVanityUrl(@GraphQLName("vanityUrlInputList") @GraphQLNonNull @GraphQLDescription("The list of vanity url to create") List<GqlJcrVanityUrlInput> vanityUrlInputList) throws GqlConstraintViolationException {
+        return vanityUrlMutationService.add(vanityUrlInputList);
     }
 }

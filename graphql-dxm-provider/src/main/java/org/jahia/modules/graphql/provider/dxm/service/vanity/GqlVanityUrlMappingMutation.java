@@ -105,7 +105,7 @@ public class GqlVanityUrlMappingMutation {
                           @GraphQLName("url") @GraphQLDescription("Desired URL value or null to keep existing value") String url
     ) throws GqlConstraintViolationException {
         try {
-            return vanityUrlMutationService.updateAndSaveVanity(getVanityUrlObject(), active, defaultMapping, language, url);
+            return vanityUrlMutationService.update(getVanityUrlObject(), active, defaultMapping, language, url);
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }

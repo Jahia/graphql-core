@@ -233,12 +233,12 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             JSONObject result = executeQuery("mutation {\n" +
                     "  jcr {\n" +
                     "    mutateNode(pathOrId: \"" +  getPagePath("page10") + "\") {\n" +
-                    "      add1: addVanityUrl(defaultMapping: " + v1.isDefaultMapping() +
+                    "      vanity: addVanityUrl(vanityUrlInputList: [{defaultMapping: " + v1.isDefaultMapping() +
                     ", active: " + v1.isActive()  + ", url: \"" + v1.getUrl() + "\" " +
-                    ", language: \"" + v1.getLanguage() + "\")\n" +
-                    "      add2: addVanityUrl(defaultMapping: " + v2.isDefaultMapping() +
+                    ", language: \"" + v1.getLanguage() + "\"},\n" +
+                    "      {defaultMapping: " + v2.isDefaultMapping() +
                     ", active: " + v2.isActive()  + ", url: \"" + v2.getUrl() + "\" " +
-                    ", language: \"" + v2.getLanguage() + "\")\n" +
+                    ", language: \"" + v2.getLanguage() + "\"}])\n" +
                     "    }  \n" +
                     "  }" +
                     "}");
