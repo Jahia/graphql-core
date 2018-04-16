@@ -230,7 +230,7 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             VanityUrl v1 = createVanity(true, true, "/vanity1");
             VanityUrl v2 = createVanity(true, false, "/vanity2");
 
-            JSONObject result = executeQuery("mutation {\n" +
+            executeQuery("mutation {\n" +
                     "  jcr {\n" +
                     "    mutateNode(pathOrId: \"" +  getPagePath("page10") + "\") {\n" +
                     "      vanity: addVanityUrl(vanityUrlInputList: [{defaultMapping: " + v1.isDefaultMapping() +
@@ -251,11 +251,27 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             Assert.assertTrue("Vanity url is not active", vanity2.isActive());
             Assert.assertTrue("Vanity url is not default", vanity1.isDefaultMapping());
 
+            JSONObject result = executeQuery("mutation {\n" +
+                    "  jcr {\n" +
+                    "    mutateNode(pathOrId: \"" +  getPagePath("page10") + "\") {\n" +
+                    "      vanity: addVanityUrl(vanityUrlInputList: [{defaultMapping: " + v1.isDefaultMapping() +
+                    ", active: " + v1.isActive()  + ", url: \"" + v1.getUrl() + "\" " +
+                    ", language: \"" + v1.getLanguage() + "\"},\n" +
+                    "      {defaultMapping: " + v2.isDefaultMapping() +
+                    ", active: " + v2.isActive()  + ", url: \"" + v2.getUrl() + "\" " +
+                    ", language: \"" + v2.getLanguage() + "\"}])\n" +
+                    "    }  \n" +
+                    "  }" +
+                    "}");
+
+            JSONObject extensions = ((JSONObject) result.getJSONArray("errors").get(0)).getJSONObject("extensions");
+            Assert.assertTrue(extensions.has("/vanity1"));
+            Assert.assertTrue(extensions.has("/vanity2"));
+
         } finally {
             session.getNode(getPagePath("page10")).remove();
             session.save();
         }
-
     }
 
     @Test
