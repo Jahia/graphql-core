@@ -82,6 +82,7 @@ public class GqlJcrVanityUrlInput {
      * @return the vanity URL
      */
     @GraphQLField
+    @GraphQLNonNull
     @GraphQLDescription("The vanity URL")
     public String getUrl() {
         return url;
@@ -93,6 +94,7 @@ public class GqlJcrVanityUrlInput {
      * @return language of the mapping
      */
     @GraphQLField
+    @GraphQLNonNull
     @GraphQLDescription("The language of the content object to which the vanity URL maps to")
     public String getLanguage() {
         return language;
@@ -115,6 +117,7 @@ public class GqlJcrVanityUrlInput {
      * @return <code>true</code> whether this URL mapping is the default one for the language, otherwise <code>false</code>
      */
     @GraphQLField
+    @GraphQLNonNull
     @GraphQLDescription("true whether this URL mapping is the default one for the language")
     public boolean isDefaultMapping() {
         return defaultMapping;
