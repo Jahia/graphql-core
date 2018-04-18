@@ -77,6 +77,7 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
         vanityUrlService = BundleUtils.getOsgiService(VanityUrlService.class, null);
 
         TestHelper.createSite(SITE_NAME);
+        TestHelper.createSite(SITE_NAME_OTHER);
 
         session.save();
     }
@@ -86,6 +87,7 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
         try {
             session = JCRTemplate.getInstance().getSessionFactory().getCurrentSystemSession(Constants.EDIT_WORKSPACE, Locale.ENGLISH, null);
             session.getNode("/sites/" + SITE_NAME).remove();
+            session.getNode("/sites/" + SITE_NAME_OTHER).remove();
             session.save();
         } finally {
             session.logout();
@@ -269,7 +271,6 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             Assert.assertTrue(extensions.has("/vanity1"));
             Assert.assertTrue(extensions.has("/vanity2"));
 
-            TestHelper.createSite(SITE_NAME_OTHER);
             JCRNodeWrapper page0 = createPage("page0", SITE_NAME_OTHER);
             session.save();
 
@@ -294,7 +295,6 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             Assert.assertTrue("Vanity url is not default", otherVanity1.isDefaultMapping());
 
         } finally {
-            session.getNode("/sites/" + SITE_NAME_OTHER).remove();
             session.getNode(getPagePath("page10")).remove();
             session.save();
         }
