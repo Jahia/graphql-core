@@ -28,7 +28,7 @@
         GNU General Public License for more details.
 
         You should have received a copy of the GNU General Public License
-        along with this program. If not, see <http://www.gnu.org/licenses/>.
+        along with this program. If not, see <http://www.gnu.org/licenses />.
 
 
         2/ JSEL - Commercial and Supported Versions of the program
@@ -49,7 +49,7 @@
     <parent>
         <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>1.0.2-SNAPSHOT</version>
+        <version>1.0.2</version>
     </parent>
     <artifactId>graphql-dxm-provider</artifactId>
     <name>Jahia GraphQL Core Provider</name>
@@ -83,14 +83,14 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>security-filter</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>1.0.0</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.jahia.test</groupId>
             <artifactId>module-test-framework</artifactId>
-            <version>7.2.3.0-SNAPSHOT</version>
+            <version>7.2.3.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
