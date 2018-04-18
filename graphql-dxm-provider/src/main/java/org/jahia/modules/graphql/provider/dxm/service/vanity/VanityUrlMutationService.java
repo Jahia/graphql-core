@@ -95,9 +95,13 @@ class VanityUrlMutationService {
 
         for (GqlJcrVanityUrlInput vanityUrl : vanityUrls) {
             try {
-                addOrUpdateVanity(new VanityUrl(), vanityUrl.isActive(), vanityUrl.isDefaultMapping(), vanityUrl.getLanguage(), vanityUrl.getUrl());
+                VanityUrl v = new VanityUrl();
+                v.setSite(targetNode.getResolveSite().getSiteKey());
+                addOrUpdateVanity(v, vanityUrl.isActive(), vanityUrl.isDefaultMapping(), vanityUrl.getLanguage(), vanityUrl.getUrl());
             } catch (GqlConstraintViolationException e) {
                 errors.put(vanityUrl.getUrl(), e.getExtensions());
+            } catch (RepositoryException e) {
+                throw new JahiaRuntimeException(e);
             }
         }
         if (!errors.isEmpty()) {

@@ -63,6 +63,7 @@ import java.util.*;
 public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
 
     private static final String SITE_NAME = "graphql_test_vanity";
+    private static final String SITE_NAME_OTHER = "graphql_test_vanity_other";
 
     private static JCRSessionWrapper session;
     private static VanityUrlService vanityUrlService;
@@ -268,7 +269,32 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             Assert.assertTrue(extensions.has("/vanity1"));
             Assert.assertTrue(extensions.has("/vanity2"));
 
+            TestHelper.createSite(SITE_NAME_OTHER);
+            JCRNodeWrapper page0 = createPage("page0", SITE_NAME_OTHER);
+            session.save();
+
+            executeQuery("mutation {\n" +
+                    "  jcr {\n" +
+                    "    mutateNode(pathOrId: \"" +  page0.getPath() + "\") {\n" +
+                    "      vanity: addVanityUrl(vanityUrlInputList: [{defaultMapping: " + v1.isDefaultMapping() +
+                    ", active: " + v1.isActive()  + ", url: \"" + v1.getUrl() + "\" " +
+                    ", language: \"" + v1.getLanguage() + "\"},\n" +
+                    "      {defaultMapping: " + v2.isDefaultMapping() +
+                    ", active: " + v2.isActive()  + ", url: \"" + v2.getUrl() + "\" " +
+                    ", language: \"" + v2.getLanguage() + "\"}])\n" +
+                    "    }  \n" +
+                    "  }" +
+                    "}");
+
+            List<VanityUrl> otherVanityUrls = vanityUrlService.getVanityUrls(page0, null, session);
+            Assert.assertEquals(2, otherVanityUrls.size());
+            VanityUrl otherVanity1 = otherVanityUrls.stream().filter((v)->v.getUrl().equals("/vanity1")).findFirst().get();
+            VanityUrl otherVanity2 = otherVanityUrls.stream().filter((v)->v.getUrl().equals("/vanity2")).findFirst().get();
+            Assert.assertTrue("Vanity url is not active", otherVanity2.isActive());
+            Assert.assertTrue("Vanity url is not default", otherVanity1.isDefaultMapping());
+
         } finally {
+            session.getNode("/sites/" + SITE_NAME_OTHER).remove();
             session.getNode(getPagePath("page10")).remove();
             session.save();
         }
@@ -524,6 +550,14 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
         page1.setProperty("j:templateName", "simple");
         page1.setProperty("jcr:title", page);
     }
+
+    private static JCRNodeWrapper createPage(String page, String siteName) throws Exception {
+        JCRNodeWrapper page1 = session.getNode("/sites/" + siteName +  "/home").addNode(page, "jnt:page");
+        page1.setProperty("j:templateName", "simple");
+        page1.setProperty("jcr:title", page);
+        return page1;
+    }
+
 
     private static VanityUrl createVanity(boolean isActive, boolean isDefault, String url) {
         VanityUrl vanityUrl = new VanityUrl();
