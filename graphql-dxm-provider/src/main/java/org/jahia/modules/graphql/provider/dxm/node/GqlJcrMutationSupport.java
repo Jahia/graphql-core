@@ -43,18 +43,17 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import javax.jcr.PropertyType;
-import javax.jcr.RepositoryException;
-import javax.jcr.Value;
-
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
+
+import javax.jcr.PropertyType;
+import javax.jcr.RepositoryException;
+import javax.jcr.Value;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Contains resources commonly used by GraphQL JCR mutations internally.
@@ -68,7 +67,7 @@ public class GqlJcrMutationSupport {
      * @param node GraphQL representation of the child node to be added
      * @return The child JCR node that was added
      */
-    protected static JCRNodeWrapper addNode(JCRNodeWrapper parent, GqlJcrNodeInput node) {
+    public static JCRNodeWrapper addNode(JCRNodeWrapper parent, GqlJcrNodeInput node) {
         JCRNodeWrapper jcrNode;
         try {
             jcrNode = parent.addNode(node.getName(), node.getPrimaryNodeType());
@@ -98,7 +97,7 @@ public class GqlJcrMutationSupport {
      * @param Properties the collection of properties to be set
      * @return The result of the operation, containing list of modified JCR properties
      */
-    protected static List<JCRPropertyWrapper> setProperties(JCRNodeWrapper node, Collection<GqlJcrPropertyInput> properties) {
+    public static List<JCRPropertyWrapper> setProperties(JCRNodeWrapper node, Collection<GqlJcrPropertyInput> properties) {
         try {
             List<JCRPropertyWrapper> result = new ArrayList<>();
             for (GqlJcrPropertyInput property : properties) {
@@ -129,7 +128,7 @@ public class GqlJcrMutationSupport {
      * @param pathOrId The string with either node UUID or its path
      * @return The requested JCR node
      */
-    protected static JCRNodeWrapper getNodeFromPathOrId(JCRSessionWrapper session, String pathOrId) {
+    public static JCRNodeWrapper getNodeFromPathOrId(JCRSessionWrapper session, String pathOrId) {
         try {
             return ('/' == pathOrId.charAt(0) ? session.getNode(pathOrId) : session.getNodeByIdentifier(pathOrId));
         } catch (RepositoryException e) {
