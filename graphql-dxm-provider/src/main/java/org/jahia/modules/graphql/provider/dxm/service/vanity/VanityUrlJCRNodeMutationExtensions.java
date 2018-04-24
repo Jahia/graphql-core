@@ -44,18 +44,28 @@
 package org.jahia.modules.graphql.provider.dxm.service.vanity;
 
 import graphql.annotations.annotationTypes.*;
+import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.GqlConstraintViolationException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.osgi.BundleUtils;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.seo.jcr.VanityUrlService;
 
+import javax.jcr.RepositoryException;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @GraphQLTypeExtension(GqlJcrNodeMutation.class)
 @GraphQLName("VanityUrlJCRNodeMutationExtensions")
-public class VanityUrlJCRNodeMutationExtensions  extends GqlJcrMutationSupport {
+public class VanityUrlJCRNodeMutationExtensions {
 
+    private JCRNodeWrapper node;
+    private VanityUrlService vanityUrlService;
     private VanityUrlMutationService vanityUrlMutationService;
 
     /**
@@ -64,7 +74,9 @@ public class VanityUrlJCRNodeMutationExtensions  extends GqlJcrMutationSupport {
      * @param node the corresponding GraphQL node
      */
     public VanityUrlJCRNodeMutationExtensions(GqlJcrNodeMutation node) {
-        this.vanityUrlMutationService = new VanityUrlMutationService(node.getNode().getNode(), BundleUtils.getOsgiService(VanityUrlService.class, null));
+        this.vanityUrlService = BundleUtils.getOsgiService(VanityUrlService.class, null);
+        this.node = node.getNode().getNode();
+        this.vanityUrlMutationService = new VanityUrlMutationService(this.node, vanityUrlService);
     }
 
     /**
@@ -77,7 +89,53 @@ public class VanityUrlJCRNodeMutationExtensions  extends GqlJcrMutationSupport {
     @GraphQLField
     @GraphQLDescription("Add vanity URL")
     @GraphQLName("addVanityUrl")
-    public boolean addVanityUrl(@GraphQLName("vanityUrlInputList") @GraphQLNonNull @GraphQLDescription("The list of vanity url to create") List<GqlJcrVanityUrlInput> vanityUrlInputList) throws GqlConstraintViolationException {
-        return vanityUrlMutationService.add(vanityUrlInputList);
+    public Collection<GqlVanityUrlMappingMutation>  addVanityUrl(@GraphQLName("vanityUrlInputList") @GraphQLNonNull @GraphQLDescription("The list of vanity url to create") List<GqlJcrVanityUrlInput> vanityUrlInputList) throws GqlConstraintViolationException {
+        vanityUrlMutationService.add(vanityUrlInputList);
+
+        try {
+            JCRSessionWrapper session = node.getSession();
+            return vanityUrlService.getVanityUrls(node, null, session).stream()
+                    .filter(u -> vanityUrlInputList.stream().anyMatch(input-> u.getUrl().equals(input.getUrl())))
+                    .map(u -> new GqlVanityUrlMappingMutation(GqlJcrMutationSupport.getNodeFromPathOrId(session, u.getIdentifier())))
+                    .collect(Collectors.toList());
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
     }
+
+    /**
+     * Update a vanity URL
+     */
+    @GraphQLField
+    @GraphQLDescription("Update a vanity URL")
+    @GraphQLName("mutateVanityUrl")
+    public Optional<GqlVanityUrlMappingMutation> mutateVanityUrl(@GraphQLName("url") @GraphQLNonNull @GraphQLDescription("The url to edit") String url) {
+        try {
+            JCRSessionWrapper session = node.getSession();
+            return vanityUrlService.getVanityUrls(node, null, session).stream()
+                    .filter(u -> url.equals(u.getUrl()))
+                    .map(u -> new GqlVanityUrlMappingMutation(GqlJcrMutationSupport.getNodeFromPathOrId(session, u.getIdentifier())))
+                    .findFirst();
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
+    }
+
+    /**
+     * Update vanity URLs
+     */
+    @GraphQLField
+    @GraphQLDescription("Update vanity URLs")
+    @GraphQLName("mutateVanityUrls")
+    public Collection<GqlVanityUrlMappingMutation> mutateVanityUrls(@GraphQLName("languages") @GraphQLDescription("Filter by languages") Collection<String> languages) throws GqlJcrWrongInputException {
+        try {
+            JCRSessionWrapper session = node.getSession();
+            return vanityUrlService.getVanityUrls(node, null, session).stream()
+                    .filter(u -> (languages == null || languages.contains(u.getLanguage())))
+                    .map(u -> new GqlVanityUrlMappingMutation(GqlJcrMutationSupport.getNodeFromPathOrId(session, u.getIdentifier()))).collect(Collectors.toList());
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
+    }
+
 }

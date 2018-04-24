@@ -83,8 +83,6 @@ public class VanityUrlJCRNodeExtensions {
      * Get vanity URLs from the current node filtered by the parameters.
      *
      * @param languages a collection of languages to retrieve the corresponding vanity URLs
-     * @param onlyActive if <code>true</code>, get only active vanity URLs
-     * @param onlyDefault if <code>true</code>, get only default vanity URLs
      * @return a collection of matching vanity URLs
      */
     @GraphQLField

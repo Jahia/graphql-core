@@ -48,7 +48,10 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.GqlConstraintViolationException;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRContentUtils;
@@ -86,6 +89,17 @@ public class GqlVanityUrlMappingMutation {
             throw new JahiaRuntimeException(e);
         }
     }
+
+    @GraphQLField
+    @GraphQLDescription("Get the identifier of the node currently being mutated")
+    public String getUuid() throws BaseGqlClientException {
+        try {
+            return vanityUrlNode.getIdentifier();
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+    }
+
 
     /**
      * Update the vanity URL.
@@ -153,6 +167,36 @@ public class GqlVanityUrlMappingMutation {
         }
     }
 
+    /**
+     * Deletes the current vanity url.
+     *
+     * @return operation result
+     * @throws BaseGqlClientException in case of an error during node delete operation
+     */
+    @GraphQLField
+    @GraphQLDescription("Deletes the current vanity url")
+    public boolean delete() {
+        try {
+            vanityUrlService.removeVanityUrlMapping(targetNode, getVanityUrlObject());
+
+            return true;
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
+    }
+
+    /**
+     * Get mutation on underlying node
+     *
+     * @return A node mutation object
+     * @throws BaseGqlClientException in case of an error during node delete operation
+     */
+    @GraphQLField
+    @GraphQLDescription("Get mutation on underlying node")
+    public GqlJcrNodeMutation getNodeMutation() {
+        return new GqlJcrNodeMutation(vanityUrlNode);
+    }
+
     private VanityUrl getVanityUrlObject() throws RepositoryException {
         List<VanityUrl> vanityUrls = vanityUrlService.getVanityUrls(targetNode, null, vanityUrlNode.getSession());
         for (VanityUrl vanityUrl : vanityUrls) {
@@ -163,10 +207,4 @@ public class GqlVanityUrlMappingMutation {
         throw new IllegalStateException("Vanity URL node not found by UUID: " + vanityUrlNode.getIdentifier());
     }
 
-    private void cleanVanityUrlParentNodes(JCRNodeWrapper vanityUrlParentNode) throws RepositoryException {
-        if (vanityUrlParentNode.getNodes().getSize() == 0) {
-            vanityUrlParentNode.getParent().removeMixin(VanityUrlManager.JAHIAMIX_VANITYURLMAPPED);
-            vanityUrlParentNode.remove();
-        }
-    }
 }
