@@ -86,27 +86,30 @@ public class FilterHelper {
         CONTAINS,
 
         @GraphQLDescription("The property value contains given String ignoring the case")
-        CONTAINS_IGNORE_CASE
+        CONTAINS_IGNORE_CASE,
+
+        @GraphQLDescription("The property value is among given Strings")
+        AMONG
     }
 
     private static HashMap<FieldEvaluation, FieldEvaluationAlgorithm> ALGORITHM_BY_EVALUATION = new HashMap<>();
 
     @FunctionalInterface
     interface FieldEvaluationAlgorithm {
-        boolean evaluate(Object source, String fieldName, String fieldValue, FieldEvaluator environment);
+        boolean evaluate(Object source, String fieldName, String fieldValue, Collection<String> fieldValues, FieldEvaluator environment);
     }
 
     static {
-        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.EQUAL, ((source, fieldName, fieldValue, environment) -> {
+        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.EQUAL, ((source, fieldName, fieldValue, fieldValues, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
             return value != null && value.toString().equals(fieldValue);
         }));
 
-        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.DIFFERENT, ((source, fieldName, fieldValue, environment) ->
-                !ALGORITHM_BY_EVALUATION.get(FieldEvaluation.EQUAL).evaluate(source, fieldName, fieldValue, environment)
+        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.DIFFERENT, ((source, fieldName, fieldValue, fieldValues, environment) ->
+            !ALGORITHM_BY_EVALUATION.get(FieldEvaluation.EQUAL).evaluate(source, fieldName, fieldValue, fieldValues, environment)
         ));
 
-        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.EMPTY, ((source, fieldName, fieldValue, environment) -> {
+        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.EMPTY, ((source, fieldName, fieldValue, fieldValues, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
             if (value instanceof Connection) {
                 return ((Connection<?>) value).getEdges().size() == 0;
@@ -117,45 +120,58 @@ public class FilterHelper {
             }
         }));
 
-        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.NOT_EMPTY, ((source, fieldName, fieldValue, environment) ->
-                !ALGORITHM_BY_EVALUATION.get(FieldEvaluation.EMPTY).evaluate(source, fieldName, fieldValue, environment)
+        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.NOT_EMPTY, ((source, fieldName, fieldValue, fieldValues, environment) ->
+            !ALGORITHM_BY_EVALUATION.get(FieldEvaluation.EMPTY).evaluate(source, fieldName, fieldValue, fieldValues, environment)
         ));
 
-        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.CONTAINS, ((source, fieldName, fieldValue, environment) -> {
+        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.CONTAINS, ((source, fieldName, fieldValue, fieldValues, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
             return value != null && StringUtils.contains(value.toString(), fieldValue);
         }));
 
-        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.CONTAINS_IGNORE_CASE, ((source, fieldName, fieldValue, environment) -> {
+        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.CONTAINS_IGNORE_CASE, ((source, fieldName, fieldValue, fieldValues, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
             return value != null && StringUtils.containsIgnoreCase(value.toString(), fieldValue);
+        }));
+
+        ALGORITHM_BY_EVALUATION.put(FieldEvaluation.AMONG, ((source, fieldName, fieldValue, fieldValues, environment) -> {
+            Object value = environment.getFieldValue(source, fieldName);
+            return value != null && fieldValues.contains(value.toString());
         }));
     }
 
     /**
-     * Get a predicate based on the value of a sub field evaluation
+     * Get a predicate based on evaluation of parameter field filters
      */
-    public static Predicate<Object> getFieldPredicate(FieldFiltersInput fieldFilters, FieldEvaluator environment) {
+    public static Predicate<Object> getFieldPredicate(FieldFiltersInput filters, FieldEvaluator environment) {
         Predicate<Object> fieldPredicate;
-        if (fieldFilters == null) {
+        if (filters == null) {
             fieldPredicate = PredicateHelper.truePredicate();
         } else {
             LinkedList<Predicate<Object>> predicates = new LinkedList<>();
-            for (FieldFilterInput fieldFilter : fieldFilters.getFilters()) {
-                FieldEvaluation evaluation = fieldFilter.getEvaluation();
-                if (evaluation == null) {
-                    evaluation = FieldEvaluation.EQUAL;
-                }
-                FieldEvaluationAlgorithm evaluationAlgorithm = ALGORITHM_BY_EVALUATION.get(evaluation);
-                if (evaluationAlgorithm == null) {
-                    throw new IllegalArgumentException("Unknown field evaluation: " + evaluation);
-                }
-
-                predicates.add(object -> evaluationAlgorithm.evaluate(object, fieldFilter.getFieldName(), fieldFilter.getValue(), environment));
+            for (FieldFilterInput filter : filters.getFilters()) {
+                predicates.add(getFieldPredicate(filter, environment));
             }
-            fieldPredicate = PredicateHelper.getCombinedPredicate(predicates, fieldFilters.getMulticriteriaEvaluation(), MulticriteriaEvaluation.ALL);
+            fieldPredicate = PredicateHelper.getCombinedPredicate(predicates, filters.getMulticriteriaEvaluation(), MulticriteriaEvaluation.ALL);
         }
         return fieldPredicate;
+    }
+
+    private static Predicate<Object> getFieldPredicate(FieldFilterInput filter, FieldEvaluator environment) {
+        FieldFiltersInput subFilter = filter.getFieldFilter();
+        if (subFilter == null) {
+            FieldEvaluation evaluation = filter.getEvaluation();
+            if (evaluation == null) {
+                evaluation = FieldEvaluation.EQUAL;
+            }
+            FieldEvaluationAlgorithm evaluationAlgorithm = ALGORITHM_BY_EVALUATION.get(evaluation);
+            if (evaluationAlgorithm == null) {
+                throw new IllegalArgumentException("Unknown field evaluation: " + evaluation);
+            }
+            return (object -> evaluationAlgorithm.evaluate(object, filter.getFieldName(), filter.getValue(), filter.getValues(), environment));
+        } else {
+            return getFieldPredicate(subFilter, environment);
+        }
     }
 
     public static <T> List<T> filterList(List<T> list, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
