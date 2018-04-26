@@ -85,6 +85,10 @@ public class GraphQLTestSupport extends JahiaTestCase {
                 session.getNode("/testList").remove();
                 session.save();
             }
+            if (session.itemExists("/testList1")) {
+                session.getNode("/testList1").remove();
+                session.save();
+            }
             return null;
         });
     }

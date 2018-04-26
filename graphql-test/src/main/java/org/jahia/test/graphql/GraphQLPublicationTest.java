@@ -43,10 +43,10 @@
  */
 package org.jahia.test.graphql;
 
-import javax.jcr.PathNotFoundException;
-
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRPublicationService;
 import org.jahia.services.content.JCRTemplate;
 import org.json.JSONObject;
 import org.junit.AfterClass;
@@ -54,9 +54,11 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.jcr.PathNotFoundException;
+
 public class GraphQLPublicationTest extends GraphQLTestSupport {
 
-    private static final long TIMEOUT_WAITING_FOR_PUBLICATION = 60000;
+    private static final long TIMEOUT_WAITING_FOR_PUBLICATION = 5000;
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
@@ -65,6 +67,15 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
 
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
             session.getNode("/").addNode("testList", "jnt:contentList");
+            session.save();
+
+            JCRNodeWrapper testlist1 = session.getNode("/").addNode("testList1", "jnt:contentList");
+            JCRNodeWrapper content1 = testlist1.addNode("text1", "jnt:text");
+            JCRNodeWrapper content2 = testlist1.addNode("text2", "jnt:text");
+            session.save();
+            JCRPublicationService.getInstance().publishByMainId(testlist1.getIdentifier());
+            content1.addMixin("jmix:cache");
+            content2.remove();
             session.save();
             return null;
         });
@@ -157,5 +168,48 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
             } while (true);
             return null;
         });
+    }
+
+    @Test
+    public void shouldPublishOneNde() throws Exception {
+        JSONObject result = executeQuery(""
+                + "mutation {"
+                + "    jcr {"
+                + "        mutateNode(pathOrId: \"/testList1\") {"
+                + "            publish(nodeOnly: true)"
+                + "        }"
+                + "    }"
+                + "}"
+        );
+
+        JSONObject mutationResult = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode");
+        Assert.assertTrue(mutationResult.getBoolean("publish"));
+
+        // Wait until the node is published via a background job.
+        long startedWaitingAt = System.currentTimeMillis();
+        do {
+            if (System.currentTimeMillis() - startedWaitingAt > TIMEOUT_WAITING_FOR_PUBLICATION) {
+                Assert.fail("Timeout waiting for node to be published");
+            }
+            if (JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.LIVE_WORKSPACE, null, session -> {
+                try {
+                    session.getNode("/testList1/text2");
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new JahiaRuntimeException(e);
+                    }
+                    return false;
+                } catch (PathNotFoundException e) {
+                    JCRNodeWrapper text1 = session.getNode("/testList1/text1");
+                    Assert.assertTrue(text1 != null && !text1.isNodeType("jmix:cache"));
+                    Assert.assertTrue(!session.nodeExists("/testList1/text2"));
+                    return true;
+                }
+            })) {
+                break;
+            }
+        } while (true);
     }
 }
