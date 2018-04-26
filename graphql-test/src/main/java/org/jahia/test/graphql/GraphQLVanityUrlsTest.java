@@ -241,7 +241,7 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
                     ", language: \"" + v1.getLanguage() + "\"},\n" +
                     "      {defaultMapping: " + v2.isDefaultMapping() +
                     ", active: " + v2.isActive()  + ", url: \"" + v2.getUrl() + "\" " +
-                    ", language: \"" + v2.getLanguage() + "\"}])\n" +
+                    ", language: \"" + v2.getLanguage() + "\"}]) { uuid }\n" +
                     "    }  \n" +
                     "  }" +
                     "}");
@@ -262,7 +262,7 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
                     ", language: \"" + v1.getLanguage() + "\"},\n" +
                     "      {defaultMapping: " + v2.isDefaultMapping() +
                     ", active: " + v2.isActive()  + ", url: \"" + v2.getUrl() + "\" " +
-                    ", language: \"" + v2.getLanguage() + "\"}])\n" +
+                    ", language: \"" + v2.getLanguage() + "\"}]) { uuid }\n" +
                     "    }  \n" +
                     "  }" +
                     "}");
@@ -282,7 +282,7 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
                     ", language: \"" + v1.getLanguage() + "\"},\n" +
                     "      {defaultMapping: " + v2.isDefaultMapping() +
                     ", active: " + v2.isActive()  + ", url: \"" + v2.getUrl() + "\" " +
-                    ", language: \"" + v2.getLanguage() + "\"}])\n" +
+                    ", language: \"" + v2.getLanguage() + "\"}]) { uuid }\n" +
                     "    }  \n" +
                     "  }" +
                     "}");
