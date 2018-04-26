@@ -47,15 +47,19 @@ package org.jahia.modules.graphql.provider.dxm.publication;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import org.apache.commons.lang.BooleanUtils;
+import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.osgi.BundleUtils;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.ComplexPublicationService;
+import org.jahia.services.content.*;
+import org.jahia.services.scheduler.BackgroundJob;
+import org.jahia.services.scheduler.SchedulerService;
+import org.quartz.JobDataMap;
+import org.quartz.JobDetail;
+import org.quartz.SchedulerException;
 
 import javax.jcr.RepositoryException;
 import java.util.Collection;
@@ -84,24 +88,45 @@ public class PublicationJCRNodeMutationExtension extends PublicationJCRExtension
      * Publish the node in certain languages.
      *
      * @param languages Languages to publish the node in
+     * @param nodeOnly if true, publish only the node in
      * @return Always true
      */
     @GraphQLField
     @GraphQLDescription("Publish the node in certain languages")
-    public boolean publish(@GraphQLName("languages") @GraphQLDescription("Languages to publish the node in") Collection<String> languages) {
+    public boolean publish(@GraphQLName("languages") @GraphQLDescription("Languages to publish the node in") Collection<String> languages,
+                           @GraphQLName("nodeOnly") @GraphQLDescription("if true publish the specified node only") Boolean nodeOnly) {
 
         ComplexPublicationService publicationService = BundleUtils.getOsgiService(ComplexPublicationService.class, null);
+        SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
 
         String uuid;
+        String path;
         JCRSessionWrapper session;
         try {
-            uuid = nodeMutation.getNode().getNode().getIdentifier();
+            JCRNodeWrapper nodeToPublish = nodeMutation.getNode().getNode();
+            uuid = nodeToPublish.getIdentifier();
+            path = nodeToPublish.getPath();
             session = JCRSessionFactory.getInstance().getCurrentUserSession();
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
 
-        publicationService.publish(Collections.singleton(uuid), languages, session);
+        if (BooleanUtils.isTrue(nodeOnly)) {
+            JobDetail jobDetail = BackgroundJob.createJahiaJob("Publication", PublicationJob.class);
+            JobDataMap jobDataMap = jobDetail.getJobDataMap();
+            jobDataMap.put(PublicationJob.PUBLICATION_UUIDS, Collections.singletonList(uuid));
+            jobDataMap.put(PublicationJob.PUBLICATION_PATHS, Collections.singletonList(path));
+            jobDataMap.put(PublicationJob.SOURCE, Constants.EDIT_WORKSPACE);
+            jobDataMap.put(PublicationJob.DESTINATION, Constants.LIVE_WORKSPACE);
+            jobDataMap.put(PublicationJob.CHECK_PERMISSIONS, true);
+            try {
+                schedulerService.scheduleJobNow(jobDetail);
+            } catch (SchedulerException e) {
+                throw new JahiaRuntimeException(e);
+            }
+        } else {
+            publicationService.publish(Collections.singleton(uuid), languages, session);
+        }
 
         return true;
     }
