@@ -44,15 +44,13 @@
  */
 package org.jahia.modules.graphql.provider.dxm.publication;
 
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import graphql.annotations.annotationTypes.*;
 import org.apache.commons.lang.BooleanUtils;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
+import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.*;
 import org.jahia.services.scheduler.BackgroundJob;
@@ -88,13 +86,13 @@ public class PublicationJCRNodeMutationExtension extends PublicationJCRExtension
      * Publish the node in certain languages.
      *
      * @param languages Languages to publish the node in
-     * @param nodeOnly if true, publish only the node in
+     * @param publishSubNodes Publish all sub and related nodes. Default is true.
      * @return Always true
      */
     @GraphQLField
     @GraphQLDescription("Publish the node in certain languages")
     public boolean publish(@GraphQLName("languages") @GraphQLDescription("Languages to publish the node in") Collection<String> languages,
-                           @GraphQLName("nodeOnly") @GraphQLDescription("if true publish the specified node only") Boolean nodeOnly) {
+                           @GraphQLName("publishSubNodes") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) @GraphQLDescription("Publish all sub and related nodes. Default is true.") Boolean publishSubNodes) {
 
         ComplexPublicationService publicationService = BundleUtils.getOsgiService(ComplexPublicationService.class, null);
         SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
@@ -111,7 +109,7 @@ public class PublicationJCRNodeMutationExtension extends PublicationJCRExtension
             throw new JahiaRuntimeException(e);
         }
 
-        if (BooleanUtils.isTrue(nodeOnly)) {
+        if (BooleanUtils.isFalse(publishSubNodes)) {
             JobDetail jobDetail = BackgroundJob.createJahiaJob("Publication", PublicationJob.class);
             JobDataMap jobDataMap = jobDetail.getJobDataMap();
             jobDataMap.put(PublicationJob.PUBLICATION_UUIDS, Collections.singletonList(uuid));

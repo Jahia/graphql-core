@@ -176,7 +176,7 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
                 + "mutation {"
                 + "    jcr {"
                 + "        mutateNode(pathOrId: \"/testList1\") {"
-                + "            publish(nodeOnly: true)"
+                + "            publish(publishSubNodes: false)"
                 + "        }"
                 + "    }"
                 + "}"
