@@ -42,7 +42,6 @@ package org.jahia.modules.graphql.provider.dxm.service.vanity;
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-import org.apache.commons.lang.StringUtils;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.GqlConstraintViolationException;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -124,7 +123,7 @@ class VanityUrlMutationService {
                 vanityUrl.setLanguage(language);
             }
             if (url != null) {
-                vanityUrl.setUrl(StringUtils.stripEnd(StringUtils.startsWith(url, "/") ? url : '/' + url, "/"));
+                vanityUrl.setUrl(url);
             }
             vanityUrlService.saveVanityUrlMapping(targetNode, vanityUrl, false);
         } catch (NonUniqueUrlMappingException e) {

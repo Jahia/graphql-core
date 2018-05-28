@@ -51,6 +51,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.seo.VanityUrl;
+import org.jahia.services.seo.jcr.NonUniqueUrlMappingException;
 import org.jahia.services.seo.jcr.VanityUrlService;
 import org.jahia.test.TestHelper;
 import org.json.JSONArray;
@@ -271,6 +272,25 @@ public class GraphQLVanityUrlsTest extends GraphQLTestSupport {
             Assert.assertTrue(extensions.has("/vanity1"));
             Assert.assertTrue(extensions.has("/vanity2"));
 
+            result = executeQuery("mutation {\n" +
+                    "  jcr {\n" +
+                    "    mutateNode(pathOrId: \"" +  getPagePath("page10") + "\") {\n" +
+                    "      vanity: addVanityUrl(vanityUrlInputList: [{defaultMapping: " + v1.isDefaultMapping() +
+                    ", active: " + v1.isActive()  + ", url: \"/" + v1.getUrl() + "\" " +
+                    ", language: \"" + v1.getLanguage() + "\"},\n" +
+                    "      {defaultMapping: " + v2.isDefaultMapping() +
+                    ", active: " + v2.isActive()  + ", url: \"" + v2.getUrl() + "/\" " +
+                    ", language: \"" + v2.getLanguage() + "\"}]) { uuid }\n" +
+                    "    }  \n" +
+                    "  }" +
+                    "}");
+
+            extensions = ((JSONObject) result.getJSONArray("errors").get(0)).getJSONObject("extensions");
+            Assert.assertTrue(extensions.has("//vanity1"));
+            Assert.assertEquals(NonUniqueUrlMappingException.class.getName(), ((JSONObject)extensions.get("//vanity1")).get("type"));
+            Assert.assertTrue(extensions.has("/vanity2/"));
+            Assert.assertEquals(NonUniqueUrlMappingException.class.getName(), ((JSONObject)extensions.get("/vanity2/")).get("type"));
+            
             JCRNodeWrapper page0 = createPage("page0", SITE_NAME_OTHER);
             session.save();
 
