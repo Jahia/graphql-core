@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -60,38 +60,39 @@ public class BundleScanner {
 
     public static <T> Collection<Class<? extends T>> getClasses(Object context, Class<? extends Annotation> annotation) {
         List<Class<? extends T>> classes = new ArrayList<>();
-        try {
-            String packageName = context.getClass().getPackage().getName();
-            String path = packageName.replace('.', '/');
-            Bundle bundle = (Bundle) PropertyUtils.getProperty(context.getClass().getClassLoader(), "bundle");
-            findClasses(path, annotation, classes, bundle);
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-            logger.warn("Cannot scan classes from " + context + " classpath", e);
-        }
+        String packageName = context.getClass().getPackage().getName();
+        String path = packageName.replace('.', '/');
+        findClasses(path, annotation, classes, context.getClass().getClassLoader());
+
         return classes;
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> void findClasses(String path, Class<? extends Annotation> annotation, List<Class<? extends T>> classes, Bundle bundle) {
-        Enumeration<String> items = bundle.getEntryPaths(path);
-        if (items != null) {
-            while (items.hasMoreElements()) {
-                String subpath = items.nextElement();
-                if (subpath.endsWith(".class")) {
-                    if (!subpath.contains("$")) {
-                        try {
-                            Class<?> c = Class.forName(subpath.substring(0, subpath.length() - 6).replace('/', '.'));
-                            if (c.isAnnotationPresent(annotation)) {
-                                classes.add((Class<? extends T>) c);
+    private static <T> void findClasses(String path, Class<? extends Annotation> annotation, List<Class<? extends T>> classes, ClassLoader classLoader) {
+        try {
+            Bundle bundle = (Bundle) PropertyUtils.getProperty(classLoader, "bundle");
+            Enumeration<String> items = bundle.getEntryPaths(path);
+            if (items != null) {
+                while (items.hasMoreElements()) {
+                    String subpath = items.nextElement();
+                    if (subpath.endsWith(".class")) {
+                        if (!subpath.contains("$")) {
+                            try {
+                                Class<?> c = Class.forName(subpath.substring(0, subpath.length() - 6).replace('/', '.'), true, classLoader);
+                                if (c.isAnnotationPresent(annotation)) {
+                                    classes.add((Class<? extends T>) c);
+                                }
+                            } catch (ClassNotFoundException e) {
+                                logger.warn("Cannot load class " + subpath);
                             }
-                        } catch (ClassNotFoundException e) {
-                            logger.warn("Cannot load class " + subpath);
                         }
+                    } else {
+                        findClasses(subpath, annotation, classes, classLoader);
                     }
-                } else {
-                    findClasses(subpath, annotation, classes, bundle);
                 }
             }
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            logger.warn("Cannot scan classes from " + classLoader + " classpath", e);
         }
     }
 }
