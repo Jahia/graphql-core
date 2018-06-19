@@ -96,7 +96,7 @@ public class GqlSearch {
             QueryManager queryManager = getSession().getWorkspace().getQueryManager();
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
             Selector source = factory.selector(queryInput.getNodeType(), "nodeType");
-            //orderings and constraints are not used for now
+            //orderings and constraints are not used for now, TODO with BACKLOG-8027
             QueryObjectModel queryObjectModel = factory.createQuery(source, null, null, null);
             NodeIterator res = queryObjectModel.execute().getNodes();
             while(res.hasNext()){
