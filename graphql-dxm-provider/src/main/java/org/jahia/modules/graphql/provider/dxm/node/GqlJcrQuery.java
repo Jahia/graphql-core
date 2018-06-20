@@ -271,9 +271,9 @@ public class GqlJcrQuery {
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
             Selector source = factory.selector(queryInput.getNodeType(), "nodeType");
             //get base Paths constraint
-            Constraint constraintPath = getBasePathConstraintTree("nodeType", queryInput.getBasePaths(), factory);
+            Constraint constraintTree = getBasePathConstraintTree("nodeType", queryInput.getBasePaths(), factory);
             //orderings and constraints are not used for now, TODO with BACKLOG-8027
-            QueryObjectModel queryObjectModel = factory.createQuery(source, constraintPath, null, null);
+            QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
             NodeIterator res = queryObjectModel.execute().getNodes();
             while(res.hasNext()){
                 JCRNodeWrapper node = (JCRNodeWrapper)res.nextNode();
@@ -300,6 +300,8 @@ public class GqlJcrQuery {
                     (selector, ((List) basePaths).get(1).toString()));
             return constraint;
         }else {
+            constraint = factory.or(factory.descendantNode(selector, ((List) basePaths).get(0).toString()), factory.descendantNode
+                    (selector, ((List) basePaths).get(1).toString()));
             for (int i = 2; i < basePaths.size(); i++) {
                 constraint = factory.or(constraint, factory.descendantNode(selector, ((List) basePaths).get(i).toString()));
             }
