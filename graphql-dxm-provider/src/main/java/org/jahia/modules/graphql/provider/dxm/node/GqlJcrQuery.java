@@ -53,12 +53,18 @@ import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
+import org.jahia.modules.graphql.provider.dxm.search.JCRNodesQueryInput;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
 
+import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
+import javax.jcr.query.QueryManager;
+import javax.jcr.query.qom.QueryObjectModel;
+import javax.jcr.query.qom.QueryObjectModelFactory;
+import javax.jcr.query.qom.Selector;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -240,6 +246,46 @@ public class GqlJcrQuery {
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
+    }
+
+    /**
+     *
+     * @param queryInput object containing query criteria
+     * @param environment the execution content instance
+     * @return GraphQL representations of nodes selected according to the query supplied
+     */
+    @GraphQLField
+    @GraphQLDescription("handles query nodes with QOM factory")
+    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    public DXPaginatedData<GqlJcrNode> getNodesByCriteria(@GraphQLName("queryInput") @GraphQLNonNull @GraphQLDescription("query input object")
+            JCRNodesQueryInput queryInput, @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values")
+            FieldFiltersInput fieldFilter, DataFetchingEnvironment environment){
+
+        return getNodesFromQueryObjectModel(queryInput, environment, fieldFilter);
+    }
+
+    private DXPaginatedData<GqlJcrNode> getNodesFromQueryObjectModel(JCRNodesQueryInput queryInput, DataFetchingEnvironment environment,
+            FieldFiltersInput fieldFilter){
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
+        List<GqlJcrNode> result = new LinkedList<>();
+        try {
+            QueryManager queryManager = getSession().getWorkspace().getQueryManager();
+            QueryObjectModelFactory factory = queryManager.getQOMFactory();
+            Selector source = factory.selector(queryInput.getNodeType(), "nodeType");
+            //orderings and constraints are not used for now, TODO with BACKLOG-8027
+            QueryObjectModel queryObjectModel = factory.createQuery(source, null, null, null);
+            NodeIterator res = queryObjectModel.execute().getNodes();
+            while(res.hasNext()){
+                JCRNodeWrapper node = (JCRNodeWrapper)res.nextNode();
+                if (PermissionHelper.hasPermission(node, environment)) {
+                    result.add(SpecializedTypesHandler.getNode(node));
+                }
+            }
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+        return PaginationHelper.paginate(FilterHelper.filterConnection(result, fieldFilter, environment), n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
+
     }
 
     private GqlJcrNode getGqlNodeByPath(String path) throws RepositoryException {

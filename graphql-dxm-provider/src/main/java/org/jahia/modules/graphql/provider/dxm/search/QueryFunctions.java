@@ -25,6 +25,7 @@ package org.jahia.modules.graphql.provider.dxm.search;
 
 /**
  * Query functions
+ * TODO : complete javaDoc
  */
 public enum QueryFunctions {
 

@@ -27,88 +27,83 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
- * Short description of the class
+ * Criteria input passed to the getNodesByCriteria graphql field
+ * contains attributes required for the query
+ * nodeType can't be empty
  *
  * @author yousria
  */
 public class JCRNodesQueryInput {
 
     private String nodeType;
-    private List<String> basePaths;
+    private Collection<String> basePaths;
     private boolean includeDescendants;
     private Constraint constraint;
     private List<String> ordering;
     private String language;
 
-    public JCRNodesQueryInput(@GraphQLName("nodeType") @GraphQLDescription("type of node") String nodeType,
-            @GraphQLName("basePaths") @GraphQLDescription("paths") List<String> basePaths,
-            @GraphQLName("includeDescendants") @GraphQLDescription("include or not descendants") boolean includeDescendants,
-            @GraphQLName("constraint") @GraphQLDescription("object for constraints") Constraint constraint,
-            @GraphQLName("ordering") @GraphQLDescription("orderings") List<String> ordering,
+    /**
+     * TODO : review what's required here and put the @GraphQLNonNull, for now only nodeType is required
+     * @param nodeType
+     * @param basePaths
+     * @param includeDescendants
+     * //@param constraint
+     * @param ordering
+     * @param language
+     */
+    public JCRNodesQueryInput(@GraphQLName("nodeType") @GraphQLDescription("type of nodes to query") String nodeType,
+            @GraphQLName("basePaths") @GraphQLDescription("paths of nodes queried") List<String> basePaths,
+            @GraphQLName("includeDescendants") @GraphQLDescription("include or not descendants of nodes queried") boolean includeDescendants,
+            //@GraphQLName("constraint") @GraphQLDescription("constraint object for the where clause") Constraint constraint,
+            @GraphQLName("ordering") @GraphQLDescription("orderings strategies") List<String> ordering,
             @GraphQLName("language") @GraphQLDescription("language") String language) {
 
         this.nodeType = nodeType;
         this.basePaths = basePaths;
         this.includeDescendants = includeDescendants;
-        this.constraint = constraint;
+        //this.constraint = constraint;
         this.ordering = ordering;
         this.language = language;
     }
 
     @GraphQLField
+    @GraphQLDescription("type of nodes to query")
     public String getNodeType() {
         return nodeType;
     }
 
-    public void setNodeType(String nodeType) {
-        this.nodeType = nodeType;
-    }
-
     @GraphQLField
-    public List<String> getBasePaths() {
+    @GraphQLDescription("paths of nodes queried")
+    public Collection<String> getBasePaths() {
         return basePaths;
     }
 
-    public void setBasePaths(List<String> basePaths) {
-        this.basePaths = basePaths;
-    }
-
     @GraphQLField
+    @GraphQLDescription("include or not descendants of nodes queried")
     public boolean isIncludeDescendants() {
         return includeDescendants;
     }
 
-    public void setIncludeDescendants(boolean includeDescendants) {
-        this.includeDescendants = includeDescendants;
-    }
-
-    @GraphQLField
+    //TODO : uncomment after implementing the Constraint Object
+    /*@GraphQLField
+    @GraphQLDescription("constraint object for the where clause")
     public Constraint getConstraint() {
         return constraint;
-    }
-
-    public void setConstraint(Constraint constraint) {
-        this.constraint = constraint;
-    }
+    }*/
 
     @GraphQLField
+    @GraphQLDescription("orderings strategies")
     public List<String> getOrdering() {
         return ordering;
     }
 
-    public void setOrdering(List<String> ordering) {
-        this.ordering = ordering;
-    }
-
     @GraphQLField
+    @GraphQLDescription("language")
     public String getLanguage() {
         return language;
-    }
-
-    public void setLanguage(String language) {
-        this.language = language;
     }
 }
