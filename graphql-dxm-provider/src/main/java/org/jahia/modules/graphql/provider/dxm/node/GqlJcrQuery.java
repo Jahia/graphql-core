@@ -53,7 +53,6 @@ import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
-import org.jahia.modules.graphql.provider.dxm.search.JCRNodesQueryInput;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
@@ -266,7 +265,7 @@ public class GqlJcrQuery {
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
             Selector source = factory.selector(queryInput.getNodeType(), "nodeType");
             //get base Paths constraint
-            Constraint constraintTree = getConstraintTree("nodeType", queryInput.getBasePaths(), factory);
+            javax.jcr.query.qom.Constraint constraintTree = getConstraintTree("nodeType", queryInput.getBasePaths(), factory);
             //orderings and constraints are not used for now, TODO with BACKLOG-8027
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
             NodeIterator res = queryObjectModel.execute().getNodes();
@@ -282,10 +281,10 @@ public class GqlJcrQuery {
         return PaginationHelper.paginate(FilterHelper.filterConnection(result, fieldFilter, environment), n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
     }
 
-    private Constraint getConstraintTree(String selector, Collection<String> basePaths, QueryObjectModelFactory factory)
+    private javax.jcr.query.qom.Constraint getConstraintTree(String selector, Collection<String> basePaths, QueryObjectModelFactory factory)
             throws RepositoryException {
         Iterator<String> basePathIt = basePaths.iterator();
-        Constraint constraint = factory.descendantNode(selector, basePathIt.next());
+        javax.jcr.query.qom.Constraint constraint = factory.descendantNode(selector, basePathIt.next());
         while (basePathIt.hasNext()) {
             constraint = factory.or(constraint, factory.descendantNode(selector, basePathIt.next()));
         }
