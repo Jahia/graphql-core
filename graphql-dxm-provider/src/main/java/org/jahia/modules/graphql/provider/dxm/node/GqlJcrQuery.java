@@ -217,13 +217,14 @@ public class GqlJcrQuery {
      * @throws BaseGqlClientException In case of issues executing the query
      */
     @GraphQLField
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("Get GraphQL representations of nodes using a query language supported by JCR")
-    public DXPaginatedData<GqlJcrNode> getNodesByQuery(@GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
-                                                       @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage,
-                                                       @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
-                                                       DataFetchingEnvironment environment)
-            throws BaseGqlClientException {
+    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    public DXPaginatedData<GqlJcrNode> getNodesByQuery(
+            @GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
+            @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage,
+            @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+            DataFetchingEnvironment environment
+    ) throws BaseGqlClientException {
         try {
             PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
             List<GqlJcrNode> result = new LinkedList<>();
@@ -244,6 +245,7 @@ public class GqlJcrQuery {
     }
 
     /**
+     * Get GraphQL representations of nodes using a constraint object.
      *
      * @param queryInput object containing query criteria
      * @param environment the execution content instance
@@ -252,15 +254,11 @@ public class GqlJcrQuery {
     @GraphQLField
     @GraphQLDescription("handles query nodes with QOM factory")
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
-    public DXPaginatedData<GqlJcrNode> getNodesByCriteria(@GraphQLName("queryInput") @GraphQLNonNull @GraphQLDescription("query input object")
-            JCRNodesQueryInput queryInput, @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values")
-            FieldFiltersInput fieldFilter, DataFetchingEnvironment environment){
-
-        return getNodesFromQueryObjectModel(queryInput, environment, fieldFilter);
-    }
-
-    private DXPaginatedData<GqlJcrNode> getNodesFromQueryObjectModel(JCRNodesQueryInput queryInput, DataFetchingEnvironment environment,
-            FieldFiltersInput fieldFilter){
+    public DXPaginatedData<GqlJcrNode> getNodesByCriteria(
+        @GraphQLName("queryInput") @GraphQLNonNull @GraphQLDescription("query input object") JCRNodesQueryInput queryInput,
+        @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+        DataFetchingEnvironment environment
+    ) throws BaseGqlClientException {
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         List<GqlJcrNode> result = new LinkedList<>();
         try {
@@ -282,7 +280,6 @@ public class GqlJcrQuery {
             throw new DataFetchingException(e);
         }
         return PaginationHelper.paginate(FilterHelper.filterConnection(result, fieldFilter, environment), n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
-
     }
 
     private Constraint getConstraintTree(String selector, Collection<String> basePaths, QueryObjectModelFactory factory)
@@ -314,5 +311,4 @@ public class GqlJcrQuery {
             return SQL2;
         }
     }
-
 }

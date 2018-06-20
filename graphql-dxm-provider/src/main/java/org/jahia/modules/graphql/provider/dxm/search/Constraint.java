@@ -26,7 +26,7 @@ package org.jahia.modules.graphql.provider.dxm.search;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 
 /**
- * Constraint Object passed to que JCRNodesQueryInput to getNodesByCriteria
+ * Constraint object passed to the JCRNodesQueryInput to getNodesByCriteria
  * TODO : Implement this class with the task related : BACKLOG-8027
  *
  * @author yousria

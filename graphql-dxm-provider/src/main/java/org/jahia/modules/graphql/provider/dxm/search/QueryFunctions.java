@@ -23,12 +23,11 @@
  */
 package org.jahia.modules.graphql.provider.dxm.search;
 
-/**
- * Query functions
- * TODO : complete javaDoc
- */
+// TODO: complete JavaDoc
 public enum QueryFunctions {
 
-    LOWER_CASE, UPPER_CASE, NODE_NAME, NODE_LOCAL_NAME
-
+    LOWER_CASE,
+    UPPER_CASE,
+    NODE_NAME,
+    NODE_LOCAL_NAME
 }

@@ -33,7 +33,6 @@ import java.util.List;
 /**
  * Criteria input passed to the getNodesByCriteria graphql field
  * contains attributes required for the query
- * nodeType can't be empty
  *
  * @author yousria
  */
@@ -88,7 +87,7 @@ public class JCRNodesQueryInput {
         return includeDescendants;
     }
 
-    //TODO : uncomment after implementing the Constraint Object
+    // TODO: uncomment after implementing the Constraint Object
     /*@GraphQLField
     @GraphQLDescription("constraint object for the where clause")
     public Constraint getConstraint() {
