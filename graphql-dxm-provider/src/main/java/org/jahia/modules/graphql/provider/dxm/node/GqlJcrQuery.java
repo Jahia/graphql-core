@@ -63,10 +63,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.qom.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLanguage.SQL2;
@@ -271,7 +268,7 @@ public class GqlJcrQuery {
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
             Selector source = factory.selector(queryInput.getNodeType(), "nodeType");
             //get base Paths constraint
-            Constraint constraintTree = getBasePathConstraintTree("nodeType", queryInput.getBasePaths(), factory);
+            Constraint constraintTree = getConstraintTree("nodeType", queryInput.getBasePaths(), factory);
             //orderings and constraints are not used for now, TODO with BACKLOG-8027
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
             NodeIterator res = queryObjectModel.execute().getNodes();
@@ -288,25 +285,14 @@ public class GqlJcrQuery {
 
     }
 
-    private Constraint getBasePathConstraintTree(String selector, Collection<String> basePaths, QueryObjectModelFactory factory)
+    private Constraint getConstraintTree(String selector, Collection<String> basePaths, QueryObjectModelFactory factory)
             throws RepositoryException {
-        Or constraint = null;
-        if(basePaths == null || basePaths.size() == 0){
-            return constraint;
-        }else if (basePaths.size() == 1) {
-            return factory.descendantNode(selector, ((List) basePaths).get(0).toString());
-        }else if(basePaths.size() == 2) {
-            constraint = factory.or(factory.descendantNode(selector, ((List) basePaths).get(0).toString()), factory.descendantNode
-                    (selector, ((List) basePaths).get(1).toString()));
-            return constraint;
-        }else {
-            constraint = factory.or(factory.descendantNode(selector, ((List) basePaths).get(0).toString()), factory.descendantNode
-                    (selector, ((List) basePaths).get(1).toString()));
-            for (int i = 2; i < basePaths.size(); i++) {
-                constraint = factory.or(constraint, factory.descendantNode(selector, ((List) basePaths).get(i).toString()));
-            }
-            return constraint;
+        Iterator<String> basePathIt = basePaths.iterator();
+        Constraint constraint = factory.descendantNode(selector, basePathIt.next());
+        while (basePathIt.hasNext()) {
+            constraint = factory.or(constraint, factory.descendantNode(selector, basePathIt.next()));
         }
+        return constraint;
     }
 
     private GqlJcrNode getGqlNodeByPath(String path) throws RepositoryException {
