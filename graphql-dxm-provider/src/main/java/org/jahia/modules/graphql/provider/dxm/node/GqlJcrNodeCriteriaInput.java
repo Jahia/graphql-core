@@ -71,7 +71,7 @@ public class GqlJcrNodeCriteriaInput {
     private String nodeType;
     private Collection<String> basePaths;
     private boolean includeDescendants;
-//    private NodeConstraint constraint;
+//    private NodeConstraint nodeConstraint;
     private List<String> ordering;
     private String language;
 
@@ -81,7 +81,7 @@ public class GqlJcrNodeCriteriaInput {
      * @param nodeType The type of nodes to fetch
      * @param basePaths
      * @param includeDescendants
-     * //@param constraint
+     * //@param nodeConstraint
      * @param ordering
      * @param language
      */
@@ -89,14 +89,14 @@ public class GqlJcrNodeCriteriaInput {
         @GraphQLName("nodeType") @GraphQLNonNull @GraphQLDescription("The type of nodes to fetch") String nodeType,
         @GraphQLName("basePaths") @GraphQLDescription("paths of nodes queried") List<String> basePaths,
         @GraphQLName("includeDescendants") @GraphQLDescription("include or not descendants of nodes queried") boolean includeDescendants,
-//        @GraphQLName("constraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") Constraint constraint,
+//        @GraphQLName("nodeConstraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") NodeConstraint nodeConstraint,
         @GraphQLName("ordering") @GraphQLDescription("ordering strategies") List<String> ordering,
         @GraphQLName("language") @GraphQLDescription("language") String language)
     {
         this.nodeType = nodeType;
         this.basePaths = basePaths;
         this.includeDescendants = includeDescendants;
-//        this.constraint = constraint;
+//        this.nodeConstraint = nodeConstraint;
         this.ordering = ordering;
         this.language = language;
     }
@@ -129,7 +129,7 @@ public class GqlJcrNodeCriteriaInput {
 //    @GraphQLField
 //    @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties")
 //    public NodeConstraint getNodeConstraint() {
-//        return constraint;
+//        return nodeConstraint;
 //    }
 
     @GraphQLField

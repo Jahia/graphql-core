@@ -105,7 +105,7 @@ public class GraphQLQueryTest extends GraphQLTestSupport {
 
     @Test
     public void shouldRetrieveNodesByCriteria() throws JSONException {
-        String criteria = "{nodeType: \"jnt:contentList\", includeDescendants:false, basePaths:[\"/testList/\"]}";
+        String criteria = "{nodeType: \"jnt:contentList\", includeDescendants: false, basePaths: [\"/testList/\"]}";
         testQueryByCriteria(criteria, 7);
     }
 
@@ -113,7 +113,7 @@ public class GraphQLQueryTest extends GraphQLTestSupport {
         return executeQuery(""
                 + "{"
                 + "    jcr {"
-                + "        nodesByCriteria(queryInput: " + criteria + ") {"
+                + "        nodesByCriteria(criteria: " + criteria + ") {"
                 + "            nodes {"
                 + "              name "
                 + "            }"

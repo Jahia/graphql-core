@@ -211,6 +211,7 @@ public class GqlJcrQuery {
      *
      * @param query The query string
      * @param queryLanguage The query language
+     * @param fieldFilter Filter by GraphQL field values
      * @param environment the execution content instance
      * @return GraphQL representations of nodes selected according to the query supplied
      * @throws BaseGqlClientException In case of issues executing the query
@@ -247,30 +248,31 @@ public class GqlJcrQuery {
      * Get GraphQL representations of nodes using a criteria object.
      *
      * @param criteria The criteria to fetch nodes by
+     * @param fieldFilter Filter by GraphQL field values
      * @param environment The execution context
      * @return GraphQL representations of nodes fetched
+     * @throws BaseGqlClientException In case of issues fetching nodes
      */
     @GraphQLField
     @GraphQLDescription("handles query nodes with QOM factory")
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     public DXPaginatedData<GqlJcrNode> getNodesByCriteria(
-        @GraphQLName("queryInput") @GraphQLNonNull @GraphQLDescription("query input object") GqlJcrNodeCriteriaInput criteria,
-        @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+        @GraphQLName("criteria") @GraphQLNonNull @GraphQLDescription("The criteria to fetch nodes by") GqlJcrNodeCriteriaInput criteria,
+        @GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL field values") FieldFiltersInput fieldFilter,
         DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
+
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         List<GqlJcrNode> result = new LinkedList<>();
         try {
             QueryManager queryManager = getSession().getWorkspace().getQueryManager();
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
             Selector source = factory.selector(criteria.getNodeType(), "nodeType");
-            //get base Paths constraint
             javax.jcr.query.qom.Constraint constraintTree = getConstraintTree("nodeType", criteria.getBasePaths(), factory);
-            //orderings and constraints are not used for now, TODO with BACKLOG-8027
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
-            NodeIterator res = queryObjectModel.execute().getNodes();
-            while(res.hasNext()){
-                JCRNodeWrapper node = (JCRNodeWrapper)res.nextNode();
+            NodeIterator it = queryObjectModel.execute().getNodes();
+            while (it.hasNext()) {
+                JCRNodeWrapper node = (JCRNodeWrapper) it.nextNode();
                 if (PermissionHelper.hasPermission(node, environment)) {
                     result.add(SpecializedTypesHandler.getNode(node));
                 }
