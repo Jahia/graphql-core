@@ -265,10 +265,12 @@ public class GqlJcrQuery {
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         List<GqlJcrNode> result = new LinkedList<>();
         try {
-            QueryManager queryManager = getSession().getWorkspace().getQueryManager();
+            QueryManager queryManager = getInternationalizedSessionIfNeeded(criteria).getWorkspace().getQueryManager();
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
             Selector source = factory.selector(criteria.getNodeType(), "nodeType");
-            javax.jcr.query.qom.Constraint constraintTree = getConstraintTree("nodeType", criteria.getBasePaths(), factory);
+            //get base Paths constraint
+            javax.jcr.query.qom.Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory);
+            //orderings and constraints are not used for now, TODO with BACKLOG-8027
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
             while (it.hasNext()) {
@@ -283,12 +285,15 @@ public class GqlJcrQuery {
         return PaginationHelper.paginate(FilterHelper.filterConnection(result, fieldFilter, environment), n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
     }
 
-    private javax.jcr.query.qom.Constraint getConstraintTree(String selector, Collection<String> basePaths, QueryObjectModelFactory factory)
+    private javax.jcr.query.qom.Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput queryInput, QueryObjectModelFactory factory)
             throws RepositoryException {
-        Iterator<String> basePathIt = basePaths.iterator();
-        javax.jcr.query.qom.Constraint constraint = factory.descendantNode(selector, basePathIt.next());
-        while (basePathIt.hasNext()) {
-            constraint = factory.or(constraint, factory.descendantNode(selector, basePathIt.next()));
+        javax.jcr.query.qom.Constraint constraint = null;
+        if(queryInput.getBasePaths() != null) {
+            Iterator<String> basePathIt = queryInput.getBasePaths().iterator();
+            constraint = factory.descendantNode(selector, basePathIt.next());
+            while (basePathIt.hasNext()) {
+                constraint = factory.or(constraint, factory.descendantNode(selector, basePathIt.next()));
+            }
         }
         return constraint;
     }
@@ -302,6 +307,13 @@ public class GqlJcrQuery {
     }
 
     private JCRSessionWrapper getSession() throws RepositoryException {
+        return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue());
+    }
+
+    private JCRSessionWrapper getInternationalizedSessionIfNeeded(GqlJcrNodeCriteriaInput criteria) throws RepositoryException {
+        if(criteria.getLanguage() != null){
+            return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue(), new Locale(criteria.getLanguage()));
+        }
         return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue());
     }
 
