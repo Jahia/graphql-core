@@ -83,7 +83,7 @@ public class GqlJcrNodeCriteriaInput {
      * @param includeDescendants
      * //@param nodeConstraint
      * @param ordering
-     * @param language
+     * @param language Language to access node properties in; must be a valid language code in case any internationalized properties are analyzed or fetched, does not matter for non-internationalized ones
      */
     public GqlJcrNodeCriteriaInput(
         @GraphQLName("nodeType") @GraphQLNonNull @GraphQLDescription("The type of nodes to fetch") String nodeType,
@@ -91,7 +91,7 @@ public class GqlJcrNodeCriteriaInput {
         @GraphQLName("includeDescendants") @GraphQLDescription("include or not descendants of nodes queried") boolean includeDescendants,
 //        @GraphQLName("nodeConstraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") NodeConstraint nodeConstraint,
         @GraphQLName("ordering") @GraphQLDescription("ordering strategies") List<String> ordering,
-        @GraphQLName("language") @GraphQLDescription("language") String language)
+        @GraphQLName("language") @GraphQLDescription("Language to access node properties in; must be a valid language code in case any internationalized properties are analyzed or fetched, does not matter for non-internationalized ones") String language)
     {
         this.nodeType = nodeType;
         this.basePaths = basePaths;
@@ -138,8 +138,11 @@ public class GqlJcrNodeCriteriaInput {
         return ordering;
     }
 
+    /**
+     * @return Language to access node properties in
+     */
     @GraphQLField
-    @GraphQLDescription("language")
+    @GraphQLDescription("Language to access node properties in")
     public String getLanguage() {
         return language;
     }

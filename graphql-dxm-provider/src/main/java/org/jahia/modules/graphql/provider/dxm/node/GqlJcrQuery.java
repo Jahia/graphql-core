@@ -266,12 +266,10 @@ public class GqlJcrQuery {
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         List<GqlJcrNode> result = new LinkedList<>();
         try {
-            QueryManager queryManager = getInternationalizedSessionIfNeeded(criteria).getWorkspace().getQueryManager();
+            QueryManager queryManager = getSession(criteria.getLanguage()).getWorkspace().getQueryManager();
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
             Selector source = factory.selector(criteria.getNodeType(), "nodeType");
-            //get base Paths constraint
-            javax.jcr.query.qom.Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory);
-            //orderings and constraints are not used for now, TODO with BACKLOG-8027
+            Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory);
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
             while (it.hasNext()) {
@@ -286,9 +284,9 @@ public class GqlJcrQuery {
         return PaginationHelper.paginate(FilterHelper.filterConnection(result, fieldFilter, environment), n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
     }
 
-    private javax.jcr.query.qom.Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory)
+    private static Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory)
             throws RepositoryException {
-        javax.jcr.query.qom.Constraint constraint = null;
+        Constraint constraint = null;
         if (criteria.getBasePaths() != null) {
             Iterator<String> basePathIt = criteria.getBasePaths().iterator();
             constraint = factory.descendantNode(selector, basePathIt.next());
@@ -311,15 +309,12 @@ public class GqlJcrQuery {
         return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue());
     }
 
-    private JCRSessionWrapper getInternationalizedSessionIfNeeded(GqlJcrNodeCriteriaInput criteria) throws RepositoryException {
-        try {
-            if (criteria.getLanguage() != null) {
-                return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue(), LocaleUtils.toLocale(criteria.getLanguage()));
-            }
-            return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue());
-        }catch (IllegalArgumentException e){
-            throw new DataFetchingException(e);
+    private JCRSessionWrapper getSession(String language) throws RepositoryException {
+        if (language == null) {
+            return getSession();
         }
+        Locale locale = LocaleUtils.toLocale(language);
+        return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue(), locale);
     }
 
     public static class QueryLanguageDefaultValue implements Supplier<Object> {
