@@ -115,7 +115,7 @@ public class GraphQLQueryTest extends GraphQLTestSupport {
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: " + criteria + ") {"
                 + "            nodes {"
-                + "              name "
+                + "                name "
                 + "            }"
                 + "	       }"
                 + "    }"
@@ -131,10 +131,10 @@ public class GraphQLQueryTest extends GraphQLTestSupport {
                 + "                node {"
                 + "                    name"
                 + "                }"
-                + "		       }"
+                + "	           }"
                 + "        }"
                 + "    }"
-                 + "}");
+                + "}");
     }
 
     private static void testQuery(String query, GqlJcrQuery.QueryLanguage language, long expectedNodesNumber) throws JSONException {
