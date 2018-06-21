@@ -285,11 +285,11 @@ public class GqlJcrQuery {
         return PaginationHelper.paginate(FilterHelper.filterConnection(result, fieldFilter, environment), n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
     }
 
-    private javax.jcr.query.qom.Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput queryInput, QueryObjectModelFactory factory)
+    private javax.jcr.query.qom.Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory)
             throws RepositoryException {
         javax.jcr.query.qom.Constraint constraint = null;
-        if(queryInput.getBasePaths() != null) {
-            Iterator<String> basePathIt = queryInput.getBasePaths().iterator();
+        if (criteria.getBasePaths() != null) {
+            Iterator<String> basePathIt = criteria.getBasePaths().iterator();
             constraint = factory.descendantNode(selector, basePathIt.next());
             while (basePathIt.hasNext()) {
                 constraint = factory.or(constraint, factory.descendantNode(selector, basePathIt.next()));
