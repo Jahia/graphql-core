@@ -99,50 +99,52 @@ public class GraphQLQueryTest extends GraphQLTestSupport {
 
     @Test
     public void shouldGetErrorNotRetrieveNodesByWrongQuery() throws Exception {
-        JSONObject result = runQuery("slct from [jnt:contentList]", GqlJcrQuery.QueryLanguage.SQL2);
+        JSONObject result = runJcrNativeQuery("slct from [jnt:contentList]", GqlJcrQuery.QueryLanguage.SQL2);
         validateError(result, "javax.jcr.query.InvalidQueryException: Query:\nslct(*)from [jnt:contentList]; expected: SELECT");
     }
 
     @Test
-    public void shouldRetrieveNodesByQueryCriteria() throws JSONException {
+    public void shouldRetrieveNodesByCriteria() throws JSONException {
         String criteria = "{nodeType: \"jnt:contentList\", includeDescendants:false, basePaths:[\"/testList/\"]}";
         testQueryByCriteria(criteria, 7);
     }
 
-    private static JSONObject runQueryWithCriteria(String criteria) throws JSONException {
-        return executeQuery("{"
+    private static JSONObject runCriteriaQuery(String criteria) throws JSONException {
+        return executeQuery(""
+                + "{"
                 + "    jcr {"
-                + "    nodesByCriteria(queryInput: " + criteria + ") {"
+                + "        nodesByCriteria(queryInput: " + criteria + ") {"
                 + "            nodes {"
                 + "              name "
                 + "            }"
-                + "		  }"
+                + "	       }"
                 + "    }"
                 + "}");
     }
 
-    private static JSONObject runQuery(String query, GqlJcrQuery.QueryLanguage language) throws JSONException {
-        return executeQuery("{"
-                          + "    jcr {"
-                          + "    nodesByQuery(query: \"" + query + "\", queryLanguage: " + language.name() + ") {"
-                          + "        edges {"
-                          + "            node {"
-                          + "                name"
-                          + "            }"
-                          + "		  }"
-                          + "    }"
-                          + "    }"
-                          + "}");
+    private static JSONObject runJcrNativeQuery(String query, GqlJcrQuery.QueryLanguage language) throws JSONException {
+        return executeQuery(""
+                + "{"
+                + "    jcr {"
+                + "        nodesByQuery(query: \"" + query + "\", queryLanguage: " + language.name() + ") {"
+                + "            edges {"
+                + "                node {"
+                + "                    name"
+                + "                }"
+                + "		       }"
+                + "        }"
+                + "    }"
+                 + "}");
     }
 
     private static void testQuery(String query, GqlJcrQuery.QueryLanguage language, long expectedNodesNumber) throws JSONException {
-        JSONObject result = runQuery(query, language);
+        JSONObject result = runJcrNativeQuery(query, language);
         JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByQuery").getJSONArray("edges");
         Assert.assertEquals(expectedNodesNumber, nodes.length());
     }
 
     private static void testQueryByCriteria(String criteria, long expectedNodesNumber) throws JSONException {
-        JSONObject result = runQueryWithCriteria(criteria.toString());
+        JSONObject result = runCriteriaQuery(criteria.toString());
         JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
         Assert.assertEquals(expectedNodesNumber, nodes.length());
     }

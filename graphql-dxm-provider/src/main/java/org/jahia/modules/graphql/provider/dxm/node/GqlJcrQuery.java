@@ -244,17 +244,17 @@ public class GqlJcrQuery {
     }
 
     /**
-     * Get GraphQL representations of nodes using a constraint object.
+     * Get GraphQL representations of nodes using a criteria object.
      *
-     * @param queryInput object containing query criteria
-     * @param environment the execution content instance
-     * @return GraphQL representations of nodes selected according to the query supplied
+     * @param criteria The criteria to fetch nodes by
+     * @param environment The execution context
+     * @return GraphQL representations of nodes fetched
      */
     @GraphQLField
     @GraphQLDescription("handles query nodes with QOM factory")
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     public DXPaginatedData<GqlJcrNode> getNodesByCriteria(
-        @GraphQLName("queryInput") @GraphQLNonNull @GraphQLDescription("query input object") JCRNodesQueryInput queryInput,
+        @GraphQLName("queryInput") @GraphQLNonNull @GraphQLDescription("query input object") GqlJcrNodeCriteriaInput criteria,
         @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
         DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
@@ -263,9 +263,9 @@ public class GqlJcrQuery {
         try {
             QueryManager queryManager = getSession().getWorkspace().getQueryManager();
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
-            Selector source = factory.selector(queryInput.getNodeType(), "nodeType");
+            Selector source = factory.selector(criteria.getNodeType(), "nodeType");
             //get base Paths constraint
-            javax.jcr.query.qom.Constraint constraintTree = getConstraintTree("nodeType", queryInput.getBasePaths(), factory);
+            javax.jcr.query.qom.Constraint constraintTree = getConstraintTree("nodeType", criteria.getBasePaths(), factory);
             //orderings and constraints are not used for now, TODO with BACKLOG-8027
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
             NodeIterator res = queryObjectModel.execute().getNodes();
