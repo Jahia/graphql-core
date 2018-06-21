@@ -46,6 +46,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.lang.LocaleUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
@@ -311,10 +312,14 @@ public class GqlJcrQuery {
     }
 
     private JCRSessionWrapper getInternationalizedSessionIfNeeded(GqlJcrNodeCriteriaInput criteria) throws RepositoryException {
-        if(criteria.getLanguage() != null){
-            return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue(), new Locale(criteria.getLanguage()));
+        try {
+            if (criteria.getLanguage() != null) {
+                return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue(), LocaleUtils.toLocale(criteria.getLanguage()));
+            }
+            return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue());
+        }catch (IllegalArgumentException e){
+            throw new DataFetchingException(e);
         }
-        return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue());
     }
 
     public static class QueryLanguageDefaultValue implements Supplier<Object> {
