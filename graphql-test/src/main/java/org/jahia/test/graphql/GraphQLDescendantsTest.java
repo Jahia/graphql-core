@@ -143,6 +143,33 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
     }
 
     @Test
+    public void shouldRetrieveAllChildNodesByCriteria() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "    nodesByCriteria(criteria:{paths: [\"/testList\"], pathType:PARENT, nodeType:\"jnt:content\"}) {"
+                + "        nodes {"
+                + "            uuid"
+                + "            name"
+                + "            path"
+                + "            parent {"
+                + "                path"
+                + "            }"
+                + "		  }"
+                + "    }"
+                + "    }"
+                + "}");
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
+
+        Assert.assertEquals(4, childByName.size());
+        validateNode(childByName.get("testSubList1"), subNodeUuid1, "testSubList1", "/testList/testSubList1", "/testList");
+        validateNode(childByName.get("testSubList2"), subNodeUuid2, "testSubList2", "/testList/testSubList2", "/testList");
+        validateNode(childByName.get("testSubList3"), subNodeUuid3, "testSubList3", "/testList/testSubList3", "/testList");
+        validateNode(childByName.get("testSubList4"), subNodeUuid4, "testSubList4", "/testList/testSubList4", "/testList");
+    }
+
+    @Test
     public void shouldRetrieveChildNodesByNames() throws Exception {
 
         JSONObject result = executeQuery("{"
