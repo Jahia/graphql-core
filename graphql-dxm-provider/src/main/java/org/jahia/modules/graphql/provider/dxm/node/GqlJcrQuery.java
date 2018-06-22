@@ -286,12 +286,35 @@ public class GqlJcrQuery {
 
     private static Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory)
             throws RepositoryException {
-        Constraint constraint = null;
-        if (criteria.getBasePaths() != null) {
-            Iterator<String> basePathIt = criteria.getBasePaths().iterator();
-            constraint = factory.descendantNode(selector, basePathIt.next());
-            while (basePathIt.hasNext()) {
-                constraint = factory.or(constraint, factory.descendantNode(selector, basePathIt.next()));
+        javax.jcr.query.qom.Constraint constraint = null;
+        if(criteria.getPaths() != null) {
+            Iterator<String> pathsIT = criteria.getPaths().iterator();
+            if(criteria.getPathType() != null) {
+                switch (criteria.getPathType()) {
+                    case PARENT:
+                        constraint = factory.childNode(selector, pathsIT.next());
+                        while (pathsIT.hasNext()) {
+                            constraint = factory.or(constraint, factory.childNode(selector, pathsIT.next()));
+                        }
+                        break;
+                    case ANCESTOR:
+                        constraint = factory.descendantNode(selector, pathsIT.next());
+                        while (pathsIT.hasNext()) {
+                            constraint = factory.or(constraint, factory.descendantNode(selector, pathsIT.next()));
+                        }
+                        break;
+                    case PATH:
+                        constraint = factory.sameNode(selector, pathsIT.next());
+                        while (pathsIT.hasNext()) {
+                            constraint = factory.or(constraint, factory.sameNode(selector, pathsIT.next()));
+                        }
+                        break;
+                }
+            }else{
+                constraint = factory.sameNode(selector, pathsIT.next());
+                while (pathsIT.hasNext()) {
+                    constraint = factory.or(constraint, factory.sameNode(selector, pathsIT.next()));
+                }
             }
         }
         return constraint;

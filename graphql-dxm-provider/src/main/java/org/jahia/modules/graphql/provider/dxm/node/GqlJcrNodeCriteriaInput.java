@@ -69,8 +69,8 @@ public class GqlJcrNodeCriteriaInput {
     }
 
     private String nodeType;
-    private Collection<String> basePaths;
-    private boolean includeDescendants;
+    private Collection<String> paths;
+    private PathType pathType;
 //    private NodeConstraint nodeConstraint;
     private List<String> ordering;
     private String language;
@@ -78,24 +78,24 @@ public class GqlJcrNodeCriteriaInput {
     /**
      * Create a criteria input instance.
      *
-     * @param nodeType The type of nodes to fetch
-     * @param basePaths
-     * @param includeDescendants
+     * @param nodeType The type of nodes to fetch (mandatory)
+     * @param paths paths of nodes we're searching (mandatory)
+     * @param pathType ANCESTOR or PARENT or PATH, if null we query only in the path itself
      * //@param nodeConstraint
      * @param ordering
      * @param language Language to access node properties in; must be a valid language code in case any internationalized properties are analyzed or fetched, does not matter for non-internationalized ones
      */
     public GqlJcrNodeCriteriaInput(
-        @GraphQLName("nodeType") @GraphQLNonNull @GraphQLDescription("The type of nodes to fetch") String nodeType,
-        @GraphQLName("basePaths") @GraphQLDescription("paths of nodes queried") List<String> basePaths,
-        @GraphQLName("includeDescendants") @GraphQLDescription("include or not descendants of nodes queried") boolean includeDescendants,
-//        @GraphQLName("nodeConstraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") NodeConstraint nodeConstraint,
-        @GraphQLName("ordering") @GraphQLDescription("ordering strategies") List<String> ordering,
-        @GraphQLName("language") @GraphQLDescription("Language to access node properties in; must be a valid language code in case any internationalized properties are analyzed or fetched, does not matter for non-internationalized ones") String language)
+            @GraphQLName("nodeType") @GraphQLNonNull @GraphQLDescription("The type of nodes to fetch") String nodeType,
+            @GraphQLName("ordering") @GraphQLDescription("ordering strategies") List<String> ordering,
+            @GraphQLName("pathType") @GraphQLDescription("path type : ANCESTOR, PARENT, PATH") PathType pathType,
+            @GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("ancestor paths of nodes queried") Collection<String> paths,
+            //        @GraphQLName("nodeConstraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") NodeConstraint nodeConstraint,
+            @GraphQLName("language") @GraphQLDescription("language") String language)
     {
         this.nodeType = nodeType;
-        this.basePaths = basePaths;
-        this.includeDescendants = includeDescendants;
+        this.paths = paths;
+        this.pathType = pathType;
 //        this.nodeConstraint = nodeConstraint;
         this.ordering = ordering;
         this.language = language;
@@ -109,18 +109,6 @@ public class GqlJcrNodeCriteriaInput {
     @GraphQLDescription("type of nodes to query")
     public String getNodeType() {
         return nodeType;
-    }
-
-    @GraphQLField
-    @GraphQLDescription("paths of nodes queried")
-    public Collection<String> getBasePaths() {
-        return basePaths;
-    }
-
-    @GraphQLField
-    @GraphQLDescription("include or not descendants of nodes queried")
-    public boolean isIncludeDescendants() {
-        return includeDescendants;
     }
 
 //    /**
@@ -145,5 +133,18 @@ public class GqlJcrNodeCriteriaInput {
     @GraphQLDescription("Language to access node properties in")
     public String getLanguage() {
         return language;
+    }
+
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("paths")
+    public Collection<String> getPaths() {
+        return paths;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("path type : ANCESTOR, PARENT or PATH")
+    public PathType getPathType() {
+        return pathType;
     }
 }
