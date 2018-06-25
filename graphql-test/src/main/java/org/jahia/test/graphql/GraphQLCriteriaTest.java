@@ -133,6 +133,18 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         testQueryByCriteria("{nodeType: \"jnt:contentList\", paths: [\"/testList/\"], pathType: ANCESTOR}", 7);
     }
 
+    @Test
+    public void shouldNotRetrieveNodesByLanguage() throws JSONException {
+        testQueryByCriteria("{nodeType:\"jnt:contentList\", paths:[\"/testList/\"], pathType:ANCESTOR, language:\"da\"}", 0);
+        testQueryByCriteria("{nodeType:\"jnt:contentList\", paths:[\"/testList/\"], pathType:ANCESTOR, language:\"it\"}", 0);
+    }
+
+    @Test
+    public void shouldRetrieveNodesByLanguage() throws JSONException {
+        testQueryByCriteria("{nodeType:\"jnt:contentList\", paths:[\"/testList/\"], pathType:ANCESTOR, language:\"fr\"}", 2);
+        testQueryByCriteria("{nodeType:\"jnt:contentList\", paths:[\"/testList/\"], pathType:ANCESTOR, language:\"en\"}", 2);
+    }
+
     private static JSONObject runCriteriaQuery(String criteria) throws JSONException {
         return executeQuery(""
                 + "{"
