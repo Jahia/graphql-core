@@ -105,12 +105,9 @@ public class GraphQLQueryTest extends GraphQLTestSupport {
 
     @Test
     public void shouldRetrieveNodesByPathCriteria() throws JSONException {
-        String criteria = "{nodeType: \"jnt:contentList\", paths: [\"/testList/\"], pathType:ANCESTOR}";
-        testQueryByCriteria(criteria, 7);
-        String criteria2 = "{nodeType: \"jnt:contentList\", paths: [\"/testList/\"], pathType:PATH}";
-        testQueryByCriteria(criteria2, 1);
-        String criteria3 = "{nodeType: \"jnt:contentList\", paths: [\"/testList/\"], pathType:PARENT}";
-        testQueryByCriteria(criteria3, 4);
+        testQueryByCriteria("{nodeType: \"jnt:contentList\", paths: [\"/testList/\"], pathType: OWN}", 1);
+        testQueryByCriteria("{nodeType: \"jnt:contentList\", paths: [\"/testList/\"], pathType: PARENT}", 4);
+        testQueryByCriteria("{nodeType: \"jnt:contentList\", paths: [\"/testList/\"], pathType: ANCESTOR}", 7);
     }
 
     private static JSONObject runCriteriaQuery(String criteria) throws JSONException {

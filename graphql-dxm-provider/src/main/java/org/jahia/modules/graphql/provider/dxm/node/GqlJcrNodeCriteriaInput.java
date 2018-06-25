@@ -61,6 +61,27 @@ import java.util.List;
 public class GqlJcrNodeCriteriaInput {
 
     /**
+     * Possible meanings of path values passed as a part of the criteria.
+     */
+    public enum PathType {
+
+        /**
+         * The path defines the ancestor of nodes to fetch.
+         */
+        ANCESTOR,
+
+        /**
+         * The path defines the parent of nodes to fetch.
+         */
+        PARENT,
+
+        /**
+         * The path defines own path of the node to fetch.
+         */
+        OWN
+    }
+
+    /**
      * A part of the criteria to filter JCR nodes, specifically by their arbitrary properties.
      */
     @GraphQLDescription("A part of the criteria to filter JCR nodes, specifically by their arbitrary properties")
@@ -69,30 +90,30 @@ public class GqlJcrNodeCriteriaInput {
     }
 
     private String nodeType;
-    private Collection<String> paths;
     private PathType pathType;
+    private Collection<String> paths;
 //    private NodeConstraint nodeConstraint;
-    private List<String> ordering;
     private String language;
+    private List<String> ordering;
 
     /**
      * Create a criteria input instance.
      *
-     * @param nodeType The type of nodes to fetch (mandatory)
-     * @param paths paths of nodes we're searching (mandatory)
-     * @param pathType ANCESTOR or PARENT or PATH, if null we query only in the path itself
+     * @param nodeType The type of nodes to fetch
+     * @param pathType The exact meaning of the paths parameter, null means OWN (default)
+     * @param paths Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter
      * //@param nodeConstraint
-     * @param ordering
      * @param language Language to access node properties in; must be a valid language code in case any internationalized properties are analyzed or fetched, does not matter for non-internationalized ones
+     * @param ordering
      */
     public GqlJcrNodeCriteriaInput(
             @GraphQLName("nodeType") @GraphQLNonNull @GraphQLDescription("The type of nodes to fetch") String nodeType,
-            @GraphQLName("ordering") @GraphQLDescription("ordering strategies") List<String> ordering,
-            @GraphQLName("pathType") @GraphQLDescription("path type : ANCESTOR, PARENT, PATH") PathType pathType,
-            @GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("ancestor paths of nodes queried") Collection<String> paths,
-            //        @GraphQLName("nodeConstraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") NodeConstraint nodeConstraint,
-            @GraphQLName("language") @GraphQLDescription("language") String language)
-    {
+            @GraphQLName("pathType") @GraphQLDescription("The exact meaning of the paths parameter, (OWN by default)") PathType pathType,
+            @GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter") Collection<String> paths,
+//            @GraphQLName("nodeConstraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") NodeConstraint nodeConstraint,
+            @GraphQLName("language") @GraphQLDescription("Language to access node properties in; must be a valid language code in case any internationalized properties are analyzed or fetched, does not matter for non-internationalized ones") String language,
+            @GraphQLName("ordering") @GraphQLDescription("ordering strategies") List<String> ordering
+    ) {
         this.nodeType = nodeType;
         this.paths = paths;
         this.pathType = pathType;
@@ -106,9 +127,28 @@ public class GqlJcrNodeCriteriaInput {
      */
     @GraphQLField
     @GraphQLNonNull
-    @GraphQLDescription("type of nodes to query")
+    @GraphQLDescription("The type of nodes to query")
     public String getNodeType() {
         return nodeType;
+    }
+
+    /**
+     * @return The exact meaning of the paths field, null means OWN (default)
+     */
+    @GraphQLField
+    @GraphQLDescription("The exact meaning of the paths parameter, null means OWN (default)")
+    public PathType getPathType() {
+        return pathType;
+    }
+
+    /**
+     * @return
+     */
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType field")
+    public Collection<String> getPaths() {
+        return paths;
     }
 
 //    /**
@@ -120,12 +160,6 @@ public class GqlJcrNodeCriteriaInput {
 //        return nodeConstraint;
 //    }
 
-    @GraphQLField
-    @GraphQLDescription("ordering strategies")
-    public List<String> getOrdering() {
-        return ordering;
-    }
-
     /**
      * @return Language to access node properties in
      */
@@ -136,15 +170,8 @@ public class GqlJcrNodeCriteriaInput {
     }
 
     @GraphQLField
-    @GraphQLNonNull
-    @GraphQLDescription("paths")
-    public Collection<String> getPaths() {
-        return paths;
-    }
-
-    @GraphQLField
-    @GraphQLDescription("path type : ANCESTOR, PARENT or PATH")
-    public PathType getPathType() {
-        return pathType;
+    @GraphQLDescription("ordering strategies")
+    public List<String> getOrdering() {
+        return ordering;
     }
 }

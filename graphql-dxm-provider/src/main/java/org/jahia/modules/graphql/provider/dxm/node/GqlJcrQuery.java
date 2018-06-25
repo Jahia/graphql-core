@@ -287,33 +287,33 @@ public class GqlJcrQuery {
     private static Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory)
             throws RepositoryException {
         javax.jcr.query.qom.Constraint constraint = null;
-        if(criteria.getPaths() != null) {
-            Iterator<String> pathsIT = criteria.getPaths().iterator();
-            if(criteria.getPathType() != null) {
+        if (criteria.getPaths() != null) {
+            Iterator<String> pathsIt = criteria.getPaths().iterator();
+            if (criteria.getPathType() != null) {
                 switch (criteria.getPathType()) {
                     case PARENT:
-                        constraint = factory.childNode(selector, pathsIT.next());
-                        while (pathsIT.hasNext()) {
-                            constraint = factory.or(constraint, factory.childNode(selector, pathsIT.next()));
+                        constraint = factory.childNode(selector, pathsIt.next());
+                        while (pathsIt.hasNext()) {
+                            constraint = factory.or(constraint, factory.childNode(selector, pathsIt.next()));
                         }
                         break;
                     case ANCESTOR:
-                        constraint = factory.descendantNode(selector, pathsIT.next());
-                        while (pathsIT.hasNext()) {
-                            constraint = factory.or(constraint, factory.descendantNode(selector, pathsIT.next()));
+                        constraint = factory.descendantNode(selector, pathsIt.next());
+                        while (pathsIt.hasNext()) {
+                            constraint = factory.or(constraint, factory.descendantNode(selector, pathsIt.next()));
                         }
                         break;
-                    case PATH:
-                        constraint = factory.sameNode(selector, pathsIT.next());
-                        while (pathsIT.hasNext()) {
-                            constraint = factory.or(constraint, factory.sameNode(selector, pathsIT.next()));
+                    case OWN:
+                        constraint = factory.sameNode(selector, pathsIt.next());
+                        while (pathsIt.hasNext()) {
+                            constraint = factory.or(constraint, factory.sameNode(selector, pathsIt.next()));
                         }
                         break;
                 }
-            }else{
-                constraint = factory.sameNode(selector, pathsIT.next());
-                while (pathsIT.hasNext()) {
-                    constraint = factory.or(constraint, factory.sameNode(selector, pathsIT.next()));
+            } else {
+                constraint = factory.sameNode(selector, pathsIt.next());
+                while (pathsIt.hasNext()) {
+                    constraint = factory.or(constraint, factory.sameNode(selector, pathsIt.next()));
                 }
             }
         }
