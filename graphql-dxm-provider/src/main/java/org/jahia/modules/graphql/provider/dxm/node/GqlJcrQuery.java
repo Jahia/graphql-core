@@ -47,6 +47,12 @@ import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.LocaleUtils;
+import org.apache.jackrabbit.commons.query.qom.Operator;
+import org.apache.jackrabbit.spi.commons.conversion.DefaultNamePathResolver;
+import org.apache.jackrabbit.spi.commons.query.qom.LiteralImpl;
+import org.apache.jackrabbit.spi.commons.query.qom.PropertyValueImpl;
+import org.apache.jackrabbit.spi.commons.query.qom.QOMTreeVisitor;
+import org.apache.jackrabbit.spi.commons.query.qom.StaticOperandImpl;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
@@ -56,10 +62,12 @@ import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFet
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.*;
+import org.jahia.services.content.nodetypes.ValueImpl;
 import org.jahia.services.query.QueryWrapper;
 
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.qom.*;
@@ -266,10 +274,11 @@ public class GqlJcrQuery {
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         List<GqlJcrNode> result = new LinkedList<>();
         try {
-            QueryManager queryManager = getSession(criteria.getLanguage()).getWorkspace().getQueryManager();
+            Session session = getSession(criteria.getLanguage());
+            QueryManager queryManager = session.getWorkspace().getQueryManager();
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
             Selector source = factory.selector(criteria.getNodeType(), "nodeType");
-            Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory);
+            Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory, session);
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
             while (it.hasNext()) {
@@ -284,7 +293,8 @@ public class GqlJcrQuery {
         return PaginationHelper.paginate(FilterHelper.filterConnection(result, fieldFilter, environment), n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
     }
 
-    private static Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory)
+    private static Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory,
+            Session session)
             throws RepositoryException {
         javax.jcr.query.qom.Constraint constraint = null;
         if (criteria.getPaths() != null) {
@@ -315,6 +325,14 @@ public class GqlJcrQuery {
                 while (pathsIt.hasNext()) {
                     constraint = factory.or(constraint, factory.sameNode(selector, pathsIt.next()));
                 }
+            }
+            if(criteria.getLanguage() != null){
+                constraint = factory.and(constraint, factory.propertyExistence(selector, "jcr:language"));
+                Literal value = new LiteralImpl(new DefaultNamePathResolver(session), new ValueImpl(LocaleUtils.toLocale(criteria
+                        .getLanguage()).toString()));
+                constraint = factory.and(constraint, factory.comparison(factory.propertyValue(selector, "jcr:language"), Operator.EQ.toString(),
+                        value));
+
             }
         }
         return constraint;
