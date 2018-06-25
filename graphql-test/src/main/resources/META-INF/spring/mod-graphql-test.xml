@@ -9,7 +9,6 @@
             <list>
                 <value>org.jahia.test.graphql.GraphQLNodeRetrievalTest</value>
                 <value>org.jahia.test.graphql.GraphQLPropertiesTest</value>
-                <value>org.jahia.test.graphql.GraphQLCriteriaTest</value>
                 <value>org.jahia.test.graphql.GraphQLAncestorsTest</value>
                 <value>org.jahia.test.graphql.GraphQLDescendantsTest</value>
                 <value>org.jahia.test.graphql.GraphQLReferencesTest</value>
