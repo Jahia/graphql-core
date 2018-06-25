@@ -103,25 +103,6 @@ public class GraphQLQueryTest extends GraphQLTestSupport {
         validateError(result, "javax.jcr.query.InvalidQueryException: Query:\nslct(*)from [jnt:contentList]; expected: SELECT");
     }
 
-    @Test
-    public void shouldRetrieveNodesByPathCriteria() throws JSONException {
-        testQueryByCriteria("{nodeType: \"jnt:contentList\", paths: [\"/testList/\"], pathType: OWN}", 1);
-        testQueryByCriteria("{nodeType: \"jnt:contentList\", paths: [\"/testList/\"], pathType: PARENT}", 4);
-        testQueryByCriteria("{nodeType: \"jnt:contentList\", paths: [\"/testList/\"], pathType: ANCESTOR}", 7);
-    }
-
-    private static JSONObject runCriteriaQuery(String criteria) throws JSONException {
-        return executeQuery(""
-                + "{"
-                + "    jcr {"
-                + "        nodesByCriteria(criteria: " + criteria + ") {"
-                + "            nodes {"
-                + "                name "
-                + "            }"
-                + "	       }"
-                + "    }"
-                + "}");
-    }
 
     private static JSONObject runJcrNativeQuery(String query, GqlJcrQuery.QueryLanguage language) throws JSONException {
         return executeQuery(""
@@ -144,9 +125,4 @@ public class GraphQLQueryTest extends GraphQLTestSupport {
         Assert.assertEquals(expectedNodesNumber, nodes.length());
     }
 
-    private static void testQueryByCriteria(String criteria, long expectedNodesNumber) throws JSONException {
-        JSONObject result = runCriteriaQuery(criteria.toString());
-        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
-        Assert.assertEquals(expectedNodesNumber, nodes.length());
-    }
 }
