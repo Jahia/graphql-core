@@ -100,20 +100,25 @@ public class GqlJcrNodeCriteriaInput {
      * Create a criteria input instance.
      *
      * @param nodeType The type of nodes to fetch
-     * @param pathType The exact meaning of the paths parameter, null means OWN (default)
-     * @param paths Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter
+     * @param pathType The exact meaning of the paths parameter, null means the default (ANCESTOR)
+     * @param paths Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter; null or empty collection means no path restrictions
      * //@param nodeConstraint
      * @param language Language to access node properties in; must be a valid language code in case any internationalized properties are analyzed or fetched, does not matter for non-internationalized ones
      * @param ordering
      */
     public GqlJcrNodeCriteriaInput(
             @GraphQLName("nodeType") @GraphQLNonNull @GraphQLDescription("The type of nodes to fetch") String nodeType,
-            @GraphQLName("pathType") @GraphQLDescription("The exact meaning of the paths parameter, (OWN by default)") PathType pathType,
-            @GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter") Collection<String> paths,
+            @GraphQLName("pathType") @GraphQLDescription("The exact meaning of the paths parameter, ANCESTOR by default") PathType pathType,
+            @GraphQLName("paths") @GraphQLDescription("Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter; null or empty array means no path restrictions") Collection<String> paths,
 //            @GraphQLName("nodeConstraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") NodeConstraint nodeConstraint,
             @GraphQLName("language") @GraphQLDescription("Language to access node properties in; must be a valid language code in case any internationalized properties are analyzed or fetched, does not matter for non-internationalized ones") String language,
             @GraphQLName("ordering") @GraphQLDescription("ordering strategies") List<String> ordering
     ) {
+
+        if (pathType == null) {
+            pathType = PathType.ANCESTOR;
+        }
+
         this.nodeType = nodeType;
         this.paths = paths;
         this.pathType = pathType;
@@ -133,20 +138,19 @@ public class GqlJcrNodeCriteriaInput {
     }
 
     /**
-     * @return The exact meaning of the paths field, null means OWN (default)
+     * @return The exact meaning of the paths field
      */
     @GraphQLField
-    @GraphQLDescription("The exact meaning of the paths parameter, null means OWN (default)")
+    @GraphQLDescription("The exact meaning of the paths field")
     public PathType getPathType() {
         return pathType;
     }
 
     /**
-     * @return
+     * @return Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType field; null or empty collection means no path restrictions
      */
     @GraphQLField
-    @GraphQLNonNull
-    @GraphQLDescription("Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType field")
+    @GraphQLDescription("Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType field; null or empty collection means no path restrictions")
     public Collection<String> getPaths() {
         return paths;
     }

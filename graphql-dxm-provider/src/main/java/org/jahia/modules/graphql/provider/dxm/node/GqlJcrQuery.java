@@ -50,9 +50,6 @@ import org.apache.commons.lang.LocaleUtils;
 import org.apache.jackrabbit.commons.query.qom.Operator;
 import org.apache.jackrabbit.spi.commons.conversion.DefaultNamePathResolver;
 import org.apache.jackrabbit.spi.commons.query.qom.LiteralImpl;
-import org.apache.jackrabbit.spi.commons.query.qom.PropertyValueImpl;
-import org.apache.jackrabbit.spi.commons.query.qom.QOMTreeVisitor;
-import org.apache.jackrabbit.spi.commons.query.qom.StaticOperandImpl;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
@@ -297,36 +294,33 @@ public class GqlJcrQuery {
             Session session)
             throws RepositoryException {
         javax.jcr.query.qom.Constraint constraint = null;
-        if (criteria.getPaths() != null) {
-            Iterator<String> pathsIt = criteria.getPaths().iterator();
-            if (criteria.getPathType() != null) {
-                switch (criteria.getPathType()) {
-                    case PARENT:
-                        constraint = factory.childNode(selector, pathsIt.next());
-                        while (pathsIt.hasNext()) {
-                            constraint = factory.or(constraint, factory.childNode(selector, pathsIt.next()));
-                        }
-                        break;
-                    case ANCESTOR:
-                        constraint = factory.descendantNode(selector, pathsIt.next());
-                        while (pathsIt.hasNext()) {
-                            constraint = factory.or(constraint, factory.descendantNode(selector, pathsIt.next()));
-                        }
-                        break;
-                    case OWN:
-                        constraint = factory.sameNode(selector, pathsIt.next());
-                        while (pathsIt.hasNext()) {
-                            constraint = factory.or(constraint, factory.sameNode(selector, pathsIt.next()));
-                        }
-                        break;
-                }
-            } else {
-                constraint = factory.sameNode(selector, pathsIt.next());
-                while (pathsIt.hasNext()) {
-                    constraint = factory.or(constraint, factory.sameNode(selector, pathsIt.next()));
-                }
+        GqlJcrNodeCriteriaInput.PathType pathType = criteria.getPathType();
+        Collection<String> paths = criteria.getPaths();
+        if (paths != null && !paths.isEmpty()) {
+            Iterator<String> pathsIt = paths.iterator();
+            switch (pathType) {
+                case ANCESTOR:
+                    constraint = factory.descendantNode(selector, pathsIt.next());
+                    while (pathsIt.hasNext()) {
+                        constraint = factory.or(constraint, factory.descendantNode(selector, pathsIt.next()));
+                    }
+                    break;
+                case PARENT:
+                    constraint = factory.childNode(selector, pathsIt.next());
+                    while (pathsIt.hasNext()) {
+                        constraint = factory.or(constraint, factory.childNode(selector, pathsIt.next()));
+                    }
+                    break;
+                case OWN:
+                    constraint = factory.sameNode(selector, pathsIt.next());
+                    while (pathsIt.hasNext()) {
+                        constraint = factory.or(constraint, factory.sameNode(selector, pathsIt.next()));
+                    }
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown path type: " + pathType);
             }
-            if(criteria.getLanguage() != null){
+            if (criteria.getLanguage() != null) {
                 constraint = factory.and(constraint, factory.propertyExistence(selector, "jcr:language"));
                 Literal value = new LiteralImpl(new DefaultNamePathResolver(session), new ValueImpl(LocaleUtils.toLocale(criteria
                         .getLanguage()).toString()));

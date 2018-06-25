@@ -142,7 +142,6 @@ public class GraphQLDescendantsTest extends GraphQLTestSupport {
         validateNode(childByName.get("testSubList4"), subNodeUuid4, "testSubList4", "/testList/testSubList4", "/testList");
     }
 
-
     @Test
     public void shouldRetrieveChildNodesByNames() throws Exception {
 
