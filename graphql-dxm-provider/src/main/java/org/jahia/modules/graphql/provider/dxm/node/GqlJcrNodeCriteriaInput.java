@@ -103,7 +103,7 @@ public class GqlJcrNodeCriteriaInput {
      * @param pathType The exact meaning of the paths parameter, null means the default (ANCESTOR)
      * @param paths Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter; null or empty collection means no path restrictions
      * //@param nodeConstraint
-     * @param language Language to access node properties in; must be a valid language code in case any internationalized properties are analyzed or fetched, does not matter for non-internationalized ones
+     * @param language Language to access node properties in; must be a valid language code in case any internationalized properties are used for filtering, does not matter for non-internationalized ones
      * @param ordering
      */
     public GqlJcrNodeCriteriaInput(
@@ -111,7 +111,7 @@ public class GqlJcrNodeCriteriaInput {
             @GraphQLName("pathType") @GraphQLDescription("The exact meaning of the paths parameter, ANCESTOR by default") PathType pathType,
             @GraphQLName("paths") @GraphQLDescription("Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter; null or empty array means no path restrictions") Collection<String> paths,
 //            @GraphQLName("nodeConstraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") NodeConstraint nodeConstraint,
-            @GraphQLName("language") @GraphQLDescription("Language to access node properties in; must be a valid language code in case any internationalized properties are analyzed or fetched, does not matter for non-internationalized ones") String language,
+            @GraphQLName("language") @GraphQLDescription("Language to access node properties in; must be a valid language code in case any internationalized properties are used for filtering, does not matter for non-internationalized ones") String language,
             @GraphQLName("ordering") @GraphQLDescription("ordering strategies") List<String> ordering
     ) {
 
