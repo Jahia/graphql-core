@@ -50,7 +50,6 @@ import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -207,36 +206,5 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         validateNode(nodeByName.get("testList"), nodeUuid, "testList", "/testList", "/");
         validateNode(nodeByName.get("testSubList2"), subNodeUuid2, "testSubList2", "/testList/testSubList2", "/testList");
         validateNode(nodeByName.get("testSubList4_2"), subNodeUuid42, "testSubList4_2", "/testList/testSubList4/testSubList4_2", "/testList/testSubList4");
-    }
-
-    @Test
-    public void shouldNotRetrieveNodesByLanguage() throws JSONException {
-        testQueryByCriteria("{nodeType:\"jnt:contentList\", paths:[\"/testList/\"], pathType:ANCESTOR, language:\"da\"}", 0);
-        testQueryByCriteria("{nodeType:\"jnt:contentList\", paths:[\"/testList/\"], pathType:ANCESTOR, language:\"it\"}", 0);
-    }
-
-    @Test
-    public void shouldRetrieveNodesByLanguage() throws JSONException {
-        testQueryByCriteria("{nodeType:\"jnt:contentList\", paths:[\"/testList/\"], pathType:ANCESTOR, language:\"fr\"}", 2);
-        testQueryByCriteria("{nodeType:\"jnt:contentList\", paths:[\"/testList/\"], pathType:ANCESTOR, language:\"en\"}", 2);
-    }
-
-    private static JSONObject runCriteriaQuery(String criteria) throws JSONException {
-        return executeQuery(""
-                + "{"
-                + "    jcr {"
-                + "        nodesByCriteria(criteria: " + criteria + ") {"
-                + "            nodes {"
-                + "                name "
-                + "            }"
-                + "	       }"
-                + "    }"
-                + "}");
-    }
-
-    private static void testQueryByCriteria(String criteria, long expectedNodesNumber) throws JSONException {
-        JSONObject result = runCriteriaQuery(criteria.toString());
-        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
-        Assert.assertEquals(expectedNodesNumber, nodes.length());
     }
 }

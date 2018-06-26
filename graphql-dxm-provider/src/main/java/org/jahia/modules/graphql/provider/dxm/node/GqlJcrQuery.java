@@ -47,9 +47,6 @@ import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.LocaleUtils;
-import org.apache.jackrabbit.commons.query.qom.Operator;
-import org.apache.jackrabbit.spi.commons.conversion.DefaultNamePathResolver;
-import org.apache.jackrabbit.spi.commons.query.qom.LiteralImpl;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
@@ -59,7 +56,6 @@ import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFet
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.*;
-import org.jahia.services.content.nodetypes.ValueImpl;
 import org.jahia.services.query.QueryWrapper;
 
 import javax.jcr.NodeIterator;
@@ -275,7 +271,7 @@ public class GqlJcrQuery {
             QueryManager queryManager = session.getWorkspace().getQueryManager();
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
             Selector source = factory.selector(criteria.getNodeType(), "nodeType");
-            Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory, session);
+            Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory);
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
             while (it.hasNext()) {
@@ -290,9 +286,7 @@ public class GqlJcrQuery {
         return PaginationHelper.paginate(FilterHelper.filterConnection(result, fieldFilter, environment), n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
     }
 
-    private static Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory,
-            Session session)
-            throws RepositoryException {
+    private static Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory) throws RepositoryException {
         javax.jcr.query.qom.Constraint constraint = null;
         GqlJcrNodeCriteriaInput.PathType pathType = criteria.getPathType();
         Collection<String> paths = criteria.getPaths();
@@ -319,14 +313,6 @@ public class GqlJcrQuery {
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown path type: " + pathType);
-            }
-            if (criteria.getLanguage() != null) {
-                constraint = factory.and(constraint, factory.propertyExistence(selector, "jcr:language"));
-                Literal value = new LiteralImpl(new DefaultNamePathResolver(session), new ValueImpl(LocaleUtils.toLocale(criteria
-                        .getLanguage()).toString()));
-                constraint = factory.and(constraint, factory.comparison(factory.propertyValue(selector, "jcr:language"), Operator.EQ.toString(),
-                        value));
-
             }
         }
         return constraint;
