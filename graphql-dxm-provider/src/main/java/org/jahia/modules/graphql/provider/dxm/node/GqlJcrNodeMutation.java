@@ -48,6 +48,7 @@ import graphql.annotations.annotationTypes.*;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 
@@ -195,11 +196,12 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing descendant nodes, based on filters passed as parameter")
     public Collection<GqlJcrNodeMutation> mutateDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") GqlJcrNode.NodeTypesInput typesFilter,
-                                                            @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter)
+                                                            @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput propertiesFilter,
+                                                            @GraphQLName("recurseOnFilteredOutNodes") @GraphQLDescription("Should the recursion go through nodes filtered out") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean recurseOnFilteredOutNodes)
     throws BaseGqlClientException {
         List<GqlJcrNodeMutation> descendants = new LinkedList<>();
         try {
-            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, null), true, descendant -> descendants.add(new GqlJcrNodeMutation(descendant)));
+            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, null), true, recurseOnFilteredOutNodes,  descendant -> descendants.add(new GqlJcrNodeMutation(descendant)));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -223,7 +225,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     throws BaseGqlClientException {
         List<GqlJcrNodeMutation> children = new LinkedList<>();
         try {
-            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, null), false, child -> children.add(new GqlJcrNodeMutation(child)));
+            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, null), false, false, child -> children.add(new GqlJcrNodeMutation(child)));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }

@@ -183,13 +183,14 @@ public class NodeHelper {
         return session.getNodeByIdentifier(node.getIdentifier());
     }
 
-    static void collectDescendants(JCRNodeWrapper node, Predicate<JCRNodeWrapper> predicate, boolean recurse, Consumer<JCRNodeWrapper> consumer) throws RepositoryException {
+    static void collectDescendants(JCRNodeWrapper node, Predicate<JCRNodeWrapper> predicate, boolean recurse, boolean recurseOnFilteredOutNodes, Consumer<JCRNodeWrapper> consumer) throws RepositoryException {
         for (JCRNodeWrapper child : node.getNodes()) {
-            if (predicate.test(child)) {
+            boolean test = predicate.test(child);
+            if (test) {
                 consumer.accept(child);
             }
-            if (recurse) {
-                collectDescendants(child, predicate, true, consumer);
+            if (recurse && (test || recurseOnFilteredOutNodes)) {
+                collectDescendants(child, predicate, true, recurseOnFilteredOutNodes, consumer);
             }
         }
     }

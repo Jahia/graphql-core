@@ -50,6 +50,7 @@ import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.MulticriteriaEvaluation;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 
 import java.util.Collection;
@@ -194,7 +195,9 @@ public interface GqlJcrNode {
     @GraphQLDescription("GraphQL representations of the descendant nodes, according to parameters passed")
     DXPaginatedData<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
                                                @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter,
-                                               @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment)
+                                               @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                               @GraphQLName("recurseOnFilteredOutNodes") @GraphQLDescription("Should the recursion go through nodes filtered out") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean recurseOnFilteredOutNodes,
+                                               DataFetchingEnvironment environment)
     throws GqlJcrWrongInputException;
 
     /**

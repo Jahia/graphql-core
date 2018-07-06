@@ -43,6 +43,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.annotations.annotationTypes.GraphQLDefaultValue;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
@@ -56,6 +57,7 @@ import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
+import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.services.content.JCRItemWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
@@ -222,7 +224,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrNode> children = new LinkedList<GqlJcrNode>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
-            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, environment), false, child -> {
+            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, environment), false, false, child -> {
                 try {
                     children.add(SpecializedTypesHandler.getNode(child));
                 } catch (RepositoryException e) {
@@ -256,11 +258,12 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     public DXPaginatedData<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") NodeTypesInput typesFilter,
                                                       @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter,
                                                       @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
+                                                      @GraphQLName("recurseOnFilteredOutNodes") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean recurseOnFilteredOutNodes,
                                                       DataFetchingEnvironment environment) {
         List<GqlJcrNode> descendants = new LinkedList<GqlJcrNode>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
-            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, environment), true, descendant -> {
+            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, environment), true, recurseOnFilteredOutNodes, descendant -> {
                 try {
                     descendants.add(SpecializedTypesHandler.getNode(descendant));
                 } catch (RepositoryException e) {
