@@ -232,11 +232,11 @@ public class GqlJcrProperty {
     }
 
     /**
-     * @return The value of the JCR property as a Double in case the property is single-valued, null otherwise
+     * @return The value of the JCR property as a Float in case the property is single-valued, null otherwise
      */
     @GraphQLField
-    @GraphQLDescription("The value of the JCR property as a Double in case the property is single-valued, null otherwise")
-    public Double getDoubleValue() {
+    @GraphQLDescription("The value of the JCR property as a Float in case the property is single-valued, null otherwise")
+    public Double getFloatValue() {
         try {
             if (property.isMultiple()) {
                 return null;
@@ -248,11 +248,11 @@ public class GqlJcrProperty {
     }
 
     /**
-     * @return The values of the JCR property as Doubles in case the property is multiple-valued, null otherwise
+     * @return The values of the JCR property as Floats in case the property is multiple-valued, null otherwise
      */
     @GraphQLField
-    @GraphQLDescription("The values of the JCR property as Doubles in case the property is multiple-valued, null otherwise")
-    public List<Double> getDoubleValues() {
+    @GraphQLDescription("The values of the JCR property as Floats in case the property is multiple-valued, null otherwise")
+    public List<Double> getFloatValues() {
         try {
             if (!property.isMultiple()) {
                 return null;

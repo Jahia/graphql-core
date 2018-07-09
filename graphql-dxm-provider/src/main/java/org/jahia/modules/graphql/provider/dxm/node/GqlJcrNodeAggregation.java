@@ -137,8 +137,8 @@ public class GqlJcrNodeAggregation {
         }
 
         @GraphQLField
-        @GraphQLDescription("The double representation of a JCR node property")
-        public Double doublePropertyValue(@GraphQLName("name") @GraphQLDescription("The name of the JCR property") @GraphQLNonNull String name,
+        @GraphQLDescription("The float representation of a JCR node property")
+        public Double floatPropertyValue(@GraphQLName("name") @GraphQLDescription("The name of the JCR property") @GraphQLNonNull String name,
                                           @GraphQLName("language") @GraphQLDescription("The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones") String language) {
             return doubleFunction.apply(mapDouble(getAllValues(name, language)));
         }
