@@ -54,7 +54,6 @@ import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.ValueFormatException;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -178,7 +177,7 @@ public class GqlJcrProperty {
      * @return The values of the JCR property as a Strings in case the property is multiple-valued, null otherwise
      */
     @GraphQLField
-    @GraphQLDescription("The values of the JCR property as a Strings in case the property is multiple-valued, null otherwise")
+    @GraphQLDescription("The values of the JCR property as Strings in case the property is multiple-valued, null otherwise")
     public List<String> getValues() {
         try {
             if (!property.isMultiple()) {
@@ -188,6 +187,80 @@ public class GqlJcrProperty {
             List<String> result = new ArrayList<>(values.length);
             for (JCRValueWrapper value : values) {
                 result.add(value.getString());
+            }
+            return result;
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return The value of the JCR property as a Long in case the property is single-valued, null otherwise
+     */
+    @GraphQLField
+    @GraphQLDescription("The value of the JCR property as a Long in case the property is single-valued, null otherwise")
+    public Long getLongValue() {
+        try {
+            if (property.isMultiple()) {
+                return null;
+            }
+            return property.getValue().getLong();
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return The values of the JCR property as Longs in case the property is multiple-valued, null otherwise
+     */
+    @GraphQLField
+    @GraphQLDescription("The values of the JCR property as Longs in case the property is multiple-valued, null otherwise")
+    public List<Long> getLongValues() {
+        try {
+            if (!property.isMultiple()) {
+                return null;
+            }
+            JCRValueWrapper[] values = property.getValues();
+            List<Long> result = new ArrayList<>(values.length);
+            for (JCRValueWrapper value : values) {
+                result.add(value.getLong());
+            }
+            return result;
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return The value of the JCR property as a Double in case the property is single-valued, null otherwise
+     */
+    @GraphQLField
+    @GraphQLDescription("The value of the JCR property as a Double in case the property is single-valued, null otherwise")
+    public Double getDoubleValue() {
+        try {
+            if (property.isMultiple()) {
+                return null;
+            }
+            return property.getValue().getDouble();
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return The values of the JCR property as Doubles in case the property is multiple-valued, null otherwise
+     */
+    @GraphQLField
+    @GraphQLDescription("The values of the JCR property as Doubles in case the property is multiple-valued, null otherwise")
+    public List<Double> getDoubleValues() {
+        try {
+            if (!property.isMultiple()) {
+                return null;
+            }
+            JCRValueWrapper[] values = property.getValues();
+            List<Double> result = new ArrayList<>(values.length);
+            for (JCRValueWrapper value : values) {
+                result.add(value.getDouble());
             }
             return result;
         } catch (RepositoryException e) {
