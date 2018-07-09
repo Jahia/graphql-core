@@ -47,6 +47,8 @@ import graphql.annotations.connection.ConnectionFetcher;
 import graphql.relay.*;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -69,6 +71,14 @@ public class DXPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T>
         }
         List<Edge<T>> edges = buildEdges(paginatedData);
         PageInfo pageInfo = getPageInfo(edges, paginatedData);
+        Class<? extends DXConnection<T>> connectionType = (Class<? extends DXConnection<T>>) DXGraphQLProvider.getInstance().getConnectionType(environment.getFieldTypeInfo().getType().getName());
+        if (connectionType != null) {
+            try {
+                return connectionType.getConstructor(List.class, PageInfo.class).newInstance(edges, pageInfo);
+            } catch (ReflectiveOperationException e) {
+                throw new DataFetchingException(e);
+            }
+        }
         return new DXConnection<T>(edges, pageInfo);
     }
 

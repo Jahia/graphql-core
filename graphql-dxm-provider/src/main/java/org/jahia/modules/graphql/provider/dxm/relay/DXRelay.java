@@ -46,7 +46,9 @@ package org.jahia.modules.graphql.provider.dxm.relay;
 import graphql.relay.Relay;
 import graphql.schema.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static graphql.Scalars.*;
 import static graphql.schema.GraphQLArgument.newArgument;
@@ -54,6 +56,16 @@ import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLObjectType.newObject;
 
 public class DXRelay extends Relay {
+
+    private Map<String, GraphQLObjectType> connectionTypes = new HashMap<>();
+
+    public void addConnectionType(String connectionType, GraphQLObjectType connectionOutputType) {
+        connectionTypes.put(connectionType, connectionOutputType);
+    }
+
+    public Map<String, GraphQLObjectType> getConnectionTypes() {
+        return connectionTypes;
+    }
 
     private final GraphQLObjectType pageInfoType = newObject()
             .name("PageInfo")
@@ -87,7 +99,7 @@ public class DXRelay extends Relay {
 
     @Override
     public GraphQLObjectType connectionType(String name, GraphQLObjectType edgeType, List<GraphQLFieldDefinition> connectionFields) {
-        return newObject()
+        GraphQLObjectType.Builder builder = newObject()
                 .name(name + "Connection")
                 .description("A connection to a list of items.")
                 .field(newFieldDefinition()
@@ -102,8 +114,13 @@ public class DXRelay extends Relay {
                         .name("pageInfo")
                         .description("details about this specific page")
                         .type(new GraphQLNonNull(pageInfoType)))
-                .fields(connectionFields)
-                .build();
+                .fields(connectionFields);
+
+        if (connectionTypes.containsKey(name + "Connection")) {
+            GraphQLObjectType graphQLOutputType = connectionTypes.get(name + "Connection");
+            builder.fields(graphQLOutputType.getFieldDefinitions());
+        }
+        return builder.build();
     }
 
 
