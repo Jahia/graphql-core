@@ -235,6 +235,17 @@ public interface GqlJcrNode {
     GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace);
 
     /**
+     * Check if the current user has a specific permission
+     *
+     * @param permissionName The permission to check
+     * @return true if the permission has the permission, false otherwise
+     */
+    @GraphQLField
+    @GraphQLDescription("Check if the current user has a specific permission")
+    boolean hasPermission(@GraphQLName("permissionName") @GraphQLDescription("The name of the permission") @GraphQLNonNull String permissionName);
+
+
+    /**
      * Nodes filter based on their types.
      */
     static class NodeTypesInput {

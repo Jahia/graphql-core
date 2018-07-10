@@ -351,6 +351,11 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         }
     }
 
+    @Override
+    public boolean hasPermission(@GraphQLName("permissionName") @GraphQLNonNull String permissionName) {
+        return node.hasPermission(permissionName);
+    }
+
     private static String normalizePath(String path) {
         return (path.endsWith("/") ? path : path + "/");
     }
