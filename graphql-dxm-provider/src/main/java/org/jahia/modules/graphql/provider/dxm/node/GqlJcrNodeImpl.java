@@ -220,10 +220,14 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                    @GraphQLName("typesFilter") NodeTypesInput typesFilter,
                                                    @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter,
                                                    @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
+                                                   @GraphQLName("includesSelf") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includesSelf,
                                                    DataFetchingEnvironment environment) {
         List<GqlJcrNode> children = new LinkedList<GqlJcrNode>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
+            if (includesSelf) {
+                children.add(this);
+            }
             NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, environment), false, false, child -> {
                 try {
                     children.add(SpecializedTypesHandler.getNode(child));
@@ -259,10 +263,14 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                       @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter,
                                                       @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
                                                       @GraphQLName("recurseOnFilteredOutNodes") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean recurseOnFilteredOutNodes,
+                                                      @GraphQLName("includesSelf") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includesSelf,
                                                       DataFetchingEnvironment environment) {
         List<GqlJcrNode> descendants = new LinkedList<GqlJcrNode>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
+            if (includesSelf) {
+                descendants.add(this);
+            }
             NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, environment), true, recurseOnFilteredOutNodes, descendant -> {
                 try {
                     descendants.add(SpecializedTypesHandler.getNode(descendant));
