@@ -53,6 +53,7 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
 import org.jahia.modules.graphql.provider.dxm.predicate.MulticriteriaEvaluation;
+import org.jahia.modules.graphql.provider.dxm.predicate.PredicateHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
@@ -228,7 +229,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             if (includesSelf) {
                 children.add(this);
             }
-            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, environment), false, false, child -> {
+            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, environment), PredicateHelper.falsePredicate(), child -> {
                 try {
                     children.add(SpecializedTypesHandler.getNode(child));
                 } catch (RepositoryException e) {
@@ -261,8 +262,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLNonNull
     public DXPaginatedData<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") NodeTypesInput typesFilter,
                                                       @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter,
+                                                      @GraphQLName("recursionTypesFilter") NodeTypesInput recursionTypesFilter,
+                                                      @GraphQLName("recursionPropertiesFilter") NodePropertiesInput recursionPropertiesFilter,
                                                       @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
-                                                      @GraphQLName("recurseOnFilteredOutNodes") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean recurseOnFilteredOutNodes,
                                                       @GraphQLName("includesSelf") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includesSelf,
                                                       DataFetchingEnvironment environment) {
         List<GqlJcrNode> descendants = new LinkedList<GqlJcrNode>();
@@ -271,7 +273,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             if (includesSelf) {
                 descendants.add(this);
             }
-            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, environment), true, recurseOnFilteredOutNodes, descendant -> {
+            NodeHelper.collectDescendants(node, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, environment), NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, environment), descendant -> {
                 try {
                     descendants.add(SpecializedTypesHandler.getNode(descendant));
                 } catch (RepositoryException e) {

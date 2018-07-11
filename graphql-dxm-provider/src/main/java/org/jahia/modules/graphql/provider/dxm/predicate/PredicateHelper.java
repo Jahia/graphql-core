@@ -54,6 +54,10 @@ public class PredicateHelper {
         return (object) -> true;
     }
 
+    public static <T> Predicate<T> falsePredicate() {
+        return (object) -> false;
+    }
+
     public static <T> Predicate<T> anyPredicate(Collection<Predicate<T>> predicates) {
         return predicates.stream().reduce(Predicate::or).orElse(t->false);
     }
