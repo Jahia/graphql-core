@@ -55,11 +55,13 @@ import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.utils.LanguageCodeConverters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.RepositoryException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -92,6 +94,16 @@ public class GqlJcrNodeType {
     public String getDisplayName(@GraphQLName("language") @GraphQLNonNull String language) {
         return nodeType.getLabel(LanguageCodeConverters.languageCodeToLocale(language));
 
+    }
+
+    @GraphQLField()
+    @GraphQLDescription
+    public String getIcon(){
+        try {
+            return getIcon(nodeType);
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @GraphQLField
@@ -173,5 +185,9 @@ public class GqlJcrNodeType {
                 .map(GqlJcrNodeType::new)
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
                 .collect(Collectors.toList());
+    }
+
+    private String getIcon(ExtendedNodeType type) throws RepositoryException {
+        return JCRContentUtils.getIconWithContext(type);
     }
 }
