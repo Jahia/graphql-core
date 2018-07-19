@@ -49,11 +49,11 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>7.2.3.1-SNAPSHOT</version>
+        <version>7.2.3.1</version>
     </parent>
     <artifactId>graphql-core-root</artifactId>
     <name>Jahia GraphQL Core Root</name>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.4</version>
     <packaging>pom</packaging>
     <description>This is the root project for the DX GraphQL Core integration project</description>
 
@@ -67,7 +67,7 @@
         <connection>scm:git:git@github.com:Jahia/graphql-core.git</connection>
         <developerConnection>scm:git:git@github.com:Jahia/graphql-core.git</developerConnection>
         <url>scm:git:git@github.com:Jahia/graphql-core.git</url>
-      <tag>HEAD</tag>
+      <tag>1_0_4</tag>
   </scm>
 
     <repositories>
