@@ -114,7 +114,7 @@ public class GraphQLConnectionsTest extends GraphQLTestSupport {
         insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
 
         result = executeQuery(getQuery(null, null, null, null, 6, 1));
-        insureConnectionResult(result, 5, 0, "null", "null", false, false);
+        insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
         result = executeQuery(getQuery(null, null, null, null, 1, -1));
         validateError(result, "Argument 'limit' can't be negative");
@@ -128,7 +128,7 @@ public class GraphQLConnectionsTest extends GraphQLTestSupport {
         insureConnectionResult(result, 5, 3, subNodeCursor1, subNodeCursor3, true, false);
 
         result = executeQuery(getQuery(subNodeCursor1, null, null, null, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", false, false);
+        insureConnectionResult(result, 5, 0, "null", "null", true, false);
 
         result = executeQuery(getQuery(subNodeCursor5, null, null, null, null, null));
         insureConnectionResult(result, 5, 4, subNodeCursor1, subNodeCursor4, true, false);
@@ -141,7 +141,7 @@ public class GraphQLConnectionsTest extends GraphQLTestSupport {
         insureConnectionResult(result, 5, 3, subNodeCursor3, subNodeCursor5, false, true);
 
         result = executeQuery(getQuery(null, subNodeCursor5, null, null, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", false, false);
+        insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
         result = executeQuery(getQuery(null, subNodeCursor1, null, null, null, null));
         insureConnectionResult(result, 5, 4, subNodeCursor2, subNodeCursor5, false, true);
@@ -186,7 +186,7 @@ public class GraphQLConnectionsTest extends GraphQLTestSupport {
         validateError(result, "Argument 'first' can't be negative");
 
         result = executeQuery(getQuery(subNodeCursor1, null, 2, null, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", false, false);
+        insureConnectionResult(result, 5, 0, "null", "null", true, false);
 
         result = executeQuery(getQuery("wrong_cursor", null, 2, null, null, null));
         insureConnectionResult(result, 5, 2, subNodeCursor1, subNodeCursor2, true, false);
@@ -202,7 +202,7 @@ public class GraphQLConnectionsTest extends GraphQLTestSupport {
         validateError(result, "Argument 'last' can't be negative");
 
         result = executeQuery(getQuery(subNodeCursor1, null, null, 3, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", false, false);
+        insureConnectionResult(result, 5, 0, "null", "null", true, false);
 
         result = executeQuery(getQuery("wrong_cursor", null, null, 2, null, null));
         insureConnectionResult(result, 5, 2, subNodeCursor4, subNodeCursor5, false, true);
@@ -218,10 +218,10 @@ public class GraphQLConnectionsTest extends GraphQLTestSupport {
         validateError(result, "Argument 'first' can't be negative");
 
         result = executeQuery(getQuery(null, subNodeCursor5, 2, null, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", false, false);
+        insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
         result = executeQuery(getQuery(null, "wrong_cursor", 2, null, null, null));
-        insureConnectionResult(result, 5, 2, subNodeCursor1, subNodeCursor2, true, false);
+        insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
         // test after + last
         result = executeQuery(getQuery(null, subNodeCursor2, null, 2, null, null));
@@ -234,10 +234,10 @@ public class GraphQLConnectionsTest extends GraphQLTestSupport {
         validateError(result, "Argument 'last' can't be negative");
 
         result = executeQuery(getQuery(null, subNodeCursor5, null, 2, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", false, false);
+        insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
         result = executeQuery(getQuery(null, "wrong_cursor", null, 2, null, null));
-        insureConnectionResult(result, 5, 2, subNodeCursor4, subNodeCursor5, false, true);
+        insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
         // test after + before
         result = executeQuery(getQuery(subNodeCursor5, subNodeCursor1, null, null, null, null));
@@ -255,7 +255,7 @@ public class GraphQLConnectionsTest extends GraphQLTestSupport {
         insureConnectionResult(result, 5, 4, subNodeCursor2, subNodeCursor5, false, true);
 
         result = executeQuery(getQuery(subNodeCursor5, "wrong_cursor", null, null, null, null));
-        insureConnectionResult(result, 5, 4, subNodeCursor1, subNodeCursor4, true, false);
+        insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
         // test after + before + last
         result = executeQuery(getQuery(subNodeCursor5, subNodeCursor1, null, 2, null, null));

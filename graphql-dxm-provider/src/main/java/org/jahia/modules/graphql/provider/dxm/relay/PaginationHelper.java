@@ -128,19 +128,15 @@ public class PaginationHelper {
                 // Sets the limit, take one more to check if there is more elements
                 source = source.limit(arguments.first + 1);
             }
-            if (arguments.last != null) {
-                // Use fifo to keep the last n elements
-                itemsBefore = new CircularFifoQueue<T>(arguments.last + 1);
+            if (arguments.last != null || arguments.before != null) {
+                // Elements collected in dedicated list, depending on last/before combination
+                itemsBefore = arguments.last == null ? new ArrayList<>() : (arguments.before == null ? new CircularFifoQueue<>(arguments.last) : new CircularFifoQueue<>(arguments.last + 1));
                 source = source.peek(itemsBefore::add);
-            }
-            if (arguments.before != null) {
-                // Use another list to also include the "before" element, if found
-                if (itemsBefore == null) {
-                    itemsBefore = new ArrayList<>();
-                    source = source.peek(itemsBefore::add);
+                if (arguments.before != null) {
+                    // Take elements until match
+                    source = StreamUtils.takeWhile(source, t -> !cursorSupport.getCursor(t).equals(arguments.before));
                 }
-                // Take elements until match
-                source = StreamUtils.takeWhile(source, t -> !cursorSupport.getCursor(t).equals(arguments.before));
+
             }
         } else if (arguments.isOffsetLimit()) {
             if (arguments.offset != null) {
@@ -170,8 +166,13 @@ public class PaginationHelper {
         } else if (arguments.first != null) {
             hasNext = filtered.size() > arguments.first;
         }
-        if (arguments.before != null) {
-            hasNext = arguments.before.equals(cursorSupport.getCursor(filtered.get(filtered.size()-1)));
+        if (!hasNext && arguments.before != null) {
+            hasNext = filtered.size() > 0 && arguments.before.equals(cursorSupport.getCursor(filtered.get(filtered.size()-1)));
+            if (!hasNext && arguments.last != null) {
+                // Cursor was not found, drop first element
+                filtered = filtered.subList(1, filtered.size());
+                count.increment();
+            }
         }
         if (hasNext) {
             filtered = filtered.subList(0, filtered.size() -1 );
