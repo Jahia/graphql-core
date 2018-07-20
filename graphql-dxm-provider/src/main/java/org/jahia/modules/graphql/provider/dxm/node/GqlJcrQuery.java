@@ -66,6 +66,7 @@ import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.qom.Constraint;
 import javax.jcr.query.qom.QueryObjectModel;
+import javax.jcr.query.qom.QueryObjectModelConstants;
 import javax.jcr.query.qom.QueryObjectModelFactory;
 import javax.jcr.query.qom.Selector;
 import java.util.*;
@@ -237,8 +238,6 @@ public class GqlJcrQuery {
             DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
         try {
-            PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
-            List<GqlJcrNode> result = new LinkedList<>();
             QueryManagerWrapper queryManager = getSession().getWorkspace().getQueryManager();
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
             JCRNodeIteratorWrapper nodes = q.execute().getNodes();
