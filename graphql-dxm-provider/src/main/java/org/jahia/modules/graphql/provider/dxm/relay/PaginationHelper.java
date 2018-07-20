@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -44,11 +44,18 @@
 package org.jahia.modules.graphql.provider.dxm.relay;
 
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
+import org.apache.commons.lang.mutable.MutableInt;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
+import org.jahia.modules.graphql.provider.dxm.util.StreamUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Base64.getEncoder;
 
@@ -65,7 +72,7 @@ public class PaginationHelper {
         filtered = applyLimitOffset(filtered, arguments);
 
         boolean hasPrevious = filtered.size() > 0 && filtered.get(0) != source.get(0);
-        boolean hasNext = filtered.size() > 0 && filtered.get(filtered.size()-1) != source.get(source.size()-1);
+        boolean hasNext = filtered.size() > 0 && filtered.get(filtered.size() - 1) != source.get(source.size() - 1);
 
         return new SimpleDXPaginatedData<>(source, filtered, cursorSupport, hasPrevious, hasNext);
     }
@@ -85,7 +92,7 @@ public class PaginationHelper {
             filtered = filtered.subList(0, filtered.size() > args.first ? args.first : filtered.size());
         }
         if (args.last != null) {
-            filtered = filtered.subList(filtered.size() > args.last ? filtered.size()-args.last : 0, filtered.size());
+            filtered = filtered.subList(filtered.size() > args.last ? filtered.size() - args.last : 0, filtered.size());
         }
         return filtered;
     }
@@ -105,6 +112,71 @@ public class PaginationHelper {
             }
         }
         return filtered;
+    }
+
+    public static <T> DXPaginatedData<T> paginate(Stream<T> source, CursorSupport<T> cursorSupport, Arguments arguments, int totalCount) {
+        MutableInt count = new MutableInt(0);
+        Collection<T> itemsBefore = null;
+
+        source = source.peek(c -> count.increment());
+        if (arguments.isCursor()) {
+            if (arguments.after != null) {
+                // Drop first elements until cursor match, then also skip matching element
+                source = StreamUtils.dropUntil(source, t -> cursorSupport.getCursor(t).equals(arguments.after)).skip(1);
+            }
+            if (arguments.first != null) {
+                // Sets the limit, take one more to check if there is more elements
+                source = source.limit(arguments.first + 1);
+            }
+            if (arguments.last != null) {
+                // Use fifo to keep the last n elements
+                itemsBefore = new CircularFifoQueue<T>(arguments.last + 1);
+                source = source.peek(itemsBefore::add);
+            }
+            if (arguments.before != null) {
+                // Use another list to also include the "before" element, if found
+                if (itemsBefore == null) {
+                    itemsBefore = new ArrayList<>();
+                    source = source.peek(itemsBefore::add);
+                }
+                // Take elements until match
+                source = StreamUtils.takeWhile(source, t -> !cursorSupport.getCursor(t).equals(arguments.before));
+            }
+        } else if (arguments.isOffsetLimit()) {
+            if (arguments.offset != null) {
+                source = source.skip(arguments.offset);
+            }
+            if (arguments.limit != null) {
+                source = source.limit(arguments.limit + 1);
+            }
+        }
+
+        List<T> filtered;
+        if (itemsBefore != null) {
+            // Execute stream, result of collect is thrown away if we have an itemsBefore list
+            source.collect(Collectors.toList());
+            filtered = new ArrayList<>(itemsBefore);
+        } else {
+            // Otherwise collect all items from the stream
+            filtered = source.collect(Collectors.toList());
+        }
+        // Substract result size from count to get the offset of first item
+        count.subtract(filtered.size());
+        boolean hasPrevious = count.intValue() > 0;
+        boolean hasNext = false;
+
+        if (arguments.limit != null) {
+            hasNext = filtered.size() > arguments.limit;
+        } else if (arguments.first != null) {
+            hasNext = filtered.size() > arguments.first;
+        }
+        if (arguments.before != null) {
+            hasNext = arguments.before.equals(cursorSupport.getCursor(filtered.get(filtered.size()-1)));
+        }
+        if (hasNext) {
+            filtered = filtered.subList(0, filtered.size() -1 );
+        }
+        return new StreamBasedDXPaginatedData<>(filtered, cursorSupport, hasPrevious, hasNext, totalCount, count.intValue());
     }
 
     public static Arguments parseArguments(DataFetchingEnvironment environment) {
@@ -175,6 +247,29 @@ public class PaginationHelper {
         @Override
         public int getIndex(T entity) {
             return source.indexOf(entity);
+        }
+    }
+
+    public static class StreamBasedDXPaginatedData<T> extends AbstractDXPaginatedData<T> {
+        private final List<T> filtered;
+        private final CursorSupport<T> cursorSupport;
+        private int startOffset = 0;
+
+        public StreamBasedDXPaginatedData(List<T> filtered, CursorSupport<T> cursorSupport, boolean hasPrevious, boolean hasNext, int totalCount, int startOffset) {
+            super(filtered, hasPrevious, hasNext, filtered.size(), totalCount);
+            this.filtered = filtered;
+            this.cursorSupport = cursorSupport;
+            this.startOffset = startOffset;
+        }
+
+        @Override
+        public String getCursor(T entity) {
+            return cursorSupport.getCursor(entity);
+        }
+
+        @Override
+        public int getIndex(T entity) {
+            return startOffset + filtered.indexOf(entity);
         }
     }
 }

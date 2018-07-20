@@ -44,9 +44,11 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.schema.DataFetchingEnvironment;
-import org.jahia.modules.graphql.provider.dxm.predicate.MulticriteriaEvaluation;
-import org.jahia.modules.graphql.provider.dxm.predicate.PredicateHelper;
+import org.jahia.modules.graphql.provider.dxm.predicate.*;
+import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
+import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
+import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -56,6 +58,8 @@ import javax.jcr.RepositoryException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class NodeHelper {
 
@@ -215,6 +219,28 @@ public class NodeHelper {
 
         Predicate<JCRNodeWrapper> result = PredicateHelper.allPredicates(Arrays.asList(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate, permissionPredicate));
         return result;
+    }
+
+    public static DXPaginatedData<GqlJcrNode> getPaginatedNodesList(JCRNodeIteratorWrapper it, GqlJcrNode.NodeTypesInput typesFilter, GqlJcrNode.NodePropertiesInput propertiesFilter, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+        Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
+                .filter(node-> PermissionHelper.hasPermission(node, environment))
+                .filter(getNodesPredicate(null, typesFilter, propertiesFilter, environment))
+                .map(descendant -> {
+                    try {
+                        return SpecializedTypesHandler.getNode(descendant);
+                    } catch (RepositoryException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
+
+        int totalSize = -1;
+        if (typesFilter == null && propertiesFilter == null && fieldFilter == null) {
+            // Can return total size only if no filters are enabled
+            totalSize = (int) it.getSize();
+        }
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
+        return PaginationHelper.paginate(stream, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments, totalSize);
     }
 
     private interface PropertyEvaluationAlgorithm {
