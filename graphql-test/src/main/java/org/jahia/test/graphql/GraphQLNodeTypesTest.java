@@ -280,4 +280,19 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
         Assert.assertFalse(names.contains("nt:base"));
     }
 
+    @Test
+    public void shouldRetrieveEditorialContentTypesOfSite() throws Exception {
+        JSONObject result = executeQuery("{\n" + 
+            "  jcr {\n" + 
+            "    nodeTypes(filter: {includeMixins: false, siteKey: \"systemsite\", includedTypes: [\"jmix:editorialContent\"], excludedTypes: [\"jmix:studioOnly\", \"jmix:hiddenType\"]}) {\n" + 
+            "      nodes {\n" + 
+            "        name\n" + 
+            "      }\n" + 
+            "    }\n" + 
+            "  }\n" + 
+            "}\n");
+
+        JSONArray nodeTypes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeTypes").getJSONArray("nodes");
+        Assert.assertEquals(11, nodeTypes.length());
+    }
 }

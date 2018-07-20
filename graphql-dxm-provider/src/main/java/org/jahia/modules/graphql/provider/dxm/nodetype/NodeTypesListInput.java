@@ -57,11 +57,28 @@ public class NodeTypesListInput {
     private List<String> modules;
     private Boolean includeMixins;
     private Boolean includeNonMixins;
+    private String siteKey;
+    private Boolean includeAbstract;
+    private List<String> includedTypes;
+    private Boolean considerSubTypes;
+    private List<String> excludedTypes;
 
-    public NodeTypesListInput(@GraphQLName("modules") List<String> modules, @GraphQLName("includeMixins") Boolean includeMixins, @GraphQLName("includeNonMixins") Boolean includeNonMixins) {
+    public NodeTypesListInput(@GraphQLName("siteKey") String siteKey,
+            @GraphQLName("modules") List<String> modules,
+            @GraphQLName("includeMixins") Boolean includeMixins,
+            @GraphQLName("includeNonMixins") Boolean includeNonMixins,
+            @GraphQLName("includeAbstract") Boolean includeAbstract,
+            @GraphQLName("includedTypes") List<String> includedTypes,
+            @GraphQLName("excludedTypes") List<String> excludedTypes,
+            @GraphQLName("considerSubTypes") Boolean considerSubTypes) {
+        this.siteKey = siteKey;
         this.modules = modules;
         this.includeMixins = includeMixins;
         this.includeNonMixins = includeNonMixins;
+        this.includeAbstract = includeAbstract;
+        this.includedTypes = includedTypes;
+        this.excludedTypes = excludedTypes;
+        this.considerSubTypes = considerSubTypes;
     }
 
     @GraphQLField
@@ -80,5 +97,35 @@ public class NodeTypesListInput {
     @GraphQLDescription("Include non mixin types (default true)")
     public Boolean getIncludeNonMixins() {
         return includeNonMixins != null ? includeNonMixins : true;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Consider only nodetypes for the specified site")
+    public String getSiteKey() {
+        return siteKey;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Include abstract types (default true)")
+    public Boolean getIncludeAbstract() {
+        return includeAbstract != null ? includeAbstract : true;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Only include types specified by this list (also considering sy-types, if considerSubTypes is true)")
+    public List<String> getIncludedTypes() {
+        return includedTypes;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Consider sub-types when checking for included/excluded nodetypes (default true)")
+    public Boolean getConsiderSubTypes() {
+        return considerSubTypes != null ? considerSubTypes : true;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Exclude the types, specified by this list (also considering sy-types, if considerSubTypes is true)")
+    public List<String> getExcludedTypes() {
+        return excludedTypes;
     }
 }

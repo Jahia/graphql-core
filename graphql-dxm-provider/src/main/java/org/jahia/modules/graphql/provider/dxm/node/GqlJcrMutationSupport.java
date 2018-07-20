@@ -94,7 +94,7 @@ public class GqlJcrMutationSupport {
      * Set the provided properties to the specified node.
      *
      * @param node The JCR node to set properties to
-     * @param Properties the collection of properties to be set
+     * @param properties the collection of properties to be set
      * @return The result of the operation, containing list of modified JCR properties
      */
     public static List<JCRPropertyWrapper> setProperties(JCRNodeWrapper node, Collection<GqlJcrPropertyInput> properties) {

@@ -54,14 +54,12 @@ import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
-import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 
+import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
-import javax.jcr.nodetype.NodeTypeIterator;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @GraphQLTypeExtension(GqlJcrQuery.class)
 public class NodeTypeJCRQueryExtensions {
@@ -90,17 +88,16 @@ public class NodeTypeJCRQueryExtensions {
     public static DXPaginatedData<GqlJcrNodeType> getNodeTypes(@GraphQLName("filter") NodeTypesListInput input,
                                                                @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
                                                                DataFetchingEnvironment environment) {
-        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
-        NodeTypeRegistry registry = NodeTypeRegistry.getInstance();
-        NodeTypeIterator nodeTypes = (input == null || input.getModules() == null) ? registry.getAllNodeTypes() : registry.getAllNodeTypes(input.getModules());
-        List<GqlJcrNodeType> mapped = Stream.generate(() -> ((ExtendedNodeType) nodeTypes.nextNodeType()))
-                .limit(nodeTypes.getSize())
-                .filter(n -> (n.isMixin() && (input == null || input.getIncludeMixins())) || (!n.isMixin() && (input == null || input.getIncludeNonMixins())))
-                .map(GqlJcrNodeType::new)
-                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)))
-                .collect(Collectors.toList());
+        try {
+            PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
+            List<GqlJcrNodeType> mapped = NodeTypeHelper.getNodeTypes(input).map(GqlJcrNodeType::new)
+                    .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)))
+                    .collect(Collectors.toList());
 
-        return PaginationHelper.paginate(mapped, GqlJcrNodeType::getName, arguments);
+            return PaginationHelper.paginate(mapped, GqlJcrNodeType::getName, arguments);
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
     }
 
 }

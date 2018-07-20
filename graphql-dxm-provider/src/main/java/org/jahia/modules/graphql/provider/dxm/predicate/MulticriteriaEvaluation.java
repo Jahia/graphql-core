@@ -55,7 +55,7 @@ public enum MulticriteriaEvaluation {
     /**
      * The result criteria evaluates positive iff all sub-criteria evaluate positive.
      */
-    @GraphQLDescription("The result criteria evaluates positive iff all sub-criteria evaluate positive")
+    @GraphQLDescription("The result criteria evaluates positive if all sub-criteria evaluate positive")
     ALL,
 
     /**
