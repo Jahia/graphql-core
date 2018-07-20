@@ -353,22 +353,4 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         Assert.assertEquals(0, nodes.length());
     }
-
-    @Test
-    public void shouldNotRetrieveNodesByInternationalizedPropertyValueNotPassingLanguage() throws Exception {
-
-        JSONObject result = executeQuery("{"
-                + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST2\"}}) {"
-                + "            nodes {"
-                + "                name"
-                + "		       }"
-                + "        }"
-                + "    }"
-                + "}");
-
-        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
-
-        Assert.assertEquals(0, nodes.length());
-    }
 }
