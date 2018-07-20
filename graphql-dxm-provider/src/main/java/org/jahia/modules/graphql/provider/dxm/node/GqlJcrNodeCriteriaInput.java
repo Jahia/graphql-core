@@ -81,18 +81,10 @@ public class GqlJcrNodeCriteriaInput {
         OWN
     }
 
-    /**
-     * A part of the criteria to filter JCR nodes, specifically by their arbitrary properties.
-     */
-    @GraphQLDescription("A part of the criteria to filter JCR nodes, specifically by their arbitrary properties")
-    public static class NodeConstraint {
-        // TODO : Implement in scope of BACKLOG-8027.
-    }
-
     private String nodeType;
     private PathType pathType;
     private Collection<String> paths;
-//    private NodeConstraint nodeConstraint;
+    private GqlJcrNodeConstraintInput nodeConstraint;
     private String language;
     private List<String> ordering;
 
@@ -102,27 +94,22 @@ public class GqlJcrNodeCriteriaInput {
      * @param nodeType The type of nodes to fetch
      * @param pathType The exact meaning of the paths parameter, null means the default (ANCESTOR)
      * @param paths Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter; null or empty collection means no path restrictions
-     * //@param nodeConstraint
+     * @param nodeConstraint Additional constraint to filter nodes by their arbitrary properties
      * @param language Language to access node properties in; must be a valid language code in case any internationalized properties are used for filtering, does not matter for non-internationalized ones
      * @param ordering
      */
     public GqlJcrNodeCriteriaInput(
-            @GraphQLName("nodeType") @GraphQLNonNull @GraphQLDescription("The type of nodes to fetch") String nodeType,
-            @GraphQLName("pathType") @GraphQLDescription("The exact meaning of the paths parameter, ANCESTOR by default") PathType pathType,
-            @GraphQLName("paths") @GraphQLDescription("Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter; null or empty array means no path restrictions") Collection<String> paths,
-//            @GraphQLName("nodeConstraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") NodeConstraint nodeConstraint,
-            @GraphQLName("language") @GraphQLDescription("Language to access node properties in; must be a valid language code in case any internationalized properties are used for filtering, does not matter for non-internationalized ones") String language,
-            @GraphQLName("ordering") @GraphQLDescription("ordering strategies") List<String> ordering
+        @GraphQLName("nodeType") @GraphQLNonNull @GraphQLDescription("The type of nodes to fetch") String nodeType,
+        @GraphQLName("pathType") @GraphQLDescription("The exact meaning of the paths parameter, ANCESTOR by default") PathType pathType,
+        @GraphQLName("paths") @GraphQLDescription("Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter; null or empty array means no path restrictions") Collection<String> paths,
+        @GraphQLName("nodeConstraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") GqlJcrNodeConstraintInput nodeConstraint,
+        @GraphQLName("language") @GraphQLDescription("Language to access node properties in; must be a valid language code in case any internationalized properties are used for filtering, does not matter for non-internationalized ones") String language,
+        @GraphQLName("ordering") @GraphQLDescription("ordering strategies") List<String> ordering
     ) {
-
-        if (pathType == null) {
-            pathType = PathType.ANCESTOR;
-        }
-
         this.nodeType = nodeType;
         this.paths = paths;
         this.pathType = pathType;
-//        this.nodeConstraint = nodeConstraint;
+        this.nodeConstraint = nodeConstraint;
         this.ordering = ordering;
         this.language = language;
     }
@@ -155,14 +142,14 @@ public class GqlJcrNodeCriteriaInput {
         return paths;
     }
 
-//    /**
-//     * @return Additional constraint to filter nodes by their arbitrary properties
-//     */
-//    @GraphQLField
-//    @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties")
-//    public NodeConstraint getNodeConstraint() {
-//        return nodeConstraint;
-//    }
+    /**
+     * @return Additional constraint to filter nodes by their arbitrary properties
+     */
+    @GraphQLField
+    @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties")
+    public GqlJcrNodeConstraintInput getNodeConstraint() {
+        return nodeConstraint;
+    }
 
     /**
      * @return Language to access node properties in

@@ -56,6 +56,7 @@ import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFet
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.*;
+import org.jahia.services.content.nodetypes.ValueImpl;
 import org.jahia.services.query.QueryWrapper;
 
 import javax.jcr.NodeIterator;
@@ -78,6 +79,11 @@ import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLangu
 @GraphQLName("JCRQuery")
 @GraphQLDescription("JCR Queries")
 public class GqlJcrQuery {
+
+    private static final NodeConstraintConvertor[] NODE_CONSTRAINT_CONVERTORS = {
+        new NodeConstraintConvertorLike(),
+        new NodeConstraintConvertorContains()
+    };
 
     private NodeQueryExtensions.Workspace workspace;
 
@@ -267,7 +273,7 @@ public class GqlJcrQuery {
             Session session = getSession(criteria.getLanguage());
             QueryManager queryManager = session.getWorkspace().getQueryManager();
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
-            Selector source = factory.selector(criteria.getNodeType(), "nodeType");
+            Selector source = factory.selector(criteria.getNodeType(), "node");
             Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory);
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
@@ -284,10 +290,17 @@ public class GqlJcrQuery {
     }
 
     private static Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory) throws RepositoryException {
-        javax.jcr.query.qom.Constraint constraint = null;
-        GqlJcrNodeCriteriaInput.PathType pathType = criteria.getPathType();
+
+        LinkedHashSet<Constraint> constraints = new LinkedHashSet<>();
+
+        // Add path constraint if any.
         Collection<String> paths = criteria.getPaths();
         if (paths != null && !paths.isEmpty()) {
+            Constraint constraint;
+            GqlJcrNodeCriteriaInput.PathType pathType = criteria.getPathType();
+            if (pathType == null) {
+                pathType = GqlJcrNodeCriteriaInput.PathType.ANCESTOR;
+            }
             Iterator<String> pathsIt = paths.iterator();
             switch (pathType) {
                 case ANCESTOR:
@@ -311,8 +324,40 @@ public class GqlJcrQuery {
                 default:
                     throw new IllegalArgumentException("Unknown path type: " + pathType);
             }
+            constraints.add(constraint);
         }
-        return constraint;
+
+        // Add node constraint if any.
+        GqlJcrNodeConstraintInput nodeConstraint = criteria.getNodeConstraint();
+        if (nodeConstraint != null) {
+            Constraint constraint = null;
+            for (NodeConstraintConvertor nodeConstraintConvertor : NODE_CONSTRAINT_CONVERTORS) {
+                Constraint c = nodeConstraintConvertor.convert(nodeConstraint, factory, selector);
+                if (c == null) {
+                    continue;
+                }
+                if (constraint != null) {
+                    throwNoneOrMultipleNodeConstraintsException();
+                }
+                constraint = c;
+            }
+            if (constraint == null) {
+                throwNoneOrMultipleNodeConstraintsException();
+            }
+            constraints.add(constraint);
+        }
+
+        // Build the result.
+        if (constraints.isEmpty()) {
+            return null;
+        } else {
+            Iterator<Constraint> constraintIt = constraints.iterator();
+            Constraint result = constraintIt.next();
+            while (constraintIt.hasNext()) {
+                result = factory.and(result, constraintIt.next());
+            }
+            return result;
+        }
     }
 
     private GqlJcrNode getGqlNodeByPath(String path) throws RepositoryException {
@@ -333,6 +378,71 @@ public class GqlJcrQuery {
         }
         Locale locale = LocaleUtils.toLocale(language);
         return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue(), locale);
+    }
+
+    private static void throwNoneOrMultipleNodeConstraintsException() {
+        StringBuilder constraintNames = new StringBuilder();
+        for (int i = 0; i < NODE_CONSTRAINT_CONVERTORS.length; i++) {
+            NodeConstraintConvertor nodeConstraintConvertor = NODE_CONSTRAINT_CONVERTORS[i];
+            constraintNames.append("'").append(nodeConstraintConvertor.getFieldName()).append("'");
+            if (i < NODE_CONSTRAINT_CONVERTORS.length - 2) {
+                constraintNames.append(", ");
+            } else if (i == NODE_CONSTRAINT_CONVERTORS.length - 2) {
+                constraintNames.append(" or ");
+            }
+        }
+        throw new GqlJcrWrongInputException("Exactly one contraint field expected, either " + constraintNames);
+    }
+
+    private static void validateNodeConstraintProperty(GqlJcrNodeConstraintInput nodeConstraint) {
+        if (nodeConstraint.getProperty() == null) {
+            throw new GqlJcrWrongInputException("'property' field is required");
+        }
+    }
+
+    private interface NodeConstraintConvertor {
+
+        Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException;
+        String getFieldName();
+    }
+
+    private static class NodeConstraintConvertorLike implements NodeConstraintConvertor {
+
+        @Override
+        public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+
+            String like = nodeConstraint.getLike();
+            if (like == null) {
+                return null;
+            }
+
+            validateNodeConstraintProperty(nodeConstraint);
+            return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()), QueryObjectModelConstants.JCR_OPERATOR_LIKE, factory.literal(new ValueImpl(like)));
+        }
+
+        @Override
+        public String getFieldName() {
+            return "like";
+        }
+    }
+
+    private static class NodeConstraintConvertorContains implements NodeConstraintConvertor {
+
+        @Override
+        public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+
+            String contains = nodeConstraint.getContains();
+            if (contains == null) {
+                return null;
+            }
+
+            return factory.fullTextSearch(selector, nodeConstraint.getProperty(), factory.literal(new ValueImpl(contains)));
+        }
+
+        @Override
+        public String getFieldName() {
+            return "contains";
+        }
     }
 
     public static class QueryLanguageDefaultValue implements Supplier<Object> {

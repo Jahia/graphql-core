@@ -61,6 +61,8 @@ import org.junit.Test;
  */
 public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
+    private static final String NONE_OR_MULTIPLE_NODE_COMPARISONS_ERROR = "Exactly one contraint field expected, either 'like' or 'contains'";
+
     private static String nodeUuid;
     private static String subNodeUuid1;
     private static String subNodeUuid2;
@@ -72,7 +74,6 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
     private static String subnodeTitleEn1 = "text EN - subList1";
     private static String subnodeTitleFr1 = "text FR - subList1";
-    private static String subnodeTitleEn2 = "text EN - subList2";
     private static String subnodeTitleFr2 = "text FR - subList2";
 
     @BeforeClass
@@ -92,7 +93,6 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
             subNodeUuid1 = subNode1.getIdentifier();
 
             JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
-            subNode2.setProperty("jcr:title", subnodeTitleEn2);
             subNodeUuid2 = subNode2.getIdentifier();
 
             JCRNodeWrapper subNode3 = node.addNode("testSubList3", "jnt:contentList");
@@ -127,7 +127,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria:{paths: [\"/testList\"], nodeType: \"jnt:content\"}) {"
+                + "        nodesByCriteria(criteria: {paths: [\"/testList\"], nodeType: \"jnt:content\"}) {"
                 + "            nodes {"
                 + "                uuid"
                 + "                name"
@@ -158,7 +158,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria:{paths: [\"/testList\"], pathType: PARENT, nodeType: \"jnt:content\"}) {"
+                + "        nodesByCriteria(criteria: {paths: [\"/testList\"], pathType: PARENT, nodeType: \"jnt:content\"}) {"
                 + "            nodes {"
                 + "                uuid"
                 + "                name"
@@ -186,7 +186,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria:{paths: [\"/testList\", \"/testList/testSubList2\", \"/testList/testSubList4/testSubList4_2\"], pathType: OWN, nodeType: \"jnt:content\"}) {"
+                + "        nodesByCriteria(criteria: {paths: [\"/testList\", \"/testList/testSubList2\", \"/testList/testSubList4/testSubList4_2\"], pathType: OWN, nodeType: \"jnt:content\"}) {"
                 + "            nodes {"
                 + "                uuid"
                 + "                name"
@@ -206,5 +206,169 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         validateNode(nodeByName.get("testList"), nodeUuid, "testList", "/testList", "/");
         validateNode(nodeByName.get("testSubList2"), subNodeUuid2, "testSubList2", "/testList/testSubList2", "/testList");
         validateNode(nodeByName.get("testSubList4_2"), subNodeUuid42, "testSubList4_2", "/testList/testSubList4/testSubList4_2", "/testList/testSubList4");
+    }
+
+    @Test
+    public void shouldRetrieveNodesByPropertyContainsExpression() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"fr\", nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST2\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(1, nodeByName.size());
+        validateNode(nodeByName.get("testSubList2"), "testSubList2");
+    }
+
+    @Test
+    public void shouldRetrieveNodesByNodeContainsExpression() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", nodeConstraint: {contains: \"SUBLIST1\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(1, nodeByName.size());
+        validateNode(nodeByName.get("testSubList1"), "testSubList1");
+    }
+
+    @Test
+    public void shouldRetrieveNodesByLikeExpression() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"fr\", nodeConstraint: {property: \"jcr:title\", like: \"%subList2%\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(1, nodeByName.size());
+        validateNode(nodeByName.get("testSubList2"), "testSubList2");
+    }
+
+    @Test
+    public void shouldGetErrorNotRetrieveNodesByLikeExpressionWhenPropertyIsEmpty() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", nodeConstraint: {like: \"%subList1%\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        validateError(result, "'property' field is required");
+    }
+
+    @Test
+    public void shouldGetErrorNotRetrieveNodesByNodeConstraintWhenNoComparisonSpecified() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", nodeConstraint: {property: \"property\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        validateError(result, NONE_OR_MULTIPLE_NODE_COMPARISONS_ERROR);
+    }
+
+    @Test
+    public void shouldGetErrorNotRetrieveNodesByNodeConstraintWhenMultipleComparisonsSpecified() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", nodeConstraint: {property: \"property\", contains: \"contains\", like: \"like\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        validateError(result, NONE_OR_MULTIPLE_NODE_COMPARISONS_ERROR);
+    }
+
+    @Test
+    public void shouldRetrieveNodesByInternationalizedPropertyValuePassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"fr\", nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST2\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(1, nodeByName.size());
+        validateNode(nodeByName.get("testSubList2"), "testSubList2");
+    }
+
+    @Test
+    public void shouldNotRetrieveNodesByInternationalizedPropertyValuePassingDifferentLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST2\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+
+        Assert.assertEquals(0, nodes.length());
+    }
+
+    @Test
+    public void shouldNotRetrieveNodesByInternationalizedPropertyValueNotPassingLanguage() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST2\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+
+        Assert.assertEquals(0, nodes.length());
     }
 }
