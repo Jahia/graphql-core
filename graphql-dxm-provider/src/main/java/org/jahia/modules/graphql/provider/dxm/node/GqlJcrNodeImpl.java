@@ -340,7 +340,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         return node.hasPermission(permissionName);
     }
 
-    public String getAggregatedLastModifedDate(@GraphQLName("language") String language, @GraphQLName("recursionTypesFilter") NodeTypesInput recursionTypesFilter, DataFetchingEnvironment environment) {
+    public String getAggregatedLastModifiedDate(@GraphQLName("language") String language, @GraphQLName("recursionTypesFilter") NodeTypesInput recursionTypesFilter, DataFetchingEnvironment environment) {
         try {
             JCRNodeWrapper i18node = NodeHelper.getNodeInLanguage(node, language);
 
