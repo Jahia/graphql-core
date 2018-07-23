@@ -246,6 +246,17 @@ public interface GqlJcrNode {
     @GraphQLDescription("Check if the current user has a specific permission")
     boolean hasPermission(@GraphQLName("permissionName") @GraphQLDescription("The name of the permission") @GraphQLNonNull String permissionName);
 
+    /**
+     * Get the last modified date of this node and its descendants. The recursion in descendants can be controlled by recursionTypesFilter.
+     * If no filter is passed, recursion will stop by default on sub pages.
+     *
+     * @return true if the permission has the permission, false otherwise
+     */
+    @GraphQLField
+    @GraphQLDescription("Get the last modified date of this node and its descendants. The recursion in descendants can be controlled by recursionTypesFilter. If no filter is passed, recursion will stop by default on sub pages.")
+    String getAggregatedLastModifedDate(@GraphQLName("language") @GraphQLDescription("The language to use to get the last modified date, if not specified, returns last modification date in any language") String language,
+                                        @GraphQLName("recursionTypesFilter") @GraphQLDescription("Stop recursion on nodes by their types; null to avoid such filtering") NodeTypesInput recursionTypesFilter,
+                                        DataFetchingEnvironment environment);
 
     /**
      * Nodes filter based on their types.

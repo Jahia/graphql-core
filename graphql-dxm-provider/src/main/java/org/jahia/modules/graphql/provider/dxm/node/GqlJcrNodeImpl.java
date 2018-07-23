@@ -48,6 +48,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
@@ -59,6 +60,8 @@ import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.services.content.*;
+import pl.touk.throwing.ThrowingPredicate;
+import pl.touk.throwing.ThrowingSupplier;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.Node;
@@ -66,6 +69,7 @@ import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.StreamSupport;
 
 /**
  * GraphQL representation of a JCR node - generic implementation.
@@ -336,6 +340,28 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         return node.hasPermission(permissionName);
     }
 
+    public String getAggregatedLastModifedDate(@GraphQLName("language") String language, @GraphQLName("recursionTypesFilter") NodeTypesInput recursionTypesFilter, DataFetchingEnvironment environment) {
+        try {
+            JCRNodeWrapper i18node = NodeHelper.getNodeInLanguage(node, language);
+
+            if (recursionTypesFilter == null) {
+                // Default, do not recurse on sub pages
+                recursionTypesFilter = new NodeTypesInput(MulticriteriaEvaluation.NONE, Collections.singleton(Constants.JAHIANT_PAGE));
+            }
+
+            Predicate<JCRNodeWrapper> predicate = NodeHelper.getTypesPredicate(recursionTypesFilter);
+            DescendantsIterator it = new DescendantsIterator(i18node, predicate);
+
+            JCRNodeWrapper max = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
+                    .filter(predicate).filter(ThrowingPredicate.unchecked(n -> n.hasProperty(Constants.JCR_LASTMODIFIED)))
+                    .reduce(i18node, (n1, n2) -> ThrowingSupplier.unchecked(() -> n1.getProperty(Constants.JCR_LASTMODIFIED).getLong() > n2.getProperty(Constants.JCR_LASTMODIFIED).getLong() ? n1 : n2).get());
+            Calendar date = max.getProperty(Constants.JCR_LASTMODIFIED).getDate();
+            return ISO8601.format(date);
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static String normalizePath(String path) {
         return (path.endsWith("/") ? path : path + "/");
     }
@@ -393,7 +419,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             if (node == null) {
                 throw new NoSuchElementException();
             }
-            position ++;
+            position++;
             return node;
         }
 
@@ -404,7 +430,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
         @Override
         public void skip(long skipNum) {
-            for (int i = 0; i< skipNum; i++) {
+            for (int i = 0; i < skipNum; i++) {
                 getNext(true);
             }
             if (node == null) {
