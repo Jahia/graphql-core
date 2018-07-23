@@ -111,7 +111,7 @@ public class PaginationHelper {
         return filtered;
     }
 
-    public static <T> DXPaginatedData<T> paginate(Stream<T> source, CursorSupport<T> cursorSupport, Arguments arguments, int totalCount) {
+    public static <T> DXPaginatedData<T> paginate(Stream<T> source, CursorSupport<T> cursorSupport, Arguments arguments) {
         MutableInt count = new MutableInt(0);
         MutableObject last = new MutableObject();
         source = source.peek(c -> count.increment());
@@ -163,10 +163,7 @@ public class PaginationHelper {
         if (hasNext) {
             filtered = filtered.subList(0, filtered.size() -1 );
         }
-        if (!arguments.isCursor() && !arguments.isOffsetLimit()) {
-            totalCount = filtered.size();
-        }
-        return new StreamBasedDXPaginatedData<>(filtered, cursorSupport, hasPrevious, hasNext, totalCount, count.intValue(), it);
+        return new StreamBasedDXPaginatedData<>(filtered, cursorSupport, hasPrevious, hasNext, count.intValue(), it);
     }
 
     public static Arguments parseArguments(DataFetchingEnvironment environment) {
@@ -246,8 +243,8 @@ public class PaginationHelper {
         private final CursorSupport<T> cursorSupport;
         private int startOffset = 0;
 
-        public StreamBasedDXPaginatedData(List<T> filtered, CursorSupport<T> cursorSupport, boolean hasPrevious, boolean hasNext, int totalCount, int startOffset, Iterator<T> remaining) {
-            super(filtered, hasPrevious, hasNext, filtered.size(), totalCount);
+        public StreamBasedDXPaginatedData(List<T> filtered, CursorSupport<T> cursorSupport, boolean hasPrevious, boolean hasNext, int startOffset, Iterator<T> remaining) {
+            super(filtered, hasPrevious, hasNext, filtered.size(), -1);
             this.filtered = filtered;
             this.remaining = remaining;
             this.cursorSupport = cursorSupport;

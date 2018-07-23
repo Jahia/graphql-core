@@ -234,13 +234,8 @@ public class NodeHelper {
                 })
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
 
-        int totalSize = -1;
-        if (typesFilter == null && propertiesFilter == null && fieldFilter == null) {
-            // Can return total size only if no filters are enabled
-            totalSize = (int) it.getSize();
-        }
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
-        return PaginationHelper.paginate(stream, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments, totalSize);
+        return PaginationHelper.paginate(stream, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
     }
 
     private interface PropertyEvaluationAlgorithm {
