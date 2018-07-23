@@ -177,6 +177,9 @@ public class PaginationHelper {
         if (hasNext) {
             filtered = filtered.subList(0, filtered.size() -1 );
         }
+        if (!arguments.isCursor() && !arguments.isOffsetLimit()) {
+            totalCount = filtered.size();
+        }
         return new StreamBasedDXPaginatedData<>(filtered, cursorSupport, hasPrevious, hasNext, totalCount, count.intValue());
     }
 
