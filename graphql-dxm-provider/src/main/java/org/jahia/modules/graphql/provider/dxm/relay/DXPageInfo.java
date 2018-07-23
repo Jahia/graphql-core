@@ -47,20 +47,18 @@ import graphql.relay.ConnectionCursor;
 import graphql.relay.DefaultPageInfo;
 
 public class DXPageInfo extends DefaultPageInfo {
-    private int nodesCount;
-    private int totalCount;
+    private DXPaginatedData data;
 
-    public DXPageInfo(ConnectionCursor startCursor, ConnectionCursor endCursor, boolean hasPreviousPage, boolean hasNextPage, int nodesCount, int totalCount) {
-        super(startCursor, endCursor, hasPreviousPage, hasNextPage);
-        this.nodesCount = nodesCount;
-        this.totalCount = totalCount;
+    public DXPageInfo(ConnectionCursor startCursor, ConnectionCursor endCursor, DXPaginatedData data) {
+        super(startCursor, endCursor, data.hasPreviousPage(), data.hasNextPage());
+        this.data = data;
     }
 
     public int getNodesCount() {
-        return nodesCount;
+        return data.getNodesCount();
     }
 
     public int getTotalCount() {
-        return totalCount;
+        return data.getTotalCount();
     }
 }

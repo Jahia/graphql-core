@@ -86,10 +86,7 @@ public class DXPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T>
         return new DXPageInfo(
                 edges.size() > 0 ? edges.get(0).getCursor() : null,
                 edges.size() > 0 ? edges.get(edges.size() - 1).getCursor() : null,
-                paginatedData.hasPreviousPage(),
-                paginatedData.hasNextPage(),
-                paginatedData.getNodesCount(),
-                paginatedData.getTotalCount());
+                paginatedData);
     }
 
     private List<Edge<T>> buildEdges(DXPaginatedData<T> paginatedData) {
