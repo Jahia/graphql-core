@@ -218,7 +218,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                    @GraphQLName("includesSelf") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includesSelf,
                                                    DataFetchingEnvironment environment) {
         try {
-            return NodeHelper.getPaginatedNodesList(node.getNodes(), typesFilter, propertiesFilter, fieldFilter, environment);
+            return NodeHelper.getPaginatedNodesList(node.getNodes(), names, typesFilter, propertiesFilter, fieldFilter, environment);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -250,7 +250,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                       DataFetchingEnvironment environment) {
         try {
             DescendantsIterator it = new DescendantsIterator(node, NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, environment));
-            return NodeHelper.getPaginatedNodesList(it, typesFilter, propertiesFilter, fieldFilter, environment);
+            return NodeHelper.getPaginatedNodesList(it, null, typesFilter, propertiesFilter, fieldFilter, environment);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }

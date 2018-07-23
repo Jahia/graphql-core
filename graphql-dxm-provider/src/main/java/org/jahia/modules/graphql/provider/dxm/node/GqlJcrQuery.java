@@ -64,11 +64,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
-import javax.jcr.query.qom.Constraint;
-import javax.jcr.query.qom.QueryObjectModel;
-import javax.jcr.query.qom.QueryObjectModelConstants;
-import javax.jcr.query.qom.QueryObjectModelFactory;
-import javax.jcr.query.qom.Selector;
+import javax.jcr.query.qom.*;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -242,7 +238,7 @@ public class GqlJcrQuery {
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
             JCRNodeIteratorWrapper nodes = q.execute().getNodes();
             // todo: naive implementation of the pagination, could be improved in some cases by setting limit/offset in query
-            return NodeHelper.getPaginatedNodesList(nodes, null, null, fieldFilter, environment);
+            return NodeHelper.getPaginatedNodesList(nodes, null, null, null, fieldFilter, environment);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }

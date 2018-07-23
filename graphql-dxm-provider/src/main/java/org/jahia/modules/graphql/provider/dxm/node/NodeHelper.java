@@ -221,10 +221,10 @@ public class NodeHelper {
         return result;
     }
 
-    public static DXPaginatedData<GqlJcrNode> getPaginatedNodesList(JCRNodeIteratorWrapper it, GqlJcrNode.NodeTypesInput typesFilter, GqlJcrNode.NodePropertiesInput propertiesFilter, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+    public static DXPaginatedData<GqlJcrNode> getPaginatedNodesList(JCRNodeIteratorWrapper it, Collection<String> names, GqlJcrNode.NodeTypesInput typesFilter, GqlJcrNode.NodePropertiesInput propertiesFilter, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
         Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
                 .filter(node-> PermissionHelper.hasPermission(node, environment))
-                .filter(getNodesPredicate(null, typesFilter, propertiesFilter, environment))
+                .filter(getNodesPredicate(names, typesFilter, propertiesFilter, environment))
                 .map(descendant -> {
                     try {
                         return SpecializedTypesHandler.getNode(descendant);
