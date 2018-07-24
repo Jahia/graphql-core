@@ -391,7 +391,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                             its.push(next.getNodes());
                         }
                     } else {
-                        return null;
+                        next = null;
                     }
                 } catch (RepositoryException e) {
                     throw new RuntimeException(e);
