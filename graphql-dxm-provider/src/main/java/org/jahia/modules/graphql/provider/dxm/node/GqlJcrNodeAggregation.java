@@ -54,6 +54,7 @@ import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
+import pl.touk.throwing.ThrowingSupplier;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
@@ -133,14 +134,14 @@ public class GqlJcrNodeAggregation {
         @GraphQLDescription("The long representation of a JCR node property")
         public Long longPropertyValue(@GraphQLName("name") @GraphQLDescription("The name of the JCR property") @GraphQLNonNull String name,
                                       @GraphQLName("language") @GraphQLDescription("The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones") String language) {
-            return longFunction.apply(mapLong(getAllValues(name, language)));
+            return longFunction.apply(getAllValues(name, language).mapToLong(v -> ThrowingSupplier.unchecked(v::getLong).get()));
         }
 
         @GraphQLField
         @GraphQLDescription("The float representation of a JCR node property")
         public Double floatPropertyValue(@GraphQLName("name") @GraphQLDescription("The name of the JCR property") @GraphQLNonNull String name,
-                                          @GraphQLName("language") @GraphQLDescription("The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones") String language) {
-            return doubleFunction.apply(mapDouble(getAllValues(name, language)));
+                                         @GraphQLName("language") @GraphQLDescription("The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones") String language) {
+            return doubleFunction.apply(getAllValues(name, language).mapToDouble(v -> ThrowingSupplier.unchecked(v::getDouble).get()));
         }
 
         @GraphQLField
@@ -151,26 +152,6 @@ public class GqlJcrNodeAggregation {
             c.setTime(new Date(longPropertyValue(name, language)));
             return ISO8601.format(c);
         }
-    }
-
-    private LongStream mapLong(Stream<Value> values) {
-        return values.mapToLong(v -> {
-            try {
-                return v.getLong();
-            } catch (RepositoryException e) {
-                throw new DataFetchingException(e);
-            }
-        });
-    }
-
-    private DoubleStream mapDouble(Stream<Value> values) {
-        return values.mapToDouble(v -> {
-            try {
-                return v.getDouble();
-            } catch (RepositoryException e) {
-                throw new DataFetchingException(e);
-            }
-        });
     }
 
     private Stream<Value> getAllValues(@GraphQLNonNull @GraphQLName("name") @GraphQLDescription("The name of the JCR property") String name, @GraphQLName("language") @GraphQLDescription("The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones") String language) {

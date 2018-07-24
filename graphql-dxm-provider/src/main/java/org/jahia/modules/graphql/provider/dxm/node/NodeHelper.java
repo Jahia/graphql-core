@@ -48,12 +48,14 @@ import org.jahia.modules.graphql.provider.dxm.predicate.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
-import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.LanguageCodeConverters;
+import pl.touk.throwing.ThrowingFunction;
+import pl.touk.throwing.ThrowingPredicate;
 
+import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import java.util.*;
 import java.util.function.Consumer;
@@ -135,13 +137,7 @@ public class NodeHelper {
         } else {
             LinkedList<Predicate<JCRNodeWrapper>> typePredicates = new LinkedList<>();
             for (String typeFilter : typesFilter.getTypes()) {
-                typePredicates.add(node -> {
-                    try {
-                        return node.isNodeType(typeFilter);
-                    } catch (RepositoryException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                typePredicates.add(ThrowingPredicate.unchecked(node -> node.isNodeType(typeFilter)));
             }
             typesPredicate = PredicateHelper.getCombinedPredicate(typePredicates, typesFilter.getMulticriteriaEvaluation(), MulticriteriaEvaluation.ANY);
         }
@@ -221,17 +217,11 @@ public class NodeHelper {
         return result;
     }
 
-    public static DXPaginatedData<GqlJcrNode> getPaginatedNodesList(JCRNodeIteratorWrapper it, Collection<String> names, GqlJcrNode.NodeTypesInput typesFilter, GqlJcrNode.NodePropertiesInput propertiesFilter, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+    public static DXPaginatedData<GqlJcrNode> getPaginatedNodesList(NodeIterator it, Collection<String> names, GqlJcrNode.NodeTypesInput typesFilter, GqlJcrNode.NodePropertiesInput propertiesFilter, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
         Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
                 .filter(node-> PermissionHelper.hasPermission(node, environment))
                 .filter(getNodesPredicate(names, typesFilter, propertiesFilter, environment))
-                .map(descendant -> {
-                    try {
-                        return SpecializedTypesHandler.getNode(descendant);
-                    } catch (RepositoryException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
+                .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode))
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
 
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);

@@ -58,8 +58,7 @@ import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @GraphQLTypeExtension(GqlJcrQuery.class)
 public class NodeTypeJCRQueryExtensions {
@@ -90,9 +89,8 @@ public class NodeTypeJCRQueryExtensions {
                                                                DataFetchingEnvironment environment) {
         try {
             PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
-            List<GqlJcrNodeType> mapped = NodeTypeHelper.getNodeTypes(input).map(GqlJcrNodeType::new)
-                    .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)))
-                    .collect(Collectors.toList());
+            Stream<GqlJcrNodeType> mapped = NodeTypeHelper.getNodeTypes(input).map(GqlJcrNodeType::new)
+                    .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
 
             return PaginationHelper.paginate(mapped, GqlJcrNodeType::getName, arguments);
         } catch (RepositoryException e) {

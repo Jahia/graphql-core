@@ -49,15 +49,16 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
+import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.RepositoryException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.jahia.services.seo.jcr.VanityUrlManager.VANITYURLMAPPINGS_NODE;
 
@@ -102,14 +103,10 @@ public class VanityUrlJCRNodeExtensions {
             throw new RuntimeException(e);
         }
 
-        List<GqlJcrVanityUrl> result = new LinkedList<>();
-        vanityUrls.forEach(vanityUrl -> {
-            GqlJcrVanityUrl gqlVanityUrl = new GqlJcrVanityUrl(vanityUrl);
-            if (languages == null || languages.contains(gqlVanityUrl.getLanguage())) {
-                result.add(gqlVanityUrl);
-            }
-        });
-
-        return FilterHelper.filterList(result, fieldFilter, environment);
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)vanityUrls, Spliterator.ORDERED), false)
+                .map(GqlJcrVanityUrl::new)
+                .filter(gqlJcrVanityUrl -> languages == null || languages.contains(gqlJcrVanityUrl.getLanguage()))
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
+                .collect(Collectors.toList());
     }
 }

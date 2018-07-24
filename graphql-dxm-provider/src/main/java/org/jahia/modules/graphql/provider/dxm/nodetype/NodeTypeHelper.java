@@ -44,16 +44,6 @@
 
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
-
-import javax.jcr.RepositoryException;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
@@ -63,6 +53,12 @@ import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.services.sites.JahiaSitesService;
+
+import javax.jcr.RepositoryException;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Utility class for retrieving and filtering node types.
@@ -142,11 +138,8 @@ public final class NodeTypeHelper {
                 modules.add("system-jahia");
             }
         }
-        Set<ExtendedNodeType> nodeTypes = new LinkedHashSet<>();
-        (modules != null ? registry.getAllNodeTypes(modules) : registry.getAllNodeTypes())
-                .forEach(nt -> nodeTypes.add(nt));
-
-        return nodeTypes.stream();
+        NodeTypeRegistry.JahiaNodeTypeIterator it = (modules != null ? registry.getAllNodeTypes(modules) : registry.getAllNodeTypes());
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<ExtendedNodeType>)it, Spliterator.ORDERED), false);
     }
 
     /**

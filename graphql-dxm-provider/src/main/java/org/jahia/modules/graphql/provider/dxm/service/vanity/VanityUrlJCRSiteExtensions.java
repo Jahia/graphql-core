@@ -43,7 +43,10 @@
  */
 package org.jahia.modules.graphql.provider.dxm.service.vanity;
 
-import graphql.annotations.annotationTypes.*;
+import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
@@ -56,12 +59,15 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.seo.VanityUrl;
 import org.jahia.services.seo.jcr.VanityUrlService;
+import pl.touk.throwing.ThrowingFunction;
 
+import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.jahia.services.seo.jcr.VanityUrlManager.JAHIANT_VANITYURL;
 
@@ -112,21 +118,13 @@ public class VanityUrlJCRSiteExtensions {
 
     private List<GqlJcrVanityUrl> getGqlJcrVanityUrls(String url, boolean activeOnly) {
         try {
-            List<GqlJcrVanityUrl> vanityUrls = new LinkedList<>();
             JCRSessionWrapper jcrSessionWrapper = siteNode.getNode().getSession();
 
             VanityUrlService vanityUrlvanityUrlService = BundleUtils.getOsgiService(VanityUrlService.class, null);
             List<VanityUrl> urls = vanityUrlvanityUrlService.findExistingVanityUrls(url, siteNode.getSiteKey(), jcrSessionWrapper.getWorkspace().getName());
-            urls.forEach(vanityUrl -> {
-                try {
-                    if (!activeOnly || vanityUrl.isActive()) {
-                        vanityUrls.add(new GqlJcrVanityUrl(jcrSessionWrapper.getNode(vanityUrl.getPath())));
-                    }
-                } catch (RepositoryException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-            return vanityUrls;
+            return urls.stream().filter(vanityUrl -> !activeOnly || vanityUrl.isActive())
+                    .map(ThrowingFunction.unchecked(vanityUrl -> new GqlJcrVanityUrl(jcrSessionWrapper.getNode(vanityUrl.getPath()))))
+                    .collect(Collectors.toList());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -144,19 +142,17 @@ public class VanityUrlJCRSiteExtensions {
     @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
     public DXPaginatedData<GqlJcrVanityUrl> getAllVanityURLs(DataFetchingEnvironment environment) {
         try {
-            List<GqlJcrVanityUrl> vanityUrls = new LinkedList<>();
             PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
             JCRSessionWrapper jcrSession = siteNode.getNode().getSession();
 
-            StringBuilder vanityQuery = new StringBuilder("SELECT * FROM [").append(JAHIANT_VANITYURL).append("] AS vanityURL WHERE ");
-            vanityQuery.append("ISDESCENDANTNODE('/sites/").append(JCRContentUtils.sqlEncode(siteNode.getSiteKey())).append("')");
+            String vanityQuery = "SELECT * FROM [" + JAHIANT_VANITYURL + "] AS vanityURL WHERE " +
+                    "ISDESCENDANTNODE('/sites/" + JCRContentUtils.sqlEncode(siteNode.getSiteKey()) + "')";
+            Query query = jcrSession.getWorkspace().getQueryManager().createQuery(vanityQuery, Query.JCR_SQL2);
+            NodeIterator it = query.execute().getNodes();
+            Stream<GqlJcrVanityUrl> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
+                    .map(GqlJcrVanityUrl::new);
 
-            Query query = jcrSession.getWorkspace().getQueryManager().createQuery(vanityQuery.toString(), Query.JCR_SQL2);
-
-            query.execute().getNodes().forEachRemaining(vanityUrl -> {
-                vanityUrls.add(new GqlJcrVanityUrl((JCRNodeWrapper) vanityUrl));
-            });
-            return PaginationHelper.paginate(vanityUrls, v -> PaginationHelper.encodeCursor(v.getUuid()), arguments);
+            return PaginationHelper.paginate(stream, v -> PaginationHelper.encodeCursor(v.getUuid()), arguments);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }

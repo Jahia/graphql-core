@@ -50,12 +50,12 @@ import org.apache.commons.lang.LocaleUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
-import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
-import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
-import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
-import org.jahia.services.content.*;
+import org.jahia.services.content.JCRNodeIteratorWrapper;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.QueryManagerWrapper;
 import org.jahia.services.content.nodetypes.ValueImpl;
 import org.jahia.services.query.QueryWrapper;
 
@@ -261,9 +261,6 @@ public class GqlJcrQuery {
         @GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL field values") FieldFiltersInput fieldFilter,
         DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
-
-        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
-        List<GqlJcrNode> result = new LinkedList<>();
         try {
             Session session = getSession(criteria.getLanguage());
             QueryManager queryManager = session.getWorkspace().getQueryManager();
@@ -272,16 +269,10 @@ public class GqlJcrQuery {
             Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory);
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
-            while (it.hasNext()) {
-                JCRNodeWrapper node = (JCRNodeWrapper) it.nextNode();
-                if (PermissionHelper.hasPermission(node, environment)) {
-                    result.add(SpecializedTypesHandler.getNode(node));
-                }
-            }
+            return NodeHelper.getPaginatedNodesList(it, null, null, null, fieldFilter, environment);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
-        return PaginationHelper.paginate(FilterHelper.filterConnection(result, fieldFilter, environment), n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
     }
 
     private static Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory) throws RepositoryException {
