@@ -54,6 +54,9 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/**
+ * Stream utils functions
+ */
 public class StreamUtils {
     public static <T> Stream<T> takeWhile(Stream<T> stream, Predicate<? super T> p) {
         class Taking extends Spliterators.AbstractSpliterator<T> implements Consumer<T> {
@@ -108,6 +111,12 @@ public class StreamUtils {
         return StreamSupport.stream(new Taking(stream.spliterator()), stream.isParallel()).onClose(stream::close);
     }
 
+    /**
+     * Drop all elements until predicate is true
+     * @param stream the given stream
+     * @param p the predicate
+     * @return the stream
+     */
     public static <T> Stream<T> dropUntil(Stream<T> stream, Predicate<? super T> p) {
         return stream.filter(FromPredicate.from(p));
     }

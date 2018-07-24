@@ -253,7 +253,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                       @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
                                                       DataFetchingEnvironment environment) {
         try {
-            DescendantsIterator it = new DescendantsIterator(node, NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, environment));
+            JCRDescendantsNodeIterator it = new JCRDescendantsNodeIterator(node, NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, environment));
             return NodeHelper.getPaginatedNodesList(it, null, typesFilter, propertiesFilter, fieldFilter, environment);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
@@ -340,6 +340,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         return node.hasPermission(permissionName);
     }
 
+    @Override
     public String getAggregatedLastModifiedDate(@GraphQLName("language") String language, @GraphQLName("recursionTypesFilter") NodeTypesInput recursionTypesFilter, DataFetchingEnvironment environment) {
         try {
             JCRNodeWrapper i18node = NodeHelper.getNodeInLanguage(node, language);
@@ -350,11 +351,13 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             }
 
             Predicate<JCRNodeWrapper> predicate = NodeHelper.getTypesPredicate(recursionTypesFilter);
-            DescendantsIterator it = new DescendantsIterator(i18node, predicate);
+            JCRDescendantsNodeIterator it = new JCRDescendantsNodeIterator(i18node, predicate);
 
             JCRNodeWrapper max = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
-                    .filter(predicate).filter(ThrowingPredicate.unchecked(n -> n.hasProperty(Constants.JCR_LASTMODIFIED)))
+                    .filter(predicate)
+                    .filter(ThrowingPredicate.unchecked(n -> n.hasProperty(Constants.JCR_LASTMODIFIED)))
                     .reduce(i18node, (n1, n2) -> ThrowingSupplier.unchecked(() -> n1.getProperty(Constants.JCR_LASTMODIFIED).getLong() > n2.getProperty(Constants.JCR_LASTMODIFIED).getLong() ? n1 : n2).get());
+
             Calendar date = max.getProperty(Constants.JCR_LASTMODIFIED).getDate();
             return ISO8601.format(date);
         } catch (RepositoryException e) {
@@ -364,89 +367,5 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     private static String normalizePath(String path) {
         return (path.endsWith("/") ? path : path + "/");
-    }
-
-    private class DescendantsIterator implements JCRNodeIteratorWrapper {
-        private Stack<JCRNodeIteratorWrapper> its = new Stack<>();
-        private Predicate<JCRNodeWrapper> recursionPredicate;
-        private JCRNodeWrapper next = null;
-        private boolean preloaded = false;
-        private int position = 0;
-
-        public DescendantsIterator(JCRNodeWrapper node, Predicate<JCRNodeWrapper> recursionPredicate) throws RepositoryException {
-            this.its.push(node.getNodes());
-            this.recursionPredicate = recursionPredicate;
-        }
-
-        private JCRNodeWrapper getNext(boolean forward) {
-            if (!preloaded) {
-                preloaded = true;
-                try {
-                    while (!its.isEmpty() && !its.peek().hasNext()) {
-                        its.pop();
-                    }
-                    if (!its.isEmpty()) {
-                        next = (JCRNodeWrapper) its.peek().nextNode();
-                        if (recursionPredicate.test(next)) {
-                            its.push(next.getNodes());
-                        }
-                    } else {
-                        next = null;
-                    }
-                } catch (RepositoryException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            if (forward) {
-                preloaded = false;
-            }
-            return next;
-        }
-
-        @Override
-        public Iterator<JCRNodeWrapper> iterator() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return getNext(false) != null;
-        }
-
-        @Override
-        public JCRNodeWrapper next() {
-            JCRNodeWrapper node = getNext(true);
-            if (node == null) {
-                throw new NoSuchElementException();
-            }
-            position++;
-            return node;
-        }
-
-        @Override
-        public Node nextNode() {
-            return next();
-        }
-
-        @Override
-        public void skip(long skipNum) {
-            for (int i = 0; i < skipNum; i++) {
-                getNext(true);
-            }
-            if (node == null) {
-                throw new NoSuchElementException();
-            }
-        }
-
-        @Override
-        public long getSize() {
-            // Unknown size
-            return -1;
-        }
-
-        @Override
-        public long getPosition() {
-            return position;
-        }
     }
 }
