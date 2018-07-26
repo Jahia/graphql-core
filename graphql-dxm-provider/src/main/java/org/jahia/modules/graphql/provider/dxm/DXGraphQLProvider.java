@@ -48,25 +48,28 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.processor.GraphQLAnnotationsComponent;
 import graphql.annotations.processor.ProcessingElementsContainer;
 import graphql.annotations.processor.retrievers.GraphQLExtensionsHandler;
+import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
+import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
-import graphql.servlet.GraphQLMutationProvider;
-import graphql.servlet.GraphQLProvider;
-import graphql.servlet.GraphQLQueryProvider;
-import graphql.servlet.GraphQLTypesProvider;
+import graphql.servlet.*;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.osgi.service.component.annotations.*;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.AnnotatedParameterizedType;
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.ParameterizedType;
 import java.util.*;
 
 @Component(service = GraphQLProvider.class, immediate = true)
-public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider {
+public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLSubscriptionProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider, TypeFunction {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
@@ -81,6 +84,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     private GraphQLObjectType queryType;
     private GraphQLObjectType mutationType;
+    private GraphQLObjectType subscriptionType;
+
     private DXRelay relay;
 
     private Map<String, Class<? extends DXConnection<?>>> connectionTypes = new HashMap<>();
@@ -117,6 +122,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         container = graphQLAnnotations.createContainer();
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
+        ((DefaultTypeFunction)defaultTypeFunction).register(this);
 
         GraphQLExtensionsHandler extensionsHandler = graphQLAnnotations.getExtensionsHandler();
 
@@ -153,6 +159,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         queryType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Query.class, container);
         mutationType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Mutation.class, container);
+        subscriptionType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Subscription.class, container);
 
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
@@ -184,6 +191,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         return mutationType.getFieldDefinitions();
     }
 
+    @Override
+    public Collection<GraphQLFieldDefinition> getSubscriptions() {
+        return subscriptionType.getFieldDefinitions();
+    }
+
     public Class<? extends DXConnection<?>> getConnectionType(String connectionName) {
         return connectionTypes.get(connectionName);
     }
@@ -199,5 +211,42 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     @GraphQLName("Mutation")
     public static class Mutation {
     }
+
+    @GraphQLName("Subscription")
+    public static class Subscription {
+    }
+
+    private TypeFunction defaultTypeFunction;
+
+    @Reference(target = "(type=default)", policy=ReferencePolicy.DYNAMIC, policyOption= ReferencePolicyOption.GREEDY)
+    public void setDefaultTypeFunction(TypeFunction defaultTypeFunction) {
+        this.defaultTypeFunction = defaultTypeFunction;
+    }
+
+    public void unsetDefaultTypeFunction(TypeFunction defaultTypeFunction) {
+        this.defaultTypeFunction = null;
+    }
+
+    @Override
+    public boolean canBuildType(Class<?> aClass, AnnotatedType annotatedType) {
+        return Publisher.class.isAssignableFrom(aClass);
+    }
+
+    @Override
+    public GraphQLType buildType(boolean input, Class<?> aClass, AnnotatedType annotatedType, ProcessingElementsContainer container) {
+        if (!(annotatedType instanceof AnnotatedParameterizedType)) {
+            throw new IllegalArgumentException("List type parameter should be specified");
+        }
+        AnnotatedParameterizedType parameterizedType = (AnnotatedParameterizedType) annotatedType;
+        AnnotatedType arg = parameterizedType.getAnnotatedActualTypeArguments()[0];
+        Class<?> klass;
+        if (arg.getType() instanceof ParameterizedType) {
+            klass = (Class<?>) ((ParameterizedType) (arg.getType())).getRawType();
+        } else {
+            klass = (Class<?>) arg.getType();
+        }
+        return defaultTypeFunction.buildType(input, klass, arg,container);
+    }
+
 
 }

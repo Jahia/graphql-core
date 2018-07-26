@@ -58,7 +58,7 @@ public class JCRExecutionStrategyProvider implements ExecutionStrategyProvider {
     public JCRExecutionStrategyProvider() {
         queryStrategy = new AsyncExecutionStrategy(new JCRDataFetchingExceptionHandler());
         mutationStrategy = new JCRMutationExecutionStrategy(new JCRDataFetchingExceptionHandler());
-        subscriptionExecutionStrategy = queryStrategy;
+        subscriptionExecutionStrategy = new JCRSubscriptionExecutionStrategy(new JCRDataFetchingExceptionHandler());
     }
 
     @Override
