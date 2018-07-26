@@ -62,16 +62,17 @@ import java.util.stream.StreamSupport;
 
 /**
  * Utility class for retrieving and filtering node types.
- * 
+ *
  * @author Sergiy Shyrkov
  */
 public final class NodeTypeHelper {
 
-    private static final Predicate<ExtendedNodeType> PREDICATE_IS_ABSTARCT = (nt) -> nt.isAbstract();
+    private static final Predicate<ExtendedNodeType> PREDICATE_IS_ABSTARCT = (nodeType) -> nodeType.isAbstract();
 
-    private static final Predicate<ExtendedNodeType> PREDICATE_IS_MIXIN = (nt) -> nt.isMixin();
+    private static final Predicate<ExtendedNodeType> PREDICATE_IS_MIXIN = (nodeType) -> nodeType.isMixin();
 
     private static Predicate<ExtendedNodeType> getFilterPredicate(NodeTypesListInput input) {
+
         if (input == null) {
             return PredicateHelper.truePredicate();
         }
@@ -110,7 +111,7 @@ public final class NodeTypeHelper {
 
     /**
      * Returns a stream of node types, matching the specified input criteria.
-     * 
+     *
      * @param input the input criteria
      * @return a stream of node types, matching the specified input criteria
      * @throws RepositoryException in case of an error retrieving node type information
@@ -119,6 +120,7 @@ public final class NodeTypeHelper {
         return getStream(input).filter(getFilterPredicate(input));
     }
 
+    @SuppressWarnings("unchecked")
     private static Stream<ExtendedNodeType> getStream(NodeTypesListInput input) throws RepositoryException {
         if (input != null && CollectionUtils.isNotEmpty(input.getModules())
                 && StringUtils.isNotEmpty(input.getSiteKey())) {
@@ -128,40 +130,32 @@ public final class NodeTypeHelper {
         List<String> modules = null;
         NodeTypeRegistry registry = NodeTypeRegistry.getInstance();
         if (input != null) {
-            if (CollectionUtils.isNotEmpty(input.getModules())) {
-                modules = input.getModules();
-            }
-            if (StringUtils.isNotEmpty(input.getSiteKey())) {
+            List<String> inputModules = input.getModules();
+            String inputSiteKey = input.getSiteKey();
+            if (CollectionUtils.isNotEmpty(inputModules)) {
+                modules = inputModules;
+            } else if (StringUtils.isNotEmpty(inputSiteKey)) {
                 modules = new LinkedList<>(
-                        StringUtils.isNotEmpty(input.getSiteKey()) ? getModulesForSite(input.getSiteKey())
-                                : input.getModules());
+                        StringUtils.isNotEmpty(inputSiteKey) ? getModulesForSite(inputSiteKey)
+                                : inputModules);
                 modules.add("system-jahia");
             }
         }
         NodeTypeRegistry.JahiaNodeTypeIterator it = (modules != null ? registry.getAllNodeTypes(modules) : registry.getAllNodeTypes());
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<ExtendedNodeType>)it, Spliterator.ORDERED), false);
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<ExtendedNodeType>) it, Spliterator.ORDERED), false);
     }
 
-    /**
-     * Returns a predicate that allows only specified node types, also considering their sub-types if <code>considerSubTypes</code> is
-     * <code>true</code>.
-     * 
-     * @param types the list of types, the predicate will allow
-     * @param considerSubTypes if <code>true</code>, we also allow sub-types of the specified node types
-     * @return predicate that allows only specified node types, also considering their sub-types if <code>considerSubTypes</code> is
-     *         <code>true</code>
-     */
-    private static Predicate<ExtendedNodeType> getTypesPredicate(Set<String> types, boolean considerSubTypes) {
-        return types == null || types.isEmpty() ? PredicateHelper.truePredicate()
-                : nt -> isNodeType(nt, types, considerSubTypes);
+    private static Predicate<ExtendedNodeType> getTypesPredicate(Set<String> nodeTypes, boolean considerSubTypes) {
+        return nodeTypes == null || nodeTypes.isEmpty() ? PredicateHelper.truePredicate()
+                : nodeType -> isNodeType(nodeType, nodeTypes, considerSubTypes);
     }
 
-    private static boolean isNodeType(ExtendedNodeType nt, Set<String> types, boolean considerSubTypes) {
+    private static boolean isNodeType(ExtendedNodeType nodeType, Set<String> nodeTypes, boolean considerSubTypes) {
         if (!considerSubTypes) {
-            return types.contains(nt.getName());
+            return nodeTypes.contains(nodeType.getName());
         }
-        for (String refType : types) {
-            if (nt.isNodeType(refType)) {
+        for (String nt : nodeTypes) {
+            if (nodeType.isNodeType(nt)) {
                 return true;
             }
         }
@@ -169,6 +163,5 @@ public final class NodeTypeHelper {
     }
 
     private NodeTypeHelper() {
-        super();
     }
 }

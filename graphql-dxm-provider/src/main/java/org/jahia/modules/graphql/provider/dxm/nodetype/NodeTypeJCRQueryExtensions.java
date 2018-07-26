@@ -63,14 +63,6 @@ import java.util.stream.Stream;
 @GraphQLTypeExtension(GqlJcrQuery.class)
 public class NodeTypeJCRQueryExtensions {
 
-    public NodeTypeJCRQueryExtensions() {
-        this(null);
-    }
-
-    public NodeTypeJCRQueryExtensions(GqlJcrQuery source) {
-        super();
-    }
-
     @GraphQLField
     @GraphQLDescription("Get a nodetype by its name")
     public static GqlJcrNodeType getNodeTypeByName(@GraphQLNonNull @GraphQLName("name") String name) {
@@ -91,11 +83,9 @@ public class NodeTypeJCRQueryExtensions {
             PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
             Stream<GqlJcrNodeType> mapped = NodeTypeHelper.getNodeTypes(input).map(GqlJcrNodeType::new)
                     .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
-
             return PaginationHelper.paginate(mapped, GqlJcrNodeType::getName, arguments);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
     }
-
 }

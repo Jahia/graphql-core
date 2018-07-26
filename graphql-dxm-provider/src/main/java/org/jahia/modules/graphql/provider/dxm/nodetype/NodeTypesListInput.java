@@ -112,7 +112,7 @@ public class NodeTypesListInput {
     }
 
     @GraphQLField
-    @GraphQLDescription("Only include types specified by this list (also considering sy-types, if considerSubTypes is true)")
+    @GraphQLDescription("Only include types specified by this list (also considering sub-types, if considerSubTypes is true)")
     public List<String> getIncludedTypes() {
         return includedTypes;
     }
@@ -124,7 +124,7 @@ public class NodeTypesListInput {
     }
 
     @GraphQLField
-    @GraphQLDescription("Exclude the types, specified by this list (also considering sy-types, if considerSubTypes is true)")
+    @GraphQLDescription("Exclude the types, specified by this list (also considering sub-types, if considerSubTypes is true)")
     public List<String> getExcludedTypes() {
         return excludedTypes;
     }
