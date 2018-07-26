@@ -49,6 +49,9 @@ import graphql.annotations.annotationTypes.GraphQLName;
 
 import java.util.List;
 
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
+
 /**
  * Input for nodetypes list
  */
@@ -59,25 +62,30 @@ public class NodeTypesListInput {
     private Boolean includeNonMixins;
     private String siteKey;
     private Boolean includeAbstract;
-    private List<String> includedTypes;
+    private List<String> includeTypes;
     private Boolean considerSubTypes;
-    private List<String> excludedTypes;
+    private List<String> excludeTypes;
 
-    public NodeTypesListInput(@GraphQLName("siteKey") String siteKey,
+    public NodeTypesListInput(
+            @GraphQLName("siteKey") String siteKey,
             @GraphQLName("modules") List<String> modules,
             @GraphQLName("includeMixins") Boolean includeMixins,
             @GraphQLName("includeNonMixins") Boolean includeNonMixins,
             @GraphQLName("includeAbstract") Boolean includeAbstract,
-            @GraphQLName("includedTypes") List<String> includedTypes,
-            @GraphQLName("excludedTypes") List<String> excludedTypes,
-            @GraphQLName("considerSubTypes") Boolean considerSubTypes) {
+            @GraphQLName("includeTypes") List<String> includeTypes,
+            @GraphQLName("excludeTypes") List<String> excludeTypes,
+            @GraphQLName("considerSubTypes") Boolean considerSubTypes
+    ) throws BaseGqlClientException {
+        if (modules != null && siteKey != null) {
+            throw new GqlJcrWrongInputException("Either a site key or a list of modules can be specified, but not both");
+        }
         this.siteKey = siteKey;
         this.modules = modules;
         this.includeMixins = includeMixins;
         this.includeNonMixins = includeNonMixins;
         this.includeAbstract = includeAbstract;
-        this.includedTypes = includedTypes;
-        this.excludedTypes = excludedTypes;
+        this.includeTypes = includeTypes;
+        this.excludeTypes = excludeTypes;
         this.considerSubTypes = considerSubTypes;
     }
 
@@ -113,8 +121,8 @@ public class NodeTypesListInput {
 
     @GraphQLField
     @GraphQLDescription("Only include types specified by this list (also considering sub-types, if considerSubTypes is true)")
-    public List<String> getIncludedTypes() {
-        return includedTypes;
+    public List<String> getIncludeTypes() {
+        return includeTypes;
     }
 
     @GraphQLField
@@ -125,7 +133,7 @@ public class NodeTypesListInput {
 
     @GraphQLField
     @GraphQLDescription("Exclude the types, specified by this list (also considering sub-types, if considerSubTypes is true)")
-    public List<String> getExcludedTypes() {
-        return excludedTypes;
+    public List<String> getExcludeTypes() {
+        return excludeTypes;
     }
 }

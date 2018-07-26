@@ -44,8 +44,6 @@
 
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.predicate.PredicateHelper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -90,14 +88,14 @@ public final class NodeTypeHelper {
             // do not include any types except mixins
             predicates.add(PREDICATE_IS_MIXIN);
         }
-        if (input.getExcludedTypes() != null && !input.getExcludedTypes().isEmpty()) {
+        if (input.getExcludeTypes() != null && !input.getExcludeTypes().isEmpty()) {
             // do not include excluded types
             predicates.add(
-                    getTypesPredicate(new HashSet<>(input.getExcludedTypes()), input.getConsiderSubTypes()).negate());
+                    getTypesPredicate(new HashSet<>(input.getExcludeTypes()), input.getConsiderSubTypes()).negate());
         }
-        if (input.getIncludedTypes() != null && !input.getIncludedTypes().isEmpty()) {
+        if (input.getIncludeTypes() != null && !input.getIncludeTypes().isEmpty()) {
             // include specified types
-            predicates.add(getTypesPredicate(new HashSet<>(input.getIncludedTypes()), input.getConsiderSubTypes()));
+            predicates.add(getTypesPredicate(new HashSet<>(input.getIncludeTypes()), input.getConsiderSubTypes()));
         }
 
         return predicates.isEmpty() ? PredicateHelper.truePredicate() : PredicateHelper.allPredicates(predicates);
@@ -122,25 +120,23 @@ public final class NodeTypeHelper {
 
     @SuppressWarnings("unchecked")
     private static Stream<ExtendedNodeType> getStream(NodeTypesListInput input) throws RepositoryException {
-        if (input != null && CollectionUtils.isNotEmpty(input.getModules())
-                && StringUtils.isNotEmpty(input.getSiteKey())) {
-            throw new IllegalArgumentException(
-                    "Either a siteKey or a list of modules can be specified as filter, but not both");
-        }
+
         List<String> modules = null;
-        NodeTypeRegistry registry = NodeTypeRegistry.getInstance();
         if (input != null) {
             List<String> inputModules = input.getModules();
             String inputSiteKey = input.getSiteKey();
-            if (CollectionUtils.isNotEmpty(inputModules)) {
+            if (inputModules != null && inputSiteKey != null) {
+                throw new IllegalArgumentException("Either a site key or a list of modules can be specified, but not both");
+            }
+            if (inputModules != null) {
                 modules = inputModules;
-            } else if (StringUtils.isNotEmpty(inputSiteKey)) {
-                modules = new LinkedList<>(
-                        StringUtils.isNotEmpty(inputSiteKey) ? getModulesForSite(inputSiteKey)
-                                : inputModules);
+            } else if (inputSiteKey != null) {
+                modules = new LinkedList<>(getModulesForSite(inputSiteKey));
                 modules.add("system-jahia");
             }
         }
+
+        NodeTypeRegistry registry = NodeTypeRegistry.getInstance();
         NodeTypeRegistry.JahiaNodeTypeIterator it = (modules != null ? registry.getAllNodeTypes(modules) : registry.getAllNodeTypes());
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<ExtendedNodeType>) it, Spliterator.ORDERED), false);
     }

@@ -46,6 +46,8 @@ package org.jahia.test.graphql;
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.AfterClass;
@@ -80,7 +82,7 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldGetNodetype() throws Exception {
+    public void shouldGetNodeType() throws Exception {
         JSONObject result = executeQuery("{\n" +
                 "  jcr{\n" +
                 "    nodeByPath(path:\"/testList\") {\n" +
@@ -113,7 +115,7 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldTestNodetype() throws Exception {
+    public void shouldTestNodeType() throws Exception {
         JSONObject result = executeQuery("{\n" +
                 "  jcr {\n" +
                 "    nodeByPath(path: \"/testList\") {\n" +
@@ -181,7 +183,7 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldRetrieveNodetype() throws Exception {
+    public void shouldRetrieveNodeType() throws Exception {
         JSONObject result = executeQuery("{\n" +
                 "  jcr {\n" +
                 "    nodeTypeByName(name: \"jmix:editorialContent\") {\n" +
@@ -198,21 +200,21 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldNotRetrieveNodetype() throws Exception {
+    public void shouldNotRetrieveNodeType() throws Exception {
         JSONObject result = executeQuery("{\n" +
                 "  jcr {\n" +
-                "    nodeTypeByName(name: \"jmix:wrongNodetype\") {\n" +
+                "    nodeTypeByName(name: \"jmix:wrong\") {\n" +
                 "      name\n" +
                 "      displayName(language: \"en\")\n" +
                 "    }\n" +
                 "  }\n" +
                 "}\n");
 
-        validateError(result, "javax.jcr.nodetype.NoSuchNodeTypeException: Unknown type : jmix:wrongNodetype");
+        validateError(result, "javax.jcr.nodetype.NoSuchNodeTypeException: Unknown type : jmix:wrong");
     }
 
     @Test
-    public void shouldRetrieveNodetypesForModule() throws Exception {
+    public void shouldRetrievesForModule() throws Exception {
         JSONObject result = executeQuery("{\n" +
                 "  jcr {\n" +
                 "    nodeTypes(filter:{modules:[\"default\"]}) {\n" +
@@ -238,7 +240,7 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldNotRetrieveNodetypesForModule() throws Exception {
+    public void shouldNotRetrievesForModule() throws Exception {
         JSONObject result = executeQuery("{\n" +
                 "  jcr {\n" +
                 "    nodeTypes(filter:{modules:[\"wrongModule\"]}) {\n" +
@@ -255,7 +257,7 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldRetrieveMixinNodetypes() throws Exception {
+    public void shouldRetrieveMixins() throws Exception {
         JSONObject result = executeQuery("{\n" +
                 "  jcr {\n" +
                 "    nodeTypes(filter:{includeNonMixins:false}) {\n" +
@@ -281,18 +283,30 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldRetrieveEditorialContentTypesOfSite() throws Exception {
-        JSONObject result = executeQuery("{\n" + 
-            "  jcr {\n" + 
-            "    nodeTypes(filter: {includeMixins: false, siteKey: \"systemsite\", includedTypes: [\"jmix:editorialContent\"], excludedTypes: [\"jmix:studioOnly\", \"jmix:hiddenType\"]}) {\n" + 
-            "      nodes {\n" + 
-            "        name\n" + 
-            "      }\n" + 
-            "    }\n" + 
-            "  }\n" + 
+    public void shouldRetrieveIncludedAndNotExcludedNodeTypes() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+            "  jcr {\n" +
+            "    nodeTypes(filter: {includeMixins: false, siteKey: \"systemsite\", includeTypes: [\"jmix:editorialContent\"], excludeTypes: [\"jmix:studioOnly\", \"jmix:hiddenType\"]}) {\n" +
+            "      nodes {\n" +
+            "        name\n" +
+            "      }\n" +
+            "    }\n" +
+            "  }\n" +
             "}\n");
 
         JSONArray nodeTypes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeTypes").getJSONArray("nodes");
+
+        NodeTypeRegistry nodeTypeRegistry = NodeTypeRegistry.getInstance();
+        Assert.assertEquals(11, nodeTypes.length());
+        for (int i = 0; i < nodeTypes.length(); i++) {
+            JSONObject nodeType = nodeTypes.getJSONObject(i);
+            ExtendedNodeType nt = nodeTypeRegistry.getNodeType(nodeType.getString("name"));
+            Assert.assertTrue(nt.isNodeType("jmix:editorialContent"));
+            Assert.assertFalse(nt.isNodeType("jmix:studioOnly"));
+            Assert.assertFalse(nt.isNodeType("jmix:hiddenType"));
+        }
+
         Assert.assertEquals(11, nodeTypes.length());
     }
 }
