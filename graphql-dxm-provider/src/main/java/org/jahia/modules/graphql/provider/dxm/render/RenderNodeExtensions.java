@@ -46,6 +46,7 @@ package org.jahia.modules.graphql.provider.dxm.render;
 
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.servlet.GraphQLContext;
@@ -68,6 +69,9 @@ import org.jahia.settings.SettingsBean;
 import javax.jcr.RepositoryException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @GraphQLTypeExtension(GqlJcrNode.class)
 public class RenderNodeExtensions {
@@ -107,7 +111,10 @@ public class RenderNodeExtensions {
             RenderService renderService = (RenderService) SpringContextSingleton.getBean("RenderService");
 
             if (contextConfiguration == null) {
-                contextConfiguration = "module";
+                contextConfiguration = "preview";
+            }
+            if (templateType == null) {
+                templateType = "html";
             }
 
             if (language == null) {
@@ -148,7 +155,7 @@ public class RenderNodeExtensions {
         public RenderedNode(String output, RenderContext renderContext) {
             this.output = output;
             this.renderContext = renderContext;
-        }
+       }
 
         @GraphQLField
         public String getOutput() {
@@ -164,6 +171,44 @@ public class RenderNodeExtensions {
                 throw new RuntimeException(e);
             }
             return constraints;
+        }
+
+        @GraphQLField
+        public List<StaticAsset> getStaticAssets(@GraphQLName("type") @GraphQLNonNull String type) {
+            Map<String, Map<String, Map<String, String>>> staticAssets = (Map)renderContext.getRequest().getAttribute("staticAssets");
+            if (staticAssets != null) {
+                Map<String, Map<String, String>> entries = staticAssets.get(type);
+                if (entries != null) {
+                    List<StaticAsset> result = new ArrayList<>();
+                    for (Map.Entry<String, Map<String, String>> filetypeEntries : entries.entrySet()) {
+                        String filePath = filetypeEntries.getKey();
+                        Map<String, String> fileOptions = filetypeEntries.getValue();
+                        result.add(new StaticAsset(filePath, fileOptions));
+                    }
+                    return result;
+                }
+            }
+            return null;
+        }
+    }
+
+    public static class StaticAsset {
+        private String key;
+        private Map<String, String> options;
+
+        public StaticAsset(String key, Map<String, String> options) {
+            this.key = key;
+            this.options = options;
+        }
+
+        @GraphQLField
+        public String getKey() {
+            return key;
+        }
+
+        @GraphQLField
+        public String getOption(@GraphQLName("name") @GraphQLNonNull String name) {
+            return options.get(name);
         }
 
     }
