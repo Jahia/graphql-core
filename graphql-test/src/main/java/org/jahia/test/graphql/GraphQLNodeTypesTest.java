@@ -214,7 +214,7 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldRetrievesForModule() throws Exception {
+    public void shouldRetrieveNodeTypesForModule() throws Exception {
         JSONObject result = executeQuery("{\n" +
                 "  jcr {\n" +
                 "    nodeTypes(filter:{modules:[\"default\"]}) {\n" +
@@ -240,7 +240,7 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldNotRetrievesForModule() throws Exception {
+    public void shouldNotRetrieveNodeTypesForModule() throws Exception {
         JSONObject result = executeQuery("{\n" +
                 "  jcr {\n" +
                 "    nodeTypes(filter:{modules:[\"wrongModule\"]}) {\n" +
