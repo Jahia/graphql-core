@@ -68,16 +68,19 @@ public class GqlJcrNodeCriteriaInput {
         /**
          * The path defines the ancestor of nodes to fetch.
          */
+        @GraphQLDescription("The specified path is an ancestor, so all its descendants will be considered in the query")
         ANCESTOR,
 
         /**
          * The path defines the parent of nodes to fetch.
          */
+        @GraphQLDescription("The specified path is a parent, so all its direct children will be considered in the query")
         PARENT,
 
         /**
          * The path defines own path of the node to fetch.
          */
+        @GraphQLDescription("The specified path is a node itself, so only this node will be considered in the query")
         OWN
     }
 
@@ -96,7 +99,7 @@ public class GqlJcrNodeCriteriaInput {
      * @param paths Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter; null or empty collection means no path restrictions
      * @param nodeConstraint Additional constraint to filter nodes by their arbitrary properties
      * @param language Language to access node properties in; must be a valid language code in case any internationalized properties are used for filtering, does not matter for non-internationalized ones
-     * @param ordering
+     * @param ordering ordering strategies
      */
     public GqlJcrNodeCriteriaInput(
         @GraphQLName("nodeType") @GraphQLNonNull @GraphQLDescription("The type of nodes to fetch") String nodeType,
