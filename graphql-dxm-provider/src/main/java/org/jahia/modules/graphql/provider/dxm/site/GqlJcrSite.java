@@ -83,6 +83,11 @@ public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @GraphQLField
+    public String getDefaultLanguage() {
+        return siteNode.getDefaultLanguage();
+    }
+
+    @GraphQLField
     public Collection<GqlSiteLanguage> getLanguages() {
         List<GqlSiteLanguage> result = new ArrayList<>();
 
