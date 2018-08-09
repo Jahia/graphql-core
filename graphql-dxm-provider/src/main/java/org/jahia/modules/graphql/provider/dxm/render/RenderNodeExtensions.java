@@ -68,6 +68,7 @@ import org.jahia.settings.SettingsBean;
 
 import javax.jcr.RepositoryException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.List;
@@ -125,6 +126,9 @@ public class RenderNodeExtensions {
             }
 
             HttpServletRequest request = ((GraphQLContext) environment.getContext()).getRequest().get();
+            if (request instanceof HttpServletRequestWrapper) {
+                request = (HttpServletRequest) ((HttpServletRequestWrapper) request).getRequest();
+            }
             HttpServletResponse response = ((GraphQLContext) environment.getContext()).getResponse().get();
 
             JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node.getNode(), language);
