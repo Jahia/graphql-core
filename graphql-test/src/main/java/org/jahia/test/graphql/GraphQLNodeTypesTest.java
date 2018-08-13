@@ -93,6 +93,9 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
                 "        queryable\n" +
                 "        systemId\n" +
                 "      }\n" +
+                "      allowedChildNodeTypes {\n" +
+                "            name\n" +
+                "          }" +
                 "      mixinTypes{\n" +
                 "        name\n" +
                 "        mixin\n" +
@@ -102,6 +105,7 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
                 "}");
         JSONObject nodeType = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("primaryNodeType");
         JSONArray mixins = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("mixinTypes");
+        JSONArray allowedChildNodeTypes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("allowedChildNodeTypes");
 
         Assert.assertEquals("jnt:contentList", nodeType.getString("name"));
         Assert.assertEquals(false, nodeType.getBoolean("mixin"));
@@ -111,6 +115,8 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
 
         Assert.assertEquals(1, mixins.length());
         Assert.assertEquals("jmix:renderable", mixins.getJSONObject(0).getString("name"));
+        Assert.assertEquals(1, allowedChildNodeTypes.length());
+        Assert.assertEquals("jmix:droppableContent", allowedChildNodeTypes.getJSONObject(0).getString("name"));
         Assert.assertEquals(true, mixins.getJSONObject(0).getBoolean("mixin"));
     }
 
