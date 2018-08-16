@@ -43,10 +43,8 @@
  */
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
-import com.google.common.base.Splitter;
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
-import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
@@ -60,6 +58,7 @@ import pl.touk.throwing.ThrowingFunction;
 import javax.jcr.RepositoryException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -127,14 +126,14 @@ public class NodetypeJCRNodeExtensions {
     @GraphQLDescription("Returns a list of types allowed under the provided node")
     public List<GqlJcrNodeType> getAllowedChildNodeTypes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
 
-        String constraints;
+        Set<String> nodeTypes;
         try {
-            constraints = ConstraintsHelper.getConstraints(node.getNode());
+            nodeTypes = ConstraintsHelper.getConstraintSet(node.getNode());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
 
-        return StringUtils.isEmpty(constraints) ? null : Splitter.on(" ").splitToList(constraints).stream().map(ThrowingFunction.unchecked(type -> NodeTypeRegistry.getInstance().getNodeType(type)))
+        return nodeTypes.stream().map(ThrowingFunction.unchecked(nodeType -> NodeTypeRegistry.getInstance().getNodeType(nodeType)))
                 .map(GqlJcrNodeType::new)
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
                 .collect(Collectors.toList());
