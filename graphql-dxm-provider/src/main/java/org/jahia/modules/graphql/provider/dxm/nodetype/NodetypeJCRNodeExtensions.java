@@ -56,7 +56,6 @@ import org.jahia.services.content.nodetypes.ConstraintsHelper;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import pl.touk.throwing.ThrowingFunction;
-import pl.touk.throwing.ThrowingPredicate;
 
 import javax.jcr.RepositoryException;
 import java.util.Arrays;
@@ -96,7 +95,7 @@ public class NodetypeJCRNodeExtensions {
     @GraphQLField
     @GraphQLDescription("Returns an array of <code>NodeType</code> objects representing the mixin node types in effect for this node.")
     @GraphQLNonNull
-    public List<GqlJcrNodeType> getMixinTypes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+    public List<GqlJcrNodeType> getMixinTypes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
         try {
             return Arrays.stream(node.getNode().getMixinNodeTypes())
                     .map(GqlJcrNodeType::new)
@@ -126,16 +125,18 @@ public class NodetypeJCRNodeExtensions {
 
     @GraphQLField
     @GraphQLDescription("Returns a list of types allowed under the provided node")
-    public List<GqlJcrNodeType> getAllowedChildNodeTypes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+    public List<GqlJcrNodeType> getAllowedChildNodeTypes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+
+        String constraints;
         try {
-            String constraints = ConstraintsHelper.getConstraints(node.getNode());
-            return StringUtils.isEmpty(constraints) ? null : Splitter.on(" ").splitToList(constraints).stream().map(ThrowingFunction.unchecked(type -> NodeTypeRegistry.getInstance().getNodeType(type)))
-                    .map(GqlJcrNodeType::new)
-                    .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
-                    .collect(Collectors.toList());
+            constraints = ConstraintsHelper.getConstraints(node.getNode());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
-    }
 
+        return StringUtils.isEmpty(constraints) ? null : Splitter.on(" ").splitToList(constraints).stream().map(ThrowingFunction.unchecked(type -> NodeTypeRegistry.getInstance().getNodeType(type)))
+                .map(GqlJcrNodeType::new)
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
+                .collect(Collectors.toList());
+    }
 }
