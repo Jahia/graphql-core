@@ -127,6 +127,8 @@ public class NodetypeJCRNodeExtensions {
     @GraphQLDescription("Returns a list of types allowed under the provided node")
     public List<GqlJcrNodeType> getAllowedChildNodeTypes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
 
+        // TODO: update to invoke the ConstraintsHelper.getConstraintSet and avoid splitting the string.
+
         String constraints;
         try {
             constraints = ConstraintsHelper.getConstraints(node.getNode());
@@ -134,7 +136,7 @@ public class NodetypeJCRNodeExtensions {
             throw new RuntimeException(e);
         }
 
-        return StringUtils.isEmpty(constraints) ? null : Splitter.on(" ").splitToList(constraints).stream().map(ThrowingFunction.unchecked(type -> NodeTypeRegistry.getInstance().getNodeType(type)))
+        return Splitter.on(" ").splitToList(constraints).stream().map(ThrowingFunction.unchecked(type -> NodeTypeRegistry.getInstance().getNodeType(type)))
                 .map(GqlJcrNodeType::new)
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
                 .collect(Collectors.toList());
