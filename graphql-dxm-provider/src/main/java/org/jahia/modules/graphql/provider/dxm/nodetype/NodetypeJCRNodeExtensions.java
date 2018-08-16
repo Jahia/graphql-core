@@ -46,7 +46,6 @@ package org.jahia.modules.graphql.provider.dxm.nodetype;
 import com.google.common.base.Splitter;
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
-import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
