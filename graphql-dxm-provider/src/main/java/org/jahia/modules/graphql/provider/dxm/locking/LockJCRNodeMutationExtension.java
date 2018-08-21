@@ -44,12 +44,13 @@
  */
 package org.jahia.modules.graphql.provider.dxm.locking;
 
-import graphql.annotations.annotationTypes.*;
+import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
-import org.jahia.modules.graphql.provider.dxm.publication.PublicationJCRExtensionSupport;
-import org.jahia.services.content.*;
+import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.RepositoryException;
 
@@ -57,7 +58,7 @@ import javax.jcr.RepositoryException;
  * Lock mutation extensions for JCR node.
  */
 @GraphQLTypeExtension(GqlJcrNodeMutation.class)
-public class LockJCRNodeMutationExtension extends PublicationJCRExtensionSupport {
+public class LockJCRNodeMutationExtension {
 
     private GqlJcrNodeMutation nodeMutation;
 
@@ -65,10 +66,8 @@ public class LockJCRNodeMutationExtension extends PublicationJCRExtensionSupport
      * Create a lock mutation extension instance.
      *
      * @param nodeMutation JCR node mutation to apply the extension to
-     * @throws GqlJcrWrongInputException In case the parameter represents a node from LIVE rather than EDIT workspace
      */
     public LockJCRNodeMutationExtension(GqlJcrNodeMutation nodeMutation) throws GqlJcrWrongInputException {
-        validateNodeWorkspace(nodeMutation.getNode());
         this.nodeMutation = nodeMutation;
     }
 
