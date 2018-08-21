@@ -44,15 +44,14 @@
  */
 package org.jahia.modules.graphql.provider.dxm.locking;
 
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import graphql.annotations.annotationTypes.*;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.RepositoryException;
+import java.util.function.Supplier;
 
 /**
  * Lock mutation extensions for JCR node.
@@ -78,10 +77,10 @@ public class LockJCRNodeMutationExtension {
      */
     @GraphQLField
     @GraphQLDescription("Lock the node")
-    public boolean lock() {
+    public boolean lock(@GraphQLName("type") @GraphQLDefaultValue(DefaultLockTypeProvider.class) @GraphQLDescription("Type of lock, defaults to user") String type) {
         try {
             JCRNodeWrapper nodeToLock = nodeMutation.getNode().getNode();
-            return nodeToLock.lockAndStoreToken("user");
+            return nodeToLock.lockAndStoreToken(type);
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
@@ -94,19 +93,29 @@ public class LockJCRNodeMutationExtension {
      */
     @GraphQLField
     @GraphQLDescription("Unlock the node")
-    public boolean unlock() {
+    public boolean unlock(@GraphQLName("type") @GraphQLDefaultValue(DefaultLockTypeProvider.class) @GraphQLDescription("Type of lock, defaults to user") String type) {
         try {
             JCRNodeWrapper nodeToUnlock = nodeMutation.getNode().getNode();
+            if (!nodeToUnlock.isLocked()) {
+                return false;
+            }
             if (nodeToUnlock.getSession().getUser().isRoot()) {
                 String lockOwner = nodeToUnlock.getLockOwner();
-                nodeToUnlock.unlock("user", lockOwner);
+                nodeToUnlock.unlock(type, lockOwner);
             }
             else {
-                nodeToUnlock.unlock("user");
+                nodeToUnlock.unlock(type);
             }
             return !nodeToUnlock.isLocked();
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
+        }
+    }
+
+    public static class DefaultLockTypeProvider implements Supplier<Object> {
+        @Override
+        public String get() {
+            return "user";
         }
     }
 }
