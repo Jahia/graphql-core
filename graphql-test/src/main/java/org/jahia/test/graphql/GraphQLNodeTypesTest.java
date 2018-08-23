@@ -93,7 +93,7 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
                 "        queryable\n" +
                 "        systemId\n" +
                 "      }\n" +
-                "      allowedChildNodeTypes {\n" +
+                "      allowedChildNodeTypes(includeSubTypes: false) {\n" +
                 "        name\n" +
                 "      }\n" +
                 "      mixinTypes{\n" +

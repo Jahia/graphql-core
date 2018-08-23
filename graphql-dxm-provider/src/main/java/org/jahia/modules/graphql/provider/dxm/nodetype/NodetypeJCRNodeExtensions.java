@@ -51,14 +51,20 @@ import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
+import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.services.content.nodetypes.ConstraintsHelper;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
-import pl.touk.throwing.ThrowingFunction;
 
 import javax.jcr.RepositoryException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+import javax.jcr.nodetype.NodeTypeIterator;
+
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -125,7 +131,11 @@ public class NodetypeJCRNodeExtensions {
 
     @GraphQLField
     @GraphQLDescription("Returns a list of types allowed under the provided node")
-    public List<GqlJcrNodeType> getAllowedChildNodeTypes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+    public List<GqlJcrNodeType> getAllowedChildNodeTypes(
+        @GraphQLName("includeSubTypes") @GraphQLDescription("Whether all sub-types of allowed child node types should be included") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean includeSubTypes,
+        @GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL fields values") FieldFiltersInput fieldFilter,
+        DataFetchingEnvironment environment
+    ) {
 
         // TODO: update to invoke the ConstraintsHelper.getConstraintSet and avoid splitting the string.
 
@@ -140,9 +150,33 @@ public class NodetypeJCRNodeExtensions {
             return Collections.emptyList();
         }
 
-        return Splitter.on(" ").splitToList(constraints).stream().map(ThrowingFunction.unchecked(type -> NodeTypeRegistry.getInstance().getNodeType(type)))
-                .map(GqlJcrNodeType::new)
-                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
-                .collect(Collectors.toList());
+        LinkedHashSet<ExtendedNodeType> types = new LinkedHashSet<>();
+        List<String> typeNames = Splitter.on(" ").splitToList(constraints);
+        for (String typeName : typeNames) {
+            ExtendedNodeType type;
+            try {
+                type = NodeTypeRegistry.getInstance().getNodeType(typeName);
+            } catch (NoSuchNodeTypeException e) {
+                throw new RuntimeException(e);
+            }
+            types.add(type);
+            if (includeSubTypes) {
+                collectSubTypes(types, type);
+            }
+        }
+
+        return types
+            .stream()
+            .map(GqlJcrNodeType::new)
+            .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
+            .collect(Collectors.toList());
+    }
+
+    private static void collectSubTypes(Collection<ExtendedNodeType> result, ExtendedNodeType type) {
+        for (NodeTypeIterator it = type.getSubtypes(); it.hasNext(); ) {
+            ExtendedNodeType subType = (ExtendedNodeType) it.next();
+            result.add(subType);
+            collectSubTypes(result, subType);
+        }
     }
 }
