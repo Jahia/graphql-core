@@ -58,6 +58,7 @@ import pl.touk.throwing.ThrowingFunction;
 
 import javax.jcr.RepositoryException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -133,6 +134,10 @@ public class NodetypeJCRNodeExtensions {
             constraints = ConstraintsHelper.getConstraints(node.getNode());
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
+        }
+
+        if (constraints.isEmpty()) {
+            return Collections.emptyList();
         }
 
         return Splitter.on(" ").splitToList(constraints).stream().map(ThrowingFunction.unchecked(type -> NodeTypeRegistry.getInstance().getNodeType(type)))
