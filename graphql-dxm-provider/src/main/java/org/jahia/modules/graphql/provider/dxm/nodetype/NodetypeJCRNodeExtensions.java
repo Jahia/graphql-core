@@ -143,10 +143,11 @@ public class NodetypeJCRNodeExtensions {
     }
 
     @GraphQLField
-    @GraphQLDescription("Returns a true if the provided type is allowed as a child node type")
+    @GraphQLDescription("Whether the provided type is allowed as a child node type of the node")
     public Boolean isAllowedChildNodeType(@GraphQLName("type") @GraphQLDescription("type to verify") String type) {
 
         // TODO: update to invoke the ConstraintsHelper.getConstraintSet and avoid splitting the string.
+
         String constraints;
         try {
             constraints = ConstraintsHelper.getConstraints(node.getNode());
