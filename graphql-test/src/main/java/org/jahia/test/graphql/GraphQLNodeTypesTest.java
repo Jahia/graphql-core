@@ -96,8 +96,6 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
                 "      allowedChildNodeTypes {\n" +
                 "        name\n" +
                 "      }\n" +
-                "      allowFile:allowedChildNodeType(type: \"jnt:file\")\n" +
-                "      allowContent:allowedChildNodeType(type: \"jnt:contentList\")\n" +
                 "      mixinTypes{\n" +
                 "        name\n" +
                 "        mixin\n" +
@@ -108,15 +106,13 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
         JSONObject nodeType = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("primaryNodeType");
         JSONArray mixins = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("mixinTypes");
         JSONArray allowedChildNodeTypes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("allowedChildNodeTypes");
-        boolean allowFile = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getBoolean("allowFile");
-        boolean allowContent = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getBoolean("allowContent");
+
         Assert.assertEquals("jnt:contentList", nodeType.getString("name"));
         Assert.assertEquals(false, nodeType.getBoolean("mixin"));
         Assert.assertEquals(true, nodeType.getBoolean("hasOrderableChildNodes"));
         Assert.assertEquals(true, nodeType.getBoolean("queryable"));
         Assert.assertEquals("system-jahia", nodeType.getString("systemId"));
-        Assert.assertTrue(!allowFile);
-        Assert.assertTrue(allowContent);
+
         Assert.assertEquals(1, mixins.length());
         Assert.assertEquals("jmix:renderable", mixins.getJSONObject(0).getString("name"));
         Assert.assertEquals(1, allowedChildNodeTypes.length());

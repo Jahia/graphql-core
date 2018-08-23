@@ -55,7 +55,6 @@ import org.jahia.services.content.nodetypes.ConstraintsHelper;
 import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import pl.touk.throwing.ThrowingFunction;
-import pl.touk.throwing.ThrowingPredicate;
 
 import javax.jcr.RepositoryException;
 import java.util.Arrays;
@@ -140,20 +139,5 @@ public class NodetypeJCRNodeExtensions {
                 .map(GqlJcrNodeType::new)
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
                 .collect(Collectors.toList());
-    }
-
-    @GraphQLField
-    @GraphQLDescription("Returns a true if the provided type is allowed as a child node type")
-    public Boolean isAllowedChildNodeType(@GraphQLName("type") @GraphQLDescription("type to verify") String type) {
-
-        // TODO: update to invoke the ConstraintsHelper.getConstraintSet and avoid splitting the string.
-        String constraints;
-        try {
-            constraints = ConstraintsHelper.getConstraints(node.getNode());
-        } catch (RepositoryException e) {
-            throw new RuntimeException(e);
-        }
-
-        return Splitter.on(" ").splitToList(constraints).stream().anyMatch(ThrowingPredicate.unchecked(nodeType -> NodeTypeRegistry.getInstance().getNodeType(type).isNodeType(nodeType)));
     }
 }
