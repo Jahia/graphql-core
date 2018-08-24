@@ -45,10 +45,13 @@
 package org.jahia.modules.graphql.provider.dxm.locking;
 
 import graphql.annotations.annotationTypes.*;
+import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.content.JCRSessionWrapper;
 
 import javax.jcr.RepositoryException;
 import java.util.function.Supplier;
@@ -105,6 +108,27 @@ public class LockJCRNodeMutationExtension {
             }
             else {
                 nodeToUnlock.unlock(type);
+            }
+            return !nodeToUnlock.isLocked();
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
+    }
+
+    /**
+     * Unlock the node and sub nodes.
+     *
+     * @return True if unlock operation was successful and false if it wasn't
+     */
+    @GraphQLField
+    @GraphQLDescription("Unlock all nodes under the specified node")
+    public boolean clearAllLocks() {
+        try {
+            JCRNodeWrapper nodeToUnlock = nodeMutation.getNode().getNode();
+            if (nodeToUnlock.getSession().getUser().isRoot()) {
+                //Retrieve the system session in order to remove the locks.
+                JCRSessionWrapper systemSession = JCRTemplate.getInstance().getSessionFactory().getCurrentSystemSession(Constants.EDIT_WORKSPACE, nodeToUnlock.getSession().getLocale(), nodeToUnlock.getSession().getFallbackLocale());
+                systemSession.getNode(nodeToUnlock.getPath()).clearAllLocks();
             }
             return !nodeToUnlock.isLocked();
         } catch (RepositoryException e) {
