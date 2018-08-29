@@ -54,23 +54,43 @@ import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
+
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.stream.Stream;
 
 @GraphQLTypeExtension(GqlJcrQuery.class)
 public class NodeTypeJCRQueryExtensions {
 
     @GraphQLField
-    @GraphQLDescription("Get a nodetype by its name")
+    @GraphQLDescription("Get a node type by its name")
     public static GqlJcrNodeType getNodeTypeByName(@GraphQLNonNull @GraphQLName("name") String name) {
         try {
             return new GqlJcrNodeType(NodeTypeRegistry.getInstance().getNodeType(name));
         } catch (NoSuchNodeTypeException e) {
             throw new DataFetchingException(e);
         }
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Get multiple node types by their names")
+    public static Collection<GqlJcrNodeType> getNodeTypesByNames(@GraphQLNonNull @GraphQLName("names") Collection<String> names) {
+        LinkedHashSet<GqlJcrNodeType> result = new LinkedHashSet<>(names.size());
+        for (String name : names) {
+            ExtendedNodeType nodeType;
+            try {
+                nodeType = NodeTypeRegistry.getInstance().getNodeType(name);
+            } catch (NoSuchNodeTypeException e) {
+                throw new DataFetchingException(e);
+            }
+            result.add(new GqlJcrNodeType(nodeType));
+        }
+        return result;
     }
 
     @GraphQLField
