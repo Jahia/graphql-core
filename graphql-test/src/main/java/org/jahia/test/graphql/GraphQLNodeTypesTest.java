@@ -44,11 +44,13 @@
 package org.jahia.test.graphql;
 
 import org.jahia.api.Constants;
+import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -56,6 +58,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -203,6 +207,44 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
 
         Assert.assertEquals("jmix:editorialContent", nodeType.getString("name"));
         Assert.assertEquals("Editorial content", nodeType.getString("displayName"));
+    }
+
+    @Test
+    public void shouldRetrieveNodeTypes() throws Exception {
+
+        JSONObject result = executeQuery("{\n" +
+                "  jcr {\n" +
+                "    nodeTypesByNames(names: [\"jmix:editorialContent\", \"jmix:siteContent\"]) {\n" +
+                "      name\n" +
+                "      displayName(language: \"en\")\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        JSONArray nodeTypes = result.getJSONObject("data").getJSONObject("jcr").getJSONArray("nodeTypesByNames");
+        ArrayList<JSONObject> sortedNodeTypes = new ArrayList<>(nodeTypes.length());
+        for (int i = 0; i < nodeTypes.length(); i++) {
+            sortedNodeTypes.add(nodeTypes.getJSONObject(i));
+        }
+        Collections.sort(sortedNodeTypes, new Comparator<JSONObject>() {
+
+            @Override
+            public int compare(JSONObject nodeType1, JSONObject nodeType2) {
+                try {
+                    return nodeType1.getString("name").compareTo(nodeType1.getString("name"));
+                } catch (JSONException e) {
+                    throw new JahiaRuntimeException(e);
+                }
+            }
+        });
+
+        Assert.assertEquals(2, sortedNodeTypes.size());
+        JSONObject nodeType1 = sortedNodeTypes.get(0);
+        JSONObject nodeType2 = sortedNodeTypes.get(1);
+        Assert.assertEquals("jmix:editorialContent", nodeType1.getString("name"));
+        Assert.assertEquals("Editorial content", nodeType1.getString("displayName"));
+        Assert.assertEquals("jmix:siteContent", nodeType2.getString("name"));
+        Assert.assertEquals("siteContent", nodeType2.getString("displayName"));
     }
 
     @Test
