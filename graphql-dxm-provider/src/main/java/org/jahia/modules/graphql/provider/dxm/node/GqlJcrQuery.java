@@ -52,12 +52,17 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.workflow.GqlWorkflow;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.QueryManagerWrapper;
 import org.jahia.services.content.nodetypes.ValueImpl;
 import org.jahia.services.query.QueryWrapper;
+import org.jahia.services.workflow.Workflow;
+import org.jahia.services.workflow.WorkflowDefinition;
+import org.jahia.services.workflow.WorkflowService;
+import org.jahia.services.workflow.WorkflowTask;
 
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
@@ -275,6 +280,15 @@ public class GqlJcrQuery {
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
+    }
+
+    @GraphQLField
+    @GraphQLDescription("poll number of workflow tasks per user")
+    public int getWorkflowTasksForUser(@GraphQLName("language") @GraphQLNonNull @GraphQLDescription("language") String language) {
+        WorkflowService workflowService = WorkflowService.getInstance();
+        List<WorkflowTask> tasks = workflowService
+                .getTasksForUser(JCRSessionFactory.getInstance().getCurrentUser(), LocaleUtils.toLocale(language));
+        return tasks.size();
     }
 
     private static Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory) throws RepositoryException {
