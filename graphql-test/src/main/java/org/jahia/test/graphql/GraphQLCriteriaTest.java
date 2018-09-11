@@ -104,6 +104,9 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
             subNodeUuid42 = subNode4.addNode("testSubList4_2", "jnt:contentList").getIdentifier();
             subNodeUuid43 = subNode4.addNode("testSubList4_3", "jnt:contentList").getIdentifier();
 
+            JCRNodeWrapper subNode5 = node.addNode("testSubList5", "jnt:contentList");
+            subNode5.setProperty("j:processId", new String[]{"jBPM:1"});
+
             session.save();
             return null;
         });
@@ -352,5 +355,17 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
 
         Assert.assertEquals(0, nodes.length());
+    }
+
+    @Test
+    public void shouldRetrieveWorkflowTasksForUser() throws Exception{
+        JSONObject result = executeQuery("{"
+                + "jcr {"
+                + "     workflowTasksForUser(language: \"en\")"
+                + "     }"
+                + "}");
+
+        int tasks = result.getJSONObject("data").getJSONObject("jcr").getInt("workflowTasksForUser");
+        Assert.assertEquals(1, tasks);
     }
 }
