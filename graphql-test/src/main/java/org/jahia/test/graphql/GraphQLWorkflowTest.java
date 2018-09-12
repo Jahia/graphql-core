@@ -25,7 +25,6 @@ package org.jahia.test.graphql;
 
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRPublicationService;
 import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.workflow.WorkflowService;
 import org.json.JSONObject;
@@ -44,8 +43,6 @@ import java.util.HashMap;
  */
 public class GraphQLWorkflowTest extends GraphQLTestSupport {
 
-    private static final long TIMEOUT_WAITING_FOR_PUBLICATION = 5000;
-
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
 
@@ -53,6 +50,7 @@ public class GraphQLWorkflowTest extends GraphQLTestSupport {
 
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
             JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
+            session.save();
             WorkflowService.getInstance().startProcess(Collections.singletonList(node.getIdentifier()), session,
                     "1-step-publication", "jBPM", new HashMap<>(), null);
             session.save();
