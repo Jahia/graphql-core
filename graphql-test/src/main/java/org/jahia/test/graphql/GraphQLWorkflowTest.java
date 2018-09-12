@@ -37,9 +37,9 @@ import java.util.Collections;
 import java.util.HashMap;
 
 /**
- * Short description of the class
+ * Test case to test Workflows graphQL API
  *
- * @author ybenchadi
+ * @author yousria
  */
 public class GraphQLWorkflowTest extends GraphQLTestSupport {
 
