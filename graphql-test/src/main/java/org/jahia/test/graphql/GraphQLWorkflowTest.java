@@ -26,6 +26,8 @@ package org.jahia.test.graphql;
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.usermanager.JahiaUser;
+import org.jahia.services.usermanager.JahiaUserImpl;
 import org.jahia.services.workflow.WorkflowService;
 import org.json.JSONObject;
 import org.junit.AfterClass;
@@ -35,6 +37,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Properties;
 
 /**
  * Test case to test Workflows graphQL API
@@ -43,16 +46,19 @@ import java.util.HashMap;
  */
 public class GraphQLWorkflowTest extends GraphQLTestSupport {
 
+    public static String TASK_ID;
+
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
 
         GraphQLTestSupport.init();
-
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(getUser(), Constants.EDIT_WORKSPACE, null, session -> {
             JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
             session.save();
-            WorkflowService.getInstance().startProcess(Collections.singletonList(node.getIdentifier()), session,
+            TASK_ID =   WorkflowService.getInstance().startProcess(Collections.singletonList(node.getIdentifier()), session,
                     "1-step-publication", "jBPM", new HashMap<>(), null);
+            session.save();
+            WorkflowService.getInstance().assignTask(TASK_ID, "jBPM", getUser());
             session.save();
             return null;
         });
@@ -61,6 +67,7 @@ public class GraphQLWorkflowTest extends GraphQLTestSupport {
     @AfterClass
     public static void oneTimeTearDown() throws Exception {
         GraphQLTestSupport.removeTestNodes();
+        WorkflowService.getInstance().abortProcess(TASK_ID, "jBPM");
     }
 
     @Test
@@ -74,7 +81,4 @@ public class GraphQLWorkflowTest extends GraphQLTestSupport {
         int tasks = result.getJSONObject("data").getJSONObject("jcr").getInt("workflowTasksForUser");
         Assert.assertEquals(1, tasks);
     }
-
-
-
 }
