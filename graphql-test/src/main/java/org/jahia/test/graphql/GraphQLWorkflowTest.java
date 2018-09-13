@@ -23,21 +23,20 @@
  */
 package org.jahia.test.graphql;
 
+import java.util.Collections;
+import java.util.HashMap;
+
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
-import org.jahia.services.usermanager.JahiaUser;
-import org.jahia.services.usermanager.JahiaUserImpl;
 import org.jahia.services.workflow.WorkflowService;
+import org.jahia.test.TestHelper;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Properties;
 
 /**
  * Test case to test Workflows graphQL API
@@ -50,8 +49,22 @@ public class GraphQLWorkflowTest extends GraphQLTestSupport {
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
-
         GraphQLTestSupport.init();
+    }
+
+    @AfterClass
+    public static void oneTimeTearDown() throws Exception {
+        GraphQLTestSupport.removeTestNodes();
+        if (TASK_ID != null) {
+            WorkflowService.getInstance().abortProcess(TASK_ID, "jBPM");
+        }
+    }
+
+    @Test
+    public void shouldRetrieveWorkflowTasksForUser() throws Exception {
+        int initialTaskCount = getActiveTasksForUser();
+
+        // start new task
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(getUser(), Constants.EDIT_WORKSPACE, null, session -> {
             JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
             session.save();
@@ -62,23 +75,17 @@ public class GraphQLWorkflowTest extends GraphQLTestSupport {
             session.save();
             return null;
         });
+        TestHelper.triggerScheduledJobsAndWait();
+        Assert.assertEquals(initialTaskCount + 1, getActiveTasksForUser());
     }
 
-    @AfterClass
-    public static void oneTimeTearDown() throws Exception {
-        GraphQLTestSupport.removeTestNodes();
-        WorkflowService.getInstance().abortProcess(TASK_ID, "jBPM");
-    }
-
-    @Test
-    public void shouldRetrieveWorkflowTasksForUser() throws Exception {
+    private int getActiveTasksForUser() throws JSONException {
         JSONObject result = executeQuery("{"
                 + "jcr {"
-                + "     workflowTasksForUser(language: \"en\")"
+                + "     activeWorkflowTaskCountForUser"
                 + "     }"
                 + "}");
 
-        int tasks = result.getJSONObject("data").getJSONObject("jcr").getInt("workflowTasksForUser");
-        Assert.assertEquals(1, tasks);
+        return result.getJSONObject("data").getJSONObject("jcr").getInt("activeWorkflowTaskCountForUser");
     }
 }
