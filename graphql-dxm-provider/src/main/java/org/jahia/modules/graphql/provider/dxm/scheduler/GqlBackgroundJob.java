@@ -46,36 +46,116 @@
 package org.jahia.modules.graphql.provider.dxm.scheduler;
 
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import org.jahia.services.scheduler.BackgroundJob;
+import org.quartz.JobDetail;
 
 public class GqlBackgroundJob {
-    private String name;
-    private String group;
-    private GqlBackgroundJobStatus status;
+    private JobDetail jobDetail;
+    private GqlBackgroundJobStatus jobStatus;
+    private GqlBackgroundJobState jobState;
 
-    public GqlBackgroundJob(String name, String group, GqlBackgroundJobStatus status) {
-        this.name = name;
-        this.group = group;
-        this.status = status;
+    public GqlBackgroundJob(JobDetail jobDetail, GqlBackgroundJobState state) {
+        this.jobDetail = jobDetail;
+        this.jobStatus = GqlBackgroundJobStatus.valueOf(jobDetail.getJobDataMap().getString(BackgroundJob.JOB_STATUS).toUpperCase());
+        this.jobState = state;
     }
 
     @GraphQLField
+    @GraphQLDescription("The job name")
     public String getName() {
-        return name;
+        return jobDetail.getName();
     }
 
     @GraphQLField
+    @GraphQLDescription("The job group name")
     public String getGroup() {
-        return group;
+        return jobDetail.getGroup();
     }
 
     @GraphQLField
-    public GqlBackgroundJobStatus getStatus() {
-        return status;
+    @GraphQLDescription("The job status")
+    public GqlBackgroundJobStatus getJobStatus() {
+        return jobStatus;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The job state is different from the status, it reflect the last action done on the job instance (Started, Vetoed, Finished)")
+    public GqlBackgroundJobState getJobState() {
+        return jobState;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The amount of time the job ran for (in milliseconds). The returned value will be -1 until the job has actually completed")
+    public Long getDuration() {
+        if (jobDetail.getJobDataMap().containsKey(BackgroundJob.JOB_DURATION)) {
+            return jobDetail.getJobDataMap().getLongFromString(BackgroundJob.JOB_DURATION);
+        }
+        return -1L;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The user key. The returned value will be null in case the job doesn't have associated user key")
+    public String getUserKey() {
+        if (jobDetail.getJobDataMap().containsKey(BackgroundJob.JOB_USERKEY)) {
+            return jobDetail.getJobDataMap().getString(BackgroundJob.JOB_USERKEY);
+        }
+        return null;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The site key. The returned value will be null in case the job doesn't have associated site key")
+    public String getSiteKey() {
+        if (jobDetail.getJobDataMap().containsKey(BackgroundJob.JOB_SITEKEY)) {
+            return jobDetail.getJobDataMap().getString(BackgroundJob.JOB_SITEKEY);
+        }
+        return null;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The job (String) property that correspond to the given name. The returned value will be null in case the job doesn't have the property")
+    public String getJobStringProperty(@GraphQLName("name") String name) {
+        if (jobDetail.getJobDataMap().containsKey(name)) {
+            return jobDetail.getJobDataMap().getString(name);
+        }
+        return null;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The job (Long) property that correspond to the given name. The returned value will be null in case the job doesn't have the property")
+    public Long getJobLongProperty(@GraphQLName("name") String name) {
+        if (jobDetail.getJobDataMap().containsKey(name)) {
+            return jobDetail.getJobDataMap().getLongValue(name);
+        }
+        return null;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The job (Int) property that correspond to the given name. The returned value will be null in case the job doesn't have the property")
+    public Integer getJobIntegerProperty(@GraphQLName("name") String name) {
+        if (jobDetail.getJobDataMap().containsKey(name)) {
+            return jobDetail.getJobDataMap().getIntValue(name);
+        }
+        return null;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The job (Boolean) property that correspond to the given name. The returned value will be null in case the job doesn't have the property")
+    public Boolean getJobBooleanProperty(@GraphQLName("name") String name) {
+        if (jobDetail.getJobDataMap().containsKey(name)) {
+            return jobDetail.getJobDataMap().getBoolean(name);
+        }
+        return null;
     }
 
     public enum GqlBackgroundJobStatus {
         ADDED, SCHEDULED, EXECUTING, SUCCESSFUL, FAILED, CANCELED
+    }
+
+    public enum GqlBackgroundJobState {
+        STARTED, VETOED, FINISHED
     }
 }
 

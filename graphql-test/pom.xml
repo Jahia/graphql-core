@@ -99,6 +99,11 @@
             <version>${graphql-java-annotations.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.king.king-http-client</groupId>
+            <artifactId>king-http-client</artifactId>
+            <version>3.0.6</version>
+        </dependency>
     </dependencies>
 
     <build>
