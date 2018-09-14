@@ -21,6 +21,7 @@
                 <value>org.jahia.test.graphql.GraphQLPermissionsTest</value>
                 <value>org.jahia.test.graphql.GraphQLPublicationTest</value>
                 <value>org.jahia.test.graphql.GraphQLVanityUrlsTest</value>
+                <value>org.jahia.test.graphql.GraphQLWorkflowTest</value>
                 <value>org.jahia.test.graphql.GraphQLSchedulerTest</value>
             </list>
         </property>
