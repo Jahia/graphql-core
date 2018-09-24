@@ -44,6 +44,7 @@
 package org.jahia.modules.graphql.provider.dxm.site;
 
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
@@ -85,6 +86,18 @@ public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLField
     public String getDefaultLanguage() {
         return siteNode.getDefaultLanguage();
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Retrieves a collection of module IDs, which are installed on the site, the node belongs to")
+    public Collection<String> getInstalledModules() {
+        return siteNode.getInstalledModules();
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Retrieves a collection of module IDs, which are installed on the site, the node belongs to, as well as dependencies of those modules")
+    public Collection<String> getInstalledModulesWithAllDependencies() {
+        return siteNode.getInstalledModulesWithAllDependencies();
     }
 
     @GraphQLField
