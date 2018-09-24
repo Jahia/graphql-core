@@ -48,6 +48,8 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.LocaleUtils;
 import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
@@ -60,6 +62,7 @@ import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.services.content.*;
+import pl.touk.throwing.ThrowingFunction;
 import pl.touk.throwing.ThrowingPredicate;
 import pl.touk.throwing.ThrowingSupplier;
 
@@ -68,6 +71,7 @@ import javax.jcr.Node;
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
@@ -363,6 +367,40 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public List<String> getLanguagesToTranslate(@GraphQLName("languagesTranslated") List<String> languagesTranslated,
+                                                @GraphQLName("languagesToCheck") List<String> languagesToCheck) {
+
+        List<String> toBeTranslated = new ArrayList<>();
+        try {
+            if (CollectionUtils.isEmpty(languagesToCheck) || CollectionUtils.isEmpty(languagesTranslated) || node.getI18Ns().getSize() <= 0) {
+                return toBeTranslated;
+            }
+
+            Optional<Long> lastTranslatedDate = languagesTranslated.stream()
+                    .map(LocaleUtils::toLocale)
+                    .filter(ThrowingPredicate.unchecked(localeTranslated -> node.hasI18N(localeTranslated)))
+                    .map(ThrowingFunction.unchecked(localeTranslated -> node.getI18N(localeTranslated).getProperty(Constants.JCR_LASTMODIFIED).getLong()))
+                    .max(Long::compareTo);
+
+            if (lastTranslatedDate.isPresent()) {
+                for (String languageToCheck : languagesToCheck) {
+                    try {
+                        Node translationNode = node.getI18N(LocaleUtils.toLocale(languageToCheck));
+                        if (translationNode.getProperty(Constants.JCR_LASTMODIFIED).getLong() < lastTranslatedDate.get()) {
+                            toBeTranslated.add(languageToCheck);
+                        }
+                    } catch (ItemNotFoundException e) {
+                        toBeTranslated.add(languageToCheck);
+                    }
+                }
+            }
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+        return toBeTranslated;
     }
 
     private static String normalizePath(String path) {

@@ -259,6 +259,16 @@ public interface GqlJcrNode {
                                          DataFetchingEnvironment environment);
 
     /**
+     * Check if the given locales need translation, by comparing last modifications dates with already existing translations
+     *
+     * @return the locales to be translate, if the given locales doesn't exist or the given locales last modification are older than already translated locales
+     */
+    @GraphQLField
+    @GraphQLDescription("Check if the given locales need translation, by comparing last modifications dates with already existing translations")
+    List<String> getLanguagesToTranslate(@GraphQLName("languagesTranslated") @GraphQLDescription("List of known translated languages, will be used to compare modifications dates") List<String> languagesTranslated,
+                                   @GraphQLName("languagesToCheck") @GraphQLDescription("List of languages potentially to be translated") List<String> languagesToCheck);
+
+    /**
      * Nodes filter based on their types.
      */
     static class NodeTypesInput {

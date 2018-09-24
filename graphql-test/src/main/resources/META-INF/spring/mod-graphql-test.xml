@@ -23,6 +23,7 @@
                 <value>org.jahia.test.graphql.GraphQLVanityUrlsTest</value>
                 <value>org.jahia.test.graphql.GraphQLWorkflowTest</value>
                 <value>org.jahia.test.graphql.GraphQLSchedulerTest</value>
+                <value>org.jahia.test.graphql.GraphQLi18nTest</value>
             </list>
         </property>
     </bean>
