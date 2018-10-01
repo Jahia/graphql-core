@@ -74,7 +74,7 @@ public class GqlJcrPermissionDataFetcher<T> implements DataFetcher<T> {
         GqlJcrPermissionChecker.checkPermissions(environment.getParentType(), environment.getFields(), permissions);
 
         try {
-            if (!PermissionHelper.hasPermission(JCRSessionFactory.getInstance().getCurrentUserSession("live").getNode("/"), environment)) {
+            if (environment.getSource() == environment.getRoot() && !PermissionHelper.hasPermission(JCRSessionFactory.getInstance().getCurrentUserSession("live").getNode("/"), environment)) {
                 throw new GqlAccessDeniedException("Access denied");
             }
         } catch (RepositoryException e) {
