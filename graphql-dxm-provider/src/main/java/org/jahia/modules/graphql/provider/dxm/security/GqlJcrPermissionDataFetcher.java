@@ -45,9 +45,12 @@ package org.jahia.modules.graphql.provider.dxm.security;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionFactory;
 
+import javax.jcr.RepositoryException;
 import java.util.Map;
 
 /**
@@ -69,6 +72,14 @@ public class GqlJcrPermissionDataFetcher<T> implements DataFetcher<T> {
 
         // check permission
         GqlJcrPermissionChecker.checkPermissions(environment.getParentType(), environment.getFields(), permissions);
+
+        try {
+            if (!PermissionHelper.hasPermission(JCRSessionFactory.getInstance().getCurrentUserSession("live").getNode("/"), environment)) {
+                throw new GqlAccessDeniedException("Access denied");
+            }
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
 
         // permission checked
         T res = originalDataFetcher.get(environment);
