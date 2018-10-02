@@ -57,11 +57,16 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component(service = {Filter.class}, property = {"pattern=/graphql"}, immediate = true)
 public class CorsFilter implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(CorsFilter.class);
+
+    private static final List<String> ALLOWED_HEADERS = Arrays.asList("authorization", "content-type");
 
     private DXGraphQLConfig config;
 
@@ -89,8 +94,10 @@ public class CorsFilter implements Filter {
                 if (checkOrigin(origin)) {
                     response.setHeader("Access-Control-Allow-Origin", origin);
                     if (request.getMethod().equalsIgnoreCase("OPTIONS")) {
+                        String[] requestHeaders = StringUtils.split(request.getHeader("Access-Control-Request-Headers"), ", ");
+                        List<String> filteredHeader = Arrays.stream(requestHeaders).map(String::toLowerCase).filter(ALLOWED_HEADERS::contains).collect(Collectors.toList());
                         response.setHeader("Access-Control-Allow-Credentials", "true");
-                        response.addHeader("Access-Control-Allow-Headers", "content-type");
+                        response.addHeader("Access-Control-Allow-Headers", StringUtils.join(filteredHeader,","));
                     }
                 }
             }
