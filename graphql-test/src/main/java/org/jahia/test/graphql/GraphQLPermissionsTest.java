@@ -43,16 +43,11 @@
  */
 package org.jahia.test.graphql;
 
-import java.util.Collections;
-import java.util.Locale;
-import java.util.Properties;
-
-import javax.jcr.RepositoryException;
-
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.json.JSONArray;
@@ -61,6 +56,11 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import javax.jcr.RepositoryException;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Properties;
 
 public class GraphQLPermissionsTest extends GraphQLTestSupport {
 
@@ -75,6 +75,8 @@ public class GraphQLPermissionsTest extends GraphQLTestSupport {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
 
             user = JahiaUserManagerService.getInstance().createUser("testUser", null, "testPassword", new Properties(), session).getJahiaUser();
+            JahiaGroupManagerService.getInstance().lookupGroup(null,"privileged", session).addMember(user);
+
 
             JCRNodeWrapper node = addTestNodeWithUserRoles(session.getNode("/"), "jnt:contentList", "testList", user, true);
             addTestNodeWithUserRoles(node, "jnt:contentList", "testSubList1", user, false);

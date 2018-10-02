@@ -16,7 +16,9 @@ import org.quartz.JobDetail;
 import org.quartz.SchedulerException;
 
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
 
 
 public class GraphQLSchedulerTest extends GraphQLTestSupport {
@@ -56,6 +58,7 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
 
         String url = getBaseServerURL() + Jahia.getContextPath() + "/modules/graphql?query=" + URLEncoder.encode(subscritpion, "UTF-8");
         SseClient sseClient = httpClient.createSSE(url)
+                .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString("root:root1234".getBytes()))
                 .idleTimeoutMillis(0)
                 .totalRequestTimeoutMillis(80000)
                 .keepAlive(true)
@@ -91,7 +94,7 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
 
         // wait for SSE client to close by himself
         sseClient.awaitClose();
-        Assert.assertEquals(jobDatas.size(), 2);
+        Assert.assertEquals(2, jobDatas.size());
 
         Assert.assertEquals("STARTED", jobDatas.get(0).getString("jobState"));
         Assert.assertEquals("EXECUTING", jobDatas.get(0).getString("jobStatus"));
