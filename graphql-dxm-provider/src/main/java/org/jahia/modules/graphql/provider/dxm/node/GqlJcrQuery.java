@@ -47,6 +47,10 @@ import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.LocaleUtils;
+import org.apache.jackrabbit.core.query.lucene.NamePathResolverImpl;
+import org.apache.jackrabbit.spi.commons.conversion.DefaultNamePathResolver;
+import org.apache.jackrabbit.spi.commons.query.qom.DynamicOperandImpl;
+import org.apache.jackrabbit.spi.commons.query.qom.PropertyValueImpl;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
@@ -269,7 +273,8 @@ public class GqlJcrQuery {
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
             Selector source = factory.selector(criteria.getNodeType(), "node");
             Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory);
-            QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
+            Ordering ordering = getOrderingByProperty(source.getSelectorName(), criteria, factory);
+            QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, ordering == null ? null : new Ordering[]{ordering}, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
             return NodeHelper.getPaginatedNodesList(it, null, null, null, fieldFilter, environment);
         } catch (RepositoryException e) {
@@ -346,6 +351,22 @@ public class GqlJcrQuery {
             }
             return result;
         }
+    }
+
+    private static Ordering getOrderingByProperty(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory) throws RepositoryException {
+        GqlOrdering gqlOrdering = criteria.getOrdering();
+        Ordering ordering = null;
+        if(gqlOrdering != null){
+            switch (gqlOrdering.getOrderType()){
+                case ASC:
+                    ordering = factory.ascending(factory.propertyValue(selector, gqlOrdering.getProperty()));
+                    break;
+                case DESC:
+                    ordering = factory.descending(factory.propertyValue(selector, gqlOrdering.getProperty()));
+                    break;
+            }
+        }
+        return ordering;
     }
 
     private GqlJcrNode getGqlNodeByPath(String path) throws RepositoryException {
