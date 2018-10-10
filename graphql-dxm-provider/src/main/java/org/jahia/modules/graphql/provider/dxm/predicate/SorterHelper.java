@@ -56,18 +56,18 @@ public class SorterHelper {
     private static HashMap<SortType, SorterHelper.FieldSorterAlgorithm> SORT_BY_DIRECTION = new HashMap<>();
 
     @FunctionalInterface interface FieldSorterAlgorithm {
-        int evaluate(Object source, String fieldName, String fieldValue, FieldEvaluator environment);
+        int evaluate(Object source, String fieldName, String fieldValue, boolean ignoreCase, FieldEvaluator environment);
     }
 
     static {
-        SORT_BY_DIRECTION.put(SortType.ASC, ((source, fieldName, fieldValue, environment) -> {
+        SORT_BY_DIRECTION.put(SortType.ASC, ((source, fieldName, fieldValue, ignoreCase, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
-            return value != null ? value.toString().compareTo(fieldValue) : 0;
+            return value != null ? (ignoreCase? value.toString().compareToIgnoreCase(fieldValue) : value.toString().compareTo(fieldValue)) : 0;
         }));
 
-        SORT_BY_DIRECTION.put(SortType.DESC, ((source, fieldName, fieldValue, environment) -> {
+        SORT_BY_DIRECTION.put(SortType.DESC, ((source, fieldName, fieldValue, ignoreCase, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
-            return value != null ? -(value.toString().compareTo(fieldValue)) : 0;
+            return value != null ? (ignoreCase? -(value.toString().compareToIgnoreCase(fieldValue)) : -(value.toString().compareTo(fieldValue))) : 0;
         }));
 
     }
@@ -81,6 +81,7 @@ public class SorterHelper {
         if (SortAlgorithm == null) {
             throw new IllegalArgumentException("Unknown sort direction : " + sortType);
         }
-        return ((object, obj) -> SortAlgorithm.evaluate(object, sortFilter.getFieldName(), (String)environment.getFieldValue(obj, sortFilter.getFieldName()), environment));
+        return ((object, obj) -> SortAlgorithm.evaluate(object, sortFilter.getFieldName(), (String)environment.getFieldValue(obj,
+                sortFilter.getFieldName()), sortFilter.isIgnoreCase(), environment));
     }
 }
