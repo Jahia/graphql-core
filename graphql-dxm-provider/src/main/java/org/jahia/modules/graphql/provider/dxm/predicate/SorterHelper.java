@@ -73,9 +73,6 @@ public class SorterHelper {
     }
 
     public static Comparator<Object> getFieldComparator(FieldSorterInput sortFilter, FieldEvaluator environment) {
-        if(sortFilter == null){
-            return ComparatorUtils.naturalComparator();
-        }
         SorterHelper.SortType sortType = sortFilter.getSortType();
         if (sortType == null) {
             sortType = SorterHelper.SortType.ASC;
