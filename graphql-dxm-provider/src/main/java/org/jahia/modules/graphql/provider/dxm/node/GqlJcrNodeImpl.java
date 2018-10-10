@@ -71,7 +71,6 @@ import javax.jcr.Node;
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
@@ -226,7 +225,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                    @GraphQLName("includesSelf") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includesSelf,
                                                    DataFetchingEnvironment environment) {
         try {
-            return NodeHelper.getPaginatedNodesList(node.getNodes(), names, typesFilter, propertiesFilter, fieldFilter, environment);
+            return NodeHelper.getPaginatedNodesList(node.getNodes(), names, typesFilter, propertiesFilter, fieldFilter, environment, null);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -258,7 +257,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                       DataFetchingEnvironment environment) {
         try {
             JCRDescendantsNodeIterator it = new JCRDescendantsNodeIterator(node, NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, environment));
-            return NodeHelper.getPaginatedNodesList(it, null, typesFilter, propertiesFilter, fieldFilter, environment);
+            return NodeHelper.getPaginatedNodesList(it, null, typesFilter, propertiesFilter, fieldFilter, environment, null);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }

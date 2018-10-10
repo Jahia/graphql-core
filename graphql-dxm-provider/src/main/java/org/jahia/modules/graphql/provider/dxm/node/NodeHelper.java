@@ -217,12 +217,16 @@ public class NodeHelper {
         return result;
     }
 
-    public static DXPaginatedData<GqlJcrNode> getPaginatedNodesList(NodeIterator it, Collection<String> names, GqlJcrNode.NodeTypesInput typesFilter, GqlJcrNode.NodePropertiesInput propertiesFilter, FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
+    public static DXPaginatedData<GqlJcrNode> getPaginatedNodesList(NodeIterator it, Collection<String> names, GqlJcrNode.NodeTypesInput typesFilter, GqlJcrNode.NodePropertiesInput propertiesFilter, FieldFiltersInput fieldFilter,
+            DataFetchingEnvironment environment, FieldSorterInput fieldSorterInput) {
         Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
                 .filter(node-> PermissionHelper.hasPermission(node, environment))
                 .filter(getNodesPredicate(names, typesFilter, propertiesFilter, environment))
                 .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode))
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
+        if(fieldSorterInput != null){
+            stream = stream.sorted(SorterHelper.getFieldComparator(fieldSorterInput, FieldEvaluator.forConnection(environment)));
+        }
 
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         return PaginationHelper.paginate(stream, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);

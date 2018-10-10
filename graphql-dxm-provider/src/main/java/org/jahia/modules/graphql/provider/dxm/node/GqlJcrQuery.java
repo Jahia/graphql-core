@@ -47,13 +47,10 @@ import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.LocaleUtils;
-import org.apache.jackrabbit.core.query.lucene.NamePathResolverImpl;
-import org.apache.jackrabbit.spi.commons.conversion.DefaultNamePathResolver;
-import org.apache.jackrabbit.spi.commons.query.qom.DynamicOperandImpl;
-import org.apache.jackrabbit.spi.commons.query.qom.PropertyValueImpl;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
@@ -244,7 +241,7 @@ public class GqlJcrQuery {
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
             JCRNodeIteratorWrapper nodes = q.execute().getNodes();
             // todo: naive implementation of the pagination, could be improved in some cases by setting limit/offset in query
-            return NodeHelper.getPaginatedNodesList(nodes, null, null, null, fieldFilter, environment);
+            return NodeHelper.getPaginatedNodesList(nodes, null, null, null, fieldFilter, environment, null);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -265,6 +262,7 @@ public class GqlJcrQuery {
     public DXPaginatedData<GqlJcrNode> getNodesByCriteria(
         @GraphQLName("criteria") @GraphQLNonNull @GraphQLDescription("The criteria to fetch nodes by") GqlJcrNodeCriteriaInput criteria,
         @GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL field values") FieldFiltersInput fieldFilter,
+            @GraphQLName("fieldSorter") @GraphQLDescription("sort by GraphQL field values") FieldSorterInput fieldSorter,
         DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
         try {
@@ -276,7 +274,7 @@ public class GqlJcrQuery {
             Ordering ordering = getOrderingByProperty(source.getSelectorName(), criteria, factory);
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, ordering == null ? null : new Ordering[]{ordering}, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
-            return NodeHelper.getPaginatedNodesList(it, null, null, null, fieldFilter, environment);
+            return NodeHelper.getPaginatedNodesList(it, null, null, null, fieldFilter, environment, fieldSorter);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
