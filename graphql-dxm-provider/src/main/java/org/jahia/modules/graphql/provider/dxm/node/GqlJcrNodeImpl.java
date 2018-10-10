@@ -44,6 +44,7 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.GraphQLDefaultValue;
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
@@ -254,10 +255,11 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                       @GraphQLName("recursionTypesFilter") NodeTypesInput recursionTypesFilter,
                                                       @GraphQLName("recursionPropertiesFilter") NodePropertiesInput recursionPropertiesFilter,
                                                       @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
+                                                      @GraphQLName("fieldSorter") FieldSorterInput fieldSorter,
                                                       DataFetchingEnvironment environment) {
         try {
             JCRDescendantsNodeIterator it = new JCRDescendantsNodeIterator(node, NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, environment));
-            return NodeHelper.getPaginatedNodesList(it, null, typesFilter, propertiesFilter, fieldFilter, environment, null);
+            return NodeHelper.getPaginatedNodesList(it, null, typesFilter, propertiesFilter, fieldFilter, environment, fieldSorter);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
