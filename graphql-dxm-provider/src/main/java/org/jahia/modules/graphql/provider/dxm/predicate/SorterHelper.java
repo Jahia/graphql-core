@@ -82,6 +82,6 @@ public class SorterHelper {
             throw new IllegalArgumentException("Unknown sort direction : " + sortType);
         }
         return ((object, obj) -> SortAlgorithm.evaluate(object, sortFilter.getFieldName(), (String)environment.getFieldValue(obj,
-                sortFilter.getFieldName()), sortFilter.isIgnoreCase(), environment));
+                sortFilter.getFieldName()), sortFilter.isIgnoreCase()==null? true : sortFilter.isIgnoreCase(), environment));
     }
 }

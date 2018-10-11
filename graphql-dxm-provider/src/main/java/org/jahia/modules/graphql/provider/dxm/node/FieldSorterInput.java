@@ -38,12 +38,12 @@ import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
 public class FieldSorterInput {
 
     private String fieldName;
-    private boolean ignoreCase;
+    private Boolean ignoreCase;
     private SorterHelper.SortType sortType;
 
     public FieldSorterInput(@GraphQLName("fieldName") @GraphQLNonNull @GraphQLDescription("fieldName to sort") String fieldName,
             @GraphQLName("sortType") @GraphQLNonNull @GraphQLDescription("type of the sort") SorterHelper.SortType sortType,
-            @GraphQLName("ignoreCase") @GraphQLNonNull @GraphQLDescription("ignore case when sorting") boolean ignoreCase) {
+            @GraphQLName("ignoreCase") @GraphQLDescription("ignore case when sorting") Boolean ignoreCase) {
         this.fieldName = fieldName;
         this.ignoreCase = ignoreCase;
         this.sortType = sortType;
@@ -63,7 +63,7 @@ public class FieldSorterInput {
 
     @GraphQLField
     @GraphQLDescription("ignore case when sorting")
-    public boolean isIgnoreCase() {
+    public Boolean isIgnoreCase() {
         return ignoreCase;
     }
 }
