@@ -25,6 +25,7 @@
                 <value>org.jahia.test.graphql.GraphQLSchedulerTest</value>
                 <value>org.jahia.test.graphql.GraphQLi18nTest</value>
                 <value>org.jahia.test.graphql.GraphQLFieldSorterTest</value>
+                <value>org.jahia.test.graphql.GraphQLOrderingTest</value>
             </list>
         </property>
     </bean>
