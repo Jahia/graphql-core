@@ -58,6 +58,7 @@ import graphql.language.SelectionSet;
 import graphql.schema.*;
 import graphql.servlet.GraphQLContext;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -168,7 +169,7 @@ public class FieldEvaluator {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> getVariables(DataFetchingEnvironment environment) {
         GraphQLContext context = environment.getContext();
-        Map<String, Object> variables = null;
+        Map<String, Object> variables = new LinkedHashMap<>();
         if (context.getRequest().isPresent()) {
             variables = (Map<String, Object>) context.getRequest().get().getAttribute(GRAPHQL_VARIABLES);
         }
@@ -178,7 +179,7 @@ public class FieldEvaluator {
     @SuppressWarnings("unchecked")
     private static Map<String, FragmentDefinition> getFragmentDefinitions(DataFetchingEnvironment environment) {
         GraphQLContext context = environment.getContext();
-        Map<String, FragmentDefinition> fragments = null;
+        Map<String, FragmentDefinition> fragments = new LinkedHashMap<>();
         if (context.getRequest().isPresent()) {
             fragments = (Map<String, FragmentDefinition>) context.getRequest().get().getAttribute(FRAGMENTS_BY_NAME);
         }
