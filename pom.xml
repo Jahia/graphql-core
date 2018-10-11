@@ -60,7 +60,7 @@
     <properties>
         <graphql-java.version>6.0</graphql-java.version>
         <graphql-java-annotations.version>6.0.0-jahia1</graphql-java-annotations.version>
-        <graphql-java-servlet.version>4.7.0-jahia1-SNAPSHOT</graphql-java-servlet.version>
+        <graphql-java-servlet.version>4.7.0-jahia2</graphql-java-servlet.version>
     </properties>
 
     <scm>
