@@ -260,16 +260,16 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     /**
      * Copy a single node to a different parent node.
      *
-     * @param pathOrId Path or UUID of the node to be copied/moved
-     * @param destParentPathOrId Path or UUID of the destination parent node to copy/move the node to
+     * @param pathOrId Path or UUID of the node to be copied
+     * @param destParentPathOrId Path or UUID of the destination parent node to copy the node to
      * @param destName The name of the node at the new location or null if its current name should be preserved
      * @return Mutation object representing the copy at the new location
      */
     @GraphQLField
     @GraphQLDescription("Copy a single node to a different parent node")
     public GqlJcrNodeMutation copyNode(
-        @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the node to be copied/moved") String pathOrId,
-        @GraphQLName("destParentPathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the destination parent node to copy/move the node to") String destParentPathOrId,
+        @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the node to be copied") String pathOrId,
+        @GraphQLName("destParentPathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the destination parent node to copy the node to") String destParentPathOrId,
         @GraphQLName("destName") @GraphQLDescription("The name of the node at the new location or null if its current name should be preserved") String destName
     ) throws BaseGqlClientException {
 
