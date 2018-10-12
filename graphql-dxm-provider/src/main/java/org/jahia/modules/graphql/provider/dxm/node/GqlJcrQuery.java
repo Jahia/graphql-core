@@ -234,6 +234,7 @@ public class GqlJcrQuery {
             @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage,
             @GraphQLName("language") @GraphQLDescription("Language to access node properties in") String language,
             @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+            @GraphQLName("fieldSorter") @GraphQLDescription("sort by GraphQL field values") FieldSorterInput fieldSorter,
             DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
         try {
@@ -241,7 +242,7 @@ public class GqlJcrQuery {
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
             JCRNodeIteratorWrapper nodes = q.execute().getNodes();
             // todo: naive implementation of the pagination, could be improved in some cases by setting limit/offset in query
-            return NodeHelper.getPaginatedNodesList(nodes, null, null, null, fieldFilter, environment, null);
+            return NodeHelper.getPaginatedNodesList(nodes, null, null, null, fieldFilter, environment, fieldSorter);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
