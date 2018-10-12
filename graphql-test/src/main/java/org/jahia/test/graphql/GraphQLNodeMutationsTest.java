@@ -1324,4 +1324,133 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             return null;
         });
     }
+
+    @Test
+    public void copyNode() throws Exception {
+
+        executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        first: copyNode(pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\") {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "        second: copyNode(pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testNode2\") {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        inJcr(session -> {
+            assertTrue(session.itemExists("/testList/testSubList1/testNode"));
+            assertTrue(session.itemExists("/testList/testSubList1/testNode2"));
+            return null;
+        });
+    }
+
+    @Test
+    public void copyNodes() throws Exception {
+
+        executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        copyNodes(nodes: [\n" +
+            "            {pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\"},\n" +
+            "            {pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testNode2\"}\n" +
+            "        ]) {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        inJcr(session -> {
+            assertTrue(session.itemExists("/testList/testSubList1/testNode"));
+            assertTrue(session.itemExists("/testList/testSubList1/testNode2"));
+            return null;
+        });
+    }
+
+    @Test
+    public void copyNodesDuplicateError() throws Exception {
+
+        JSONObject result = executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        copyNodes(nodes: [\n" +
+            "            {pathOrId: \"/testList/testSubList2\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testError\"},\n" +
+            "            {pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testError\"}\n" +
+            "        ]) {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        validateError(result,
+            "Errors copying nodes:\n" +
+            "org.jahia.modules.graphql.provider.dxm.DataFetchingException: javax.jcr.ItemExistsException: Node '/testList/testSubList1/testError' already exists\n"
+        );
+    }
+
+    @Test
+    public void pasteCopiedNode() throws Exception {
+
+        executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        pasteNode(mode: COPY, pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\") {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        inJcr(session -> {
+            assertTrue(session.itemExists("/testList/testSubList1/testNode"));
+            return null;
+        });
+    }
+
+    @Test
+    public void pasteCopiedNodes() throws Exception {
+
+        executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        pasteNodes(mode: COPY, namingConflictResolution: RENAME, nodes: [\n" +
+            "            {pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\"},\n" +
+            "            {pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\"}\n" +
+            "        ]) {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        inJcr(session -> {
+            assertTrue(session.itemExists("/testList/testSubList1/testNode"));
+            assertTrue(session.itemExists("/testList/testSubList1/testNode-1"));
+            return null;
+        });
+    }
+
+    @Test
+    public void pasteCopiedNodesDuplicateError() throws Exception {
+
+        JSONObject result = executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        pasteNodes(mode: COPY, nodes: [\n" +
+            "            {pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testError\"},\n" +
+            "            {pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testError\"}\n" +
+            "        ]) {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        validateError(result, "javax.jcr.ItemExistsException: Node '/testList/testSubList1/testError' already exists");
+    }
 }
