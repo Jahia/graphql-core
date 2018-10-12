@@ -1389,7 +1389,79 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
         validateError(result,
             "Errors copying nodes:\n" +
-            "org.jahia.modules.graphql.provider.dxm.DataFetchingException: javax.jcr.ItemExistsException: Node '/testList/testSubList1/testError' already exists\n"
+            "org.jahia.modules.graphql.provider.dxm.DataFetchingException: javax.jcr.ItemExistsException: Same name siblings are not allowed: node /testList/testSubList1/testError\n"
+        );
+    }
+
+    @Test
+    public void moveNode() throws Exception {
+
+        executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        first: moveNode(pathOrId: \"/testList/testSubList2\", destParentPathOrId: \"/testList/testSubList1\") {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "        second: moveNode(pathOrId: \"/testList/testSubList3\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testSubList3A\") {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        inJcr(session -> {
+            assertFalse(session.itemExists("/testList/testSubList2"));
+            assertFalse(session.itemExists("/testList/testSubList3"));
+            assertTrue(session.itemExists("/testList/testSubList1/testSubList2"));
+            assertTrue(session.itemExists("/testList/testSubList1/testSubList3A"));
+            return null;
+        });
+    }
+
+    @Test
+    public void moveNodes() throws Exception {
+
+        executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        moveNodes(nodes: [\n" +
+            "            {pathOrId: \"/testList/testSubList2\", destParentPathOrId: \"/testList/testSubList1\"},\n" +
+            "            {pathOrId: \"/testList/testSubList3\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testSubList3A\"}\n" +
+            "        ]) {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        inJcr(session -> {
+            assertFalse(session.itemExists("/testList/testSubList2"));
+            assertFalse(session.itemExists("/testList/testSubList3"));
+            assertTrue(session.itemExists("/testList/testSubList1/testSubList2"));
+            assertTrue(session.itemExists("/testList/testSubList1/testSubList3A"));
+            return null;
+        });
+    }
+
+    @Test
+    public void moveNodesDuplicateError() throws Exception {
+
+        JSONObject result = executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        moveNodes(nodes: [\n" +
+            "            {pathOrId: \"/testList/testSubList2\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testError\"},\n" +
+            "            {pathOrId: \"/testList/testSubList3\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testError\"}\n" +
+            "        ]) {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        validateError(result,
+            "Errors moving nodes:\n" +
+            "org.jahia.modules.graphql.provider.dxm.DataFetchingException: javax.jcr.ItemExistsException: Same name siblings are not allowed: node /testList/testSubList1/testError\n"
         );
     }
 
@@ -1451,6 +1523,70 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             "}\n"
         );
 
-        validateError(result, "javax.jcr.ItemExistsException: Node '/testList/testSubList1/testError' already exists");
+        validateError(result, "javax.jcr.ItemExistsException: Same name siblings are not allowed: node /testList/testSubList1/testError");
+    }
+
+    @Test
+    public void pasteCutNode() throws Exception {
+
+        executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        pasteNode(mode: MOVE, pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\") {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        inJcr(session -> {
+            assertFalse(session.itemExists("/testList/testNode"));
+            assertTrue(session.itemExists("/testList/testSubList1/testNode"));
+            return null;
+        });
+    }
+
+    @Test
+    public void pasteCutNodes() throws Exception {
+
+        executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        pasteNodes(mode: MOVE, namingConflictResolution: RENAME, nodes: [\n" +
+            "            {pathOrId: \"/testList/testSubList2\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testDuplicate\"},\n" +
+            "            {pathOrId: \"/testList/testSubList3\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testDuplicate\"}\n" +
+            "        ]) {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        inJcr(session -> {
+            assertFalse(session.itemExists("/testList/testSubList2"));
+            assertFalse(session.itemExists("/testList/testSubList3"));
+            assertTrue(session.itemExists("/testList/testSubList1/testDuplicate"));
+            assertTrue(session.itemExists("/testList/testSubList1/testDuplicate-1"));
+            return null;
+        });
+    }
+
+    @Test
+    public void pasteCutNodesDuplicateError() throws Exception {
+
+        JSONObject result = executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        pasteNodes(mode: MOVE, nodes: [\n" +
+            "            {pathOrId: \"/testList/testSubList2\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testError\"},\n" +
+            "            {pathOrId: \"/testList/testSubList3\", destParentPathOrId: \"/testList/testSubList1\", destName: \"testError\"}\n" +
+            "        ]) {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        validateError(result, "javax.jcr.ItemExistsException: Same name siblings are not allowed: node /testList/testSubList1/testError");
     }
 }

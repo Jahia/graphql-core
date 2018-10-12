@@ -71,8 +71,7 @@ public class ContentManagementGqlJcrMutationExtension {
         if (mode == PasteMode.COPY) {
             return mutation.copyNode(pathOrId, destParentPathOrId, destName);
         } else if (mode == PasteMode.MOVE) {
-            // TODO: Implement MOVE support.
-            throw new UnsupportedOperationException();
+            return mutation.moveNode(pathOrId, destParentPathOrId, destName);
         } else {
             throw new UnsupportedOperationException();
         }

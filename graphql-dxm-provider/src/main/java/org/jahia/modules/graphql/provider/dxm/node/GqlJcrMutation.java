@@ -293,6 +293,40 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     }
 
     /**
+     * Move a single node to a different parent node.
+     *
+     * @param pathOrId Path or UUID of the node to be moved
+     * @param destParentPathOrId Path or UUID of the destination parent node to move the node to
+     * @param destName The name of the node at the new location or null if its current name should be preserved
+     * @return Mutation object representing the node at the new location
+     */
+    @GraphQLField
+    @GraphQLDescription("Move a single node to a different parent node")
+    public GqlJcrNodeMutation moveNode(
+        @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the node to be moved") String pathOrId,
+        @GraphQLName("destParentPathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the destination parent node to move the node to") String destParentPathOrId,
+        @GraphQLName("destName") @GraphQLDescription("The name of the node at the new location or null if its current name should be preserved") String destName
+    ) throws BaseGqlClientException {
+
+        JCRNodeWrapper destParentNode = getNodeFromPathOrId(getSession(), destParentPathOrId);
+        JCRNodeWrapper node = getNodeFromPathOrId(getSession(), pathOrId);
+        if (destName == null) {
+            destName = node.getName();
+        }
+
+        JCRNodeWrapper destNode;
+        try {
+            String destPath = destParentNode.getPath() + '/' + destName;
+            getSession().move(node.getPath(), destPath);
+            destNode = destParentNode.getNode(destName);
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+
+        return new GqlJcrNodeMutation(destNode);
+    }
+
+    /**
      * Copy multiple nodes to different parent node(s).
      *
      * @param nodes Info about nodes to copy and their new parent node(s)
@@ -304,19 +338,61 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         @GraphQLName("nodes") @GraphQLNonNull Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes
     ) throws BaseGqlClientException {
 
+        return reproduceNodes(nodes, new NodeReproducer() {
+
+            @Override
+            public GqlJcrNodeMutation reproduce(GqlJcrReproducibleNodeInput node) {
+                return copyNode(node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName());
+            }
+
+            @Override
+            public String getOperationName() {
+                return "copying";
+            }
+        });
+    }
+
+    /**
+     * Move multiple nodes to different parent node(s).
+     *
+     * @param nodes Info about nodes to move and their new parent node(s)
+     * @return A collection of mutation objects representing moved nodes at their new location(s)
+     */
+    @GraphQLField
+    @GraphQLDescription("Move multiple nodes to different parent node(s)")
+    public Collection<GqlJcrNodeMutation> moveNodes(
+        @GraphQLName("nodes") @GraphQLNonNull Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes
+    ) throws BaseGqlClientException {
+
+        return reproduceNodes(nodes, new NodeReproducer() {
+
+            @Override
+            public GqlJcrNodeMutation reproduce(GqlJcrReproducibleNodeInput node) {
+                return moveNode(node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName());
+            }
+
+            @Override
+            public String getOperationName() {
+                return "moving";
+            }
+        });
+    }
+
+    private Collection<GqlJcrNodeMutation> reproduceNodes(Collection<GqlJcrReproducibleNodeInput> nodes, NodeReproducer nodeReproducer) throws BaseGqlClientException {
+
         ArrayList<GqlJcrNodeMutation> result = new ArrayList<>(nodes.size());
         LinkedList<Exception> exceptions = new LinkedList<>();
 
         for (GqlJcrReproducibleNodeInput node : nodes) {
             try {
-                result.add(copyNode(node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName()));
+                result.add(nodeReproducer.reproduce(node));
             } catch (Exception e) {
                 exceptions.add(e);
             }
         }
 
         if (!exceptions.isEmpty()) {
-            StringBuilder message = new StringBuilder("Errors copying nodes:\n");
+            StringBuilder message = new StringBuilder("Errors " + nodeReproducer.getOperationName() + " nodes:\n");
             for (Exception e : exceptions) {
                 message.append(e.getClass().getName()).append(": ").append(e.getMessage()).append('\n');
             }
@@ -324,6 +400,12 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         }
 
         return result;
+    }
+
+    private interface NodeReproducer {
+
+        GqlJcrNodeMutation reproduce(GqlJcrReproducibleNodeInput node);
+        String getOperationName();
     }
 
     /**
