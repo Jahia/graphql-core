@@ -89,7 +89,7 @@ public class ContentManagementGqlJcrMutationExtension {
     @GraphQLDescription("Paste multiple nodes to different parent node(s)")
     public Collection<GqlJcrNodeMutation> pasteNodes(
         @GraphQLName("mode") @GraphQLNonNull @GraphQLDescription("Paste mode, either COPY or MOVE") PasteMode mode,
-        @GraphQLName("nodes") @GraphQLNonNull Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes,
+        @GraphQLName("nodes") @GraphQLNonNull  @GraphQLDescription("Info about nodes to paste and their new parent node(s)") Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes,
         @GraphQLName("namingConflictResolution") @GraphQLDefaultValue(SupplierFail.class) @GraphQLDescription("The way to deal with duplicate node names when they are not allowed, either FAIL or RENAME") NodeNamingConflictResolutionStrategy namingConflictResolution
     ) throws BaseGqlClientException {
         ArrayList<GqlJcrNodeMutation> result = new ArrayList<>(nodes.size());
