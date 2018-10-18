@@ -47,11 +47,13 @@ import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.commons.lang.mutable.MutableObject;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.modules.graphql.provider.dxm.util.StreamUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Base64.getEncoder;

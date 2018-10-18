@@ -60,6 +60,7 @@ import javax.jcr.RepositoryException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -225,7 +226,8 @@ public class NodeHelper {
                 .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode))
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
         if(fieldSorterInput != null){
-            stream = stream.sorted(SorterHelper.getFieldComparator(fieldSorterInput, FieldEvaluator.forConnection(environment)));
+            List items = stream.sorted(SorterHelper.getFieldComparator(fieldSorterInput, FieldEvaluator.forConnection(environment))).collect(Collectors.toList());
+            return PaginationHelper.paginate(items, environment);
         }
 
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
