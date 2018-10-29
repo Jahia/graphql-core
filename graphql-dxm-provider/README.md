@@ -11,7 +11,7 @@ The API gives a global view of the nodes and allows to access multiple languages
 GraphQL uses HTTP and relies on standard DX authentication valve to get the current user. 
 Based on the user permissions, some graphQL fields may or may not be allowed. 
 
-Security filter
+Authorization is based on security filter configuration.
 
 ### Relay standard support
 
@@ -264,3 +264,52 @@ is equivalent to :
 SELECT * from [jnt:bigText] where (name()=”test” or [text]=”test”)
 ```
 
+### Aggregations
+
+The `JCRNodeConnnection` type contains an `aggregation` fields, that can be used to calculate an aggregation on a list of `JCRNode` items and their properties. The aggregation `avg` / `min` / `max` / `sum` can be used on any numeric property (or date property). The `count` aggregation will return the total number of values for the specified property.
+ 
+### Lock
+
+It's possible to get lock information on node, and use mutations to lock/unlock nodes, or clear all locks. 
+
+```
+extend type JCRNode {
+	lockInfo: LockInfo
+}
+```
+
+```
+extend type JCRNodeMutation {
+	lock(type: String, recursive: Boolean): Boolean
+	unlock(type: String, recursive: Boolean force: Boolean): Boolean
+}
+```
+
+### Publication
+
+The API allows to publish a node and get the current publication status with the following fields :
+
+```
+extend type JCRNode {
+    aggregatedPublicationInfo(language: String, includesReferences: Boolean, includesSubNodes: Boolean): PublicationInfo
+}
+```
+
+```
+extends type JCRNodeMutation {
+    publish(languages: [String])
+}
+```
+
+### Vanity URLs
+
+Vanity URLs can be queried from a node by using the `vanityUrls` field :
+
+```
+extend type JCRNode {
+	vanityURLs(
+        languages: [String], 
+        onlyActive:boolean, 
+        onlyDefault:boolean): [VanityURL]
+}
+```
