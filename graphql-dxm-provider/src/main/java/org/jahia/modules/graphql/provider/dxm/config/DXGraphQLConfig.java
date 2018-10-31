@@ -44,8 +44,12 @@
 package org.jahia.modules.graphql.provider.dxm.config;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.graphql.provider.dxm.customApi.ConfigUtil;
+import org.jahia.modules.graphql.provider.dxm.customApi.CustomApi;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
+import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +67,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLConfig.class);
     private final static String PERMISSION_PREFIX = "permission.";
+    private final static String TYPE_PREFIX = "type.";
 
     private final static String CORS_ORIGINS = "http.cors.allow-origin";
 
@@ -72,13 +77,23 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private Set<String> corsOrigins = new HashSet<>();
     private Map<String, Set<String>> corsOriginByPid = new HashMap<>();
 
+    private Map<String, CustomApi> customApis = new HashMap<>();
+
+    private ComponentContext componentContext;
+
     @Override
     public String getName() {
         return "DX GraphQL configurations";
     }
 
+    @Activate
+    public void activate(ComponentContext context) {
+        this.componentContext = context;
+    }
+
     @Override
     public void updated(String pid, Dictionary<String, ?> properties) throws ConfigurationException {
+        componentContext.disableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
 
         if (properties == null) {
             return;
@@ -96,7 +111,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
             String key = keys.nextElement();
             boolean addKey = true;
             // parse permissions ( permission format is like: permission.Query.nodesByQuery = privileged )
-            if (key.startsWith(PERMISSION_PREFIX) && properties.get(key) != null) {
+            String value = (String) properties.get(key);
+            if (key.startsWith(PERMISSION_PREFIX) && value != null) {
                 // check if any configuration also contains the same permission configuration
                 for (String p : keysByPid.keySet()) {
                     if (!StringUtils.equals(p, pid) && keysByPid.get(p).contains(key)) {
@@ -106,18 +122,21 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                     }
                 }
                 if (addKey) {
-                    permissions.put(key.substring(PERMISSION_PREFIX.length()), (String) properties.get(key));
+                    permissions.put(key.substring(PERMISSION_PREFIX.length()), value);
                     // store the key for the permission configuration
                     keysForPid.add(key);
                 }
             } else if (key.equals(CORS_ORIGINS)) {
-                corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split((String)properties.get(CORS_ORIGINS)," ,"))));
+                corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split(value," ,"))));
+            } else if (key.startsWith(TYPE_PREFIX)) {
+                keysForPid.add(key);
+                ConfigUtil.configureCustomApi(key.substring(TYPE_PREFIX.length()), value, customApis);
             } else {
                 // store other properties than permission configuration
                 keysForPid.add(key);
             }
         }
-
+        componentContext.enableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
         corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
     }
 
@@ -141,6 +160,10 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     public Map<String, String> getPermissions() {
         return permissions;
+    }
+
+    public Map<String, CustomApi> getCustomApis() {
+        return customApis;
     }
 
     public Set<String> getCorsOrigins() {

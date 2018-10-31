@@ -55,6 +55,8 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.servlet.*;
+import org.jahia.modules.graphql.provider.dxm.customApi.CustomApi;
+import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
@@ -68,7 +70,7 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
 
-@Component(service = GraphQLProvider.class, immediate = true)
+@Component(service = GraphQLProvider.class, enabled = false)
 public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLSubscriptionProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider, TypeFunction {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
@@ -85,6 +87,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private GraphQLObjectType queryType;
     private GraphQLObjectType mutationType;
     private GraphQLObjectType subscriptionType;
+
+    private DXGraphQLConfig dxGraphQLConfig;
 
     private DXRelay relay;
 
@@ -114,6 +118,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     public void removeExtensionProvider(DXGraphQLExtensionsProvider provider) {
         this.extensionsProviders.remove(provider);
+    }
+
+    @Reference
+    public void bindDxGraphQLConfig(DXGraphQLConfig dxGraphQLConfig) {
+        this.dxGraphQLConfig = dxGraphQLConfig;
     }
 
     @Activate
@@ -183,7 +192,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     @Override
     public Collection<GraphQLFieldDefinition> getQueries() {
-        return queryType.getFieldDefinitions();
+        List<GraphQLFieldDefinition> defs = new ArrayList<>(queryType.getFieldDefinitions());
+        for (CustomApi apiType : dxGraphQLConfig.getCustomApis().values()) {
+            defs.addAll(apiType.getQueryFields());
+        }
+        return defs;
     }
 
     @Override
