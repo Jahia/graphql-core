@@ -49,6 +49,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.relay.Connection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrProperty;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -102,6 +103,9 @@ public class FilterHelper {
     static {
         ALGORITHM_BY_EVALUATION.put(FieldEvaluation.EQUAL, ((source, fieldName, fieldValue, fieldValues, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
+            if (value instanceof GqlJcrProperty) {
+                return ((GqlJcrProperty) value).getValue().equals(fieldValue);
+            }
             return value != null && value.toString().equals(fieldValue);
         }));
 
