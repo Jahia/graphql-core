@@ -140,6 +140,9 @@ public class FilterHelper {
 
         ALGORITHM_BY_EVALUATION.put(FieldEvaluation.AMONG, ((source, fieldName, fieldValue, fieldValues, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
+            if (value instanceof GqlJcrProperty) {
+                return fieldValues.contains(((GqlJcrProperty) value).getValue());
+            }
             return value != null && fieldValues.contains(value.toString());
         }));
     }
