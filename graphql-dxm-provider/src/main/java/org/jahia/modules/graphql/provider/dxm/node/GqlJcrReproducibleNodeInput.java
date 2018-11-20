@@ -34,6 +34,7 @@ public class GqlJcrReproducibleNodeInput {
     }
 
     @GraphQLField
+    @GraphQLName("pathOrId")
     @GraphQLNonNull
     @GraphQLDescription("Path or UUID of the node to be copied/moved")
     public String getPathOrId() {
@@ -41,6 +42,7 @@ public class GqlJcrReproducibleNodeInput {
     }
 
     @GraphQLField
+    @GraphQLName("destParentPathOrId")
     @GraphQLNonNull
     @GraphQLDescription("Path or UUID of the destination parent node to copy/move the node to")
     public String getDestParentPathOrId() {
@@ -48,6 +50,7 @@ public class GqlJcrReproducibleNodeInput {
     }
 
     @GraphQLField
+    @GraphQLName("destName")
     @GraphQLDescription("The name of the node at the new location or null if its current name should be preserved")
     public String getDestName() {
         return destName;

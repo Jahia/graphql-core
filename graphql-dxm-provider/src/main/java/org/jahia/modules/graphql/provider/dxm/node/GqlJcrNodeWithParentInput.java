@@ -69,6 +69,7 @@ public class GqlJcrNodeWithParentInput extends GqlJcrNodeInput {
     }
 
     @GraphQLField
+    @GraphQLName("parentPathOrId")
     @GraphQLNonNull
     @GraphQLDescription("The parent path or id where the node will be created")
     public String getParentPathOrId() {

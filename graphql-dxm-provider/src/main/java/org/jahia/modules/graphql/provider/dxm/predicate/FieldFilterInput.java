@@ -88,30 +88,35 @@ public class FieldFilterInput {
     }
 
     @GraphQLField
+    @GraphQLName("fieldFilter")
     @GraphQLDescription("Either a non-null sub-filter, or null in case the input object represents a simple field filter configured via its other properties")
     public FieldFiltersInput getFieldFilter() {
         return fieldFilter;
     }
 
     @GraphQLField
+    @GraphQLName("fieldName")
     @GraphQLDescription("The name of the field or its alias to filter by")
     public String getFieldName() {
         return fieldName;
     }
 
     @GraphQLField
+    @GraphQLName("value")
     @GraphQLDescription("The value to evaluate the field against (for single-valued operations)")
     public String getValue() {
         return value;
     }
 
     @GraphQLField
+    @GraphQLName("values")
     @GraphQLDescription("The values to evaluate the field against (for multi-valued operations)")
     public Collection<String> getValues() {
         return values;
     }
 
     @GraphQLField
+    @GraphQLName("evaluation")
     @GraphQLDescription("The way to evaluate the property; null indicates default (EQUAL)")
     public FilterHelper.FieldEvaluation getEvaluation() {
         return evaluation;

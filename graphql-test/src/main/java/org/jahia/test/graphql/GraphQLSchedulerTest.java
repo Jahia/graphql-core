@@ -40,7 +40,7 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
         List<JSONObject> jobDatas = new ArrayList<>();
         JobDetail testJob = TestJob.createTestJob();
 
-        String subscritpion = "subscription backgroundJobSubscription {\n" +
+        String subscription = "subscription backgroundJobSubscription {\n" +
                                     "backgroundJobSubscription(filterByNames:[\"" + testJob.getName() + "\"]) {\n" +
                                         "group\n" +
                                         "name\n" +
@@ -56,7 +56,7 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
 
 
 
-        String url = getBaseServerURL() + Jahia.getContextPath() + "/modules/graphql?query=" + URLEncoder.encode(subscritpion, "UTF-8");
+        String url = getBaseServerURL() + Jahia.getContextPath() + "/modules/graphql?query=" + URLEncoder.encode(subscription, "UTF-8");
         SseClient sseClient = httpClient.createSSE(url)
                 .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString("root:root1234".getBytes()))
                 .idleTimeoutMillis(0)

@@ -65,7 +65,7 @@ public class GqlJcrPermissionDataFetcher<T> implements DataFetcher<T> {
     }
 
     @Override
-    public T get(DataFetchingEnvironment environment) {
+    public T get(DataFetchingEnvironment environment) throws Exception {
 
         // check permission
         GqlJcrPermissionChecker.checkPermissions(environment.getParentType(), environment.getFields(), permissions);

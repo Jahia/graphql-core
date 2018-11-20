@@ -66,11 +66,13 @@ public class GqlSiteLanguage {
     }
 
     @GraphQLField
+    @GraphQLName("language")
     public String getLanguage() {
         return language;
     }
 
     @GraphQLField
+    @GraphQLName("displayName")
     public String getDisplayName(@GraphQLName("language") String displayLanguage) {
         Locale locale = LanguageCodeConverters.languageCodeToLocale(language);
         return displayLanguage != null ? locale.getDisplayName(Locale.forLanguageTag(displayLanguage)) : locale.getDisplayName(locale);

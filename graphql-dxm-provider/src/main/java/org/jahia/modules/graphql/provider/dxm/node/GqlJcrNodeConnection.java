@@ -46,6 +46,7 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.relay.Edge;
 import graphql.relay.PageInfo;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
@@ -58,6 +59,7 @@ public class GqlJcrNodeConnection extends DXConnection<GqlJcrNode> {
     }
 
     @GraphQLField
+    @GraphQLName("aggregation")
     public GqlJcrNodeAggregation getAggregation() {
         return new GqlJcrNodeAggregation(getEdges());
     }

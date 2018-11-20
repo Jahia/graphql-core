@@ -106,6 +106,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     }
 
     @GraphQLField
+    @GraphQLName("node")
     @GraphQLDescription("Get the graphQL representation of the node currently being mutated")
     public GqlJcrNode getNode() throws BaseGqlClientException {
         try {
@@ -116,6 +117,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     }
 
     @GraphQLField
+    @GraphQLName("uuid")
     @GraphQLDescription("Get the identifier of the node currently being mutated")
     public String getUuid() throws BaseGqlClientException {
         try {

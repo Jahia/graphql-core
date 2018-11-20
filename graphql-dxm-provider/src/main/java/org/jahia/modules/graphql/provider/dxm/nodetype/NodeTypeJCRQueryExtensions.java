@@ -68,6 +68,7 @@ import java.util.stream.Stream;
 public class NodeTypeJCRQueryExtensions {
 
     @GraphQLField
+    @GraphQLName("nodeTypeByName")
     @GraphQLDescription("Get a node type by its name")
     public static GqlJcrNodeType getNodeTypeByName(@GraphQLNonNull @GraphQLName("name") String name) {
         try {
@@ -78,6 +79,7 @@ public class NodeTypeJCRQueryExtensions {
     }
 
     @GraphQLField
+    @GraphQLName("nodeTypesByNames")
     @GraphQLDescription("Get multiple node types by their names")
     public static Collection<GqlJcrNodeType> getNodeTypesByNames(@GraphQLNonNull @GraphQLName("names") Collection<String> names) {
         LinkedHashSet<GqlJcrNodeType> result = new LinkedHashSet<>(names.size());
@@ -94,8 +96,9 @@ public class NodeTypeJCRQueryExtensions {
     }
 
     @GraphQLField
+    @GraphQLName("nodeTypes")
     @GraphQLDescription("Get a list of nodetypes based on specified parameter")
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     public static DXPaginatedData<GqlJcrNodeType> getNodeTypes(@GraphQLName("filter") NodeTypesListInput input,
                                                                @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
                                                                DataFetchingEnvironment environment) {

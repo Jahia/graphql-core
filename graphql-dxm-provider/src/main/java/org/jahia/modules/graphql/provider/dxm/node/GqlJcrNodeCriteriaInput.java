@@ -120,6 +120,7 @@ public class GqlJcrNodeCriteriaInput {
      * @return The type of nodes to fetch
      */
     @GraphQLField
+    @GraphQLName("nodeType")
     @GraphQLNonNull
     @GraphQLDescription("The type of nodes to query")
     public String getNodeType() {
@@ -130,6 +131,7 @@ public class GqlJcrNodeCriteriaInput {
      * @return The exact meaning of the paths field
      */
     @GraphQLField
+    @GraphQLName("pathType")
     @GraphQLDescription("The exact meaning of the paths field")
     public PathType getPathType() {
         return pathType;
@@ -139,6 +141,7 @@ public class GqlJcrNodeCriteriaInput {
      * @return Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType field; null or empty collection means no path restrictions
      */
     @GraphQLField
+    @GraphQLName("paths")
     @GraphQLDescription("Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType field; null or empty collection means no path restrictions")
     public Collection<String> getPaths() {
         return paths;
@@ -148,6 +151,7 @@ public class GqlJcrNodeCriteriaInput {
      * @return Additional constraint to filter nodes by their arbitrary properties
      */
     @GraphQLField
+    @GraphQLName("nodeConstraint")
     @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties")
     public GqlJcrNodeConstraintInput getNodeConstraint() {
         return nodeConstraint;
@@ -157,12 +161,14 @@ public class GqlJcrNodeCriteriaInput {
      * @return Language to access node properties in
      */
     @GraphQLField
+    @GraphQLName("language")
     @GraphQLDescription("Language to access node properties in")
     public String getLanguage() {
         return language;
     }
 
     @GraphQLField
+    @GraphQLName("ordering")
     @GraphQLDescription("ordering strategies")
     public GqlOrdering getOrdering() {
         return ordering;

@@ -78,6 +78,7 @@ public interface GqlJcrNode {
      * @return The UUID of the JCR node this object represents
      */
     @GraphQLField
+    @GraphQLName("uuid")
     @GraphQLNonNull
     @GraphQLDescription("The UUID of the JCR node this object represents")
     String getUuid();
@@ -86,6 +87,7 @@ public interface GqlJcrNode {
      * @return Get the workspace of the query
      */
     @GraphQLField
+    @GraphQLName("workspace")
     @GraphQLNonNull
     @GraphQLDescription("Get the workspace of the query")
     NodeQueryExtensions.Workspace getWorkspace();
@@ -94,6 +96,7 @@ public interface GqlJcrNode {
      * @return The name of the JCR node this object represents
      */
     @GraphQLField
+    @GraphQLName("name")
     @GraphQLNonNull
     @GraphQLDescription("The name of the JCR node this object represents")
     String getName();
@@ -102,6 +105,7 @@ public interface GqlJcrNode {
      * @return The path of the JCR node this object represents
      */
     @GraphQLField
+    @GraphQLName("path")
     @GraphQLNonNull
     @GraphQLDescription("The path of the JCR node this object represents")
     String getPath();
@@ -111,6 +115,7 @@ public interface GqlJcrNode {
      * @return The display name of the JCR node this object represents in the requested language
      */
     @GraphQLField
+    @GraphQLName("displayName")
     @GraphQLDescription("The display name of the JCR node this object represents in the requested language")
     String getDisplayName(@GraphQLName("language") @GraphQLDescription("The language to obtain the display name in") String language);
 
@@ -118,6 +123,7 @@ public interface GqlJcrNode {
      * @return GraphQL representation of the parent JCR node
      */
     @GraphQLField
+    @GraphQLName("parent")
     @GraphQLDescription("GraphQL representation of the parent JCR node")
     GqlJcrNode getParent();
 
@@ -129,6 +135,7 @@ public interface GqlJcrNode {
      * @return GraphQL representations of the properties in the requested language
      */
     @GraphQLField
+    @GraphQLName("properties")
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the properties in the requested language")
     Collection<GqlJcrProperty> getProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names,
@@ -143,6 +150,7 @@ public interface GqlJcrNode {
      * @return The GraphQL representation of the property in the requested language; null if the property does not exist
      */
     @GraphQLField
+    @GraphQLName("property")
     @GraphQLDescription("The GraphQL representation of the property in the requested language; null if the property does not exist")
     GqlJcrProperty getProperty(@GraphQLName("name") @GraphQLDescription("The name of the JCR property") @GraphQLNonNull String name,
                                @GraphQLName("language") @GraphQLDescription("The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones") String language);
@@ -158,8 +166,9 @@ public interface GqlJcrNode {
      * @throws GqlJcrWrongInputException In case any of the property filters passed as a part of the propertiesFilter is inconsistent (for example missing a property value to be used for comparison)
      */
     @GraphQLField
+    @GraphQLName("children")
     @GraphQLNonNull
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the child nodes, according to parameters passed")
     DXPaginatedData<GqlJcrNode> getChildren(@GraphQLName("names") @GraphQLDescription("Filter of child nodes by their names; null to avoid such filtering") Collection<String> names,
                                             @GraphQLName("typesFilter") @GraphQLDescription("Filter of child nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
@@ -177,6 +186,7 @@ public interface GqlJcrNode {
      * @throws GqlJcrWrongInputException In case of malformed relative descendant node path
      */
     @GraphQLField
+    @GraphQLName("descendant")
     @GraphQLDescription("GraphQL representation of a descendant node, based on its relative path")
     GqlJcrNode getDescendant(@GraphQLName("relPath") @GraphQLDescription("Name or relative path of the sub node") @GraphQLNonNull String relPath)
     throws GqlJcrWrongInputException;
@@ -191,8 +201,9 @@ public interface GqlJcrNode {
      * @throws GqlJcrWrongInputException In case any of the property filters passed as a part of the propertiesFilter is inconsistent (for example missing a property value to be used for comparison)
      */
     @GraphQLField
+    @GraphQLName("descendants")
     @GraphQLNonNull
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the descendant nodes, according to parameters passed")
     DXPaginatedData<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
                                                @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter,
@@ -211,6 +222,7 @@ public interface GqlJcrNode {
      * @throws GqlJcrWrongInputException In case the upToPath parameter value is not a valid path of an ancestor node of this node
      */
     @GraphQLField
+    @GraphQLName("ancestors")
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the ancestor nodes of the JCR node, top down direction")
     List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") @GraphQLDescription("The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes") String upToPath,
@@ -222,8 +234,9 @@ public interface GqlJcrNode {
      * @return GraphQL representations of the reference properties that target the JCR Node
      */
     @GraphQLField
+    @GraphQLName("references")
     @GraphQLNonNull
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
     DXPaginatedData<GqlJcrProperty> getReferences(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,DataFetchingEnvironment environment);
 
@@ -234,6 +247,7 @@ public interface GqlJcrNode {
      * @return GraphQL representation of this node in certain workspace; null in case there is no corresponding node in the target workspace
      */
     @GraphQLField
+    @GraphQLName("nodeInWorkspace")
     @GraphQLDescription("GraphQL representation of this node in certain workspace")
     GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace);
 
@@ -254,6 +268,7 @@ public interface GqlJcrNode {
      * @return true if the permission has the permission, false otherwise
      */
     @GraphQLField
+    @GraphQLName("aggregatedLastModifiedDate")
     @GraphQLDescription("Get the last modified date of this node and its descendants. The recursion in descendants can be controlled by recursionTypesFilter. If no filter is passed, recursion will stop by default on sub pages.")
     String getAggregatedLastModifiedDate(@GraphQLName("language") @GraphQLDescription("The language to use to get the last modified date, if not specified, returns last modification date in any language") String language,
                                          @GraphQLName("recursionTypesFilter") @GraphQLDescription("Stop recursion on nodes by their types; null to avoid such filtering") NodeTypesInput recursionTypesFilter,
@@ -265,6 +280,7 @@ public interface GqlJcrNode {
      * @return the locales to be translate, if the given locales doesn't exist or the given locales last modification are older than already translated locales
      */
     @GraphQLField
+    @GraphQLName("languagesToTranslate")
     @GraphQLDescription("Check if the given locales need translation, by comparing last modifications dates with already existing translations")
     List<String> getLanguagesToTranslate(@GraphQLName("languagesTranslated") @GraphQLDescription("List of known translated languages, will be used to compare modifications dates") List<String> languagesTranslated,
                                    @GraphQLName("languagesToCheck") @GraphQLDescription("List of languages potentially to be translated") List<String> languagesToCheck);
@@ -303,6 +319,7 @@ public interface GqlJcrNode {
          * @return Node type names required for a node to pass the filter
          */
         @GraphQLField
+        @GraphQLName("types")
         @GraphQLNonNull
         @GraphQLDescription("Node type names required for a node to pass the filter")
         public Collection<String> getTypes() {
@@ -414,6 +431,7 @@ public interface GqlJcrNode {
          * @return Language to use when evaluating the property
          */
         @GraphQLField
+        @GraphQLName("language")
         @GraphQLDescription("Language to use when evaluating the property")
         public String getLanguage() {
             return language;

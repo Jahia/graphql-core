@@ -55,6 +55,7 @@ import org.jahia.modules.graphql.provider.dxm.SimpleTypeResolver;
 public interface GqlJcrItemDefinition {
 
     @GraphQLField
+    @GraphQLName("name")
     @GraphQLNonNull
     @GraphQLDescription("Gets the name of the child item.")
     String getName();
@@ -80,6 +81,7 @@ public interface GqlJcrItemDefinition {
     boolean isHidden();
 
     @GraphQLField
+    @GraphQLName("declaringNodeType")
     @GraphQLNonNull
     @GraphQLDescription("Gets the node type that contains the declaration of this definition.")
     GqlJcrNodeType getDeclaringNodeType();

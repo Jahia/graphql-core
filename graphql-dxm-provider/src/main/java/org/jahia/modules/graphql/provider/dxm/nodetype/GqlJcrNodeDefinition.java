@@ -67,6 +67,7 @@ public class GqlJcrNodeDefinition implements GqlJcrItemDefinition {
     }
 
     @Override
+    @GraphQLName("name")
     @GraphQLNonNull
     public String getName() {
         return definition.getName();
@@ -97,18 +98,21 @@ public class GqlJcrNodeDefinition implements GqlJcrItemDefinition {
     }
 
     @Override
+    @GraphQLName("declaringNodeType")
     @GraphQLNonNull
     public GqlJcrNodeType getDeclaringNodeType() {
         return new GqlJcrNodeType(definition.getDeclaringNodeType());
     }
 
     @GraphQLField
+    @GraphQLName("requiredPrimaryType")
     @GraphQLDescription("Gets the minimum set of primary node types that the child node must have.")
     public List<GqlJcrNodeType> getRequiredPrimaryType() {
         return Arrays.stream(definition.getRequiredPrimaryTypes()).map(GqlJcrNodeType::new).collect(Collectors.toList());
     }
 
     @GraphQLField
+    @GraphQLName("defaultPrimaryType")
     @GraphQLDescription("Gets the default primary node type that will be assigned to the child node if it is created without an explicitly specified primary node type.")
     public GqlJcrNodeType getDefaultPrimaryType() {
         return new GqlJcrNodeType(definition.getDefaultPrimaryType());

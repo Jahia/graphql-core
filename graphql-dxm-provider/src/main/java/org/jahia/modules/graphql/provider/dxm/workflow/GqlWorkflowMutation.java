@@ -61,6 +61,7 @@ public class GqlWorkflowMutation {
     }
 
     @GraphQLField
+    @GraphQLName("workflow")
     public GqlWorkflow getWorkflow() {
         return new GqlWorkflow(workflowProcess);
     }

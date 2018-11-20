@@ -73,6 +73,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @GraphQLTypeExtension(GqlJcrNode.class)
 public class RenderNodeExtensions {
@@ -85,8 +86,13 @@ public class RenderNodeExtensions {
 
     @GraphQLField
     public GqlJcrNode getDisplayableNode(DataFetchingEnvironment environment) {
-        RenderContext context = new RenderContext(((GraphQLContext) environment.getContext()).getRequest().get(),
-                ((GraphQLContext) environment.getContext()).getResponse().get(),
+        Optional<HttpServletRequest> httpServletRequest = ((GraphQLContext) environment.getContext()).getRequest();
+        Optional<HttpServletResponse> httpServletResponse = ((GraphQLContext) environment.getContext()).getResponse();
+        if(!httpServletRequest.isPresent() || !httpServletResponse.isPresent()) {
+            return null;
+        }
+        RenderContext context = new RenderContext(httpServletRequest.get(),
+                httpServletResponse.get(),
                 JCRSessionFactory.getInstance().getCurrentUser());
         JCRNodeWrapper node = JCRContentUtils.findDisplayableNode(((GqlJcrNode) environment.getSource()).getNode(), context);
         if (node != null) {
@@ -125,11 +131,17 @@ public class RenderNodeExtensions {
                 }
             }
 
-            HttpServletRequest request = ((GraphQLContext) environment.getContext()).getRequest().get();
+            Optional<HttpServletRequest> httpServletRequest = ((GraphQLContext) environment.getContext()).getRequest();
+            Optional<HttpServletResponse> httpServletResponse = ((GraphQLContext) environment.getContext()).getResponse();
+            if(!httpServletRequest.isPresent() || !httpServletResponse.isPresent()) {
+                throw new RuntimeException("No HttpRequest or HttpResponse");
+            }
+            HttpServletRequest request = httpServletRequest.get();
             if (request instanceof HttpServletRequestWrapper) {
                 request = (HttpServletRequest) ((HttpServletRequestWrapper) request).getRequest();
             }
-            HttpServletResponse response = ((GraphQLContext) environment.getContext()).getResponse().get();
+
+            HttpServletResponse response = httpServletResponse.get();
 
             JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node.getNode(), language);
 

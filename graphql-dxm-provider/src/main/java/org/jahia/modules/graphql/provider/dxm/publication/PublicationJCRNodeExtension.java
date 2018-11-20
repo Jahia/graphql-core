@@ -92,6 +92,7 @@ public class PublicationJCRNodeExtension extends PublicationJCRExtensionSupport 
      * @return Aggregated publication info about the node
      */
     @GraphQLField
+    @GraphQLName("aggregatedPublicationInfo")
     @GraphQLNonNull
     @GraphQLDescription("Aggregated publication info about the JCR node")
     public GqlPublicationInfo getAggregatedPublicationInfo(

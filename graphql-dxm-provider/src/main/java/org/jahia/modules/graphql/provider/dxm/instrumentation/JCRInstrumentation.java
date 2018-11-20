@@ -44,7 +44,7 @@
 package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
 import graphql.execution.ExecutionContext;
-import graphql.execution.instrumentation.NoOpInstrumentation;
+import graphql.execution.instrumentation.SimpleInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
 import graphql.schema.DataFetcher;
@@ -59,7 +59,7 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * JCR instrumentation implementation
  */
-public class JCRInstrumentation extends NoOpInstrumentation {
+public class JCRInstrumentation extends SimpleInstrumentation {
 
     public static final String GRAPHQL_VARIABLES = "graphQLVariables";
     public static final String FRAGMENTS_BY_NAME = "fragmentsByName";
@@ -70,10 +70,10 @@ public class JCRInstrumentation extends NoOpInstrumentation {
         this.dxGraphQLConfig = dxGraphQLConfig;
     }
 
-    @Override
-    public DataFetcher<?> instrumentDataFetcher(DataFetcher<?> dataFetcher, InstrumentationFieldFetchParameters parameters) {
-        return super.instrumentDataFetcher(new GqlJcrPermissionDataFetcher<>(dataFetcher, dxGraphQLConfig.getPermissions()), parameters);
-    }
+//    @Override
+//    public DataFetcher<?> instrumentDataFetcher(DataFetcher<?> dataFetcher, InstrumentationFieldFetchParameters parameters) {
+//        return super.instrumentDataFetcher(new GqlJcrPermissionDataFetcher<>(dataFetcher, dxGraphQLConfig.getPermissions()), parameters);
+//    }
 
     @Override
     public ExecutionContext instrumentExecutionContext(ExecutionContext executionContext, InstrumentationExecutionParameters parameters) {

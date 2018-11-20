@@ -62,8 +62,8 @@ public class JCRMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
      * Extend the standard behavior to complete any GqlJcrMutation field via persisting any changes made to JCR during its execution.
      */
     @Override
-    protected CompletableFuture<ExecutionResult> completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, Object fetchedValue) {
-        CompletableFuture<ExecutionResult> result = super.completeField(executionContext, parameters, fetchedValue);
+    protected FieldValueInfo completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, Object fetchedValue) {
+        FieldValueInfo result = super.completeField(executionContext, parameters, fetchedValue);
 
         if (fetchedValue instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
             // we only complete field if there were no errors on execution

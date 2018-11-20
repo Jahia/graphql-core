@@ -46,6 +46,7 @@ package org.jahia.modules.graphql.provider.dxm.publication;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 
 /**
@@ -57,6 +58,7 @@ public interface GqlPublicationInfo {
      * @return Aggregated publication status of the node
      */
     @GraphQLField
+    @GraphQLName("publicationStatus")
     @GraphQLNonNull
     @GraphQLDescription("Aggregated publication status of the node")
     GqlPublicationStatus getPublicationStatus();

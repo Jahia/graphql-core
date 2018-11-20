@@ -43,6 +43,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.workflow;
 
+import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
@@ -61,6 +62,7 @@ import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 public class WorkflowJCRQueryExtensions {
 
     @GraphQLField
+    @GraphQLName("activeWorkflowTaskCountForUser")
     @GraphQLDescription("Retrieves the number of active workflow tasks for the current user")
     public static int getActiveWorkflowTaskCountForUser() {
         return BundleUtils.getOsgiService(WorkflowService.class, null)
