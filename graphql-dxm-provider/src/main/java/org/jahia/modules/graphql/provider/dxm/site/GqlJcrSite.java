@@ -69,38 +69,45 @@ public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @GraphQLField
+    @GraphQLName("sitekey")
     public String getSiteKey() {
         return siteNode.getSiteKey();
     }
 
     @GraphQLField
+    @GraphQLName("serverName")
     public String getServerName() {
         return siteNode.getServerName();
     }
 
     @GraphQLField
+    @GraphQLName("description")
     public String getDescription() {
         return siteNode.getDescription();
     }
 
     @GraphQLField
+    @GraphQLName("defaultLanguage")
     public String getDefaultLanguage() {
         return siteNode.getDefaultLanguage();
     }
 
     @GraphQLField
+    @GraphQLName("installedModules")
     @GraphQLDescription("Retrieves a collection of module IDs, which are installed on the site, the node belongs to")
     public Collection<String> getInstalledModules() {
         return siteNode.getInstalledModules();
     }
 
     @GraphQLField
+    @GraphQLName("installedModulesWithAllDependencies")
     @GraphQLDescription("Retrieves a collection of module IDs, which are installed on the site, the node belongs to, as well as dependencies of those modules")
     public Collection<String> getInstalledModulesWithAllDependencies() {
         return siteNode.getInstalledModulesWithAllDependencies();
     }
 
     @GraphQLField
+    @GraphQLName("languages")
     public Collection<GqlSiteLanguage> getLanguages() {
         List<GqlSiteLanguage> result = new ArrayList<>();
 

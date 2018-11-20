@@ -73,6 +73,7 @@ public class GqlJcrNodeInput {
     }
 
     @GraphQLField
+    @GraphQLName("name")
     @GraphQLNonNull
     @GraphQLDescription("The name of the node to create")
     public String getName() {
@@ -80,6 +81,7 @@ public class GqlJcrNodeInput {
     }
 
     @GraphQLField
+    @GraphQLName("primaryNodeType")
     @GraphQLNonNull
     @GraphQLDescription("The primary node type of the node to create")
     public String getPrimaryNodeType() {
@@ -87,18 +89,21 @@ public class GqlJcrNodeInput {
     }
 
     @GraphQLField
+    @GraphQLName("mixins")
     @GraphQLDescription("The collection of mixins to add to the node")
     public Collection<String> getMixins() {
         return mixins;
     }
 
     @GraphQLField
+    @GraphQLName("properties")
     @GraphQLDescription("The collection of properties to set to the node")
     public Collection<GqlJcrPropertyInput> getProperties() {
         return properties;
     }
 
     @GraphQLField
+    @GraphQLName("children")
     @GraphQLDescription("The collection of sub nodes to create")
     public Collection<GqlJcrNodeInput> getChildren() {
         return children;

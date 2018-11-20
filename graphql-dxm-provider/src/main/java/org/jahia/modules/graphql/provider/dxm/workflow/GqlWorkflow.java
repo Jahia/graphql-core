@@ -56,6 +56,7 @@ public class GqlWorkflow {
     }
 
     @GraphQLField
+    @GraphQLName("startUser")
     public String getStartUser() {
         return workflowProcess.getStartUser();
     }

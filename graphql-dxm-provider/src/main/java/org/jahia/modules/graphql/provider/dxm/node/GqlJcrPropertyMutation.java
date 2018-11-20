@@ -95,6 +95,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     }
 
     @GraphQLField
+    @GraphQLName("property")
     @GraphQLDescription("Get the graphQL representation of the property currently being mutated")
     public GqlJcrProperty getProperty() throws BaseGqlClientException {
         try {
@@ -105,6 +106,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     }
 
     @GraphQLField
+    @GraphQLName("path")
     @GraphQLDescription("Get the path of the property currently being mutated")
     public String getPath() throws BaseGqlClientException {
         return node.getPath() + "/" + name;

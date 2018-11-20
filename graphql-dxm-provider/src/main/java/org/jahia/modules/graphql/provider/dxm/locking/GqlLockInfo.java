@@ -110,6 +110,7 @@ public class GqlLockInfo {
     }
 
     @GraphQLField
+    @GraphQLName("details")
     @GraphQLDescription("Is node lockable")
     public List<GqlLockDetail> getDetails(@GraphQLName("language") @GraphQLDescription("language in which to retrieve details") String language) {
         List<GqlLockDetail> lockDetails = new LinkedList<>();

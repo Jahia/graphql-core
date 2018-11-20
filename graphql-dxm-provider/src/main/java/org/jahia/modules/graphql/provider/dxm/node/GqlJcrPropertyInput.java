@@ -74,6 +74,7 @@ public class GqlJcrPropertyInput {
     }
 
     @GraphQLField
+    @GraphQLName("name")
     @GraphQLNonNull
     @GraphQLDescription("The name of the property to set")
     public String getName() {
@@ -81,24 +82,28 @@ public class GqlJcrPropertyInput {
     }
 
     @GraphQLField
+    @GraphQLName("type")
     @GraphQLDescription("The type of the property")
     public GqlJcrPropertyType getType() {
         return type;
     }
 
     @GraphQLField
+    @GraphQLName("language")
     @GraphQLDescription("The language in which the property will be set (for internationalized properties")
     public String getLanguage() {
         return language;
     }
 
     @GraphQLField
+    @GraphQLName("value")
     @GraphQLDescription("The value to set (for single valued properties)")
     public String getValue() {
         return value;
     }
 
     @GraphQLField
+    @GraphQLName("values")
     @GraphQLDescription("The values to set (for multivalued properties)")
     public List<String> getValues() {
         return values;

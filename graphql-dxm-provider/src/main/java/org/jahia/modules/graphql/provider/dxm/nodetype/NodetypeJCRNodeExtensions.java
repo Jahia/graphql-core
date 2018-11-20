@@ -82,6 +82,7 @@ public class NodetypeJCRNodeExtensions {
     }
 
     @GraphQLField
+    @GraphQLName("primaryNodeType")
     @GraphQLNonNull
     public GqlJcrNodeType getPrimaryNodeType() {
         try {
@@ -92,13 +93,15 @@ public class NodetypeJCRNodeExtensions {
     }
 
     @GraphQLField
+    @GraphQLName("isNodeType")
     @GraphQLDescription("Reports if the current node matches the nodetype(s) passed in parameter")
     @GraphQLNonNull
-    public boolean getIsNodeType(@GraphQLName("type") @GraphQLNonNull GqlJcrNode.NodeTypesInput input) {
+    public boolean isNodeType(@GraphQLName("type") @GraphQLNonNull GqlJcrNode.NodeTypesInput input) {
         return NodeHelper.getTypesPredicate(input).test(node.getNode());
     }
 
     @GraphQLField
+    @GraphQLName("mixinTypes")
     @GraphQLDescription("Returns an array of <code>NodeType</code> objects representing the mixin node types in effect for this node.")
     @GraphQLNonNull
     public List<GqlJcrNodeType> getMixinTypes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
@@ -113,6 +116,7 @@ public class NodetypeJCRNodeExtensions {
     }
 
     @GraphQLField
+    @GraphQLName("definition")
     @GraphQLDescription("Returns the node definition that applies to this node.")
     public GqlJcrNodeDefinition getDefinition() {
         ExtendedNodeDefinition definition;
@@ -130,6 +134,7 @@ public class NodetypeJCRNodeExtensions {
     }
 
     @GraphQLField
+    @GraphQLName("allowedChildNodeTypes")
     @GraphQLDescription("Returns a list of types allowed under the provided node")
     public List<GqlJcrNodeType> getAllowedChildNodeTypes(
         @GraphQLName("includeSubTypes") @GraphQLDescription("Whether all sub-types of allowed child node types should be included") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean includeSubTypes,

@@ -68,8 +68,9 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
 
-@Component(service = GraphQLProvider.class, immediate = true)
-public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLSubscriptionProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider, TypeFunction {
+@Component(service = GraphQLProvider.class, enabled = false)
+public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider, TypeFunction {
+        //, GraphQLSubscriptionProvider {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
@@ -191,7 +192,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         return mutationType.getFieldDefinitions();
     }
 
-    @Override
+//    @Override
     public Collection<GraphQLFieldDefinition> getSubscriptions() {
         return subscriptionType.getFieldDefinitions();
     }

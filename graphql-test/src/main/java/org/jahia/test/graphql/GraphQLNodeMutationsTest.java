@@ -57,10 +57,13 @@ import org.jahia.services.content.JCRTemplate;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.*;
+import org.springframework.mock.web.MockMultipartFile;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
+import javax.servlet.http.Part;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
 import java.util.stream.Collectors;

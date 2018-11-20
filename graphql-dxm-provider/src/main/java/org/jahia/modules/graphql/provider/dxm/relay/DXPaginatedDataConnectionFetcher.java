@@ -64,14 +64,14 @@ public class DXPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T>
     }
 
     @Override
-    public Connection<T> get(DataFetchingEnvironment environment) {
+    public Connection<T> get(DataFetchingEnvironment environment) throws Exception {
         DXPaginatedData<T> paginatedData = paginationDataFetcher.get(environment);
         if (paginatedData == null) {
             return new DefaultConnection<>(Collections.emptyList(), new DefaultPageInfo(null,null,false,false));
         }
         List<Edge<T>> edges = buildEdges(paginatedData);
         PageInfo pageInfo = getPageInfo(edges, paginatedData);
-        Class<? extends DXConnection<T>> connectionType = (Class<? extends DXConnection<T>>) DXGraphQLProvider.getInstance().getConnectionType(environment.getFieldTypeInfo().getType().getName());
+        Class<? extends DXConnection<T>> connectionType = (Class<? extends DXConnection<T>>) DXGraphQLProvider.getInstance().getConnectionType(environment.getExecutionStepInfo().getFieldDefinition().getType().getName());
         if (connectionType != null) {
             try {
                 return connectionType.getConstructor(List.class, PageInfo.class).newInstance(edges, pageInfo);

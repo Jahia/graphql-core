@@ -87,17 +87,20 @@ public class GqlJcrNodeType {
     }
 
     @GraphQLField()
+    @GraphQLName("name")
     public String getName() {
         return nodeType.getName();
     }
 
     @GraphQLField()
+    @GraphQLName("displayName")
     public String getDisplayName(@GraphQLName("language") @GraphQLNonNull String language) {
         return nodeType.getLabel(LanguageCodeConverters.languageCodeToLocale(language));
 
     }
 
     @GraphQLField()
+    @GraphQLName("icon")
     @GraphQLDescription
     public String getIcon(){
         try {
@@ -108,6 +111,7 @@ public class GqlJcrNodeType {
     }
 
     @GraphQLField
+    @GraphQLName("systemId")
     @GraphQLDescription("System ID of the node type, corresponding to the name of the module declaring it.")
     public String getSystemId() {
         return nodeType.getSystemId();
@@ -138,6 +142,7 @@ public class GqlJcrNodeType {
     }
 
     @GraphQLField
+    @GraphQLName("primaryItem")
     @GraphQLDescription("Returns the name of the primary item (one of the child items of the nodes of this node type). If this node has no primary item, then this method null.")
     public GqlJcrItemDefinition getPrimaryItem() {
         String primaryItemName = nodeType.getPrimaryItemName();
@@ -153,6 +158,7 @@ public class GqlJcrNodeType {
     }
 
     @GraphQLField
+    @GraphQLName("properties")
     @GraphQLDescription("Returns an array containing the property definitions of this node type.")
     public List<GqlJcrPropertyDefinition> getProperties(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
         return Arrays.stream(nodeType.getPropertyDefinitions())
@@ -162,6 +168,7 @@ public class GqlJcrNodeType {
     }
 
     @GraphQLField
+    @GraphQLName("nodes")
     @GraphQLDescription("Returns an array containing the child node definitions of this node type.")
     public List<GqlJcrNodeDefinition> getNodes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
         return Arrays.stream(nodeType.getChildNodeDefinitions())
@@ -171,7 +178,8 @@ public class GqlJcrNodeType {
     }
 
     @GraphQLField
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLName("subTypes")
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("Returns all subtypes of this node type in the node type inheritance hierarchy.")
     public PaginatedData<GqlJcrNodeType> getSubtypes(DataFetchingEnvironment environment) {
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
@@ -180,6 +188,7 @@ public class GqlJcrNodeType {
     }
 
     @GraphQLField
+    @GraphQLName("supertypes")
     @GraphQLDescription("Returns all supertypes of this node type in the node type inheritance hierarchy.")
     public List<GqlJcrNodeType> getSupertypes(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment) {
         return nodeType.getSupertypeSet().stream()

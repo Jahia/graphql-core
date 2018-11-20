@@ -125,6 +125,7 @@ public class GqlJcrQuery {
      * @return Get the workspace of the query
      */
     @GraphQLField
+    @GraphQLName("workspace")
     @GraphQLNonNull
     @GraphQLDescription("Get the workspace of the query")
     public NodeQueryExtensions.Workspace getWorkspace() {
@@ -140,6 +141,7 @@ public class GqlJcrQuery {
      */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLName("nodeById")
     @GraphQLDescription("Get GraphQL representation of a node by its UUID")
     public GqlJcrNode getNodeById(@GraphQLName("uuid") @GraphQLNonNull @GraphQLDescription("The UUID of the node") String uuid)
             throws BaseGqlClientException {
@@ -159,6 +161,7 @@ public class GqlJcrQuery {
      */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLName("nodeByPath")
     @GraphQLDescription("Get GraphQL representation of a node by its path")
     public GqlJcrNode getNodeByPath(@GraphQLName("path") @GraphQLNonNull @GraphQLDescription("The path of the node") String path)
             throws BaseGqlClientException {
@@ -178,6 +181,7 @@ public class GqlJcrQuery {
      */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLName("nodesById")
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their UUIDs")
     public Collection<GqlJcrNode> getNodesById(@GraphQLName("uuids") @GraphQLNonNull @GraphQLDescription("The UUIDs of the nodes") Collection<@GraphQLNonNull String> uuids)
             throws BaseGqlClientException {
@@ -201,6 +205,7 @@ public class GqlJcrQuery {
      */
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLName("nodesByPath")
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their paths")
     public Collection<GqlJcrNode> getNodesByPath(@GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("The paths of the nodes") Collection<@GraphQLNonNull String> paths)
             throws BaseGqlClientException {
@@ -227,8 +232,9 @@ public class GqlJcrQuery {
      * @throws BaseGqlClientException In case of issues executing the query
      */
     @GraphQLField
+    @GraphQLName("nodesByQuery")
     @GraphQLDescription("Get GraphQL representations of nodes using a query language supported by JCR")
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     public DXPaginatedData<GqlJcrNode> getNodesByQuery(
             @GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
             @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage,
@@ -259,8 +265,9 @@ public class GqlJcrQuery {
      * @throws BaseGqlClientException In case of issues fetching nodes
      */
     @GraphQLField
+    @GraphQLName("nodesByCriteria")
     @GraphQLDescription("handles query nodes with QOM factory")
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     public DXPaginatedData<GqlJcrNode> getNodesByCriteria(
         @GraphQLName("criteria") @GraphQLNonNull @GraphQLDescription("The criteria to fetch nodes by") GqlJcrNodeCriteriaInput criteria,
         @GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL field values") FieldFiltersInput fieldFilter,

@@ -91,6 +91,7 @@ public class GqlVanityUrlMappingMutation {
     }
 
     @GraphQLField
+    @GraphQLName("uuid")
     @GraphQLDescription("Get the identifier of the node currently being mutated")
     public String getUuid() throws BaseGqlClientException {
         try {
@@ -192,6 +193,7 @@ public class GqlVanityUrlMappingMutation {
      * @throws BaseGqlClientException in case of an error during node delete operation
      */
     @GraphQLField
+    @GraphQLName("nodeMutation")
     @GraphQLDescription("Get mutation on underlying node")
     public GqlJcrNodeMutation getNodeMutation() {
         return new GqlJcrNodeMutation(vanityUrlNode);

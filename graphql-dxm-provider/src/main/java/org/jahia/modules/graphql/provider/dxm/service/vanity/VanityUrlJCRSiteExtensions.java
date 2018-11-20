@@ -139,7 +139,7 @@ public class VanityUrlJCRSiteExtensions {
     @GraphQLField
     @GraphQLName("getAllVanityURLs")
     @GraphQLDescription("return vanity urls")
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     public DXPaginatedData<GqlJcrVanityUrl> getAllVanityURLs(DataFetchingEnvironment environment) {
         try {
             PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);

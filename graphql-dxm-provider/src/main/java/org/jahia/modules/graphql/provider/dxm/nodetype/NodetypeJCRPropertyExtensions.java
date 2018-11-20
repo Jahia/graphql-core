@@ -63,6 +63,7 @@ public class NodetypeJCRPropertyExtensions {
     }
 
     @GraphQLField
+    @GraphQLName("definition")
     @GraphQLDescription("Returns the property definition that applies to this property.")
     public GqlJcrPropertyDefinition getDefinition() {
         ExtendedPropertyDefinition definition;

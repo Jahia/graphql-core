@@ -85,7 +85,7 @@ public class QueryExtensions {
     }
 
     @GraphQLField
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     public static DXPaginatedData<GqlNews> getNewsByDate(@GraphQLName("afterDate") String after, @GraphQLName("beforeDate") String before, DataFetchingEnvironment environment) throws RepositoryException  {
         QueryWrapper query = JCRSessionFactory.getInstance().getCurrentUserSession().getWorkspace().getQueryManager().createQuery("select * from [jnt:news] where [date]>'"
                 + ISO8601.format(ISO8601.parse(after))

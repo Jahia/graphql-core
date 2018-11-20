@@ -69,6 +69,7 @@ public class GqlJcrPropertyDefinition implements GqlJcrItemDefinition {
     }
 
     @Override
+    @GraphQLName("name")
     @GraphQLNonNull
     public String getName() {
         return definition.getName();
@@ -105,12 +106,14 @@ public class GqlJcrPropertyDefinition implements GqlJcrItemDefinition {
     }
 
     @Override
+    @GraphQLName("declaringNodeType")
     @GraphQLNonNull
     public GqlJcrNodeType getDeclaringNodeType() {
         return new GqlJcrNodeType(definition.getDeclaringNodeType());
     }
 
     @GraphQLField
+    @GraphQLName("internationalized")
     @GraphQLDescription("Reports whether this property has language dependant values.")
     @GraphQLNonNull
     public boolean isInternationalized() {
@@ -125,6 +128,7 @@ public class GqlJcrPropertyDefinition implements GqlJcrItemDefinition {
     }
 
     @GraphQLField
+    @GraphQLName("requiredType")
     @GraphQLDescription("Gets the required type of the property.")
     @GraphQLNonNull
     public GqlJcrPropertyType getRequiredType() {

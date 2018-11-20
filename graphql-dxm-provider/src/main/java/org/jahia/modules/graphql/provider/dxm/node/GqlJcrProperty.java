@@ -90,6 +90,7 @@ public class GqlJcrProperty {
      * @return The name of the JCR property
      */
     @GraphQLField
+    @GraphQLName("name")
     @GraphQLNonNull
     @GraphQLDescription("The name of the JCR property")
     public String getName() {
@@ -104,6 +105,7 @@ public class GqlJcrProperty {
      * @return The path of the JCR property
      */
     @GraphQLField
+    @GraphQLName("path")
     @GraphQLNonNull
     @GraphQLDescription("The path of the JCR property")
     public String getPath() {
@@ -118,6 +120,7 @@ public class GqlJcrProperty {
      * @return The type of the JCR property
      */
     @GraphQLField
+    @GraphQLName("type")
     @GraphQLNonNull
     @GraphQLDescription("The type of the JCR property")
     public GqlJcrPropertyType getType() {
@@ -132,6 +135,7 @@ public class GqlJcrProperty {
      * @return Whether the property is internationalized
      */
     @GraphQLField
+    @GraphQLName("internationalized")
     @GraphQLNonNull
     @GraphQLDescription("Whether the property is internationalized")
     public boolean isInternationalized() {
@@ -148,6 +152,7 @@ public class GqlJcrProperty {
      * @return The language the property value was obtained in for internationalized properties; null for non-internationalized ones
      */
     @GraphQLField
+    @GraphQLName("language")
     @GraphQLDescription("The language the property value was obtained in for internationalized properties; null for non-internationalized ones")
     public String getLanguage() {
         try {
@@ -161,6 +166,7 @@ public class GqlJcrProperty {
      * @return The value of the JCR property as a String in case the property is single-valued, null otherwise
      */
     @GraphQLField
+    @GraphQLName("value")
     @GraphQLDescription("The value of the JCR property as a String in case the property is single-valued, null otherwise")
     public String getValue() {
         try {
@@ -177,6 +183,7 @@ public class GqlJcrProperty {
      * @return The values of the JCR property as a Strings in case the property is multiple-valued, null otherwise
      */
     @GraphQLField
+    @GraphQLName("values")
     @GraphQLDescription("The values of the JCR property as Strings in case the property is multiple-valued, null otherwise")
     public List<String> getValues() {
         try {
@@ -198,6 +205,7 @@ public class GqlJcrProperty {
      * @return The value of the JCR property as a Long in case the property is single-valued, null otherwise
      */
     @GraphQLField
+    @GraphQLName("longValue")
     @GraphQLDescription("The value of the JCR property as a Long in case the property is single-valued, null otherwise")
     public Long getLongValue() {
         try {
@@ -214,6 +222,7 @@ public class GqlJcrProperty {
      * @return The values of the JCR property as Longs in case the property is multiple-valued, null otherwise
      */
     @GraphQLField
+    @GraphQLName("longValues")
     @GraphQLDescription("The values of the JCR property as Longs in case the property is multiple-valued, null otherwise")
     public List<Long> getLongValues() {
         try {
@@ -235,6 +244,7 @@ public class GqlJcrProperty {
      * @return The value of the JCR property as a Float in case the property is single-valued, null otherwise
      */
     @GraphQLField
+    @GraphQLName("floatValue")
     @GraphQLDescription("The value of the JCR property as a Float in case the property is single-valued, null otherwise")
     public Double getFloatValue() {
         try {
@@ -251,6 +261,7 @@ public class GqlJcrProperty {
      * @return The values of the JCR property as Floats in case the property is multiple-valued, null otherwise
      */
     @GraphQLField
+    @GraphQLName("floatValues")
     @GraphQLDescription("The values of the JCR property as Floats in case the property is multiple-valued, null otherwise")
     public List<Double> getFloatValues() {
         try {
@@ -273,6 +284,7 @@ public class GqlJcrProperty {
      * @throws GqlJcrUnresolvedNodeReferenceException In case either the type (must be REFEENCE, WEAKREFERENCE or STRING) or the actual value of the property do not allow to resolve the node reference
      */
     @GraphQLField
+    @GraphQLName("refNode")
     @GraphQLDescription("GraphQL representation of the node this property references in case the property is single-valued, null otherwise")
     public GqlJcrNode getRefNode() throws GqlJcrUnresolvedNodeReferenceException {
         try {
@@ -290,6 +302,7 @@ public class GqlJcrProperty {
      * @throws GqlJcrUnresolvedNodeReferenceException In case either the type (must be REFEENCE, WEAKREFERENCE or STRING) or any of the actual values of the property do not allow to resolve the node reference
      */
     @GraphQLField
+    @GraphQLName("refNodes")
     @GraphQLDescription("GraphQL representations of the nodes this property references in case the property is multiple-valued, null otherwise")
     public List<GqlJcrNode> getRefNodes() throws GqlJcrUnresolvedNodeReferenceException {
         try {
@@ -311,6 +324,7 @@ public class GqlJcrProperty {
      * @return The GraphQL representation of the JCR node the property belongs to.
      */
     @GraphQLField
+    @GraphQLName("node")
     @GraphQLNonNull
     @GraphQLDescription("The GraphQL representation of the JCR node the property belongs to.")
     public GqlJcrNode getNode() {

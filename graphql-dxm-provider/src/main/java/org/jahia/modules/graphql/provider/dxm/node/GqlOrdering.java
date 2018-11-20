@@ -80,12 +80,14 @@ public class GqlOrdering {
     }
 
     @GraphQLField
+    @GraphQLName("property")
     @GraphQLDescription("The property to order by")
     public String getProperty() {
         return property;
     }
 
     @GraphQLField
+    @GraphQLName("orderType")
     @GraphQLDescription("ASC or DESC order")
     public OrderType getOrderType() {
         return orderType;

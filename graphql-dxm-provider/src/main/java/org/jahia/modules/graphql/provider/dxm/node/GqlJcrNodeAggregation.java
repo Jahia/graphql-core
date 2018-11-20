@@ -77,18 +77,21 @@ public class GqlJcrNodeAggregation {
 
 
     @GraphQLField
+    @GraphQLName("count")
     @GraphQLDescription("Count aggregation")
     public CountAggregation getCount() {
         return new CountAggregation();
     }
 
     @GraphQLField
+    @GraphQLName("sum")
     @GraphQLDescription("Sum aggregation")
     public StatAggregation getSum() {
         return new StatAggregation(LongStream::sum, DoubleStream::sum);
     }
 
     @GraphQLField
+    @GraphQLName("max")
     @GraphQLDescription("Max aggregation")
     public StatAggregation getMax() {
         return new StatAggregation((l) -> l.max().orElseThrow(() -> new DataFetchingException("No value")),
@@ -96,6 +99,7 @@ public class GqlJcrNodeAggregation {
     }
 
     @GraphQLField
+    @GraphQLName("min")
     @GraphQLDescription("Min aggregation")
     public StatAggregation getMin() {
         return new StatAggregation((l) -> l.min().orElseThrow(() -> new DataFetchingException("No value")),
@@ -103,6 +107,7 @@ public class GqlJcrNodeAggregation {
     }
 
     @GraphQLField
+    @GraphQLName("avg")
     @GraphQLDescription("Average aggregation")
     public StatAggregation getAvg() {
         return new StatAggregation((l) -> (long) l.average().orElseThrow(() -> new DataFetchingException("No value")),

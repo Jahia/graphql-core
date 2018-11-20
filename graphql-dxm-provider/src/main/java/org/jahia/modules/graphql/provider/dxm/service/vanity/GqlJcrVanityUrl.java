@@ -78,6 +78,7 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
      * @return the vanity URL
      */
     @GraphQLField
+    @GraphQLName("url")
     @GraphQLDescription("The vanity URL")
     public String getUrl() {
         return getNode().getPropertyAsString(PROPERTY_URL);
@@ -89,6 +90,7 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
      * @return language of the mapping
      */
     @GraphQLField
+    @GraphQLName("language")
     @GraphQLDescription("The language of the content object to which the vanity URL maps to")
     public String getLanguage() {
         return getNode().getPropertyAsString(JCR_LANGUAGE);
@@ -100,6 +102,7 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
      * @return The node targeted by this vanity URL
      */
     @GraphQLField
+    @GraphQLName("targetNode")
     @GraphQLDescription("The node targeted by this vanity URL")
     public GqlJcrNode getTargetNode() {
         return getParent().getParent();

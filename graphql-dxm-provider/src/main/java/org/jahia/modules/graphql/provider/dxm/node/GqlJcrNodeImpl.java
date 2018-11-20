@@ -126,6 +126,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     @Override
     @GraphQLNonNull
+    @GraphQLName("uuid")
     public String getUuid() {
         try {
             return node.getIdentifier();
@@ -135,6 +136,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLName("workspace")
     @GraphQLNonNull
     public NodeQueryExtensions.Workspace getWorkspace() {
         try {
@@ -145,18 +147,21 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLName("name")
     @GraphQLNonNull
     public String getName() {
         return node.getName();
     }
 
     @Override
+    @GraphQLName("path")
     @GraphQLNonNull
     public String getPath() {
         return node.getPath();
     }
 
     @Override
+    @GraphQLName("displayName")
     public String getDisplayName(@GraphQLName("language") String language) {
         try {
             JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node, language);
@@ -167,6 +172,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLName("parent")
     public GqlJcrNode getParent() {
         try {
             return SpecializedTypesHandler.getNode(node.getParent());
@@ -176,6 +182,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLName("properties")
     @GraphQLNonNull
     public Collection<GqlJcrProperty> getProperties(@GraphQLName("names") Collection<String> names,
                                                     @GraphQLName("language") String language,
@@ -202,6 +209,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLName("property")
     public GqlJcrProperty getProperty(@GraphQLName("name") @GraphQLNonNull String name,
                                       @GraphQLName("language") String language) {
         try {
@@ -216,7 +224,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLName("children")
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLNonNull
     public DXPaginatedData<GqlJcrNode> getChildren(@GraphQLName("names") Collection<String> names,
                                                    @GraphQLName("typesFilter") NodeTypesInput typesFilter,
@@ -234,6 +243,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLName("descendant")
     public GqlJcrNode getDescendant(@GraphQLName("relPath") @GraphQLNonNull String relPath) {
         if (relPath.contains("..")) {
             throw new GqlJcrWrongInputException("No navigation outside of the node sub-tree is supported");
@@ -249,7 +259,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLName("descendants")
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLNonNull
     public DXPaginatedData<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") NodeTypesInput typesFilter,
                                                       @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter,
@@ -268,6 +279,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLName("ancestors")
     @GraphQLNonNull
     public List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") String upToPath,
                                          @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
@@ -303,7 +315,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
-    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLName("references")
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLNonNull
     public DXPaginatedData<GqlJcrProperty> getReferences(@GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
                                                          DataFetchingEnvironment environment) {
@@ -331,6 +344,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLName("nodeInWorkspace")
     public GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace) {
         try {
             JCRNodeWrapper target = JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue()).getNodeByIdentifier(node.getIdentifier());
@@ -348,6 +362,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLName("aggregatedLastModifiedDate")
     public String getAggregatedLastModifiedDate(@GraphQLName("language") String language, @GraphQLName("recursionTypesFilter") NodeTypesInput recursionTypesFilter, DataFetchingEnvironment environment) {
         try {
             JCRNodeWrapper i18node = NodeHelper.getNodeInLanguage(node, language);
@@ -373,6 +388,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLName("languagesToTranslate")
     public List<String> getLanguagesToTranslate(@GraphQLName("languagesTranslated") List<String> languagesTranslated,
                                                 @GraphQLName("languagesToCheck") List<String> languagesToCheck) {
 

@@ -46,7 +46,7 @@ package org.jahia.modules.graphql.provider.dxm.predicate;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import graphql.TypeResolutionEnvironment;
-import graphql.execution.ExecutionTypeInfo;
+import graphql.execution.ExecutionStepInfo;
 import graphql.execution.FieldCollector;
 import graphql.execution.FieldCollectorParameters;
 import graphql.execution.ValuesResolver;
@@ -254,12 +254,17 @@ public class FieldEvaluator {
         }
         fieldEnv.fieldDefinition(fieldDefinition);
         fieldEnv.fieldType(fieldDefinition.getType());
-        fieldEnv.fieldTypeInfo(ExecutionTypeInfo.newTypeInfo()
+        fieldEnv.executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
                 .fieldDefinition(fieldDefinition)
                 .type(fieldDefinition.getType())
                 .build());
 
-        Object value = fieldDefinition.getDataFetcher().get(fieldEnv.build());
+        Object value = null;
+        try {
+            value = fieldDefinition.getDataFetcher().get(fieldEnv.build());
+        } catch (Exception e) {
+            value = e.getMessage();
+        }
 
         if (nextField != null && value != null) {
             return forSubField(fieldDefinition.getType(), field != null ? field.getSelectionSet() : null).getFieldValue(value, nextField);
