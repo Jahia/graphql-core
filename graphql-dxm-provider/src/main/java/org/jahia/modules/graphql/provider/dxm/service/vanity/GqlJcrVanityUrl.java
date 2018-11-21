@@ -114,6 +114,7 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
      * @return true if the URL mapping is activated or false if it is not activated
      */
     @GraphQLField
+    @GraphQLName("active")
     @GraphQLDescription("true if the URL mapping is activated or false if it is not activated")
     public boolean isActive() {
         try {
@@ -129,6 +130,7 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
      * @return <code>true</code> whether this URL mapping is the default one for the language, otherwise <code>false</code>
      */
     @GraphQLField
+    @GraphQLName("default")
     @GraphQLDescription("true whether this URL mapping is the default one for the language")
     public boolean isDefault() {
         try {

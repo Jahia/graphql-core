@@ -50,18 +50,21 @@ public class FieldSorterInput {
     }
 
     @GraphQLField
+    @GraphQLName("fieldName")
     @GraphQLDescription("fieldName to sort")
     public String getFieldName() {
         return fieldName;
     }
 
     @GraphQLField
+    @GraphQLName("sortType")
     @GraphQLDescription("direction of the sort")
     public SorterHelper.SortType getSortType() {
         return sortType;
     }
 
     @GraphQLField
+    @GraphQLName("ignoreCase")
     @GraphQLDescription("ignore case when sorting")
     public Boolean isIgnoreCase() {
         return ignoreCase;
