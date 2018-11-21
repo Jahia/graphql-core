@@ -66,6 +66,7 @@ public interface GqlPublicationInfo {
      * @return Aggregated locked status of the node
      */
     @GraphQLField
+    @GraphQLName("locked")
     @GraphQLDescription("Aggregated locked status of the node")
     public boolean isLocked();
 
@@ -73,6 +74,7 @@ public interface GqlPublicationInfo {
      * @return Aggregated work-in-progress status of the node
      */
     @GraphQLField
+    @GraphQLName("workInProgress")
     @GraphQLDescription("Aggregated work-in-progress status of the node")
     public boolean isWorkInProgress();
 
@@ -80,6 +82,7 @@ public interface GqlPublicationInfo {
      * @return Whether current user is allowed to publish the node omitting any workflows
      */
     @GraphQLField
+    @GraphQLName("allowedToPublishWithoutWorkflow")
     @GraphQLDescription("Whether current user is allowed to publish the node omitting any workflows")
     public boolean isAllowedToPublishWithoutWorkflow();
 }

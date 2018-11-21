@@ -118,24 +118,28 @@ public class GqlJcrNodeType {
     }
 
     @GraphQLField
+    @GraphQLName("mixin")
     @GraphQLDescription("Returns true if this is a mixin type; returns false otherwise.")
     public boolean isMixin() {
         return nodeType.isMixin();
     }
 
     @GraphQLField
+    @GraphQLName("abstract")
     @GraphQLDescription("Returns true if this is an abstract node type; returns false otherwise.")
     public boolean isAbstract() {
         return nodeType.isAbstract();
     }
 
     @GraphQLField
+    @GraphQLName("hasOrderableChildNodes")
     @GraphQLDescription("Returns true if nodes of this type must support orderable child nodes; returns false otherwise.")
     public boolean isHasOrderableChildNodes() {
         return nodeType.hasOrderableChildNodes();
     }
 
     @GraphQLField
+    @GraphQLName("queryable")
     @GraphQLDescription("Returns true if the node type is queryable.")
     public boolean isQueryable() {
         return nodeType.isQueryable();
