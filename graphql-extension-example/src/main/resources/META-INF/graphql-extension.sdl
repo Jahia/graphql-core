@@ -1,0 +1,6 @@
+type News {
+    title(language:String): String
+    description(language:String): String
+    file: String
+    date: String
+}
