@@ -50,28 +50,34 @@ import graphql.annotations.processor.ProcessingElementsContainer;
 import graphql.annotations.processor.retrievers.GraphQLExtensionsHandler;
 import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLType;
+import graphql.schema.*;
 import graphql.servlet.*;
 import org.jahia.modules.graphql.provider.dxm.customApi.CustomApi;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.SynchronousBundleListener;
 import org.osgi.service.component.annotations.*;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.ParameterizedType;
+import java.net.URL;
 import java.util.*;
 
 @Component(service = GraphQLProvider.class, enabled = false)
-public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
+public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider,
+        SynchronousBundleListener, DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
+
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
@@ -82,7 +88,16 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     private ProcessingElementsContainer container;
 
+    private BundleContext bundleContext;
+
+    private static Map<String, String> bundleQueryRegistry = new HashMap<>();
+
     private Collection<DXGraphQLExtensionsProvider> extensionsProviders = new HashSet<>();
+
+    public void setBundleContext(BundleContext bundleContext) {
+        this.bundleContext = bundleContext;
+        bundleContext.addBundleListener(this);
+    }
 
     private GraphQLObjectType queryType;
     private GraphQLObjectType mutationType;
@@ -126,8 +141,10 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     }
 
     @Activate
-    public void activate() {
+    public void activate(BundleContext context) {
         instance = this;
+
+        setBundleContext(context);
 
         container = graphQLAnnotations.createContainer();
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
@@ -143,7 +160,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         for (Map.Entry<String, Class<? extends DXConnection<?>>> entry : connectionTypes.entrySet()) {
             relay.addConnectionType(entry.getKey(), (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(entry.getValue(), container));
         }
-
 
         extensionsProviders.add(this);
 
@@ -193,9 +209,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     @Override
     public Collection<GraphQLFieldDefinition> getQueries() {
         List<GraphQLFieldDefinition> defs = new ArrayList<>(queryType.getFieldDefinitions());
+
         for (CustomApi apiType : dxGraphQLConfig.getCustomApis().values()) {
             defs.addAll(apiType.getQueryFields());
         }
+        logger.info("bundle registry " + bundleQueryRegistry.size());
         return defs;
     }
 
@@ -215,6 +233,74 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     public GraphQLOutputType getOutputType(Class<?> clazz) {
         return graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(clazz, container);
+    }
+
+    /**
+     * this method subscribe the bundle event and parse the graphql schema
+     * which the bundle contains
+     */
+    @Override
+    public void bundleChanged(BundleEvent bundleEvent) {
+
+        String name = bundleEvent.getBundle().getSymbolicName();
+        if (name != null) {
+            logger.debug("bundle name [", name, "] event type [", bundleEvent.getType(), "]");
+
+            switch (bundleEvent.getType()) {
+                case BundleEvent.STARTING:
+                case BundleEvent.UPDATED:
+                    try{
+                        //fetch the schema file from bundle
+                        URL url = bundleEvent.getBundle().getResource("META-INF/graphql-extension.sdl");
+                        if(url != null){
+                            logger.debug("get bundle schema " + url.getPath());
+                            StringBuffer sb = new StringBuffer();
+                            BufferedReader br =new BufferedReader(new InputStreamReader(url.openStream()));
+                            while(br.ready()){
+                                sb.append(br.readLine());
+                            }
+                            br.close();
+
+                            registerBundle(name, sb.toString());
+                        }
+
+                    }catch (IOException e){
+                        e.printStackTrace();
+                        logger.error("fail to extract schema file from bundle, ignore this step");
+                    }finally{
+                        break;
+                    }
+                case BundleEvent.STOPPING:
+                    //unregister the schema
+                    registerBundle(name, null);
+
+                    break;
+                default:
+                    logger.debug("nothing is to be changed for the bundle query registry");
+                    break;
+            }
+
+        }
+    }
+
+    /**
+     *
+     * @param name
+     * @param sdlResource
+     */
+    private void registerBundle(String name, String sdlResource){
+        if(sdlResource == null){
+            bundleQueryRegistry.remove(name);
+            logger.debug("remove type registry for " + name);
+        }else{
+            /** parse schema **/
+//            SchemaParser schemaParser = new SchemaParser();
+//            SchemaGenerator schemaGenerator = new SchemaGenerator();
+//            TypeDefinitionRegistry typeRegistry = schemaParser.parse(sdlResource);
+
+            bundleQueryRegistry.put(name, sdlResource);
+            logger.debug("add new type registry for " + name);
+        }
     }
 
     @GraphQLName("Query")
