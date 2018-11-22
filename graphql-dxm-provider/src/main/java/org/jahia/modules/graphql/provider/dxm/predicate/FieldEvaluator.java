@@ -233,7 +233,8 @@ public class FieldEvaluator {
                 .root(environment.getRoot())
                 .executionId(environment.getExecutionId())
                 .fragmentsByName(environment.getFragmentsByName())
-                .graphQLSchema(environment.getGraphQLSchema());
+                .graphQLSchema(environment.getGraphQLSchema())
+                .executionContext(environment.getExecutionContext());
 
         // Try to find field in selection set to reuse alias/arguments
         Field field = fieldFinder.find(objectType, fieldName);
