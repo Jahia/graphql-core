@@ -73,6 +73,7 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.ParameterizedType;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component(service = GraphQLProvider.class, enabled = false)
 public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider,
@@ -90,7 +91,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     private BundleContext bundleContext;
 
-    private static Map<String, String> bundleQueryRegistry = new HashMap<>();
+    private static Map<String, String> bundleQueryRegistry = new ConcurrentHashMap<>();
 
     private Collection<DXGraphQLExtensionsProvider> extensionsProviders = new HashSet<>();
 
@@ -213,7 +214,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         for (CustomApi apiType : dxGraphQLConfig.getCustomApis().values()) {
             defs.addAll(apiType.getQueryFields());
         }
-        logger.info("bundle registry " + bundleQueryRegistry.size());
+
         return defs;
     }
 
