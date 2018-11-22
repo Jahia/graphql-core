@@ -219,7 +219,7 @@ public class NodeHelper {
     }
 
     public static DXPaginatedData<GqlJcrNode> getPaginatedNodesList(NodeIterator it, Collection<String> names, GqlJcrNode.NodeTypesInput typesFilter, GqlJcrNode.NodePropertiesInput propertiesFilter, FieldFiltersInput fieldFilter,
-            DataFetchingEnvironment environment, FieldSorterInput fieldSorterInput) {
+            DataFetchingEnvironment environment, FieldSorterInput fieldSorterInput, FieldGroupingInput fieldGroupingInput) {
         Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
                 .filter(node-> PermissionHelper.hasPermission(node, environment))
                 .filter(getNodesPredicate(names, typesFilter, propertiesFilter, environment))
@@ -227,7 +227,14 @@ public class NodeHelper {
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
         if(fieldSorterInput != null){
             List items = stream.sorted(SorterHelper.getFieldComparator(fieldSorterInput, FieldEvaluator.forConnection(environment))).collect(Collectors.toList());
+            if (fieldGroupingInput != null) {
+                items = (List) GroupingHelper.group(items.stream(), fieldGroupingInput, FieldEvaluator.forConnection(environment)).collect(Collectors.toList());
+            }
             return PaginationHelper.paginate(items, environment);
+        }
+
+        if (fieldGroupingInput != null) {
+            stream = GroupingHelper.group(stream, fieldGroupingInput, FieldEvaluator.forConnection(environment));
         }
 
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);

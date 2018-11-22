@@ -235,6 +235,7 @@ public class GqlJcrQuery {
             @GraphQLName("language") @GraphQLDescription("Language to access node properties in") String language,
             @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
             @GraphQLName("fieldSorter") @GraphQLDescription("sort by GraphQL field values") FieldSorterInput fieldSorter,
+            @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields by criteria") FieldGroupingInput fieldGrouping,
             DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
         try {
@@ -242,7 +243,7 @@ public class GqlJcrQuery {
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
             JCRNodeIteratorWrapper nodes = q.execute().getNodes();
             // todo: naive implementation of the pagination, could be improved in some cases by setting limit/offset in query
-            return NodeHelper.getPaginatedNodesList(nodes, null, null, null, fieldFilter, environment, fieldSorter);
+            return NodeHelper.getPaginatedNodesList(nodes, null, null, null, fieldFilter, environment, fieldSorter, fieldGrouping);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -263,7 +264,8 @@ public class GqlJcrQuery {
     public DXPaginatedData<GqlJcrNode> getNodesByCriteria(
         @GraphQLName("criteria") @GraphQLNonNull @GraphQLDescription("The criteria to fetch nodes by") GqlJcrNodeCriteriaInput criteria,
         @GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL field values") FieldFiltersInput fieldFilter,
-            @GraphQLName("fieldSorter") @GraphQLDescription("sort by GraphQL field values") FieldSorterInput fieldSorter,
+        @GraphQLName("fieldSorter") @GraphQLDescription("sort by GraphQL field values") FieldSorterInput fieldSorter,
+        @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields by criteria") FieldGroupingInput fieldGrouping,
         DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
         try {
@@ -275,7 +277,7 @@ public class GqlJcrQuery {
             Ordering ordering = getOrderingByProperty(source.getSelectorName(), criteria, factory);
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, ordering == null ? null : new Ordering[]{ordering}, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
-            return NodeHelper.getPaginatedNodesList(it, null, null, null, fieldFilter, environment, fieldSorter);
+            return NodeHelper.getPaginatedNodesList(it, null, null, null, fieldFilter, environment, fieldSorter, fieldGrouping);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }

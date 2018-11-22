@@ -226,7 +226,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                    @GraphQLName("includesSelf") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includesSelf,
                                                    DataFetchingEnvironment environment) {
         try {
-            return NodeHelper.getPaginatedNodesList(node.getNodes(), names, typesFilter, propertiesFilter, fieldFilter, environment, null);
+            return NodeHelper.getPaginatedNodesList(node.getNodes(), names, typesFilter, propertiesFilter, fieldFilter, environment, null, null);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -256,10 +256,11 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                       @GraphQLName("recursionPropertiesFilter") NodePropertiesInput recursionPropertiesFilter,
                                                       @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
                                                       @GraphQLName("fieldSorter") FieldSorterInput fieldSorter,
+                                                      @GraphQLName("fieldGrouping") FieldGroupingInput fieldGrouping,
                                                       DataFetchingEnvironment environment) {
         try {
             JCRDescendantsNodeIterator it = new JCRDescendantsNodeIterator(node, NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, environment));
-            return NodeHelper.getPaginatedNodesList(it, null, typesFilter, propertiesFilter, fieldFilter, environment, fieldSorter);
+            return NodeHelper.getPaginatedNodesList(it, null, typesFilter, propertiesFilter, fieldFilter, environment, fieldSorter, fieldGrouping);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
