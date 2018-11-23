@@ -53,18 +53,21 @@ public class FieldGroupingInput {
 
     @GraphQLField
     @GraphQLDescription("fieldName to group on")
+    @GraphQLNonNull
     public String getFieldName() {
         return fieldName;
     }
 
     @GraphQLField
     @GraphQLDescription("grouping type")
+    @GraphQLNonNull
     public GroupingHelper.GroupingType getGroupingType() {
         return groupingType;
     }
 
     @GraphQLField
     @GraphQLDescription("specified groups")
+    @GraphQLNonNull
     public List<String> getGroups() {
         return groups;
     }

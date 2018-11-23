@@ -44,7 +44,6 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.GraphQLDefaultValue;
-import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
@@ -223,10 +222,12 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                    @GraphQLName("typesFilter") NodeTypesInput typesFilter,
                                                    @GraphQLName("propertiesFilter") NodePropertiesInput propertiesFilter,
                                                    @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
+                                                   @GraphQLName("fieldSorter") FieldSorterInput fieldSorter,
+                                                   @GraphQLName("fieldGrouping") FieldGroupingInput fieldGrouping,
                                                    @GraphQLName("includesSelf") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includesSelf,
                                                    DataFetchingEnvironment environment) {
         try {
-            return NodeHelper.getPaginatedNodesList(node.getNodes(), names, typesFilter, propertiesFilter, fieldFilter, environment, null, null);
+            return NodeHelper.getPaginatedNodesList(node.getNodes(), names, typesFilter, propertiesFilter, fieldFilter, environment, fieldSorter, fieldGrouping);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
