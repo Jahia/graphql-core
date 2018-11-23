@@ -51,6 +51,7 @@ import graphql.annotations.processor.retrievers.GraphQLExtensionsHandler;
 import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.schema.*;
+import graphql.schema.idl.*;
 import graphql.servlet.*;
 import org.jahia.modules.graphql.provider.dxm.customApi.CustomApi;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
@@ -97,7 +98,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     public void setBundleContext(BundleContext bundleContext) {
         this.bundleContext = bundleContext;
-        bundleContext.addBundleListener(this);
     }
 
     private GraphQLObjectType queryType;
@@ -146,6 +146,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         instance = this;
 
         setBundleContext(context);
+        bundleContext.addBundleListener(instance);
 
         container = graphQLAnnotations.createContainer();
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
@@ -215,7 +216,29 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
             defs.addAll(apiType.getQueryFields());
         }
 
+        for(String sdl : bundleQueryRegistry.values()){
+            /** parse schema **/
+            final SchemaParser schemaParser = new SchemaParser();
+            final TypeDefinitionRegistry typeRegistry = schemaParser.parse(sdl);
+
+            final RuntimeWiring wiring = buildRuntimeWiring();
+            final SchemaGenerator schemaGenerator = new SchemaGenerator();
+            final GraphQLSchema graphQLSchema = schemaGenerator.makeExecutableSchema(typeRegistry, wiring);
+
+            defs.addAll(graphQLSchema.getQueryType().getFieldDefinitions());
+        }
+
         return defs;
+    }
+
+    /**
+     *
+     *
+     * @return
+     */
+    //TODO apply data fetcher from GraphQLExtension object
+    private static RuntimeWiring buildRuntimeWiring() {
+        return RuntimeWiring.newRuntimeWiring().wiringFactory(new EchoingWiringFactory()).build();
     }
 
     @Override
@@ -243,7 +266,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     @Override
     public void bundleChanged(BundleEvent bundleEvent) {
 
-        String name = bundleEvent.getBundle().getSymbolicName();
+        final String name = bundleEvent.getBundle().getSymbolicName();
         if (name != null) {
             logger.debug("bundle name [", name, "] event type [", bundleEvent.getType(), "]");
 
@@ -255,8 +278,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
                         URL url = bundleEvent.getBundle().getResource("META-INF/graphql-extension.sdl");
                         if(url != null){
                             logger.debug("get bundle schema " + url.getPath());
-                            StringBuffer sb = new StringBuffer();
-                            BufferedReader br =new BufferedReader(new InputStreamReader(url.openStream()));
+                            final StringBuffer sb = new StringBuffer();
+                            final BufferedReader br =new BufferedReader(new InputStreamReader(url.openStream()));
                             while(br.ready()){
                                 sb.append(br.readLine());
                             }
@@ -289,15 +312,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
      * @param name
      * @param sdlResource
      */
-    private void registerBundle(String name, String sdlResource){
+    private void registerBundle(final String name, final String sdlResource){
         if(sdlResource == null){
             bundleQueryRegistry.remove(name);
             logger.debug("remove type registry for " + name);
         }else{
-            /** parse schema **/
-//            SchemaParser schemaParser = new SchemaParser();
-//            SchemaGenerator schemaGenerator = new SchemaGenerator();
-//            TypeDefinitionRegistry typeRegistry = schemaParser.parse(sdlResource);
 
             bundleQueryRegistry.put(name, sdlResource);
             logger.debug("add new type registry for " + name);
