@@ -1,6 +1,14 @@
-type News {
+schema {
+    query: Query
+}
+
+type NewsSDL {
     title(language:String): String
     description(language:String): String
     file: String
     date: String
+}
+
+type Query {
+    newsByDate: [NewsSDL]
 }

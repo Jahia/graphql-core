@@ -95,8 +95,10 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Jahia-Depends>default</Jahia-Depends>
+                        <Jahia-Depends>default,graphql-dxm-provider</Jahia-Depends>
                         <_dsannotations>*</_dsannotations>
+                        <!--Higher priority than graphql-dxm-provider (2)-->
+                        <Jahia-Module-Priority>3</Jahia-Module-Priority>
                     </instructions>
                 </configuration>
             </plugin>
