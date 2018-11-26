@@ -117,6 +117,7 @@
                     <instructions>
                         <Jahia-Depends>default</Jahia-Depends>
                         <_dsannotations>*</_dsannotations>
+                        <Jahia-Module-Priority>2</Jahia-Module-Priority>
                     </instructions>
                 </configuration>
             </plugin>
