@@ -62,7 +62,6 @@ import org.jahia.osgi.BundleUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
-import org.osgi.framework.SynchronousBundleListener;
 import org.osgi.service.component.annotations.*;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -81,7 +80,7 @@ import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
 
 @Component(service = GraphQLProvider.class, enabled = false)
 public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider,
-        SynchronousBundleListener, DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
+        DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
 
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
@@ -96,6 +95,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private BundleContext bundleContext;
 
     private static Map<String, URL> sdlResources = new ConcurrentHashMap<>();
+    private GraphQLSchema graphQLSchema;
 
     private Collection<DXGraphQLExtensionsProvider> extensionsProviders = new HashSet<>();
 
@@ -146,9 +146,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     @Activate
     public void activate(BundleContext context) {
         instance = this;
-
         setBundleContext(context);
-        bundleContext.addBundleListener(instance);
 
         container = graphQLAnnotations.createContainer();
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
@@ -196,7 +194,16 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
                 logger.info("Registered type extension {}", aClass);
             }
         }
-
+        for (Bundle bundle: bundleContext.getBundles()) {
+            if (BundleUtils.isJahiaBundle(bundle)) {
+                URL url = bundle.getResource("META-INF/graphql-extension.sdl");
+                if(url != null){
+                    logger.debug("get bundle schema " + url.getPath());
+                    registerSDLResource(bundle.getState(), bundle.getSymbolicName(), url);
+                }
+            }
+        }
+        graphQLSchema = generateGraphQLSchema();
         specializedTypesHandler.initializeTypes();
 
     }
@@ -207,6 +214,14 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         types.add(graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNodeImpl.class, container));
         types.addAll(specializedTypesHandler.getKnownTypes().values());
+        List<String> reservedType = Arrays.asList("Query","Mutation","Subscription");
+        if (graphQLSchema != null) {
+            for (Map.Entry<String, GraphQLType> gqlTypeEntry : graphQLSchema.getTypeMap().entrySet()) {
+                if (!gqlTypeEntry.getKey().startsWith("__") && !reservedType.contains(gqlTypeEntry.getKey()) && !(gqlTypeEntry.getValue() instanceof GraphQLScalarType)) {
+                    types.add(gqlTypeEntry.getValue());
+                }
+            }
+        }
         return types;
     }
 
@@ -216,6 +231,9 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         for (CustomApi apiType : dxGraphQLConfig.getCustomApis().values()) {
             defs.addAll(apiType.getQueryFields());
+        }
+        if (graphQLSchema != null) {
+            defs.addAll(graphQLSchema.getQueryType().getFieldDefinitions());
         }
         return defs;
     }
@@ -239,50 +257,24 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     }
 
     /**
-     * this method subscribe the bundle event and parse the graphql schema
-     * which the bundle contains
+     * Registers or deregisters a bundle's graphql-extension.sdl in the sdl registry
+     * @param bundleEventType - Current state of the bundle
+     * @param bundleName - Name of the bundle
+     * @param sdlResource - URL resource pointing to SDL file (graphql-extension.sdl) in bundle
      */
-    @Override
-    public void bundleChanged(BundleEvent bundleEvent) {
-        Bundle bundle = bundleEvent.getBundle();
-        if (BundleUtils.isJahiaBundle(bundle)) {
-            final String name = bundleEvent.getBundle().getSymbolicName();
-            logger.debug("bundle name [", name, "] event type [", bundleEvent.getType(), "]");
-
-            switch (bundleEvent.getType()) {
-                case BundleEvent.STARTING:
-                case BundleEvent.UPDATED:
-                        //fetch the schema resource from bundle
-                        URL url = bundleEvent.getBundle().getResource("META-INF/graphql-extension.sdl");
-                        if(url != null){
-                            logger.debug("get bundle schema " + url.getPath());
-                            registerSDLResource(name, url);
-                        }
-                case BundleEvent.STOPPING:
-                    //unregister the schema
-                    registerSDLResource(name, null);
-                    break;
-                default:
-                    logger.debug("nothing is to be changed for the bundle query registry");
-                    break;
-            }
-
-        }
-    }
-
-    /**
-     *
-     * @param name
-     * @param sdlResource
-     */
-    private void registerSDLResource(final String name, final URL sdlResource){
-        if(sdlResource == null){
-            sdlResources.remove(name);
-            logger.debug("remove type registry for " + name);
-        }else{
-
-            sdlResources.put(name, sdlResource);
-            logger.debug("add new type registry for " + name);
+    private void registerSDLResource(int bundleEventType, String bundleName , final URL sdlResource){
+        switch (bundleEventType) {
+            case BundleEvent.STOPPED:
+            case BundleEvent.STOPPING:
+            case BundleEvent.UNINSTALLED:
+            case BundleEvent.UNRESOLVED:
+                sdlResources.remove(bundleName);
+                logger.debug("remove type registry for " + bundleName);
+                return;
+            case BundleEvent.RESOLVED:
+                sdlResources.put(bundleName, sdlResource);
+                logger.debug("add new type registry for " + bundleName);
+                return;
         }
     }
 
