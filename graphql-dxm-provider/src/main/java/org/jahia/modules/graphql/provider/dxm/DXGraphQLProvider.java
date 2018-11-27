@@ -53,12 +53,22 @@ import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.schema.*;
 import graphql.schema.idl.*;
 import graphql.servlet.*;
+import org.apache.commons.lang.StringUtils;
+import org.jahia.api.Constants;
+import org.jahia.data.templates.JahiaTemplatesPackage;
+import org.jahia.modules.graphql.provider.dxm.customApi.ConfigUtil;
 import org.jahia.modules.graphql.provider.dxm.customApi.CustomApi;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.osgi.BundleUtils;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
@@ -67,6 +77,7 @@ import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.RepositoryException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.AnnotatedParameterizedType;
@@ -96,6 +107,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     private static Map<String, URL> sdlResources = new ConcurrentHashMap<>();
     private GraphQLSchema graphQLSchema;
+    private Map<String, CustomApi> customApis = new HashMap<>();
 
     private Collection<DXGraphQLExtensionsProvider> extensionsProviders = new HashSet<>();
 
@@ -203,9 +215,9 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
                 }
             }
         }
-        graphQLSchema = generateGraphQLSchema();
+//        graphQLSchema = generateGraphQLSchema();
+        processGeneratedDefinitions();
         specializedTypesHandler.initializeTypes();
-
     }
 
     @Override
@@ -214,27 +226,26 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         types.add(graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNodeImpl.class, container));
         types.addAll(specializedTypesHandler.getKnownTypes().values());
-        List<String> reservedType = Arrays.asList("Query","Mutation","Subscription");
-        if (graphQLSchema != null) {
-            for (Map.Entry<String, GraphQLType> gqlTypeEntry : graphQLSchema.getTypeMap().entrySet()) {
-                if (!gqlTypeEntry.getKey().startsWith("__") && !reservedType.contains(gqlTypeEntry.getKey()) && !(gqlTypeEntry.getValue() instanceof GraphQLScalarType)) {
-                    types.add(gqlTypeEntry.getValue());
-                }
-            }
-        }
+//        List<String> reservedType = Arrays.asList("Query","Mutation","Subscription");
+//        if (graphQLSchema != null) {
+//            for (Map.Entry<String, GraphQLType> gqlTypeEntry : graphQLSchema.getTypeMap().entrySet()) {
+//                if (!gqlTypeEntry.getKey().startsWith("__") && !reservedType.contains(gqlTypeEntry.getKey()) && !(gqlTypeEntry.getValue() instanceof GraphQLScalarType)) {
+//                    types.add(gqlTypeEntry.getValue());
+//                }
+//            }
+//        }
         return types;
     }
 
     @Override
     public Collection<GraphQLFieldDefinition> getQueries() {
         List<GraphQLFieldDefinition> defs = new ArrayList<>(queryType.getFieldDefinitions());
-
-        for (CustomApi apiType : dxGraphQLConfig.getCustomApis().values()) {
+        for (CustomApi apiType : customApis.values()) {
             defs.addAll(apiType.getQueryFields());
         }
-        if (graphQLSchema != null) {
-            defs.addAll(graphQLSchema.getQueryType().getFieldDefinitions());
-        }
+//        if (graphQLSchema != null) {
+//            defs.addAll(graphQLSchema.getQueryType().getFieldDefinitions());
+//        }
         return defs;
     }
 
@@ -322,17 +333,16 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         return defaultTypeFunction.buildType(input, klass, arg,container);
     }
 
-
     private GraphQLSchema generateGraphQLSchema() {
         if (sdlResources.size() == 0) {
             return null;
         }
         SchemaParser schemaParser = new SchemaParser();
         TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
-        for (Map.Entry<String, URL> entry: sdlResources.entrySet()) {
+        for (Map.Entry<String, URL> entry : sdlResources.entrySet()) {
             try {
                 typeDefinitionRegistry.merge(schemaParser.parse(new InputStreamReader(entry.getValue().openStream())));
-            } catch(IOException ex) {
+            } catch (IOException ex) {
                 logger.error("Failed to read sdl resource.", ex);
             }
         }
@@ -342,6 +352,40 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         SchemaGenerator schemaGenerator = new SchemaGenerator();
 
-        return schemaGenerator.makeExecutableSchema(typeDefinitionRegistry,runtimeWiring);
+        return schemaGenerator.makeExecutableSchema(typeDefinitionRegistry, runtimeWiring);
+    }
+
+    private void processGeneratedDefinitions() {
+        try {
+            JCRSessionWrapper sessionWrapper = JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null);
+            Bundle bundle = BundleUtils.getBundleBySymbolicName("graphql-definition-generator", null);
+            if (bundle != null) {
+                JahiaTemplatesPackage module = BundleUtils.getModule(bundle);
+                if (sessionWrapper.nodeExists("/modules/graphql-definition-generator/" + module.getVersion() + "/templates/contents/definitions")) {
+                    JCRNodeWrapper definitions = sessionWrapper.getNode("/modules/graphql-definition-generator/" + module.getVersion() + "/templates/contents/definitions");
+                    String s = definitions.getPropertyAsString("definitions");
+                    if (StringUtils.isNotEmpty(s)) {
+                        try {
+                            JSONArray definitionsList = new JSONArray(s);
+                            for (int i = 0; i < definitionsList.length(); i++) {
+                                JSONObject definition = definitionsList.getJSONObject(i);
+                                String type = definition.getString("queryName");
+                                ConfigUtil.registerTypeDefinition(type, definition.getString("definitionName"), customApis);
+                                JSONArray properties = definition.getJSONArray("usedProperties");
+                                for (int j = 0; j < properties.length(); j++) {
+                                    JSONObject usedProperty = properties.getJSONObject(j);
+                                    String userDefinedPropertyName = !"null".equals(usedProperty.getString("userDefinedName")) ? usedProperty.getString("userDefinedName") : usedProperty.getString("name");
+                                    ConfigUtil.registerPropertyDefinition(type, usedProperty.getString("name"), userDefinedPropertyName, customApis);
+                                }
+                            }
+                        } catch (JSONException ex) {
+                            logger.error("Failed to parse definitions JSON.", ex);
+                        }
+                    }
+                }
+            }
+        } catch(RepositoryException ex){
+            logger.error("Failed to retrieve session.", ex);
+        }
     }
 }

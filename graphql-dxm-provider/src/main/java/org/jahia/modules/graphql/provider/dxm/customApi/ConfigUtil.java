@@ -52,4 +52,23 @@ public class ConfigUtil {
             }
         }
     }
+
+    public static void registerTypeDefinition(String type, String value, Map<String, CustomApi> customApis) {
+        if (!customApis.containsKey(type)) {
+            CustomApi api = new CustomApi(type);
+            api.setNodeType(value);
+            customApis.put(type, api);
+        }
+    }
+
+    public static void registerPropertyDefinition(String type, String field, String value, Map<String, CustomApi> customApis) {
+        if (customApis.containsKey(type)) {
+            CustomApi api = customApis.get(type);
+            if (api.getField(field) == null) {
+                api.addField(field, new Field(field));
+            }
+            api.getField(field).setProperty(value);
+        }
+
+    }
 }
