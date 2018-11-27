@@ -15,6 +15,10 @@ public class GqlProperty {
 
     private String type;
 
+    private String prefix;
+
+    private String[] defaultValues;
+
     @GraphQLField
     @GraphQLName("name")
     public String getName() {
@@ -33,5 +37,25 @@ public class GqlProperty {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    @GraphQLField
+    @GraphQLName("defaultValues")
+    public String[] getDefaultValues() {
+        return defaultValues;
+    }
+
+    public void setDefaultValues(String[] defaultValues) {
+        this.defaultValues = defaultValues;
+    }
+
+    @GraphQLField
+    @GraphQLName("prefix")
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public void setPrefix(String prefix) {
+        this.prefix = prefix;
     }
 }

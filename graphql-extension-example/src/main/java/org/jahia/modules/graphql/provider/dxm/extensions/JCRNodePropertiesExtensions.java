@@ -2,6 +2,7 @@ package org.jahia.modules.graphql.provider.dxm.extensions;
 
 import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.modules.graphql.provider.dxm.extensions.node.GqlName;
 import org.jahia.modules.graphql.provider.dxm.extensions.node.GqlProperty;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -9,8 +10,11 @@ import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created at Nov 2018$
@@ -39,6 +43,7 @@ public class JCRNodePropertiesExtensions {
 
                 jcrProp.setName(propDefinition.getName());
                 jcrProp.setType(propDefinition.getItemType());
+                jcrProp.setPrefix(propDefinition.getPrefix());
 
                 jcrProps.add(jcrProp);
             }
@@ -49,6 +54,26 @@ public class JCRNodePropertiesExtensions {
         }
 
         return jcrProps;
+    }
+
+    @GraphQLField
+    public static List<GqlName> typeNameSpaces(){
+        List<GqlName> nameSpaces = new ArrayList<>();
+        Map<String, String> nameSpacesMap = NodeTypeRegistry.getInstance().getNamespaces();
+        nameSpacesMap.keySet().forEach( key -> nameSpaces.add(new GqlName(key)));
+
+        return nameSpaces;
+    }
+
+    @GraphQLField
+    public static List<GqlName> typeNamesByPrefix(@GraphQLNonNull @GraphQLName("namePrefix") @GraphQLDescription("name of specific node type")
+                                                          String typeNamePrefix){
+        List<GqlName> typeNames = new ArrayList<>();
+        NodeTypeRegistry.getInstance().getAllNodeTypes().forEach( nodeType -> {
+            if(nodeType.getName().startsWith(typeNamePrefix)) typeNames.add(new GqlName(nodeType.getName()));
+        });
+
+        return typeNames;
     }
 
 }
