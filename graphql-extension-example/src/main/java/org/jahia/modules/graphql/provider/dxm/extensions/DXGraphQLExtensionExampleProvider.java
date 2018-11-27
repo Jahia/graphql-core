@@ -55,6 +55,6 @@ public class DXGraphQLExtensionExampleProvider implements DXGraphQLExtensionsPro
 
     @Override
     public Collection<Class<?>> getExtensions() {
-        return Arrays.<Class<?>>asList(JCRNodeExtensions.class, QueryExtensions.class);
+        return Arrays.<Class<?>>asList(JCRNodeExtensions.class, QueryExtensions.class, JCRNodePropertiesExtensions.class);
     }
 }
