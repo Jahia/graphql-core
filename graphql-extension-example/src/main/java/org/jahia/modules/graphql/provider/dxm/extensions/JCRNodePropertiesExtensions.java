@@ -10,6 +10,7 @@ import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.PropertyType;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,7 +43,7 @@ public class JCRNodePropertiesExtensions {
                 GqlProperty jcrProp = new GqlProperty();
 
                 jcrProp.setName(propDefinition.getName());
-                jcrProp.setType(propDefinition.getItemType());
+                jcrProp.setType(PropertyType.nameFromValue(propDefinition.getRequiredType()));
                 jcrProp.setPrefix(propDefinition.getPrefix());
 
                 jcrProps.add(jcrProp);
