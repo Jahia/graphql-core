@@ -66,11 +66,11 @@ public class JCRNodePropertiesExtensions {
     }
 
     @GraphQLField
-    public static List<GqlName> typeNamesByPrefix(@GraphQLNonNull @GraphQLName("namePrefix") @GraphQLDescription("name of specific node type")
-                                                          String typeNamePrefix){
+    public static List<GqlName> typeNamesByPrefix(@GraphQLNonNull @GraphQLName("namePrefix") @GraphQLDescription("prefix of name")
+                                                          String  prefix){
         List<GqlName> typeNames = new ArrayList<>();
         NodeTypeRegistry.getInstance().getAllNodeTypes().forEach( nodeType -> {
-            if(nodeType.getName().startsWith(typeNamePrefix)) typeNames.add(new GqlName(nodeType.getName()));
+            if(nodeType.getName().startsWith(prefix)) typeNames.add(new GqlName(nodeType.getName()));
         });
 
         return typeNames;
