@@ -64,6 +64,7 @@ public class ConfigUtil {
     public static void registerPropertyDefinition(String type, String field, String value, Map<String, CustomApi> customApis) {
         if (customApis.containsKey(type)) {
             CustomApi api = customApis.get(type);
+            field = field.replace(":", "_");
             if (api.getField(field) == null) {
                 api.addField(field, new Field(field));
             }
