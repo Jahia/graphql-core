@@ -11,9 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.PropertyType;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -70,7 +68,7 @@ public class JCRNodePropertiesExtensions {
     public static List<GqlName> typeNamesByPrefix(@GraphQLNonNull @GraphQLName("namePrefix") @GraphQLDescription("prefix of name")
                                                           String  prefix){
         List<GqlName> typeNames = new ArrayList<>();
-        NodeTypeRegistry.getInstance().getAllNodeTypes().forEach( nodeType -> {
+        NodeTypeRegistry.getInstance().getAllNodeTypes().forEach(nodeType -> {
             if(nodeType.getName().startsWith(prefix)) typeNames.add(new GqlName(nodeType.getName()));
         });
 
