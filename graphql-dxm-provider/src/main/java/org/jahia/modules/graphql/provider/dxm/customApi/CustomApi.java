@@ -105,19 +105,19 @@ public class CustomApi {
         if (graphQLObjectType == null) {
             try {
                 ExtendedNodeType type = NodeTypeRegistry.getInstance().getNodeType(getNodeType());
-
+                Map<String, ExtendedPropertyDefinition> extendedPropertyDefinitionMap = type.getPropertyDefinitionsAsMap();
                 graphQLObjectType = GraphQLObjectType.newObject()
                         .name(name)
                         .fields(fields.values().stream().map(value->
                                 GraphQLFieldDefinition.newFieldDefinition()
                                         .name(value.getName())
                                         .dataFetcher(new PropertiesDataFetcher(this, value))
-                                        .argument(type.getPropertyDefinition(value.getProperty()).isInternationalized() ?
+                                        .argument(extendedPropertyDefinitionMap.get(value.getProperty()).isInternationalized() ?
                                                 Collections.singletonList(GraphQLArgument.newArgument().name("language").type(new GraphQLNonNull(GraphQLString)).build()) :
                                                 Collections.emptyList())
-                                        .type(getGraphQLType(type.getPropertyDefinition(value.getProperty())))
+                                        .type(getGraphQLType(extendedPropertyDefinitionMap.get(value.getProperty())))
                                         .build()
-                        ).collect(Collectors.toList()))
+            ).collect(Collectors.toList()))
                         .build();
             } catch (NoSuchNodeTypeException e) {
                 throw new RuntimeException(e);
