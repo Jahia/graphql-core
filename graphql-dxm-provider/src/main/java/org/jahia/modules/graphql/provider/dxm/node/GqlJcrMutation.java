@@ -279,6 +279,10 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
             destName = node.getName();
         }
 
+        if (destParentNode.equals(node) || destParentNode.getPath().startsWith(node.getPath() + "/")) {
+            throw new GqlJcrWrongInputException("Cannot paste node in itself");
+        }
+
         JCRNodeWrapper destNode;
         try {
             if (!node.copy(destParentNode.getPath(), destName, JCRNodeWrapper.NodeNamingConflictResolutionStrategy.FAIL)) {
