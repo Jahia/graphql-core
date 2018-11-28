@@ -52,6 +52,7 @@ import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.schema.*;
 import graphql.schema.idl.*;
+import graphql.schema.idl.errors.SchemaProblem;
 import graphql.servlet.*;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
@@ -59,6 +60,7 @@ import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.graphql.provider.dxm.customApi.ConfigUtil;
 import org.jahia.modules.graphql.provider.dxm.customApi.CustomApi;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
+import org.jahia.modules.graphql.provider.dxm.customApi.SDLRegistrationService;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
@@ -69,9 +71,7 @@ import org.jahia.services.content.JCRSessionWrapper;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleEvent;
+import org.osgi.framework.*;
 import org.osgi.service.component.annotations.*;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -103,17 +103,12 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     private ProcessingElementsContainer container;
 
-    private BundleContext bundleContext;
-
     private static Map<String, URL> sdlResources = new ConcurrentHashMap<>();
     private GraphQLSchema graphQLSchema;
     private Map<String, CustomApi> customApis = new HashMap<>();
 
     private Collection<DXGraphQLExtensionsProvider> extensionsProviders = new HashSet<>();
 
-    public void setBundleContext(BundleContext bundleContext) {
-        this.bundleContext = bundleContext;
-    }
 
     private GraphQLObjectType queryType;
     private GraphQLObjectType mutationType;
@@ -123,6 +118,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private DXRelay relay;
 
     private Map<String, Class<? extends DXConnection<?>>> connectionTypes = new HashMap<>();
+    private SDLRegistrationService sdlRegistrationService;
 
     public static DXGraphQLProvider getInstance() {
         return instance;
@@ -141,6 +137,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         return container;
     }
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
+    public void setSDLRegistrationService(SDLRegistrationService sdlRegistrationService) {
+        this.sdlRegistrationService = sdlRegistrationService;
+    }
+
     @Reference(cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY)
     public void addExtensionProvider(DXGraphQLExtensionsProvider provider) {
         this.extensionsProviders.add(provider);
@@ -156,9 +157,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     }
 
     @Activate
-    public void activate(BundleContext context) {
+    public void activate() {
         instance = this;
-        setBundleContext(context);
 
         container = graphQLAnnotations.createContainer();
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
@@ -206,16 +206,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
                 logger.info("Registered type extension {}", aClass);
             }
         }
-        for (Bundle bundle: bundleContext.getBundles()) {
-            if (BundleUtils.isJahiaBundle(bundle)) {
-                URL url = bundle.getResource("META-INF/graphql-extension.sdl");
-                if(url != null){
-                    logger.debug("get bundle schema " + url.getPath());
-                    registerSDLResource(bundle.getState(), bundle.getSymbolicName(), url);
-                }
-            }
-        }
-//        graphQLSchema = generateGraphQLSchema();
+        graphQLSchema = generateGraphQLSchema();
         processGeneratedDefinitions();
         specializedTypesHandler.initializeTypes();
     }
@@ -226,14 +217,14 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         types.add(graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNodeImpl.class, container));
         types.addAll(specializedTypesHandler.getKnownTypes().values());
-//        List<String> reservedType = Arrays.asList("Query","Mutation","Subscription");
-//        if (graphQLSchema != null) {
-//            for (Map.Entry<String, GraphQLType> gqlTypeEntry : graphQLSchema.getTypeMap().entrySet()) {
-//                if (!gqlTypeEntry.getKey().startsWith("__") && !reservedType.contains(gqlTypeEntry.getKey()) && !(gqlTypeEntry.getValue() instanceof GraphQLScalarType)) {
-//                    types.add(gqlTypeEntry.getValue());
-//                }
-//            }
-//        }
+        List<String> reservedType = Arrays.asList("Query","Mutation","Subscription");
+        if (graphQLSchema != null) {
+            for (Map.Entry<String, GraphQLType> gqlTypeEntry : graphQLSchema.getTypeMap().entrySet()) {
+                if (!gqlTypeEntry.getKey().startsWith("__") && !reservedType.contains(gqlTypeEntry.getKey()) && !(gqlTypeEntry.getValue() instanceof GraphQLScalarType)) {
+                    types.add(gqlTypeEntry.getValue());
+                }
+            }
+        }
         return types;
     }
 
@@ -243,9 +234,9 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         for (CustomApi apiType : customApis.values()) {
             defs.addAll(apiType.getQueryFields());
         }
-//        if (graphQLSchema != null) {
-//            defs.addAll(graphQLSchema.getQueryType().getFieldDefinitions());
-//        }
+        if (graphQLSchema != null) {
+            defs.addAll(graphQLSchema.getQueryType().getFieldDefinitions());
+        }
         return defs;
     }
 
@@ -265,28 +256,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     public GraphQLOutputType getOutputType(Class<?> clazz) {
         return graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(clazz, container);
-    }
-
-    /**
-     * Registers or deregisters a bundle's graphql-extension.sdl in the sdl registry
-     * @param bundleEventType - Current state of the bundle
-     * @param bundleName - Name of the bundle
-     * @param sdlResource - URL resource pointing to SDL file (graphql-extension.sdl) in bundle
-     */
-    private void registerSDLResource(int bundleEventType, String bundleName , final URL sdlResource){
-        switch (bundleEventType) {
-            case BundleEvent.STOPPED:
-            case BundleEvent.STOPPING:
-            case BundleEvent.UNINSTALLED:
-            case BundleEvent.UNRESOLVED:
-                sdlResources.remove(bundleName);
-                logger.debug("remove type registry for " + bundleName);
-                return;
-            case BundleEvent.RESOLVED:
-                sdlResources.put(bundleName, sdlResource);
-                logger.debug("add new type registry for " + bundleName);
-                return;
-        }
     }
 
     @GraphQLName("Query")
@@ -334,16 +303,18 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     }
 
     private GraphQLSchema generateGraphQLSchema() {
-        if (sdlResources.size() == 0) {
+        if (sdlRegistrationService == null || sdlRegistrationService.getSDLResources().size() == 0) {
             return null;
         }
         SchemaParser schemaParser = new SchemaParser();
         TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
-        for (Map.Entry<String, URL> entry : sdlResources.entrySet()) {
+        for (Map.Entry<String, URL> entry : sdlRegistrationService.getSDLResources().entrySet()) {
             try {
                 typeDefinitionRegistry.merge(schemaParser.parse(new InputStreamReader(entry.getValue().openStream())));
             } catch (IOException ex) {
                 logger.error("Failed to read sdl resource.", ex);
+            } catch (SchemaProblem ex) {
+                logger.warn("Failed to merge schema from bundle [" + entry.getKey() + "]:", ex.getMessage());
             }
         }
         RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring()
