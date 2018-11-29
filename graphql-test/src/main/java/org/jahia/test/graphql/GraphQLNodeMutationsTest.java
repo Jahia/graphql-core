@@ -1394,6 +1394,48 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     }
 
     @Test
+    public void copyNodesCannotCopyToItselfError() throws Exception {
+
+        JSONObject result = executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        copyNodes(nodes: [\n" +
+            "            {pathOrId: \"/testList/testSubList2\", destParentPathOrId: \"/testList/testSubList2\"},\n" +
+            "        ]) {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        validateError(result,
+            "Errors copying nodes:\n" +
+            "org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException: Cannot copy or move node '/testList/testSubList2' to itself or its descendant node\n"
+        );
+    }
+
+    @Test
+    public void copyNodesCannotCopyToDescendantError() throws Exception {
+
+        JSONObject result = executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        copyNodes(nodes: [\n" +
+            "            {pathOrId: \"/testList\", destParentPathOrId: \"/testList/testSubList2\"},\n" +
+            "        ]) {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        validateError(result,
+            "Errors copying nodes:\n" +
+            "org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException: Cannot copy or move node '/testList' to itself or its descendant node\n"
+        );
+    }
+
+    @Test
     public void moveNode() throws Exception {
 
         executeQuery("\n" +
@@ -1462,6 +1504,48 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         validateError(result,
             "Errors moving nodes:\n" +
             "org.jahia.modules.graphql.provider.dxm.DataFetchingException: javax.jcr.ItemExistsException: Same name siblings are not allowed: node /testList/testSubList1/testError\n"
+        );
+    }
+
+    @Test
+    public void moveNodesCannotMoveToItselfError() throws Exception {
+
+        JSONObject result = executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        moveNodes(nodes: [\n" +
+            "            {pathOrId: \"/testList/testSubList2\", destParentPathOrId: \"/testList/testSubList2\"},\n" +
+            "        ]) {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        validateError(result,
+            "Errors moving nodes:\n" +
+            "org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException: Cannot copy or move node '/testList/testSubList2' to itself or its descendant node\n"
+        );
+    }
+
+    @Test
+    public void moveNodesCannotMoveToDescendantError() throws Exception {
+
+        JSONObject result = executeQuery("\n" +
+            "mutation {\n" +
+            "    jcr {\n" +
+            "        moveNodes(nodes: [\n" +
+            "            {pathOrId: \"/testList\", destParentPathOrId: \"/testList/testSubList2\"},\n" +
+            "        ]) {\n" +
+            "            uuid\n" +
+            "        }\n" +
+            "    }\n" +
+            "}\n"
+        );
+
+        validateError(result,
+            "Errors moving nodes:\n" +
+            "org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException: Cannot copy or move node '/testList' to itself or its descendant node\n"
         );
     }
 
