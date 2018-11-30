@@ -16,7 +16,7 @@ import java.util.List;
 import static graphql.Scalars.GraphQLString;
 
 public class ByPropertySingleFinderDataFetcher extends FinderDataFetcher {
-    public ByPropertySingleFinderDataFetcher(CustomApi type, Finder finder) {
+    public ByPropertySingleFinderDataFetcher(String type, Finder finder) {
         super(type, finder);
     }
 
@@ -28,7 +28,7 @@ public class ByPropertySingleFinderDataFetcher extends FinderDataFetcher {
     @Override
     public GqlJcrNode get(DataFetchingEnvironment environment) {
         try {
-            String statement = "select * from [\"" + type.getNodeType() + "\"] where [\"" + finder.getProperty() + "\"]=\"" + environment.getArgument("eq") + "\"";
+            String statement = "select * from [\"" + type + "\"] where [\"" + finder.getProperty() + "\"]=\"" + environment.getArgument("eq") + "\"";
             NodeIterator it = JCRSessionFactory.getInstance().getCurrentUserSession().getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
             if (it.hasNext()) {
                 return new GqlJcrNodeImpl((JCRNodeWrapper) it.nextNode());

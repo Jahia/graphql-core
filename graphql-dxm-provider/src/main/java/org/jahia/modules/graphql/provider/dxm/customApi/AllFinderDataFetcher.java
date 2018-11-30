@@ -19,13 +19,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class AllFinderDataFetcher extends FinderDataFetcher {
-    public AllFinderDataFetcher(CustomApi type, Finder finder) {
-        super(type, finder);
-    }
-
-    @Override
-    public String getName() {
-        return "all" + type.getName();
+    public AllFinderDataFetcher(String type) {
+        super(type);
     }
 
     @Override
@@ -36,7 +31,7 @@ public class AllFinderDataFetcher extends FinderDataFetcher {
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
         try {
-            String statement = "select * from [\"" + type.getNodeType() + "\"]";
+            String statement = "select * from [\"" + type + "\"]";
 
             JCRNodeIteratorWrapper it = JCRSessionFactory.getInstance().getCurrentUserSession().getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
 

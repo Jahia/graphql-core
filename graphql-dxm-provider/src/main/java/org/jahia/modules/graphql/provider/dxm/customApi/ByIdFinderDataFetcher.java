@@ -13,8 +13,8 @@ import java.util.List;
 import static graphql.Scalars.GraphQLString;
 
 public class ByIdFinderDataFetcher extends FinderDataFetcher {
-    public ByIdFinderDataFetcher(CustomApi type, Finder finder) {
-        super(type, finder);
+    public ByIdFinderDataFetcher(String type, Finder finder) {
+        super(type);
     }
 
     @Override

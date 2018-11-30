@@ -7,24 +7,16 @@ import java.util.List;
 
 public abstract class FinderDataFetcher implements DataFetcher {
 
-    protected CustomApi type;
+    protected String type;
     protected Finder finder;
 
-    public FinderDataFetcher(CustomApi type, Finder finder) {
+    public FinderDataFetcher(String type, Finder finder) {
         this.type = type;
         this.finder = finder;
     }
 
-    public String getName() {
-        return StringUtils.uncapitalise(type.getName()) + StringUtils.capitalise(finder.getName());
-    }
-
-    public GraphQLOutputType getObjectType() {
-        if (finder.isMultiple()) {
-            return new GraphQLList(type.getObjectType());
-        } else {
-            return type.getObjectType();
-        }
+    public FinderDataFetcher(String type) {
+        this(type, null);
     }
 
     public abstract List<GraphQLArgument> getArguments();

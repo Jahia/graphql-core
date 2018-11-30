@@ -20,7 +20,7 @@ import java.util.stream.StreamSupport;
 import static graphql.Scalars.GraphQLString;
 
 public class ByPropertyMultipleFinderDataFetcher extends FinderDataFetcher {
-    public ByPropertyMultipleFinderDataFetcher(CustomApi type, Finder finder) {
+    public ByPropertyMultipleFinderDataFetcher(String type, Finder finder) {
         super(type, finder);
     }
 
@@ -32,7 +32,7 @@ public class ByPropertyMultipleFinderDataFetcher extends FinderDataFetcher {
     @Override
     public List<GqlJcrNode>  get(DataFetchingEnvironment environment) {
         try {
-            String statement = "select * from [\"" + type.getNodeType() + "\"] where [\"" + finder.getProperty() + "\"]=\"" + environment.getArgument("eq") + "\"";
+            String statement = "select * from [\"" + type + "\"] where [\"" + finder.getProperty() + "\"]=\"" + environment.getArgument("eq") + "\"";
             JCRNodeIteratorWrapper it = JCRSessionFactory.getInstance().getCurrentUserSession().getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
             Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
                     .filter(node-> PermissionHelper.hasPermission(node, environment))

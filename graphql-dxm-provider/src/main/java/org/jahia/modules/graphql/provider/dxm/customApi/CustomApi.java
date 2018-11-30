@@ -73,33 +73,33 @@ public class CustomApi {
         return finders.values();
     }
 
-    public List<GraphQLFieldDefinition> getQueryFields() {
-        return finders.values().stream().map(this::getFinderDataFetcher).map(finderDataFetcher ->
-                GraphQLFieldDefinition.newFieldDefinition()
-                        .name(finderDataFetcher.getName())
-                        .dataFetcher(finderDataFetcher)
-                        .argument(finderDataFetcher.getArguments())
-                        .type(finderDataFetcher.getObjectType()) // todo return a connection to type if finder is multiple
-                        .build()
-        ).collect(Collectors.toList());
-    }
+//    public List<GraphQLFieldDefinition> getQueryFields() {
+//        return finders.values().stream().map(this::getFinderDataFetcher).map(finderDataFetcher ->
+//                GraphQLFieldDefinition.newFieldDefinition()
+//                        .name(finderDataFetcher.getName())
+//                        .dataFetcher(finderDataFetcher)
+//                        .argument(finderDataFetcher.getArguments())
+//                        .type(finderDataFetcher.getObjectType()) // todo return a connection to type if finder is multiple
+//                        .build()
+//        ).collect(Collectors.toList());
+//    }
 
-    public FinderDataFetcher getFinderDataFetcher(Finder finder) {
-        if (finder.getName().equals("byId")) {
-            return new ByIdFinderDataFetcher(this,finder);
-        } else if (finder.getName().equals("byPath")) {
-            return new ByPathFinderDataFetcher(this,finder);
-        } else if (finder.getName().equals("all")) {
-            return new AllFinderDataFetcher(this,finder);
-        } else if (finder.getName().startsWith("by")) {
-            if (finder.isMultiple()) {
-                return new ByPropertyMultipleFinderDataFetcher(this,finder);
-            } else {
-                return new ByPropertySingleFinderDataFetcher(this,finder);
-            }
-        }
-        return null;
-    }
+//    public FinderDataFetcher getFinderDataFetcher(Finder finder) {
+//        if (finder.getName().equals("byId")) {
+//            return new ByIdFinderDataFetcher(this,finder);
+//        } else if (finder.getName().equals("byPath")) {
+//            return new ByPathFinderDataFetcher(this,finder);
+//        } else if (finder.getName().equals("all")) {
+//            return new AllFinderDataFetcher(this,finder);
+//        } else if (finder.getName().startsWith("by")) {
+//            if (finder.isMultiple()) {
+//                return new ByPropertyMultipleFinderDataFetcher(this,finder);
+//            } else {
+//                return new ByPropertySingleFinderDataFetcher(this,finder);
+//            }
+//        }
+//        return null;
+//    }
 
     public GraphQLObjectType getObjectType() {
         if (graphQLObjectType == null) {

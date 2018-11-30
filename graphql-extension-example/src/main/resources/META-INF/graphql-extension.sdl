@@ -1,14 +1,10 @@
-schema {
-    query: Query
-}
-
-type NewsSDL {
-    title(language:String): String
+type NewsSDL @mapping(node:"jnt:news"){
+    title(language:String): String @mapping(property:"jcr:title")
     description(language:String): String
     file: String
     date: String
 }
 
-type Query {
-    newsByDate: [NewsSDL]
+extend type Query {
+    allNews: [NewsSDL]
 }
