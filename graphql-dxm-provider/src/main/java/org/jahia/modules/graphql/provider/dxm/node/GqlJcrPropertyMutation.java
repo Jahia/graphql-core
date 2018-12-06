@@ -47,6 +47,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.upload.UploadHelper;
@@ -121,7 +122,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.setProperty(name, getValue(type, value, localizedNode.getSession(), environment));
-        } catch (RepositoryException | IOException e) {
+        } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw new DataFetchingException(e);
         }
         return true;
@@ -137,7 +138,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.setProperty(name, getValues(type, values, localizedNode.getSession(), environment));
-        } catch (RepositoryException | IOException e) {
+        } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw new DataFetchingException(e);
         }
         return true;
@@ -152,7 +153,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).addValue(getValue(type, value, localizedNode.getSession(), environment));
-        } catch (RepositoryException | IOException e) {
+        } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw new DataFetchingException(e);
         }
         return true;
@@ -167,7 +168,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).removeValue(getValue(type, value, localizedNode.getSession(), environment));
-        } catch (RepositoryException | IOException e) {
+        } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw new DataFetchingException(e);
         }
         return true;
@@ -182,7 +183,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).addValues(getValues(type, values, localizedNode.getSession(), environment));
-        } catch (RepositoryException | IOException e) {
+        } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw new DataFetchingException(e);
         }
         return true;
@@ -197,7 +198,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).removeValues(getValues(type, values, localizedNode.getSession(), environment));
-        } catch (RepositoryException | IOException e) {
+        } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw new DataFetchingException(e);
         }
         return true;
@@ -224,11 +225,11 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
                 : PropertyType.STRING;
     }
 
-    private Value getValue(GqlJcrPropertyType type, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException {
+    private Value getValue(GqlJcrPropertyType type, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException, FileSizeLimitExceededException {
         return getValue(getPropertyType(type), value, session, environment);
     }
 
-    private Value[] getValues(GqlJcrPropertyType type, List<String> values, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException {
+    private Value[] getValues(GqlJcrPropertyType type, List<String> values, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException, FileSizeLimitExceededException {
         List<Value> jcrValues = new ArrayList<>();
         int jcrType = getPropertyType(type);
         for (String value : values) {
@@ -237,7 +238,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         return jcrValues.toArray(new Value[jcrValues.size()]);
     }
 
-    private Value getValue(int jcrType, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException {
+    private Value getValue(int jcrType, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException, FileSizeLimitExceededException {
         ValueFactory valueFactory = session.getValueFactory();
         switch (jcrType) {
             case PropertyType.REFERENCE:
@@ -245,7 +246,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             case PropertyType.WEAKREFERENCE:
                 return valueFactory.createValue(getNodeFromPathOrId(session, value), true);
             case PropertyType.BINARY:
-                if (UploadHelper.isFileUpload(value, environment)) {
+                if (UploadHelper.isValidFileUpload(value, environment)) {
                     return valueFactory.createValue(valueFactory.createBinary(UploadHelper.getFileUpload(value, environment).getInputStream()));
                 } else {
                     return valueFactory.createValue(value, jcrType);

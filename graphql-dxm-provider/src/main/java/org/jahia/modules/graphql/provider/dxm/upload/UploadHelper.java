@@ -46,7 +46,9 @@ package org.jahia.modules.graphql.provider.dxm.upload;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.servlet.GraphQLContext;
 import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
+import org.jahia.settings.SettingsBean;
 
 import java.util.List;
 
@@ -60,16 +62,33 @@ public class UploadHelper {
      * @param name Name of the part
      * @param environment The DataFetchingEnvironment
      * @return true if a FileItem is found
+     * @throws FileSizeLimitExceededException  if the file exceeds currently set limit
      */
-    public static boolean isFileUpload(String name, DataFetchingEnvironment environment) {
+    public static boolean isValidFileUpload(String name, DataFetchingEnvironment environment) throws FileSizeLimitExceededException {
         GraphQLContext context = environment.getContext();
         if (!context.getFiles().isPresent()) {
             return false;
         }
+
         List<FileItem> f = context.getFiles().get().get(name);
         if (f == null || f.size() != 1) {
             return false;
         }
+
+        long uploadSize = f.get(0).getSize();
+        long maxUploadSize = SettingsBean.getInstance().getJahiaFileUploadMaxSize();
+        if (uploadSize > maxUploadSize) {
+            throw new FileSizeLimitExceededException(
+                    String.format(
+                            "The field %s exceeds its maximum permitted size of %s bytes.",
+                            f.get(0).getName(),
+                            maxUploadSize
+                    ),
+                    uploadSize,
+                    maxUploadSize
+            );
+        }
+
         return true;
     }
 
