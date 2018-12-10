@@ -279,6 +279,8 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
             destName = node.getName();
         }
 
+        verifyNodeReproductionTarget(node, destParentNode);
+
         JCRNodeWrapper destNode;
         try {
             if (!node.copy(destParentNode.getPath(), destName, JCRNodeWrapper.NodeNamingConflictResolutionStrategy.FAIL)) {
@@ -313,6 +315,8 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         if (destName == null) {
             destName = node.getName();
         }
+
+        verifyNodeReproductionTarget(node, destParentNode);
 
         JCRNodeWrapper destNode;
         try {
@@ -376,6 +380,12 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
                 return "moving";
             }
         });
+    }
+
+    private static void verifyNodeReproductionTarget(JCRNodeWrapper node, JCRNodeWrapper destParentNode) {
+        if (destParentNode.equals(node) || destParentNode.getPath().startsWith(node.getPath() + "/")) {
+            throw new GqlJcrWrongInputException("Cannot copy or move node '" + node.getPath() + "' to itself or its descendant node");
+        }
     }
 
     private Collection<GqlJcrNodeMutation> reproduceNodes(Collection<GqlJcrReproducibleNodeInput> nodes, NodeReproducer nodeReproducer) throws BaseGqlClientException {
