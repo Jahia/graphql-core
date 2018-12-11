@@ -53,6 +53,8 @@ import graphql.annotations.annotationTypes.GraphQLName;
 @GraphQLDescription("An optional part of the JCR node criteria to filter nodes, specifically by their arbitrary properties")
 public class GqlJcrNodeConstraintInput {
 
+    private String lessThenOrEqualTo;
+    private String greaterThenOrEqualTo;
     private String like;
     private String contains;
     private String property;
@@ -69,10 +71,14 @@ public class GqlJcrNodeConstraintInput {
     public GqlJcrNodeConstraintInput(
         @GraphQLName("like") @GraphQLDescription("A value to compare the node property value to, using the 'like' operator") String like,
         @GraphQLName("contains") @GraphQLDescription("A search expression to match the node property value(s) against, either specific property only or all node properties, dependent on the 'property' parameter value passed") String contains,
+        @GraphQLName("lessThenOrEqualTo") @GraphQLDescription("A value to compare the node property value to, using the 'lessThenOrEqualTo' operator") String lessThenOrEqualTo,
+        @GraphQLName("greaterThenOrEqualTo") @GraphQLDescription("A value to compare the node property value to, using the 'greaterThenOrEqualTo' operator") String greaterThenOrEqualTo,
         @GraphQLName("property") @GraphQLDescription("The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values") String property
     ) {
         this.like = like;
         this.contains = contains;
+        this.lessThenOrEqualTo = lessThenOrEqualTo;
+        this.greaterThenOrEqualTo = greaterThenOrEqualTo;
         this.property = property;
     }
 
@@ -100,9 +106,30 @@ public class GqlJcrNodeConstraintInput {
      * @return The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values
      */
     @GraphQLField
+    @GraphQLName("lessThenOrEqualTo")
+    @GraphQLDescription("A value to compare the node property value to, using the 'lessThenOrEqualTo' operator")
+    public String getLessThenOrEqualTo() {
+        return lessThenOrEqualTo;
+    }
+
+    /**
+     * @return The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values
+     */
+    @GraphQLField
+    @GraphQLName("greaterThenOrEqualTo")
+    @GraphQLDescription("A value to compare the node property value to, using the 'lessThenOrEqualTo' operator")
+    public String getGreaterThenOrEqualTo() {
+        return greaterThenOrEqualTo;
+    }
+
+    /**
+     * @return The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values
+     */
+    @GraphQLField
     @GraphQLName("property")
     @GraphQLDescription("The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values")
     public String getProperty() {
         return property;
     }
+
 }

@@ -238,7 +238,9 @@ public class NodeHelper {
         }
 
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
-        return PaginationHelper.paginate(stream, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
+        return PaginationHelper.paginate(stream, n -> {
+                return PaginationHelper.encodeCursor(n.getUuid());
+            }, arguments);
     }
 
     private interface PropertyEvaluationAlgorithm {

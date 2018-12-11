@@ -43,31 +43,40 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.iterators.IteratorChain;
 import org.apache.commons.lang.LocaleUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.predicate.CriteriaSearchInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
-import org.jahia.services.content.JCRNodeIteratorWrapper;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.QueryManagerWrapper;
+import org.jahia.services.content.*;
 import org.jahia.services.content.nodetypes.ValueImpl;
 import org.jahia.services.query.QueryWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.qom.*;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLanguage.SQL2;
 
@@ -77,6 +86,8 @@ import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLangu
 @GraphQLName("JCRQuery")
 @GraphQLDescription("JCR Queries")
 public class GqlJcrQuery {
+
+    private static Logger logger = LoggerFactory.getLogger(GqlJcrQuery.class);
 
     private static final NodeConstraintConvertor[] NODE_CONSTRAINT_CONVERTORS = {
         new NodeConstraintConvertorLike(),
@@ -280,7 +291,7 @@ public class GqlJcrQuery {
             QueryManager queryManager = session.getWorkspace().getQueryManager();
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
             Selector source = factory.selector(criteria.getNodeType(), "node");
-            Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory);
+            Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, null, factory);
             Ordering ordering = getOrderingByProperty(source.getSelectorName(), criteria, factory);
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, ordering == null ? null : new Ordering[]{ordering}, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
@@ -290,7 +301,86 @@ public class GqlJcrQuery {
         }
     }
 
-    private static Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory) throws RepositoryException {
+    @GraphQLField
+    @GraphQLDescription("Get GraphQL representations of multiple nodes by search criteria")
+    @GraphQLConnection(connection = DXPaginatedDataConnectionFetcher.class)
+    public DXPaginatedData<GqlJcrNode> getNodesBySearch(@GraphQLName("criteriaSearch")
+            @GraphQLNonNull @GraphQLDescription("The criteria to fetch nodes by") final CriteriaSearchInput criteriaSearch,
+            @GraphQLName("language") @GraphQLDescription("Language to access node properties in") final String language,
+                                                        DataFetchingEnvironment environment)
+            throws BaseGqlClientException{
+
+        logger.info("::: Ggl - nodesBySearch endpoint processes criteria search");
+
+        try{
+            final Session session = getSession(language);
+            final QueryManager queryManager = session.getWorkspace().getQueryManager();
+            final QueryObjectModelFactory factory = queryManager.getQOMFactory();
+
+            NodeIterator combinedNIt = null;
+            //for multiple node types,  join results
+            for(String nodeType : criteriaSearch.getNodeTypes()){
+                final Selector source = factory.selector(nodeType, "node");
+
+                //build like constrains
+                final Map<String, String> constraintPropertyMap = new HashMap<>();
+                constraintPropertyMap.put("jcr:createdBy", criteriaSearch.getCreatedBy());
+                constraintPropertyMap.put("jcr:lastModifiedBy", criteriaSearch.getLastModifiedBy());
+                constraintPropertyMap.put("j:lastPublishedBy", criteriaSearch.getLastPublishedBy());
+                List<GqlJcrNodeConstraintInput> extraConstraints = buildExtraConstraints(constraintPropertyMap,
+                        QueryObjectModelConstants.JCR_OPERATOR_LIKE);
+
+                //build date constraints
+
+
+                GqlJcrNodeCriteriaInput criteria = new GqlJcrNodeCriteriaInput(nodeType, GqlJcrNodeCriteriaInput.PathType.ANCESTOR,
+                        Arrays.asList(criteriaSearch.getBasePath()), null, language, null);
+                Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, extraConstraints, factory);
+
+                QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, null, null);
+                NodeIterator it = queryObjectModel.execute().getNodes();
+                combinedNIt = combinedNIt == null ? it : (NodeIterator)Iterators.concat(combinedNIt, it);
+            }
+            logger.info(":::::::::::::::::: size " + combinedNIt.getSize());
+
+            return NodeHelper.getPaginatedNodesList(combinedNIt,
+                                                    null, null, null, null,
+                                                    environment, null, null);
+
+        } catch (RepositoryException e) {
+            e.printStackTrace();
+            logger.error("failed to fetch nodes by search criteria");
+            throw new DataFetchingException(e);
+        }
+
+    }
+
+    private List<GqlJcrNodeConstraintInput> buildExtraConstraints(Map<String, String> constraintPropertyMap, String jcrOperator){
+        final List<GqlJcrNodeConstraintInput> nodeConstraints = new ArrayList<>();
+        constraintPropertyMap.forEach( (propertyName, propertyValue) -> {
+            if(!Strings.isNullOrEmpty(propertyValue)){
+
+                switch (jcrOperator) {
+                    case QueryObjectModelConstants.JCR_OPERATOR_LIKE:
+                        nodeConstraints.add( new GqlJcrNodeConstraintInput(propertyValue, null, null, null, propertyName));
+                        break;
+                    case QueryObjectModelConstants.JCR_OPERATOR_LESS_THAN_OR_EQUAL_TO:
+                        nodeConstraints.add( new GqlJcrNodeConstraintInput(null, null, propertyValue, null, propertyName));
+                        break;
+                    case QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO:
+                        nodeConstraints.add( new GqlJcrNodeConstraintInput(null, null, null, propertyValue, propertyName));
+                        break;
+                    default: break;
+                }
+
+            }
+        });
+
+        return nodeConstraints;
+    }
+
+    private static Constraint getConstraintTree(String selector, GqlJcrNodeCriteriaInput criteria,
+                                                List<GqlJcrNodeConstraintInput> extraContraints, QueryObjectModelFactory factory) throws RepositoryException {
 
         LinkedHashSet<Constraint> constraints = new LinkedHashSet<>();
 
@@ -329,24 +419,34 @@ public class GqlJcrQuery {
         }
 
         // Add node constraint if any.
-        GqlJcrNodeConstraintInput nodeConstraint = criteria.getNodeConstraint();
-        if (nodeConstraint != null) {
-            Constraint constraint = null;
-            for (NodeConstraintConvertor nodeConstraintConvertor : NODE_CONSTRAINT_CONVERTORS) {
-                Constraint c = nodeConstraintConvertor.convert(nodeConstraint, factory, selector);
-                if (c == null) {
-                    continue;
+        List<GqlJcrNodeConstraintInput> constraintInputList = new ArrayList<>();
+        constraintInputList.add(criteria.getNodeConstraint());
+        constraintInputList.addAll(extraContraints);
+        constraintInputList.forEach( nodeConstraint -> {
+            if (nodeConstraint != null) {
+                Constraint constraint = null;
+                for (NodeConstraintConvertor nodeConstraintConvertor : NODE_CONSTRAINT_CONVERTORS) {
+                    try{
+                        Constraint c = nodeConstraintConvertor.convert(nodeConstraint, factory, selector);
+                        if (c == null) {
+                            continue;
+                        }
+                        if (constraint != null) {
+                            throwNoneOrMultipleNodeConstraintsException();
+                        }
+                        constraint = c;
+                    } catch (RepositoryException e){
+                        e.printStackTrace();
+                        logger.error("failed to convert node constraint ", e);
+                    }
+
                 }
-                if (constraint != null) {
+                if (constraint == null) {
                     throwNoneOrMultipleNodeConstraintsException();
                 }
-                constraint = c;
+                constraints.add(constraint);
             }
-            if (constraint == null) {
-                throwNoneOrMultipleNodeConstraintsException();
-            }
-            constraints.add(constraint);
-        }
+        });
 
         // Build the result.
         if (constraints.isEmpty()) {
@@ -460,6 +560,56 @@ public class GqlJcrQuery {
         public String getFieldName() {
             return "contains";
         }
+    }
+
+    /**
+     * A constraint convertor for the jcr comparison of less-then-or-equal-to
+     *
+     */
+    private static class NodeConstraintConvertorLessThenOrEqualTo implements NodeConstraintConvertor {
+
+        @Override
+        public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+
+            String value = nodeConstraint.getLessThenOrEqualTo();
+            if (value == null) {
+                return null;
+            }
+
+            validateNodeConstraintProperty(nodeConstraint);
+            return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()), QueryObjectModelConstants.JCR_OPERATOR_LESS_THAN_OR_EQUAL_TO, factory.literal(new ValueImpl(value)));
+        }
+
+        @Override
+        public String getFieldName() {
+            return "lessThenOrEqualTo";
+        }
+
+    }
+
+    /**
+     * A constraint convertor for the jcr comparison of greater-then-or-equal-to
+     *
+     */
+    private static class NodeConstraintConvertorGreaterThenOrEqualTo implements NodeConstraintConvertor {
+
+        @Override
+        public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+
+            String value = nodeConstraint.getLessThenOrEqualTo();
+            if (value == null) {
+                return null;
+            }
+
+            validateNodeConstraintProperty(nodeConstraint);
+            return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()), QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO, factory.literal(new ValueImpl(value)));
+        }
+
+        @Override
+        public String getFieldName() {
+            return "greaterThenOrEqualTo";
+        }
+
     }
 
     public static class QueryLanguageDefaultValue implements Supplier<Object> {
