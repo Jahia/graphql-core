@@ -282,38 +282,4 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         }
         return defaultTypeFunction.buildType(input, klass, arg,container);
     }
-
-//    private void processGeneratedDefinitions() {
-//        try {
-//            JCRSessionWrapper sessionWrapper = JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null);
-//            Bundle bundle = BundleUtils.getBundleBySymbolicName("graphql-definition-generator", null);
-//            if (bundle != null) {
-//                JahiaTemplatesPackage module = BundleUtils.getModule(bundle);
-//                if (sessionWrapper.nodeExists("/modules/graphql-definition-generator/" + module.getVersion() + "/templates/contents/definitions")) {
-//                    JCRNodeWrapper definitions = sessionWrapper.getNode("/modules/graphql-definition-generator/" + module.getVersion() + "/templates/contents/definitions");
-//                    String s = definitions.getPropertyAsString("definitions");
-//                    if (StringUtils.isNotEmpty(s)) {
-//                        try {
-//                            JSONArray definitionsList = new JSONArray(s);
-//                            for (int i = 0; i < definitionsList.length(); i++) {
-//                                JSONObject definition = definitionsList.getJSONObject(i);
-//                                String type = definition.getString("queryName");
-//                                ConfigUtil.registerTypeDefinition(type, definition.getString("definitionName"), customApis);
-//                                JSONArray properties = definition.getJSONArray("usedProperties");
-//                                for (int j = 0; j < properties.length(); j++) {
-//                                    JSONObject usedProperty = properties.getJSONObject(j);
-//                                    String userDefinedPropertyName = !"null".equals(usedProperty.getString("userDefinedName")) ? usedProperty.getString("userDefinedName") : usedProperty.getString("name");
-//                                    ConfigUtil.registerPropertyDefinition(type, usedProperty.getString("name"), userDefinedPropertyName, customApis);
-//                                }
-//                            }
-//                        } catch (JSONException ex) {
-//                            logger.error("Failed to parse definitions JSON.", ex);
-//                        }
-//                    }
-//                }
-//            }
-//        } catch(RepositoryException ex){
-//            logger.error("Failed to retrieve session.", ex);
-//        }
-//    }
 }
