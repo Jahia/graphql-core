@@ -1,4 +1,4 @@
-package org.jahia.modules.graphql.provider.dxm.customApi;
+package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
@@ -17,23 +17,23 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static graphql.Scalars.GraphQLString;
-
-public class ByPropertyMultipleFinderDataFetcher extends FinderDataFetcher {
-    public ByPropertyMultipleFinderDataFetcher(String type, Finder finder) {
-        super(type, finder);
+public class AllFinderDataFetcher extends FinderDataFetcher {
+    public AllFinderDataFetcher(String type) {
+        super(type);
     }
 
     @Override
     public List<GraphQLArgument> getArguments() {
-        return Collections.singletonList(GraphQLArgument.newArgument().name("eq").type(GraphQLString).build());
+        return Collections.emptyList();
     }
 
     @Override
-    public List<GqlJcrNode>  get(DataFetchingEnvironment environment) {
+    public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
         try {
-            String statement = "select * from [\"" + type + "\"] where [\"" + finder.getProperty() + "\"]=\"" + environment.getArgument("eq") + "\"";
+            String statement = "select * from [\"" + type + "\"]";
+
             JCRNodeIteratorWrapper it = JCRSessionFactory.getInstance().getCurrentUserSession().getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
+
             Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
                     .filter(node-> PermissionHelper.hasPermission(node, environment))
                     .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));

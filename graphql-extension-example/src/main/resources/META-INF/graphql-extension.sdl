@@ -5,6 +5,15 @@ type NewsSDL @mapping(node:"jnt:news"){
     date: String
 }
 
+type BoozSDL @mapping(node:"jnt:booz"){
+    title(language:String): String @mapping(property:"jcr:title")
+    description(language:String): String
+    file: String
+    date: String
+}
+
 extend type Query {
     allNews: [NewsSDL]
+    allBooz: [BoozSDL]
+    boozByPath: [BoozSDL]
 }

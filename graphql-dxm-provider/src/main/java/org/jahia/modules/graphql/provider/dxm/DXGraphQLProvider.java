@@ -45,7 +45,6 @@ package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.processor.GraphQLAnnotations;
 import graphql.annotations.processor.GraphQLAnnotationsComponent;
 import graphql.annotations.processor.ProcessingElementsContainer;
 import graphql.annotations.processor.retrievers.GraphQLExtensionsHandler;
@@ -54,38 +53,19 @@ import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.language.*;
 import graphql.schema.*;
-import graphql.schema.idl.*;
-import graphql.schema.idl.errors.SchemaProblem;
 import graphql.servlet.*;
-import org.apache.commons.lang.StringUtils;
-import org.jahia.api.Constants;
-import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
-import org.jahia.modules.graphql.provider.dxm.customApi.*;
-import org.jahia.modules.graphql.provider.dxm.customApi.Field;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
-import org.jahia.osgi.BundleUtils;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.nodetypes.ExtendedNodeType;
-import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
-import org.jahia.services.content.nodetypes.NodeTypeRegistry;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.osgi.framework.Bundle;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.AllFinderDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SchemaOperations;
+import org.jahia.modules.graphql.provider.dxm.sdl.registration.SDLRegistrationService;
 import org.osgi.service.component.annotations.*;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.RepositoryException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.ParameterizedType;
@@ -93,7 +73,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static graphql.Scalars.GraphQLString;
+import static graphql.schema.GraphQLObjectType.newObject;
 import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
 
 @Component(service = GraphQLProvider.class, enabled = false)
@@ -113,7 +93,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     private static Map<String, URL> sdlResources = new ConcurrentHashMap<>();
     private GraphQLSchema graphQLSchema;
-    private Map<String, CustomApi> customApis = new HashMap<>();
 
     private Collection<DXGraphQLExtensionsProvider> extensionsProviders = new HashSet<>();
 
@@ -122,6 +101,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private GraphQLObjectType mutationType;
     private GraphQLObjectType subscriptionType;
     private DXGraphQLConfig dxGraphQLConfig;
+    private List<ObjectTypeDefinition> faultyDefinitions = new ArrayList<>();
 
     private DXRelay relay;
 
@@ -219,7 +199,9 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
                 logger.info("Registered type extension {}", aClass);
             }
         }
-        generateGraphQLSchema();
+
+        //Generate schema from user defined SDL
+        graphQLSchema = SchemaOperations.generateSchema(sdlRegistrationService);
 //        processGeneratedDefinitions();
         specializedTypesHandler.initializeTypes();
     }
@@ -230,39 +212,14 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         types.add(graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNodeImpl.class, container));
         types.addAll(specializedTypesHandler.getKnownTypes().values());
-        List<String> reservedType = Arrays.asList("Query","Mutation","Subscription");
-        if (graphQLSchema != null) {
-            for (Map.Entry<String, GraphQLType> gqlTypeEntry : graphQLSchema.getTypeMap().entrySet()) {
-                if (!gqlTypeEntry.getKey().startsWith("__") && !reservedType.contains(gqlTypeEntry.getKey()) && !(gqlTypeEntry.getValue() instanceof GraphQLScalarType)) {
-                    types.add(gqlTypeEntry.getValue());
-                }
-            }
-        }
+        SchemaOperations.addTypes(graphQLSchema, types);
         return types;
     }
 
     @Override
     public Collection<GraphQLFieldDefinition> getQueries() {
         List<GraphQLFieldDefinition> defs = new ArrayList<>(queryType.getFieldDefinitions());
-//        for (CustomApi apiType : customApis.values()) {
-//            defs.addAll(apiType.getQueryFields());
-//        }
-        if (graphQLSchema != null) {
-            List<GraphQLFieldDefinition> fieldDefinitions = graphQLSchema.getQueryType().getFieldDefinitions();
-            for (GraphQLFieldDefinition fieldDefinition : fieldDefinitions) {
-                AllFinderDataFetcher dataFetcher = new AllFinderDataFetcher(fieldDefinition.getType() instanceof GraphQLList ?
-                        ((GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType()).getDirective("mapping").getArgument("node").getValue().toString() :
-                        ((GraphQLObjectType) fieldDefinition.getType()).getDirective("mapping").getArgument("node").getValue().toString());
-                GraphQLFieldDefinition customApiFieldDef = GraphQLFieldDefinition.newFieldDefinition()
-                        .name(fieldDefinition.getName())
-                        .dataFetcher(dataFetcher)
-                        .argument(dataFetcher.getArguments())
-                        .type(fieldDefinition.getType()) // todo return a connection to type if finder is multiple
-                        .build();
-                defs.add(customApiFieldDef);
-            }
-
-        }
+        SchemaOperations.addSchemaDefinitions(graphQLSchema, defs);
         return defs;
     }
 
@@ -326,77 +283,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
             klass = (Class<?>) arg.getType();
         }
         return defaultTypeFunction.buildType(input, klass, arg,container);
-    }
-
-    private void generateGraphQLSchema() {
-        if (sdlRegistrationService == null || sdlRegistrationService.getSDLResources().size() == 0) {
-            return;
-        }
-        SchemaParser schemaParser = new SchemaParser();
-        TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
-        typeDefinitionRegistry.add(new ObjectTypeDefinition("Query"));
-        typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
-                .name("mapping")
-                .directiveLocations(Arrays.asList(DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
-                        DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build(),
-                        DirectiveLocation.newDirectiveLocation().name("INTERFACE").build()))
-                .inputValueDefinitions(Arrays.asList(InputValueDefinition.newInputValueDefinition().name("node").type(TypeName.newTypeName("String").build()).build(),
-                        InputValueDefinition.newInputValueDefinition().name("property").type(TypeName.newTypeName("String").build()).build()))
-                .build());
-        for (Map.Entry<String, URL> entry : sdlRegistrationService.getSDLResources().entrySet()) {
-            try {
-                typeDefinitionRegistry.merge(schemaParser.parse(new InputStreamReader(entry.getValue().openStream())));
-            } catch (IOException ex) {
-                logger.error("Failed to read sdl resource.", ex);
-            } catch (SchemaProblem ex) {
-                logger.warn("Failed to merge schema from bundle [" + entry.getKey() + "]:", ex.getMessage());
-            }
-        }
-        RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring()
-                .type(newTypeWiring("Query").build())
-                .directive("mapping", new SchemaDirectiveWiring() {
-                    @Override
-                    public GraphQLObjectType onObject(SchemaDirectiveWiringEnvironment<GraphQLObjectType> environment) {
-                        return environment.getElement();
-                    }
-
-                    @Override
-                    public GraphQLFieldDefinition onField(SchemaDirectiveWiringEnvironment<GraphQLFieldDefinition> environment) {
-                        try {
-                            //Todo add error/syntax check
-                            ObjectTypeDefinition parentType = (ObjectTypeDefinition) ((NodeParentTree) ((SchemaDirectiveWiringEnvironmentImpl) environment).getNodeParentTree().getParentInfo().get()).getNode();
-                            Directive parentTypeDirective = parentType.getDirective("mapping");
-                            String nodeType = ((StringValue) parentTypeDirective.getArgument("node").getValue()).getValue();
-                            ExtendedNodeType type = NodeTypeRegistry.getInstance().getNodeType(nodeType);
-                            Map<String, ExtendedPropertyDefinition> extendedPropertyDefinitionMap = type.getPropertyDefinitionsAsMap();
-                            Field field = new Field(environment.getElement().getName());
-                            field.setProperty(environment.getDirective().getArgument("property").getValue().toString());
-                            return GraphQLFieldDefinition.newFieldDefinition()
-                                    .name(environment.getElement().getName())
-                                    .dataFetcher(new PropertiesDataFetcher(null, field))
-                                    .argument(GraphQLArgument.newArgument().name("language").type(new GraphQLNonNull(GraphQLString)).build())
-                                    .type(GraphQLString)
-                                    .build();
-                        } catch (NoSuchNodeTypeException e) {
-                            logger.error("Mapping is not referring to existing type ", e);
-                        }
-                        return null;
-                    }
-                })
-                .wiringFactory(new NoopWiringFactory(){
-                    @Override
-                    public DataFetcher getDefaultDataFetcher(FieldWiringEnvironment environment) {
-                        return DataFetchingEnvironment::getSource;
-                    }
-                })
-                .build();
-
-        SchemaGenerator schemaGenerator = new SchemaGenerator();
-        try {
-            graphQLSchema = schemaGenerator.makeExecutableSchema(SchemaGenerator.Options.defaultOptions().enforceSchemaDirectives(false), typeDefinitionRegistry, runtimeWiring);
-        } catch (Exception e) {
-            logger.error("Failed to generate GraphQL schema from merged sdl resources.", e);
-        }
     }
 
 //    private void processGeneratedDefinitions() {

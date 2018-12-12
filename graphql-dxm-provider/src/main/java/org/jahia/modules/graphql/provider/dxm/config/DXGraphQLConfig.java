@@ -44,8 +44,6 @@
 package org.jahia.modules.graphql.provider.dxm.config;
 
 import org.apache.commons.lang.StringUtils;
-import org.jahia.modules.graphql.provider.dxm.customApi.ConfigUtil;
-import org.jahia.modules.graphql.provider.dxm.customApi.CustomApi;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.service.component.ComponentContext;
@@ -76,8 +74,6 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private Set<String> corsOrigins = new HashSet<>();
     private Map<String, Set<String>> corsOriginByPid = new HashMap<>();
-
-    private Map<String, CustomApi> customApis = new HashMap<>();
 
     private ComponentContext componentContext;
 
@@ -128,9 +124,6 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 }
             } else if (key.equals(CORS_ORIGINS)) {
                 corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split(value," ,"))));
-            } else if (key.startsWith(TYPE_PREFIX)) {
-                keysForPid.add(key);
-                ConfigUtil.configureCustomApi(key.substring(TYPE_PREFIX.length()), value, customApis);
             } else {
                 // store other properties than permission configuration
                 keysForPid.add(key);
@@ -160,10 +153,6 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     public Map<String, String> getPermissions() {
         return permissions;
-    }
-
-    public Map<String, CustomApi> getCustomApis() {
-        return customApis;
     }
 
     public Set<String> getCorsOrigins() {

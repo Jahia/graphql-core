@@ -41,7 +41,7 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.graphql.provider.dxm.customApi;
+package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
@@ -58,11 +58,9 @@ import java.util.List;
 
 public class PropertiesDataFetcher implements DataFetcher<Object> {
 
-    private CustomApi type;
     private Field field;
 
-    public PropertiesDataFetcher(CustomApi type, Field field) {
-        this.type = type;
+    public PropertiesDataFetcher(Field field) {
         this.field = field;
     }
 

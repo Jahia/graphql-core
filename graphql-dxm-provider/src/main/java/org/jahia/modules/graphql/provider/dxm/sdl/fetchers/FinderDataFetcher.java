@@ -1,7 +1,6 @@
-package org.jahia.modules.graphql.provider.dxm.customApi;
+package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.*;
-import org.codehaus.plexus.util.StringUtils;
 
 import java.util.List;
 

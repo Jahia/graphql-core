@@ -1,4 +1,4 @@
-package org.jahia.modules.graphql.provider.dxm.customApi;
+package org.jahia.modules.graphql.provider.dxm.sdl.registration;
 
 import org.jahia.osgi.BundleUtils;
 import org.osgi.framework.Bundle;

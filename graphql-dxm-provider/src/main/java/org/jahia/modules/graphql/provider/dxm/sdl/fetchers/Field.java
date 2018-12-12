@@ -1,4 +1,4 @@
-package org.jahia.modules.graphql.provider.dxm.customApi;
+package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 public class Field {
     private String name;
