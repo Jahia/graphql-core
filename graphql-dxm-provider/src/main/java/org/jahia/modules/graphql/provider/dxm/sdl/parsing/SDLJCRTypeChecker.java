@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class JCRTypeChecker {
+public class SDLJCRTypeChecker {
 
     /**
      * Check mapping directive node types and remove from type registry definitions which refer to jcr types not

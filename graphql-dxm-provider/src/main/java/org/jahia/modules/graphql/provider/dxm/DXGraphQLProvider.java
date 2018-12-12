@@ -58,8 +58,7 @@ import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.AllFinderDataFetcher;
-import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SchemaOperations;
+import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaOperations;
 import org.jahia.modules.graphql.provider.dxm.sdl.registration.SDLRegistrationService;
 import org.osgi.service.component.annotations.*;
 import org.reactivestreams.Publisher;
@@ -200,7 +199,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         }
 
         //Generate schema from user defined SDL
-        SchemaOperations.generateSchema(sdlRegistrationService);
+        SDLSchemaOperations.generateSchema(sdlRegistrationService);
 //        processGeneratedDefinitions();
         specializedTypesHandler.initializeTypes();
     }
@@ -211,14 +210,14 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         types.add(graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNodeImpl.class, container));
         types.addAll(specializedTypesHandler.getKnownTypes().values());
-        SchemaOperations.addTypes(types);
+        SDLSchemaOperations.addTypes(types);
         return types;
     }
 
     @Override
     public Collection<GraphQLFieldDefinition> getQueries() {
         List<GraphQLFieldDefinition> defs = new ArrayList<>(queryType.getFieldDefinitions());
-        SchemaOperations.addSchemaDefinitions(defs);
+        SDLSchemaOperations.addSchemaDefinitions(defs);
         return defs;
     }
 

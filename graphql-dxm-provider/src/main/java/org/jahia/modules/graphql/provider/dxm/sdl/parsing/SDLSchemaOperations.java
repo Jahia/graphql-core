@@ -16,8 +16,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public class SchemaOperations {
-    private static Logger logger = LoggerFactory.getLogger(SchemaOperations.class);
+public class SDLSchemaOperations {
+    private static Logger logger = LoggerFactory.getLogger(SDLSchemaOperations.class);
 
     private static GraphQLSchema graphQLSchema;
 
@@ -46,14 +46,14 @@ public class SchemaOperations {
                 }
             }
 
-            JCRTypeChecker.removeNonExistentJCRTypes(typeDefinitionRegistry);
+            SDLJCRTypeChecker.removeNonExistentJCRTypes(typeDefinitionRegistry);
             SchemaGenerator schemaGenerator = new SchemaGenerator();
 
             try {
                 graphQLSchema = schemaGenerator.makeExecutableSchema(
                         SchemaGenerator.Options.defaultOptions().enforceSchemaDirectives(false),
                         typeDefinitionRegistry,
-                        SDLRuntimeWiring.runtimeWiring(new DirectiveWiring())
+                        SDLRuntimeWiring.runtimeWiring(new SDLDirectiveWiring())
                 );
             } catch (Exception e) {
                 logger.error("Failed to generate GraphQL schema from merged sdl resources.", e);

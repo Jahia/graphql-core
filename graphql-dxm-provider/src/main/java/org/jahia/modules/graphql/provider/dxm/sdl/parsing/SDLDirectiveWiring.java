@@ -16,7 +16,7 @@ import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.PropertiesDataFetcher
 
 import static graphql.Scalars.GraphQLString;
 
-public class DirectiveWiring implements SchemaDirectiveWiring {
+public class SDLDirectiveWiring implements SchemaDirectiveWiring {
 
     @Override
     public GraphQLObjectType onObject(SchemaDirectiveWiringEnvironment<GraphQLObjectType> environment) {
