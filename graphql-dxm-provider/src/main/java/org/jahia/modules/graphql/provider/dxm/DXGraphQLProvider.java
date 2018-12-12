@@ -92,7 +92,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private ProcessingElementsContainer container;
 
     private static Map<String, URL> sdlResources = new ConcurrentHashMap<>();
-    private GraphQLSchema graphQLSchema;
 
     private Collection<DXGraphQLExtensionsProvider> extensionsProviders = new HashSet<>();
 
@@ -201,7 +200,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         }
 
         //Generate schema from user defined SDL
-        graphQLSchema = SchemaOperations.generateSchema(sdlRegistrationService);
+        SchemaOperations.generateSchema(sdlRegistrationService);
 //        processGeneratedDefinitions();
         specializedTypesHandler.initializeTypes();
     }
@@ -212,14 +211,14 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         types.add(graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNodeImpl.class, container));
         types.addAll(specializedTypesHandler.getKnownTypes().values());
-        SchemaOperations.addTypes(graphQLSchema, types);
+        SchemaOperations.addTypes(types);
         return types;
     }
 
     @Override
     public Collection<GraphQLFieldDefinition> getQueries() {
         List<GraphQLFieldDefinition> defs = new ArrayList<>(queryType.getFieldDefinitions());
-        SchemaOperations.addSchemaDefinitions(graphQLSchema, defs);
+        SchemaOperations.addSchemaDefinitions(defs);
         return defs;
     }
 

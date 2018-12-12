@@ -19,7 +19,9 @@ import java.util.Map;
 public class SchemaOperations {
     private static Logger logger = LoggerFactory.getLogger(SchemaOperations.class);
 
-    public static GraphQLSchema generateSchema(SDLRegistrationService sdlRegistrationService) {
+    private static GraphQLSchema graphQLSchema;
+
+    public static void generateSchema(SDLRegistrationService sdlRegistrationService) {
         if (sdlRegistrationService != null && sdlRegistrationService.getSDLResources().size() > 0) {
             SchemaParser schemaParser = new SchemaParser();
             TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
@@ -48,7 +50,7 @@ public class SchemaOperations {
             SchemaGenerator schemaGenerator = new SchemaGenerator();
 
             try {
-                return schemaGenerator.makeExecutableSchema(
+                graphQLSchema = schemaGenerator.makeExecutableSchema(
                         SchemaGenerator.Options.defaultOptions().enforceSchemaDirectives(false),
                         typeDefinitionRegistry,
                         SDLRuntimeWiring.runtimeWiring(new DirectiveWiring())
@@ -57,10 +59,9 @@ public class SchemaOperations {
                 logger.error("Failed to generate GraphQL schema from merged sdl resources.", e);
             }
         }
-        return null;
     }
 
-    public static void addSchemaDefinitions(GraphQLSchema graphQLSchema, List<GraphQLFieldDefinition> defs) {
+    public static void addSchemaDefinitions(List<GraphQLFieldDefinition> defs) {
         if (graphQLSchema != null) {
             List<GraphQLFieldDefinition> fieldDefinitions = graphQLSchema.getQueryType().getFieldDefinitions();
             for (GraphQLFieldDefinition fieldDefinition : fieldDefinitions) {
@@ -78,7 +79,7 @@ public class SchemaOperations {
         }
     }
 
-    public static void addTypes(GraphQLSchema graphQLSchema, List<GraphQLType> types) {
+    public static void addTypes(List<GraphQLType> types) {
         if (graphQLSchema != null) {
             List<String> reservedType = Arrays.asList("Query","Mutation","Subscription");
             for (Map.Entry<String, GraphQLType> gqlTypeEntry : graphQLSchema.getTypeMap().entrySet()) {
