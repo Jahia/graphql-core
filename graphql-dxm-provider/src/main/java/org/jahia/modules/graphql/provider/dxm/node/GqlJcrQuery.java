@@ -91,7 +91,14 @@ public class GqlJcrQuery {
 
     private static final NodeConstraintConvertor[] NODE_CONSTRAINT_CONVERTORS = {
         new NodeConstraintConvertorLike(),
-        new NodeConstraintConvertorContains()
+        new NodeConstraintConvertorContains(),
+        new NodeConstraintConvertorEquals(),
+        new NodeConstraintConvertorNotEquals(),
+        new NodeConstraintConvertorGreaterThan(),
+        new NodeConstraintConvertorGreaterThanOrEqualsTo(),
+        new NodeConstraintConvertorLessThan(),
+        new NodeConstraintConvertorLessThanOrEqualsTo(),
+        new NodeConstraintConvertorExists()
     };
 
     private NodeQueryExtensions.Workspace workspace;
@@ -523,42 +530,226 @@ public class GqlJcrQuery {
         String getFieldName();
     }
 
+    private static DynamicOperand applyConstraintFunctions(GqlJcrNodeConstraintInput nodeConstraint, PropertyValue value, QueryObjectModelFactory factory)
+            throws RepositoryException{
+
+            switch (nodeConstraint.getFunction()){
+                case LOWER_CASE:
+                    return factory.lowerCase(value);
+                case UPPER_CASE:
+                    return factory.upperCase(value);
+                default: return value;
+            }
+
+    }
+
+    /**
+     * Constraint for "like" operator
+     */
     private static class NodeConstraintConvertorLike implements NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            String like = nodeConstraint.getLike();
-            if (like == null) {
+            String value = nodeConstraint.getLike();
+            if (value == null) {
                 return null;
             }
 
             validateNodeConstraintProperty(nodeConstraint);
-            return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()), QueryObjectModelConstants.JCR_OPERATOR_LIKE, factory.literal(new ValueImpl(like)));
+            return factory.comparison(applyConstraintFunctions(nodeConstraint, factory.propertyValue(selector, nodeConstraint.getProperty()), factory),
+                                QueryObjectModelConstants.JCR_OPERATOR_LIKE, factory.literal(new ValueImpl(value)));
         }
 
         @Override
         public String getFieldName() {
-            return "like";
+            return GqlJcrNodeConstraintInput.LIKE;
         }
     }
 
+    /**
+     * Constraint for "contains" operator
+     */
     private static class NodeConstraintConvertorContains implements NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            String contains = nodeConstraint.getContains();
-            if (contains == null) {
+            String value = nodeConstraint.getContains();
+            if (value == null) {
                 return null;
             }
 
-            return factory.fullTextSearch(selector, nodeConstraint.getProperty(), factory.literal(new ValueImpl(contains)));
+            return factory.fullTextSearch(selector, nodeConstraint.getProperty(), factory.literal(new ValueImpl(value)));
         }
 
         @Override
         public String getFieldName() {
-            return "contains";
+            return GqlJcrNodeConstraintInput.CONTAINS;
+        }
+    }
+
+    /**
+     * Constraint for "equals to" operator
+     */
+    private static class NodeConstraintConvertorEquals implements NodeConstraintConvertor {
+
+        @Override
+        public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+
+            String value = nodeConstraint.getEquals();
+            if (value == null) {
+                return null;
+            }
+
+            validateNodeConstraintProperty(nodeConstraint);
+            return factory.comparison(applyConstraintFunctions(nodeConstraint, factory.propertyValue(selector, nodeConstraint.getProperty()), factory),
+                    QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO, factory.literal(new ValueImpl(value)));
+        }
+
+        @Override
+        public String getFieldName() {
+            return GqlJcrNodeConstraintInput.EQUALS;
+        }
+    }
+
+    /**
+     * Constraint for "not equals to" operator
+     */
+    private static class NodeConstraintConvertorNotEquals implements NodeConstraintConvertor {
+
+        @Override
+        public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+
+            String value = nodeConstraint.getNotEquals();
+            if (value == null) {
+                return null;
+            }
+
+            validateNodeConstraintProperty(nodeConstraint);
+            return factory.comparison(applyConstraintFunctions(nodeConstraint, factory.propertyValue(selector, nodeConstraint.getProperty()), factory),
+                    QueryObjectModelConstants.JCR_OPERATOR_NOT_EQUAL_TO, factory.literal(new ValueImpl(value)));
+        }
+
+        @Override
+        public String getFieldName() {
+            return GqlJcrNodeConstraintInput.NOTEQUALS;
+        }
+    }
+
+    /**
+     * Constraint for "less than" operator
+     */
+    private static class NodeConstraintConvertorLessThan implements NodeConstraintConvertor {
+
+        @Override
+        public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+
+            String value = nodeConstraint.getLt();
+            if (value == null) {
+                return null;
+            }
+
+            validateNodeConstraintProperty(nodeConstraint);
+            return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
+                    QueryObjectModelConstants.JCR_OPERATOR_LESS_THAN, factory.literal(new ValueImpl(value)));
+        }
+
+        @Override
+        public String getFieldName() {
+            return GqlJcrNodeConstraintInput.LT;
+        }
+    }
+
+    /**
+     * Constraint for "greater than" operator
+     */
+    private static class NodeConstraintConvertorGreaterThan implements NodeConstraintConvertor {
+
+        @Override
+        public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+
+            String value = nodeConstraint.getGt();
+            if (value == null) {
+                return null;
+            }
+
+            validateNodeConstraintProperty(nodeConstraint);
+            return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
+                    QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN, factory.literal(new ValueImpl(value)));
+        }
+
+        @Override
+        public String getFieldName() {
+            return GqlJcrNodeConstraintInput.GT;
+        }
+    }
+
+    /**
+     * Constraint for "less than or equals to" operator
+     */
+    private static class NodeConstraintConvertorLessThanOrEqualsTo implements NodeConstraintConvertor {
+
+        @Override
+        public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+
+            String value = nodeConstraint.getLte();
+            if (value == null) {
+                return null;
+            }
+
+            validateNodeConstraintProperty(nodeConstraint);
+            return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
+                    QueryObjectModelConstants.JCR_OPERATOR_LESS_THAN_OR_EQUAL_TO, factory.literal(new ValueImpl(value)));
+        }
+
+        @Override
+        public String getFieldName() {
+            return GqlJcrNodeConstraintInput.LTE;
+        }
+    }
+
+    /**
+     * Constraint for "greater than or equals to" operator
+     */
+    private static class NodeConstraintConvertorGreaterThanOrEqualsTo implements NodeConstraintConvertor {
+
+        @Override
+        public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+
+            String value = nodeConstraint.getGte();
+            if (value == null) {
+                return null;
+            }
+
+            validateNodeConstraintProperty(nodeConstraint);
+            return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
+                    QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO, factory.literal(new ValueImpl(value)));
+        }
+
+        @Override
+        public String getFieldName() {
+            return GqlJcrNodeConstraintInput.GTE;
+        }
+    }
+
+    /**
+     * Constraint for "exists" operator
+     */
+    private static class NodeConstraintConvertorExists implements NodeConstraintConvertor {
+
+        @Override
+        public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+            Boolean value = nodeConstraint.getExists();
+            if(value == null) {
+                return null;
+            }
+            return factory.propertyExistence(selector, nodeConstraint.getProperty());
+        }
+
+        @Override
+        public String getFieldName() {
+            return GqlJcrNodeConstraintInput.EXISTS;
         }
     }
 

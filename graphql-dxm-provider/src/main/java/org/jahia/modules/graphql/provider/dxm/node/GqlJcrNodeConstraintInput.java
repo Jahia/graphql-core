@@ -53,33 +53,80 @@ import graphql.annotations.annotationTypes.GraphQLName;
 @GraphQLDescription("An optional part of the JCR node criteria to filter nodes, specifically by their arbitrary properties")
 public class GqlJcrNodeConstraintInput {
 
-    private String lessThenOrEqualTo;
-    private String greaterThenOrEqualTo;
+    public static String LIKE = "like";
+    public static String CONTAINS = "contains";
+    public static String EQUALS = "equals";
+    public static String NOTEQUALS = "notEquals";
+    public static String LT = "lt";
+    public static String GT = "gt";
+    public static String LTE = "lte";
+    public static String GTE = "gte";
+    public static String EXISTS = "exists";
+
+    public enum QueryFunctions{
+        @GraphQLDescription("query function for lower case comparison")
+        LOWER_CASE,
+        @GraphQLDescription("query function for upper case comparison")
+        UPPER_CASE,
+        @GraphQLDescription("query function for node name comparison")
+        NODE_NAME,
+        @GraphQLDescription("query function for node local name comparison")
+        NODE_LOCAL_NAME
+    }
+
     private String like;
     private String contains;
     private String property;
+    private QueryFunctions function;
+    private String equals;
+    private String notEquals;
+    private String lt;
+    private String gt;
+    private String lte;
+    private String gte;
+    private Boolean exists;
 
     /**
-     * Create an instance of the node constraint.
+     Create an instance of the node constraint.
      *
      * Exactly one parameter that defines the way node property values are compared/matched (such as 'like', 'contains', etc) must be non-null.
      *
      * @param like A value to compare the node property value to, using the 'like' operator
      * @param contains A search expression to match the node property value(s) against: dependent on whether the property parameter is null, either that specific property only or all node properties will be matched
      * @param property The name of the node property to compare/match; should be null when not applicable, may be null when optional, dependent on other parameter values
+     * @param function
+     * @param equals
+     * @param notEquals
+     * @param lt
+     * @param gt
+     * @param lte
+     * @param gte
+     * @param exists
      */
     public GqlJcrNodeConstraintInput(
         @GraphQLName("like") @GraphQLDescription("A value to compare the node property value to, using the 'like' operator") String like,
         @GraphQLName("contains") @GraphQLDescription("A search expression to match the node property value(s) against, either specific property only or all node properties, dependent on the 'property' parameter value passed") String contains,
-        @GraphQLName("lessThenOrEqualTo") @GraphQLDescription("A value to compare the node property value to, using the 'lessThenOrEqualTo' operator") String lessThenOrEqualTo,
-        @GraphQLName("greaterThenOrEqualTo") @GraphQLDescription("A value to compare the node property value to, using the 'greaterThenOrEqualTo' operator") String greaterThenOrEqualTo,
-        @GraphQLName("property") @GraphQLDescription("The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values") String property
+        @GraphQLName("property") @GraphQLDescription("The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values") String property,
+        @GraphQLName("function") @GraphQLDescription("The query function name for the node for comparison") QueryFunctions function,
+        @GraphQLName("equals") @GraphQLDescription("A value to compare the node property value to, using the 'equals to' operator") String equals,
+        @GraphQLName("notEquals") @GraphQLDescription("A value to compare the node property value to, using the 'not equals to' operator") String notEquals,
+        @GraphQLName("lt") @GraphQLDescription("A value to compare the node property value to, using the 'less than' operator") String lt,
+        @GraphQLName("gt") @GraphQLDescription("A value to compare the node property value to, using the 'greater than' operator") String gt,
+        @GraphQLName("lte") @GraphQLDescription("A value to compare the node property value to, using the 'less than or equals to' operator") String lte,
+        @GraphQLName("gte") @GraphQLDescription("A value to compare the node property value to, using the 'greater than or equals to' operator") String gte,
+        @GraphQLName("exists") @GraphQLDescription("A value to compare the node property value to, using the 'exists' operator") Boolean exists
     ) {
         this.like = like;
         this.contains = contains;
-        this.lessThenOrEqualTo = lessThenOrEqualTo;
-        this.greaterThenOrEqualTo = greaterThenOrEqualTo;
         this.property = property;
+        this.function = function;
+        this.equals = equals;
+        this.notEquals = notEquals;
+        this.lt = lt;
+        this.gt = gt;
+        this.lte = lte;
+        this.gte = gte;
+        this.exists = exists;
     }
 
     /**
@@ -106,30 +153,65 @@ public class GqlJcrNodeConstraintInput {
      * @return The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values
      */
     @GraphQLField
-    @GraphQLName("lessThenOrEqualTo")
-    @GraphQLDescription("A value to compare the node property value to, using the 'lessThenOrEqualTo' operator")
-    public String getLessThenOrEqualTo() {
-        return lessThenOrEqualTo;
-    }
-
-    /**
-     * @return The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values
-     */
-    @GraphQLField
-    @GraphQLName("greaterThenOrEqualTo")
-    @GraphQLDescription("A value to compare the node property value to, using the 'lessThenOrEqualTo' operator")
-    public String getGreaterThenOrEqualTo() {
-        return greaterThenOrEqualTo;
-    }
-
-    /**
-     * @return The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values
-     */
-    @GraphQLField
     @GraphQLName("property")
     @GraphQLDescription("The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values")
     public String getProperty() {
         return property;
     }
 
+    @GraphQLField
+    @GraphQLName("function")
+    @GraphQLDescription("The query function name for the node for comparison")
+    public QueryFunctions getFunction() {
+        return function;
+    }
+
+    @GraphQLField
+    @GraphQLName("equals")
+    @GraphQLDescription("A value to compare the node property value to, using the 'equals to' operator")
+    public String getEquals() {
+        return equals;
+    }
+
+    @GraphQLField
+    @GraphQLName("notEquals")
+    @GraphQLDescription("A value to compare the node property value to, using the 'not equals to' operator")
+    public String getNotEquals() {
+        return notEquals;
+    }
+
+    @GraphQLField
+    @GraphQLName("lt")
+    @GraphQLDescription("A value to compare the node property value to, using the 'less than' operator")
+    public String getLt() {
+        return lt;
+    }
+
+    @GraphQLField
+    @GraphQLName("gt")
+    @GraphQLDescription("A value to compare the node property value to, using the 'greater than' operator")
+    public String getGt() {
+        return gt;
+    }
+
+    @GraphQLField
+    @GraphQLName("lte")
+    @GraphQLDescription("A value to compare the node property value to, using the 'less than or equals to' operator")
+    public String getLte() {
+        return lte;
+    }
+
+    @GraphQLField
+    @GraphQLName("gte")
+    @GraphQLDescription("A value to compare the node property value to, using the 'greater than or equals to' operator")
+    public String getGte() {
+        return gte;
+    }
+
+    @GraphQLField
+    @GraphQLName("exists")
+    @GraphQLDescription("A value to compare the node property value to, using the 'exists' operator")
+    public Boolean getExists() {
+        return exists;
+    }
 }
