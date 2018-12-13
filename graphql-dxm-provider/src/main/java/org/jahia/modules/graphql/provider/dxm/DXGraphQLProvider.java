@@ -51,15 +51,16 @@ import graphql.annotations.processor.retrievers.GraphQLExtensionsHandler;
 import graphql.annotations.processor.retrievers.GraphQLObjectHandler;
 import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
-import graphql.language.*;
-import graphql.schema.*;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLType;
 import graphql.servlet.*;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
-import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaOperations;
-import org.jahia.modules.graphql.provider.dxm.sdl.registration.SDLRegistrationService;
+import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
 import org.osgi.service.component.annotations.*;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -71,9 +72,6 @@ import java.lang.reflect.ParameterizedType;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static graphql.schema.GraphQLObjectType.newObject;
-import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
 
 @Component(service = GraphQLProvider.class, enabled = false)
 public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider,
@@ -99,12 +97,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private GraphQLObjectType mutationType;
     private GraphQLObjectType subscriptionType;
     private DXGraphQLConfig dxGraphQLConfig;
-    private List<ObjectTypeDefinition> faultyDefinitions = new ArrayList<>();
 
     private DXRelay relay;
 
     private Map<String, Class<? extends DXConnection<?>>> connectionTypes = new HashMap<>();
-    private SDLRegistrationService sdlRegistrationService;
+    private SDLSchemaService sdlSchemaService;
 
     public static DXGraphQLProvider getInstance() {
         return instance;
@@ -124,8 +121,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     }
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
-    public void setSDLRegistrationService(SDLRegistrationService sdlRegistrationService) {
-        this.sdlRegistrationService = sdlRegistrationService;
+    public void setSDLRegistrationService(SDLSchemaService sdlSchemaService) {
+        this.sdlSchemaService = sdlSchemaService;
     }
 
     @Reference(cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY)
@@ -199,8 +196,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         }
 
         //Generate schema from user defined SDL
-        SDLSchemaOperations.generateSchema(sdlRegistrationService);
-//        processGeneratedDefinitions();
+        sdlSchemaService.generateSchema();
         specializedTypesHandler.initializeTypes();
     }
 
@@ -210,14 +206,14 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         types.add(graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNodeImpl.class, container));
         types.addAll(specializedTypesHandler.getKnownTypes().values());
-        SDLSchemaOperations.addTypes(types);
+        types.addAll(sdlSchemaService.getSDLTypes());
         return types;
     }
 
     @Override
     public Collection<GraphQLFieldDefinition> getQueries() {
         List<GraphQLFieldDefinition> defs = new ArrayList<>(queryType.getFieldDefinitions());
-        SDLSchemaOperations.addSchemaDefinitions(defs);
+        defs.addAll(sdlSchemaService.getSDLQueries());
         return defs;
     }
 

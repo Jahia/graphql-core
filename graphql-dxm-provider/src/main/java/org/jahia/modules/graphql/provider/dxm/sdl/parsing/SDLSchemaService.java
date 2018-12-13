@@ -6,22 +6,34 @@ import graphql.schema.idl.*;
 import graphql.schema.idl.errors.SchemaProblem;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.AllFinderDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.registration.SDLRegistrationService;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public class SDLSchemaOperations {
-    private static Logger logger = LoggerFactory.getLogger(SDLSchemaOperations.class);
+@Component(service = SDLSchemaService.class, immediate = true)
+public class SDLSchemaService {
+    private static Logger logger = LoggerFactory.getLogger(SDLSchemaService.class);
 
-    private static GraphQLSchema graphQLSchema;
+    private GraphQLSchema graphQLSchema;
+    private SDLRegistrationService sdlRegistrationService;
 
-    public static void generateSchema(SDLRegistrationService sdlRegistrationService) {
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
+    public void setSdlRegistrationService(SDLRegistrationService sdlRegistrationService) {
+        this.sdlRegistrationService = sdlRegistrationService;
+    }
+
+    public void generateSchema() {
         if (sdlRegistrationService != null && sdlRegistrationService.getSDLResources().size() > 0) {
             SchemaParser schemaParser = new SchemaParser();
             TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
@@ -61,7 +73,8 @@ public class SDLSchemaOperations {
         }
     }
 
-    public static void addSchemaDefinitions(List<GraphQLFieldDefinition> defs) {
+    public List<GraphQLFieldDefinition> getSDLQueries() {
+        List<GraphQLFieldDefinition> defs = new ArrayList<>();
         if (graphQLSchema != null) {
             List<GraphQLFieldDefinition> fieldDefinitions = graphQLSchema.getQueryType().getFieldDefinitions();
             for (GraphQLFieldDefinition fieldDefinition : fieldDefinitions) {
@@ -77,9 +90,11 @@ public class SDLSchemaOperations {
                 defs.add(sdlDef);
             }
         }
+        return defs;
     }
 
-    public static void addTypes(List<GraphQLType> types) {
+    public List<GraphQLType> getSDLTypes() {
+        List<GraphQLType> types = new ArrayList<>();
         if (graphQLSchema != null) {
             List<String> reservedType = Arrays.asList("Query","Mutation","Subscription");
             for (Map.Entry<String, GraphQLType> gqlTypeEntry : graphQLSchema.getTypeMap().entrySet()) {
@@ -88,5 +103,10 @@ public class SDLSchemaOperations {
                 }
             }
         }
+        return types;
+    }
+
+    public GraphQLSchema getGraphQLSchema() {
+        return graphQLSchema;
     }
 }
