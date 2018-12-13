@@ -78,6 +78,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeConstraintInput.QueryFunctions.NODE_LOCAL_NAME;
+import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeConstraintInput.QueryFunctions.NODE_NAME;
 import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLanguage.SQL2;
 
 /**
@@ -353,23 +355,24 @@ public class GqlJcrQuery {
             constraints.add(constraint);
         }
 
-        // Add node constraint if any.
-        List<GqlJcrNodeConstraintInput> constraintInputList = new ArrayList<>();
-        constraintInputList.add(criteria.getNodeConstraint());
-        if(extraAllConstraintInputs!=null) constraintInputList.addAll(extraAllConstraintInputs);
-        constraintInputList.forEach( nodeConstraintInput -> constraints.add(convertToConstraint(selector, nodeConstraintInput, factory)) );
-
         // Build the result.
         if (constraints.isEmpty()) {
             return null;
         } else {
+            // apply and constraints for mandatory and All.
+            List<GqlJcrNodeConstraintInput> constraintInputList = new ArrayList<>();
+            constraintInputList.add(criteria.getNodeConstraint());
+            if(extraAllConstraintInputs!=null && !extraAllConstraintInputs.isEmpty()){
+                constraintInputList.addAll(extraAllConstraintInputs);
+            }
+            constraintInputList.forEach( nodeConstraintInput -> constraints.add(convertToConstraint(selector, nodeConstraintInput, factory)) );
             Iterator<Constraint> constraintIt = constraints.iterator();
             Constraint result = constraintIt.next();
             while (constraintIt.hasNext()) {
                 result = factory.and(result, constraintIt.next());
             }
 
-            //apply any constraints
+            //apply Any constraints
             if(extraAnyConstraintInputs!=null && !extraAnyConstraintInputs.isEmpty()){
                 extraAnyConstraintInputs.forEach( nodeConstraintInput -> extraAnyConstraints.add(convertToConstraint(selector, nodeConstraintInput, factory)) );
                 constraintIt = extraAnyConstraints.iterator();
@@ -380,7 +383,7 @@ public class GqlJcrQuery {
                 result = factory.and(result, anyResult);
             }
 
-            //apply none constraints
+            //apply None constraints
             if(extraNoneConstraintInputs!=null && !extraNoneConstraintInputs.isEmpty()){
                 extraNoneConstraintInputs.forEach( nodeConstraintInput -> extraNoneConstraints.add(convertToConstraint(selector, nodeConstraintInput, factory)) );
                 constraintIt = extraNoneConstraints.iterator();
@@ -473,7 +476,8 @@ public class GqlJcrQuery {
     }
 
     private static void validateNodeConstraintProperty(GqlJcrNodeConstraintInput nodeConstraint) {
-        if (nodeConstraint.getProperty() == null) {
+        if (nodeConstraint.getProperty() == null && !nodeConstraint.getFunction().equals(NODE_NAME)
+                && !nodeConstraint.getFunction().equals(NODE_LOCAL_NAME)) {
             throw new GqlJcrWrongInputException("'property' field is required");
         }
     }
@@ -488,14 +492,14 @@ public class GqlJcrQuery {
      * Apply constraint function to target property value
      *
      * @param nodeConstraint
-     * @param value
+     * @param selector
      * @param factory
      * @return
      * @throws RepositoryException
      */
-    private static DynamicOperand applyConstraintFunctions(GqlJcrNodeConstraintInput nodeConstraint, PropertyValue value, QueryObjectModelFactory factory)
+    private static DynamicOperand applyConstraintFunctions(GqlJcrNodeConstraintInput nodeConstraint, String selector, QueryObjectModelFactory factory)
             throws RepositoryException{
-
+            PropertyValue value = nodeConstraint.getProperty() != null ?  factory.propertyValue(selector, nodeConstraint.getProperty()) : null;
             if(nodeConstraint.getFunction()==null) return value;
 
             switch (nodeConstraint.getFunction()){
@@ -503,6 +507,10 @@ public class GqlJcrQuery {
                     return factory.lowerCase(value);
                 case UPPER_CASE:
                     return factory.upperCase(value);
+                case NODE_NAME:
+                    return factory.nodeName(selector);
+                case NODE_LOCAL_NAME:
+                    return factory.nodeLocalName(selector);
                 default: return value;
             }
 
@@ -522,7 +530,7 @@ public class GqlJcrQuery {
             }
 
             validateNodeConstraintProperty(nodeConstraint);
-            return factory.comparison(applyConstraintFunctions(nodeConstraint, factory.propertyValue(selector, nodeConstraint.getProperty()), factory),
+            return factory.comparison(applyConstraintFunctions(nodeConstraint, selector, factory),
                                 QueryObjectModelConstants.JCR_OPERATOR_LIKE, factory.literal(new ValueImpl(value)));
         }
 
@@ -568,7 +576,7 @@ public class GqlJcrQuery {
             }
 
             validateNodeConstraintProperty(nodeConstraint);
-            return factory.comparison(applyConstraintFunctions(nodeConstraint, factory.propertyValue(selector, nodeConstraint.getProperty()), factory),
+            return factory.comparison(applyConstraintFunctions(nodeConstraint, selector, factory),
                     QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO, factory.literal(new ValueImpl(value)));
         }
 
@@ -592,7 +600,7 @@ public class GqlJcrQuery {
             }
 
             validateNodeConstraintProperty(nodeConstraint);
-            return factory.comparison(applyConstraintFunctions(nodeConstraint, factory.propertyValue(selector, nodeConstraint.getProperty()), factory),
+            return factory.comparison(applyConstraintFunctions(nodeConstraint, selector, factory),
                     QueryObjectModelConstants.JCR_OPERATOR_NOT_EQUAL_TO, factory.literal(new ValueImpl(value)));
         }
 
@@ -709,7 +717,8 @@ public class GqlJcrQuery {
             if(value == null) {
                 return null;
             }
-            return factory.propertyExistence(selector, nodeConstraint.getProperty());
+            Constraint constraint = factory.propertyExistence(selector, nodeConstraint.getProperty());
+            return value ? constraint : factory.not(constraint);
         }
 
         @Override
