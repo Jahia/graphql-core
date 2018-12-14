@@ -58,7 +58,7 @@ public class SDLSchemaService {
                 }
             }
 
-            SDLJCRTypeChecker.removeNonExistentJCRTypes(typeDefinitionRegistry);
+            SDLJCRTypeChecker.checkForConsistencyWithJCR(typeDefinitionRegistry);
             SchemaGenerator schemaGenerator = new SchemaGenerator();
 
             try {
