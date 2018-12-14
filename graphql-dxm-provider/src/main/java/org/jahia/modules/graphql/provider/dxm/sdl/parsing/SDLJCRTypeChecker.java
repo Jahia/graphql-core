@@ -79,13 +79,13 @@ public class SDLJCRTypeChecker {
             if (typeDefinitionRegistry.getType(removedType).isPresent()) {
                 ObjectTypeDefinition def = (ObjectTypeDefinition) typeDefinitionRegistry.getType(removedType).get();
                 typeDefinitionRegistry.remove(typeDefinitionRegistry.getType(removedType).get());
-                typeDefinitionRegistry.add(new CustomTypeDefinition(def, "No JCR type was found for this type. Fix SDL and redeploy your module."));
+                typeDefinitionRegistry.add(new CustomTypeDefinition(def, statuses.get(def.getName()).toString()));
                 List<FieldDefinition> fieldDefinitions = typeDefinitionRegistry.objectTypeExtensions().get("Query").get(0).getFieldDefinitions();
                 fieldDefinitions.removeIf(fd -> {
                     if (fd.getType() instanceof ListType) {
                         return ((TypeName) ((ListType) fd.getType()).getType()).getName().equals(removedType);
                     }
-                    //TODO handle other types
+                    //TODO handle other types if applicable
                     return false;
                 });
             }
