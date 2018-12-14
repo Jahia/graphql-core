@@ -53,6 +53,7 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.util.DefaultConstraintHelper;
 import org.jahia.services.content.*;
 import org.jahia.services.content.nodetypes.ValueImpl;
 import org.jahia.services.query.QueryWrapper;
@@ -346,7 +347,12 @@ public class GqlJcrQuery {
             }
             constraints.add(constraint);
         }
-
+        //Build default properties constraint
+        Constraint result = null;
+        if (criteria.getNodeConstraint().getContains() != null) {
+            DefaultConstraintHelper defaultConstraintHelper = new DefaultConstraintHelper(factory, selector);
+            result = defaultConstraintHelper.buildDefaultPropertiesConstraint(criteria.getNodeConstraint().getContains());
+        }
         // Build the result.
         if (constraints.isEmpty()) {
             return null;
@@ -357,9 +363,13 @@ public class GqlJcrQuery {
             if(extraAllConstraintInputs!=null && !extraAllConstraintInputs.isEmpty()){
                 constraintInputList.addAll(extraAllConstraintInputs);
             }
-            constraintInputList.forEach( nodeConstraintInput -> constraints.add(convertToConstraint(selector, nodeConstraintInput, factory)) );
+            constraintInputList.forEach( nodeConstraintInput -> {
+                if ((nodeConstraintInput.getContains() != null && nodeConstraintInput.getProperty() == null)) {
+                    return;
+                }
+                constraints.add(convertToConstraint(selector, nodeConstraintInput, factory));
+            });
             Iterator<Constraint> constraintIt = constraints.iterator();
-            Constraint result = constraintIt.next();
             while (constraintIt.hasNext()) {
                 result = factory.and(result, constraintIt.next());
             }
