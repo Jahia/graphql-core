@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,6 +22,20 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
     private final Map<String, URL> sdlResources = new ConcurrentHashMap<>();
     private BundleContext bundleContext;
     private ComponentContext componentContext;
+
+    private static Map<Integer,String> status = new HashMap<>();
+
+    static {
+        status.put(BundleEvent.INSTALLED,"installed");
+        status.put(BundleEvent.UNINSTALLED,"uninstalled");
+        status.put(BundleEvent.RESOLVED,"resolved");
+        status.put(BundleEvent.UNRESOLVED,"unresolved");
+        status.put(BundleEvent.STARTED,"started");
+        status.put(BundleEvent.STARTING,"starting");
+        status.put(BundleEvent.STOPPED,"stopped");
+        status.put(BundleEvent.STOPPING,"started");
+        status.put(BundleEvent.UPDATED,"updated");
+    }
 
     @Activate
     public void activate(ComponentContext componentContext, BundleContext bundleContext) {
@@ -47,8 +62,11 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
     public void bundleChanged(BundleEvent event) {
         Bundle bundle = event.getBundle();
         if (checkForSDLResourceInBundle(bundle)) {
-            componentContext.disableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
-            componentContext.enableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
+            logger.debug("received event {} for bundle {} ",new Object[]{status.get(event.getType()),event.getBundle().getSymbolicName()});
+            if(event.getType() == BundleEvent.STARTED || event.getType() == BundleEvent.STOPPED) {
+                componentContext.disableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
+                componentContext.enableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
+            }
         }
     }
 
@@ -56,8 +74,9 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         if (BundleUtils.isJahiaBundle(bundle)) {
             URL url = bundle.getResource("META-INF/graphql-extension.sdl");
             if(url != null){
-                logger.debug("get bundle schema " + url.getPath());
-                return registerSDLResource(bundle.getState(), bundle.getSymbolicName(), url);
+                logger.debug("get bundle schema {}",new Object[]{url.getPath()});
+                registerSDLResource(bundle.getState(), bundle.getSymbolicName(), url);
+                return true;
             }
         }
         return false;
@@ -69,21 +88,22 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
      * @param bundleName - Name of the bundle
      * @param sdlResource - URL resource pointing to SDL file (graphql-extension.sdl) in bundle
      */
-    private boolean registerSDLResource(int bundleEventType, String bundleName , final URL sdlResource){
+    private void registerSDLResource(int bundleEventType, String bundleName , final URL sdlResource){
         switch (bundleEventType) {
             case BundleEvent.STOPPED:
             case BundleEvent.STOPPING:
             case BundleEvent.UNINSTALLED:
             case BundleEvent.UNRESOLVED:
-                logger.debug("remove type registry for " + bundleName);
-                sdlResources.remove(bundleName);
-                return true;
+                if(sdlResources.containsKey(bundleName)) {
+                    logger.debug("remove type registry for " + bundleName);
+                    sdlResources.remove(bundleName);
+                }
             case BundleEvent.RESOLVED:
             case BundleEvent.STARTED:
-                logger.debug("add new type registry for " + bundleName);
-                sdlResources.put(bundleName, sdlResource);
-                return true;
-            default: return false;
+                if(!sdlResources.containsKey(bundleName)) {
+                    logger.debug("add new type registry for " + bundleName);
+                    sdlResources.put(bundleName, sdlResource);
+                }
         }
     }
 }

@@ -103,7 +103,7 @@ public class SpecializedTypesHandler {
         } else {
             specializedTypesClass.put(nodeType, clazz);
         }
-        logger.info("Registered specialized type {} handled by class {}", nodeType, clazz);
+        logger.debug("Registered specialized type {} handled by class {}", nodeType, clazz);
     }
 
     public Map<String, GraphQLObjectType> getKnownTypes() {

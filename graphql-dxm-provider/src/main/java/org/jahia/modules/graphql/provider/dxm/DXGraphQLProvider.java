@@ -169,9 +169,9 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
                 extensionsHandler.registerTypeExtension(aClass, container);
                 if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
-                    logger.info("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
+                    logger.debug("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
                 } else {
-                    logger.info("Registered type extension {}", aClass);
+                    logger.debug("Registered type extension {}", aClass);
                 }
             }
             for (Class<? extends GqlJcrNode> aClass : extensionsProvider.getSpecializedTypes()) {
@@ -191,7 +191,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
                 extensionsHandler.registerTypeExtension(aClass, container);
-                logger.info("Registered type extension {}", aClass);
+                logger.debug("Registered type extension {}", aClass);
             }
         }
 
