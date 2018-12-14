@@ -62,6 +62,7 @@ public class GqlJcrNodeConstraintInput {
     public static String LTE = "lte";
     public static String GTE = "gte";
     public static String EXISTS = "exists";
+    public static String LASTDAYS = "lastDays";
 
     public enum QueryFunctions{
         @GraphQLDescription("query function for lower case comparison")
@@ -85,6 +86,7 @@ public class GqlJcrNodeConstraintInput {
     private String lte;
     private String gte;
     private Boolean exists;
+    private Integer lastDays;
 
     /**
      Create an instance of the node constraint.
@@ -114,7 +116,8 @@ public class GqlJcrNodeConstraintInput {
         @GraphQLName("gt") @GraphQLDescription("A value to compare the node property value to, using the 'greater than' operator") String gt,
         @GraphQLName("lte") @GraphQLDescription("A value to compare the node property value to, using the 'less than or equals to' operator") String lte,
         @GraphQLName("gte") @GraphQLDescription("A value to compare the node property value to, using the 'greater than or equals to' operator") String gte,
-        @GraphQLName("exists") @GraphQLDescription("A value to compare the node property value to, using the 'exists' operator") Boolean exists
+        @GraphQLName("exists") @GraphQLDescription("A value to compare the node property value to, using the 'exists' operator") Boolean exists,
+        @GraphQLName("lastDays") @GraphQLDescription("A value to compare the node property value to, using the 'exists' operator") Integer lastDays
     ) {
         this.like = like;
         this.contains = contains;
@@ -127,6 +130,7 @@ public class GqlJcrNodeConstraintInput {
         this.lte = lte;
         this.gte = gte;
         this.exists = exists;
+        this.lastDays = lastDays;
     }
 
     /**
@@ -213,5 +217,12 @@ public class GqlJcrNodeConstraintInput {
     @GraphQLDescription("A value to compare the node property value to, using the 'exists' operator")
     public Boolean getExists() {
         return exists;
+    }
+
+    @GraphQLField
+    @GraphQLName("lastDays")
+    @GraphQLDescription("A value to pick the last days for node property date value, using the 'lastDays' operator")
+    public Integer getLastDays() {
+        return lastDays;
     }
 }

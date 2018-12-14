@@ -43,20 +43,14 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.iterators.IteratorChain;
 import org.apache.commons.lang.LocaleUtils;
+import org.apache.commons.lang.time.DateUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.predicate.CriteriaSearchInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
-import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.services.content.*;
@@ -65,21 +59,18 @@ import org.jahia.services.query.QueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.qom.*;
-import java.lang.reflect.Array;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeConstraintInput.QueryFunctions.NODE_LOCAL_NAME;
-import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeConstraintInput.QueryFunctions.NODE_NAME;
+import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeConstraintInput.QueryFunctions.*;
 import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLanguage.SQL2;
 
 /**
@@ -100,7 +91,8 @@ public class GqlJcrQuery {
         new NodeConstraintConvertorGreaterThanOrEqualsTo(),
         new NodeConstraintConvertorLessThan(),
         new NodeConstraintConvertorLessThanOrEqualsTo(),
-        new NodeConstraintConvertorExists()
+        new NodeConstraintConvertorExists(),
+        new NodeConstraintConvertorLastDays()
     };
 
     private NodeQueryExtensions.Workspace workspace;
@@ -727,6 +719,33 @@ public class GqlJcrQuery {
         }
     }
 
+    /**
+     * Constraint for "lastDays" operator
+     */
+    private static class NodeConstraintConvertorLastDays implements NodeConstraintConvertor {
+
+        @Override
+        public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+            Integer value = nodeConstraint.getLastDays();
+            if(value == null) {
+                return null;
+            }
+
+            validateNodeConstraintProperty(nodeConstraint);
+            Date targetDate = DateUtils.addDays(new Date(), - value);
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSXXX");
+
+            return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
+                                        QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO,
+                                        factory.literal(new ValueImpl(dateFormat.format(targetDate))));
+        }
+
+        @Override
+        public String getFieldName() {
+            return GqlJcrNodeConstraintInput.LASTDAYS;
+        }
+    }
+
     public static class QueryLanguageDefaultValue implements Supplier<Object> {
 
         @Override
@@ -734,4 +753,5 @@ public class GqlJcrQuery {
             return SQL2;
         }
     }
+
 }
