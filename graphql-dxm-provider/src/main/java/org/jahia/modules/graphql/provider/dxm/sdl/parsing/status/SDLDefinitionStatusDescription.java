@@ -1,7 +1,5 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.parsing.status;
 
-import static org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatusTypes.*;
-
 public class SDLDefinitionStatusDescription {
     private String field;
     private String message;
@@ -29,9 +27,9 @@ public class SDLDefinitionStatusDescription {
 
     public void setMessage(SDLDefinitionStatusTypes statusType) {
         switch (statusType) {
-            case MISSING_JCRNODETYPE: this.message = "node type was not found";
+            case MISSING_JCR_NODE_TYPE: this.message = "node type was not found";
                 break;
-            case MISSING_JCRPROPERTY: this.message = "property is missing from node type";
+            case MISSING_JCR_PROPERTY: this.message = "property is missing from node type";
                 break;
             default: this.message = "OK";
         }

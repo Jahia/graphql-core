@@ -41,8 +41,7 @@ public class SDLSchemaService {
             typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
                     .name("mapping")
                     .directiveLocations(Arrays.asList(DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
-                            DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build(),
-                            DirectiveLocation.newDirectiveLocation().name("INTERFACE").build()))
+                            DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
                     .inputValueDefinitions(Arrays.asList(
                             InputValueDefinition.newInputValueDefinition().name("node").type(TypeName.newTypeName("String").build()).build(),
                             InputValueDefinition.newInputValueDefinition().name("property").type(TypeName.newTypeName("String").build()).build()))

@@ -2,6 +2,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.parsing;
 
 import graphql.language.*;
 import graphql.schema.idl.TypeDefinitionRegistry;
+import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatusDescription;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatusTypes;
@@ -42,14 +43,17 @@ public class SDLJCRTypeChecker {
                     String jcrNodeType = ((StringValue)directive.getArgument("node").getValue()).getValue();
                     if (!NodeTypeRegistry.getInstance().hasNodeType(jcrNodeType)) {
                         toremove.add(entry.getKey());
-                        status.setStatusType(SDLDefinitionStatusTypes.MISSING_JCRNODETYPE);
+                        status.setStatusType(SDLDefinitionStatusTypes.MISSING_JCR_NODE_TYPE);
                         status.setStatusDescription(new SDLDefinitionStatusDescription(jcrNodeType));
                     }
                     else {
                         try {
                             ExtendedNodeType jcrNode = NodeTypeRegistry.getInstance().getNodeType(jcrNodeType);
-                            status.setMappedTypeModuleId(jcrNode.getTemplatePackage().getBundle().getSymbolicName());
-                            status.setMappedTypeModuleName(jcrNode.getTemplatePackage().getName());
+                            JahiaTemplatesPackage jahiaTemplatesPackage = jcrNode.getTemplatePackage();
+                            if (jahiaTemplatesPackage != null) {
+                                status.setMappedTypeModuleId(jahiaTemplatesPackage.getBundle().getSymbolicName());
+                                status.setMappedTypeModuleName(jahiaTemplatesPackage.getName());
+                            }
                             status.setMapsToType(jcrNodeType);
 
                             //Check field directives and make sure all properties can be found on the jcr node type
@@ -60,7 +64,7 @@ public class SDLJCRTypeChecker {
                                         String jcrProperty = ((StringValue)fieldDirective.getArgument("property").getValue()).getValue();
                                             if (jcrNode.getPropertyDefinition(jcrProperty) == null) {
                                                 toremove.add(entry.getKey());
-                                                status.setStatusType(SDLDefinitionStatusTypes.MISSING_JCRPROPERTY);
+                                                status.setStatusType(SDLDefinitionStatusTypes.MISSING_JCR_PROPERTY);
                                                 status.setStatusDescription(new SDLDefinitionStatusDescription(jcrProperty));
                                                 break;
                                             }
