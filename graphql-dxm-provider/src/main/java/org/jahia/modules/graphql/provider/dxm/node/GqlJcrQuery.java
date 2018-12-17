@@ -364,7 +364,7 @@ public class GqlJcrQuery {
                 constraintInputList.addAll(extraAllConstraintInputs);
             }
             constraintInputList.forEach( nodeConstraintInput -> {
-                if ((nodeConstraintInput.getContains() != null && nodeConstraintInput.getProperty() == null)) {
+                if ((nodeConstraintInput == null || (nodeConstraintInput.getContains() != null && nodeConstraintInput.getProperty() == null))) {
                     return;
                 }
                 constraints.add(convertToConstraint(selector, nodeConstraintInput, factory));
