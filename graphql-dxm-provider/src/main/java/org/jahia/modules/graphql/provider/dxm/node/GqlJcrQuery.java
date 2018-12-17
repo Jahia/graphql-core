@@ -349,7 +349,7 @@ public class GqlJcrQuery {
         }
         //Build default properties constraint
         Constraint result = null;
-        if (criteria.getNodeConstraint().getContains() != null) {
+        if (criteria.getNodeConstraint() != null && criteria.getNodeConstraint().getContains() != null) {
             DefaultConstraintHelper defaultConstraintHelper = new DefaultConstraintHelper(factory, selector);
             result = defaultConstraintHelper.buildDefaultPropertiesConstraint(criteria.getNodeConstraint().getContains());
         }
