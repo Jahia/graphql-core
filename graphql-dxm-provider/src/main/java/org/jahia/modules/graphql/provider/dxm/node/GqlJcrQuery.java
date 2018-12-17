@@ -371,7 +371,7 @@ public class GqlJcrQuery {
             });
             Iterator<Constraint> constraintIt = constraints.iterator();
             while (constraintIt.hasNext()) {
-                result = factory.and(result, constraintIt.next());
+                result = result != null ? factory.and(result, constraintIt.next()) : constraintIt.next();
             }
 
             //apply Any constraints
