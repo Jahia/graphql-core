@@ -5,6 +5,7 @@ import graphql.schema.*;
 import graphql.schema.idl.*;
 import graphql.schema.idl.errors.SchemaProblem;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.AllFinderDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLSchemaInfo;
 import org.jahia.modules.graphql.provider.dxm.sdl.registration.SDLRegistrationService;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -16,10 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component(service = SDLSchemaService.class, immediate = true)
 public class SDLSchemaService {
@@ -27,6 +25,7 @@ public class SDLSchemaService {
 
     private GraphQLSchema graphQLSchema;
     private SDLRegistrationService sdlRegistrationService;
+    private LinkedHashMap<String, SDLSchemaInfo> bundlesSDLSchemaStatus = new LinkedHashMap<>();
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
     public void setSdlRegistrationService(SDLRegistrationService sdlRegistrationService) {
@@ -36,27 +35,20 @@ public class SDLSchemaService {
     public void generateSchema() {
         if (sdlRegistrationService != null && sdlRegistrationService.getSDLResources().size() > 0) {
             SchemaParser schemaParser = new SchemaParser();
-            TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
-            typeDefinitionRegistry.add(new ObjectTypeDefinition("Query"));
-            typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
-                    .name("mapping")
-                    .directiveLocations(Arrays.asList(DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
-                            DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
-                    .inputValueDefinitions(Arrays.asList(
-                            InputValueDefinition.newInputValueDefinition().name("node").type(TypeName.newTypeName("String").build()).build(),
-                            InputValueDefinition.newInputValueDefinition().name("property").type(TypeName.newTypeName("String").build()).build()))
-                    .build());
-
+            TypeDefinitionRegistry typeDefinitionRegistry = prepareTypeRegistryDefinition();
             for (Map.Entry<String, URL> entry : sdlRegistrationService.getSDLResources().entrySet()) {
+                String sdlResourceName = entry.getKey();
                 try {
-                    typeDefinitionRegistry.merge(schemaParser.parse(new InputStreamReader(entry.getValue().openStream())));
+                    TypeDefinitionRegistry parsedRegistry = schemaParser.parse(new InputStreamReader(entry.getValue().openStream()));
+                    typeDefinitionRegistry.merge(parsedRegistry);
+                    bundlesSDLSchemaStatus.put(sdlResourceName, new SDLSchemaInfo(sdlResourceName));
                 } catch (IOException ex) {
                     logger.error("Failed to read sdl resource.", ex);
                 } catch (SchemaProblem ex) {
-                    logger.warn("Failed to merge schema from bundle [" + entry.getKey() + "]:", ex.getMessage());
+                    logger.warn("Failed to merge schema from bundle [" + sdlResourceName + "]: " + ex.getMessage());
+                    bundlesSDLSchemaStatus.put(sdlResourceName, bundlesSDLSchemaStatus.put(sdlResourceName, new SDLSchemaInfo(sdlResourceName, SDLSchemaInfo.SDLSchemaStatus.SYNTAX_ERROR, ex.getMessage())));
                 }
             }
-
             SDLJCRTypeChecker.checkForConsistencyWithJCR(typeDefinitionRegistry);
             SchemaGenerator schemaGenerator = new SchemaGenerator();
 
@@ -91,6 +83,20 @@ public class SDLSchemaService {
         }
         return defs;
     }
+
+    private TypeDefinitionRegistry prepareTypeRegistryDefinition() {
+        TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
+        typeDefinitionRegistry.add(new ObjectTypeDefinition("Query"));
+        typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
+                .name("mapping")
+                .directiveLocations(Arrays.asList(DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
+                        DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
+                .inputValueDefinitions(Arrays.asList(
+                        InputValueDefinition.newInputValueDefinition().name("node").type(TypeName.newTypeName("String").build()).build(),
+                        InputValueDefinition.newInputValueDefinition().name("property").type(TypeName.newTypeName("String").build()).build()))
+                .build());
+        return typeDefinitionRegistry;
+    };
 
     public List<GraphQLType> getSDLTypes() {
         List<GraphQLType> types = new ArrayList<>();
