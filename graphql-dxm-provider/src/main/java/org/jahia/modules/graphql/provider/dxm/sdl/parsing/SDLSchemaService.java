@@ -59,7 +59,7 @@ public class SDLSchemaService {
                         SDLRuntimeWiring.runtimeWiring(new SDLDirectiveWiring())
                 );
             } catch (Exception e) {
-                logger.error("Failed to generate GraphQL schema from merged sdl resources.", e);
+                logger.warn("Invalid type definition(s) detected during schema generation: " + e.getMessage());
             }
         }
     }
