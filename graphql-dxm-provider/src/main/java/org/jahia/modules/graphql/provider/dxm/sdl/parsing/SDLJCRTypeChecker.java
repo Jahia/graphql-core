@@ -95,6 +95,15 @@ public class SDLJCRTypeChecker {
             }
         }
 
+        //Verify that types which are being extended exist, remove those extensions that do not extend an existing type
+        HashMap<String, ObjectTypeDefinition> types = (HashMap<String, ObjectTypeDefinition>) typeDefinitionRegistry.getTypesMap(ObjectTypeDefinition.class);
+        for (Map.Entry<String, List<ObjectTypeExtensionDefinition>> entry : typeDefinitionRegistry.objectTypeExtensions().entrySet()) {
+            if (!types.containsKey(entry.getKey())) {
+                    typeDefinitionRegistry.remove(entry.getValue().get(0));
+                logger.warn("Extension of type [" + entry.getKey() + "]" + " does not exist... removing from type registry.");
+            }
+        }
+
         printStatuses(statuses);
 
         return statuses;
