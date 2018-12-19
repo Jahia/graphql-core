@@ -43,9 +43,14 @@
  */
 package org.jahia.test.graphql;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.commons.lang.time.DateUtils;
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
@@ -61,20 +66,26 @@ import org.junit.Test;
  */
 public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
-    private static final String NONE_OR_MULTIPLE_NODE_COMPARISONS_ERROR = "Exactly one contraint field expected, either 'like' or 'contains'";
+    private static final String NONE_OR_MULTIPLE_NODE_COMPARISONS_ERROR = "Exactly one contraint field expected, either 'like', 'contains', 'equals', 'notEquals', 'gt', 'gte', 'lt', 'lte', 'exists' or 'lastDays'";
 
-    private static String nodeUuid;
-    private static String subNodeUuid1;
-    private static String subNodeUuid2;
-    private static String subNodeUuid3;
-    private static String subNodeUuid4;
-    private static String subNodeUuid41;
-    private static String subNodeUuid42;
-    private static String subNodeUuid43;
+    private static String nodeUuid = null;
+    private static String subNodeUuid1 = null;
+    private static String subNodeUuid2 = null;
+    private static String subNodeUuid3 = null;
+    private static String subNodeUuid4 = null;
+    private static String subNodeUuid41 = null;
+    private static String subNodeUuid42 = null;
+    private static String subNodeUuid43 = null;
 
     private static String subnodeTitleEn1 = "text EN - subList1";
+    private static String subnodeTitleEn2 = "text EN - subList2";
     private static String subnodeTitleFr1 = "text FR - subList1";
     private static String subnodeTitleFr2 = "text FR - subList2";
+
+    private static Date subnode1Published = new Date();
+    private static Date subnode2Published = DateUtils.addDays(new Date(), -2);
+    private static Date subnode3Published = DateUtils.addDays(new Date(), -4);
+    private static Date subnode4Published = DateUtils.addDays(new Date(), -6);
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
@@ -83,33 +94,50 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
 
-            JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
-            nodeUuid = node.getIdentifier();
+            try{
+                JCRNodeWrapper node = session.getRootNode().addNode("testList", "jnt:contentList");
+                nodeUuid = node.getIdentifier();
 
-            JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
-            subNode1.addMixin("jmix:liveProperties");
-            subNode1.setProperty("jcr:title", subnodeTitleEn1);
-            subNode1.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
-            subNodeUuid1 = subNode1.getIdentifier();
+                JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
+                subNode1.addMixin("jmix:liveProperties");
+                subNode1.setProperty("jcr:title", subnodeTitleEn1);
+                subNode1.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
+                subNode1.setProperty("j:nodename", "sharedpropvalue");
+                Calendar calendar1 = Calendar.getInstance();
+                calendar1.setTime(subnode1Published);
+                subNode1.setProperty("j:lastPublished", calendar1);
+                subNodeUuid1 = subNode1.getIdentifier();
 
-            JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
-            subNodeUuid2 = subNode2.getIdentifier();
+                JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
+                subNode2.setProperty("jcr:title", subnodeTitleEn2);
+                Calendar calendar2 = Calendar.getInstance();
+                calendar2.setTime(subnode2Published);
+                subNode2.setProperty("j:lastPublished", calendar2);
+                subNodeUuid2 = subNode2.getIdentifier();
 
-            JCRNodeWrapper subNode3 = node.addNode("testSubList3", "jnt:contentList");
-            subNodeUuid3 = subNode3.getIdentifier();
+                JCRNodeWrapper subNode3 = node.addNode("testSubList3", "jnt:contentList");
+                Calendar calendar3 = Calendar.getInstance();
+                calendar3.setTime(subnode3Published);
+                subNode3.setProperty("j:lastPublished", calendar3);
+                subNodeUuid3 = subNode3.getIdentifier();
 
-            JCRNodeWrapper subNode4 = node.addNode("testSubList4", "jnt:contentList");
-            subNodeUuid4 = subNode4.getIdentifier();
-            subNodeUuid41 = subNode4.addNode("testSubList4_1", "jnt:contentList").getIdentifier();
-            subNodeUuid42 = subNode4.addNode("testSubList4_2", "jnt:contentList").getIdentifier();
-            subNodeUuid43 = subNode4.addNode("testSubList4_3", "jnt:contentList").getIdentifier();
+                JCRNodeWrapper subNode4 = node.addNode("testSubList4", "jnt:contentList");
+                Calendar calendar4 = Calendar.getInstance();
+                calendar4.setTime(subnode4Published);
+                subNode4.setProperty("j:lastPublished", calendar4);
+                subNodeUuid4 = subNode4.getIdentifier();
+                subNodeUuid41 = subNode4.addNode("testSubList4_1", "jnt:contentList").getIdentifier();
+                subNodeUuid42 = subNode4.addNode("testSubList4_2", "jnt:contentList").getIdentifier();
+                subNodeUuid43 = subNode4.addNode("testSubList4_3", "jnt:contentList").getIdentifier();
 
-
-            session.save();
+                session.save();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
             return null;
         });
 
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRENCH, session -> {
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRANCE, session -> {
             JCRNodeWrapper node = session.getNode("/testList");
             node.getNode("testSubList1").setProperty("jcr:title", subnodeTitleFr1);
             node.getNode("testSubList2").setProperty("jcr:title", subnodeTitleFr2);
@@ -128,7 +156,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {paths: [\"/testList\"], nodeType: \"jnt:content\"}) {"
+                + "        nodesByCriteria(criteria: {language: \"en\", paths: [\"/testList\"], nodeType: \"jnt:content\"}) {"
                 + "            nodes {"
                 + "                uuid"
                 + "                name"
@@ -214,7 +242,9 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"fr\", nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST2\"}}) {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "               nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST1\"}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"
@@ -226,7 +256,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
 
         Assert.assertEquals(1, nodeByName.size());
-        validateNode(nodeByName.get("testSubList2"), "testSubList2");
+        validateNode(nodeByName.get("testSubList1"), "testSubList1");
     }
 
     @Test
@@ -234,7 +264,9 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", nodeConstraint: {contains: \"SUBLIST1\"}}) {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "            nodeConstraint: {contains: \"SUBLIST1\"}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"
@@ -254,7 +286,82 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "               nodeConstraint: {property: \"jcr:title\", like: \"%subList%\"}}) {"
+                + "            nodes {"
+                + "                 name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(2, nodeByName.size());
+        validateNode(nodeByName.get("testSubList1"), "testSubList1");
+        validateNode(nodeByName.get("testSubList2"), "testSubList2");
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    @Test
+    public void shouldRetrieveNodeByDefaultConstraint() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"fr\", nodeConstraint: {property: \"jcr:title\", like: \"%subList2%\"}}) {"
+                + "            nodes {"
+                + "                 name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+    }
+    /**
+     * test case for 'equals to' constraints comparison
+     *
+     * @throws Exception
+     */
+    @Test
+    public void shouldRetrieveNodeByEqualsExpression() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: ANCESTOR, "
+                + "             nodeConstraint: {property: \"jcr:title\", equals: \"" + subnodeTitleEn1 + "\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(1, nodeByName.size());
+        validateNode(nodeByName.get("testSubList1"), "testSubList1");
+
+    }
+
+    /**
+     * test case for 'not equals to' constraints comparison
+     *
+     * @throws Exception
+     */
+    @Test
+    public void shouldRetrieveNodeByNotEqualsExpression() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: ANCESTOR, "
+                + "            nodeConstraint: {property: \"jcr:title\", notEquals: \"" + subnodeTitleEn1 + "\"}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"
@@ -267,14 +374,21 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         Assert.assertEquals(1, nodeByName.size());
         validateNode(nodeByName.get("testSubList2"), "testSubList2");
+
     }
 
+    /**
+     * test case for 'less than' constraints comparison
+     *
+     * @throws Exception
+     */
     @Test
-    public void shouldGetErrorNotRetrieveNodesByLikeExpressionWhenPropertyIsEmpty() throws Exception {
-
+    public void shouldRetrieveNodeByLessThanExpression() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", nodeConstraint: {like: \"%subList1%\"}}) {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "           nodeConstraint: {property: \"j:lastPublished\", lt: \"" + datetimeToString(subnode2Published) + "\"}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"
@@ -282,7 +396,201 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "    }"
                 + "}");
 
-        validateError(result, "'property' field is required");
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(2, nodeByName.size());
+        validateNode(nodeByName.get("testSubList3"), "testSubList3");
+        validateNode(nodeByName.get("testSubList4"), "testSubList4");
+
+    }
+
+    /**
+     * test case for 'less than or equals to' constraints comparison
+     *
+     * @throws Exception
+     */
+    @Test
+    public void shouldRetrieveNodeByLessThanOrEqualsToExpression() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "             nodeConstraint: {property: \"j:lastPublished\", lte: \"" + datetimeToString(subnode2Published) + "\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertTrue(nodeByName.size()>=2);
+        validateNode(nodeByName.get("testSubList3"), "testSubList3");
+        validateNode(nodeByName.get("testSubList4"), "testSubList4");
+
+    }
+
+    /**
+     * test case for 'greater than' constraints comparison
+     *
+     * @throws Exception
+     */
+    @Test
+    public void shouldRetrieveNodeByGreaterThanExpression() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              nodeConstraint: {property: \"j:lastPublished\", gt: \"" + datetimeToString(subnode2Published) + "\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertTrue(nodeByName.size()>=1);
+        validateNode(nodeByName.get("testSubList1"), "testSubList1");
+
+    }
+
+    /**
+     * test case for 'greater than or equals to' constraints comparison
+     *
+     * @throws Exception
+     */
+    @Test
+    public void shouldRetrieveNodeByGreaterThanOrEqualsToExpression() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "               nodeConstraint: {property: \"j:lastPublished\", gte: \""+datetimeToString(subnode2Published)+"\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "                lastPublished: property(name: \"j:lastPublished\") {"
+                + "                  value"
+                + "                }"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(2, nodeByName.size());
+        validateNode(nodeByName.get("testSubList1"), "testSubList1");
+        validateNode(nodeByName.get("testSubList2"), "testSubList2");
+
+    }
+
+    /**
+     * test case for 'exists' constraints comparison
+     *
+     * @throws Exception
+     */
+    @Test
+    public void shouldRetrieveNodesByExistsExpression() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "                 nodeConstraint: {property: \"j:liveProperties\", exists: true}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(1, nodeByName.size());
+        validateNode(nodeByName.get("testSubList1"), "testSubList1");
+
+    }
+
+    /**
+     * test case for 'last days' constraints comparison
+     *
+     * @throws Exception
+     */
+    @Test
+    public void shouldRetrieveNodesByLastDaysExpression() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "                 nodeConstraint: {property: \"j:lastPublished\", lastDays: 3}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(2, nodeByName.size());
+        validateNode(nodeByName.get("testSubList1"), "testSubList1");
+        validateNode(nodeByName.get("testSubList2"), "testSubList2");
+    }
+
+
+    /**
+     * test case for 'exists' constraints comparison
+     *
+     * @throws Exception
+     */
+    @Test
+    public void shouldRetrieveNodesByExistsExpressionWhenPropertyDoesNotExist() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "               nodeConstraint: {property: \"j:liveProperties\", exists: false}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(3, nodeByName.size());
+        validateNode(nodeByName.get("testSubList2"), "testSubList2");
+        validateNode(nodeByName.get("testSubList3"), "testSubList3");
+        validateNode(nodeByName.get("testSubList4"), "testSubList4");
+
+    }
+
+
+
+    @Test
+    public void shouldGetErrorNotRetrieveNodesByLikeExpressionWhenPropertyIsEmpty() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", paths: \"/testList\", nodeConstraint: {like: \"%subList1%\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        validateError(result, "Internal Server Error(s) while executing query");
     }
 
     @Test
@@ -290,7 +598,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", nodeConstraint: {property: \"property\"}}) {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", paths: \"/testList\", nodeConstraint: {property: \"property\"}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"
@@ -306,7 +614,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", nodeConstraint: {property: \"property\", contains: \"contains\", like: \"like\"}}) {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", paths: \"/testList\", nodeConstraint: {property: \"property\", contains: \"contains\", like: \"like\"}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"
@@ -317,12 +625,15 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         validateError(result, NONE_OR_MULTIPLE_NODE_COMPARISONS_ERROR);
     }
 
+    //TODO - use different language
     @Test
     public void shouldRetrieveNodesByInternationalizedPropertyValuePassingLanguage() throws Exception {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"fr\", nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST2\"}}) {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "             nodeConstraint: {property: \"jcr:title\", like: \"%subList2%\"}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"
@@ -342,7 +653,9 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST2\"}}) {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"fr\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "           nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST3\"}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"
@@ -353,6 +666,11 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
 
         Assert.assertEquals(0, nodes.length());
+    }
+
+    private static String datetimeToString(Date date){
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSXXX");
+        return dateFormat.format(date);
     }
 
 }
