@@ -604,6 +604,25 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     }
 
     @Test
+    public void shouldGetErrorNotRetrieveNodesByAllConstraintsWhenPropertyIsEmpty() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
+                + "               all: [{property: \"j:liveProperties\", exists: true}, {like: \"%subList1%\"}]"
+                + "            }) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        validateError(result, "'property' field is required");
+    }
+
+    @Test
     public void shouldRetrieveNodeByAnyConstraints() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
@@ -626,6 +645,25 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         Assert.assertEquals(2, nodeByName.size());
         validateNode(nodeByName.get("testSubList1"), "testSubList1");
         validateNode(nodeByName.get("testSubList4"), "testSubList4");
+    }
+
+    @Test
+    public void shouldGetErrorNotRetrieveNodesByAnyConstraintsWhenPropertyIsEmpty() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
+                + "               any: [{property: \"j:liveProperties\", exists: true}, {like: \"%subList1%\"}]"
+                + "            }) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        validateError(result, "'property' field is required");
     }
 
     @Test
@@ -654,6 +692,25 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     }
 
     @Test
+    public void shouldGetErrorNotRetrieveNodesByNoneConstraintsWhenPropertyIsEmpty() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
+                + "               none: [{property: \"j:liveProperties\", exists: true}, {like: \"%subList2%\"}]"
+                + "            }) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        validateError(result, "'property' field is required");
+    }
+
+    @Test
     public void shouldRetrieveNodeByAllAnyNoneConstraints() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
@@ -677,6 +734,27 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         Assert.assertEquals(1, nodeByName.size());
         validateNode(nodeByName.get("testSubList1"), "testSubList1");
+    }
+
+    @Test
+    public void shouldGetErrorNotRetrieveNodeByAllAnyNoneConstraints() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
+                + "               all: [{property: \"j:liveProperties\", exists: true}, {like: \"%subList2%\"}], "
+                + "               any: [{property: \"j:keywords\", exists: true}, {like: \"%subList2%\"}], "
+                + "               none: [{property: \"j:lastPublished\", lte: \""+datetimeToString(subnode3Published)+"\"}, {like: \"%subList2%\"}]"
+                + "            }) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        validateError(result, "'property' field is required");
     }
 
     @Test
