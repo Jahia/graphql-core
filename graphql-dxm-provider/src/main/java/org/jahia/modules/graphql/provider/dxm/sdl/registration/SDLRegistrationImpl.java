@@ -44,7 +44,7 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         this.bundleContext.addBundleListener(this);
         boolean sdlResourcesDiscovered = false;
         for (Bundle bundle: bundleContext.getBundles()) {
-            if (checkForSDLResourceInBundle(bundle)) {
+            if (checkForSDLResourceInBundle(bundle, null)) {
                 sdlResourcesDiscovered = true;
             }
         }
@@ -61,7 +61,7 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
     @Override
     public void bundleChanged(BundleEvent event) {
         Bundle bundle = event.getBundle();
-        if (checkForSDLResourceInBundle(bundle)) {
+        if (checkForSDLResourceInBundle(bundle, event)) {
             logger.debug("received event {} for bundle {} ",new Object[]{status.get(event.getType()),event.getBundle().getSymbolicName()});
             if(event.getType() == BundleEvent.STARTED || event.getType() == BundleEvent.STOPPED) {
                 componentContext.disableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
@@ -70,13 +70,18 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         }
     }
 
-    private boolean checkForSDLResourceInBundle(Bundle bundle) {
+    private boolean checkForSDLResourceInBundle(Bundle bundle, BundleEvent event) {
         if (BundleUtils.isJahiaBundle(bundle)) {
-            URL url = bundle.getResource("META-INF/graphql-extension.sdl");
-            if(url != null){
-                logger.debug("get bundle schema {}",new Object[]{url.getPath()});
-                registerSDLResource(bundle.getState(), bundle.getSymbolicName(), url);
-                return true;
+            if (event != null && event.getType() == BundleEvent.UNINSTALLED) {
+                //Remove resource from bundle that was uninstalled
+                registerSDLResource(bundle.getState(), bundle.getSymbolicName(), null);
+            } else {
+                URL url = bundle.getResource("META-INF/graphql-extension.sdl");
+                if (url != null) {
+                    logger.debug("get bundle schema {}", new Object[]{url.getPath()});
+                    registerSDLResource(event != null ? event.getType() : bundle.getState(), bundle.getSymbolicName(), url);
+                    return true;
+                }
             }
         }
         return false;
