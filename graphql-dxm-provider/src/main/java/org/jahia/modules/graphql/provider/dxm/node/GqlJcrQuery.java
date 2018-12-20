@@ -478,8 +478,8 @@ public class GqlJcrQuery {
     }
 
     private static void validateNodeConstraintProperty(GqlJcrNodeConstraintInput nodeConstraint) {
-        if (nodeConstraint.getProperty() == null && !nodeConstraint.getFunction().equals(NODE_NAME)
-                && !nodeConstraint.getFunction().equals(NODE_LOCAL_NAME)) {
+        if (nodeConstraint.getProperty() == null && nodeConstraint.getContains()==null
+            && (nodeConstraint.getFunction()==null || !nodeConstraint.getFunction().equals(NODE_NAME) || !nodeConstraint.getFunction().equals(NODE_LOCAL_NAME))) {
             throw new GqlJcrWrongInputException("'property' field is required");
         }
     }

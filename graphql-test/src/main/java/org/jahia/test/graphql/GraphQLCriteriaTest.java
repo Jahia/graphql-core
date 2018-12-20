@@ -83,9 +83,9 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     private static String subnodeTitleFr2 = "text FR - subList2";
 
     private static Date subnode1Published = new Date();
-    private static Date subnode2Published = DateUtils.addDays(new Date(), -2);
-    private static Date subnode3Published = DateUtils.addDays(new Date(), -4);
-    private static Date subnode4Published = DateUtils.addDays(new Date(), -6);
+    private static Date subnode2Published = DateUtils.addDays(new Date(), -1);
+    private static Date subnode3Published = DateUtils.addDays(new Date(), -2);
+    private static Date subnode4Published = DateUtils.addDays(new Date(), -3);
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
@@ -100,15 +100,18 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
                 JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
                 subNode1.addMixin("jmix:liveProperties");
+                subNode1.addMixin("jmix:keywords");
                 subNode1.setProperty("jcr:title", subnodeTitleEn1);
                 subNode1.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
-                subNode1.setProperty("j:nodename", "sharedpropvalue");
+                subNode1.setProperty("j:keywords", new String[]{"keyword1", "keyword2"});
                 Calendar calendar1 = Calendar.getInstance();
                 calendar1.setTime(subnode1Published);
                 subNode1.setProperty("j:lastPublished", calendar1);
                 subNodeUuid1 = subNode1.getIdentifier();
 
                 JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
+                subNode1.addMixin("jmix:keywords");
+                subNode1.setProperty("j:keywords", new String[]{"keyword3", "keyword4"});
                 subNode2.setProperty("jcr:title", subnodeTitleEn2);
                 Calendar calendar2 = Calendar.getInstance();
                 calendar2.setTime(subnode2Published);
@@ -122,6 +125,8 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 subNodeUuid3 = subNode3.getIdentifier();
 
                 JCRNodeWrapper subNode4 = node.addNode("testSubList4", "jnt:contentList");
+                subNode4.addMixin("jmix:liveProperties");
+                subNode4.setProperty("j:liveProperties", new String[] {"liveProperty3", "liveProperty4"});
                 Calendar calendar4 = Calendar.getInstance();
                 calendar4.setTime(subnode4Published);
                 subNode4.setProperty("j:lastPublished", calendar4);
@@ -513,8 +518,9 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
         Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
 
-        Assert.assertEquals(1, nodeByName.size());
+        Assert.assertEquals(2, nodeByName.size());
         validateNode(nodeByName.get("testSubList1"), "testSubList1");
+        validateNode(nodeByName.get("testSubList4"), "testSubList4");
 
     }
 
@@ -529,7 +535,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
                 + "              paths: \"/testList\", pathType: PARENT, "
-                + "                 nodeConstraint: {property: \"j:lastPublished\", lastDays: 3}}) {"
+                + "                 nodeConstraint: {property: \"j:lastPublished\", lastDays: 2}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"
@@ -568,14 +574,110 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
         Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
 
-        Assert.assertEquals(3, nodeByName.size());
+        Assert.assertEquals(2, nodeByName.size());
         validateNode(nodeByName.get("testSubList2"), "testSubList2");
         validateNode(nodeByName.get("testSubList3"), "testSubList3");
-        validateNode(nodeByName.get("testSubList4"), "testSubList4");
-
     }
 
+    @Test
+    public void shouldRetrieveNodeByAllConstraints() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
+                + "               all: [{property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}]"
+                + "            }) {"
+                + "            nodes {"
+                + "                name"
+                + "                title: property(name: \"jcr:title\") {value}"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
 
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(1, nodeByName.size());
+        validateNode(nodeByName.get("testSubList1"), "testSubList1");
+    }
+
+    @Test
+    public void shouldRetrieveNodeByAnyConstraints() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
+                + "               any: [{property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}]"
+                + "            }) {"
+                + "            nodes {"
+                + "                name"
+                + "                title: property(name: \"jcr:title\") {value}"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(2, nodeByName.size());
+        validateNode(nodeByName.get("testSubList1"), "testSubList1");
+        validateNode(nodeByName.get("testSubList4"), "testSubList4");
+    }
+
+    @Test
+    public void shouldRetrieveNodeByNoneConstraints() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
+                + "               none: [{property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}]"
+                + "            }) {"
+                + "            nodes {"
+                + "                name"
+                + "                title: property(name: \"jcr:title\") {value}"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(2, nodeByName.size());
+        validateNode(nodeByName.get("testSubList2"), "testSubList2");
+        validateNode(nodeByName.get("testSubList3"), "testSubList3");
+    }
+
+    @Test
+    public void shouldRetrieveNodeByAllAnyNoneConstraints() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
+                + "               all: [{property: \"j:liveProperties\", exists: true}], "
+                + "               any: [{property: \"j:keywords\", exists: true}, {property: \"j:tagList\", exists: true}], "
+                + "               none: [{property: \"j:lastPublished\", lte: \""+datetimeToString(subnode3Published)+"\"}]"
+                + "            }) {"
+                + "            nodes {"
+                + "                name"
+                + "                title: property(name: \"jcr:title\") {value}"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(1, nodeByName.size());
+        validateNode(nodeByName.get("testSubList1"), "testSubList1");
+    }
 
     @Test
     public void shouldGetErrorNotRetrieveNodesByLikeExpressionWhenPropertyIsEmpty() throws Exception {
@@ -590,7 +692,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "    }"
                 + "}");
 
-        validateError(result, "Internal Server Error(s) while executing query");
+        validateError(result, "'property' field is required");
     }
 
     @Test
@@ -625,7 +727,6 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         validateError(result, NONE_OR_MULTIPLE_NODE_COMPARISONS_ERROR);
     }
 
-    //TODO - use different language
     @Test
     public void shouldRetrieveNodesByInternationalizedPropertyValuePassingLanguage() throws Exception {
 
