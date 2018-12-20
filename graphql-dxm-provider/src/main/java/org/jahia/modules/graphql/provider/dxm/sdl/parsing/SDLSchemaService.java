@@ -5,6 +5,7 @@ import graphql.schema.*;
 import graphql.schema.idl.*;
 import graphql.schema.idl.errors.SchemaProblem;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.AllFinderDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLSchemaInfo;
 import org.jahia.modules.graphql.provider.dxm.sdl.registration.SDLRegistrationService;
 import org.osgi.service.component.annotations.Component;
@@ -26,6 +27,7 @@ public class SDLSchemaService {
     private GraphQLSchema graphQLSchema;
     private SDLRegistrationService sdlRegistrationService;
     private LinkedHashMap<String, SDLSchemaInfo> bundlesSDLSchemaStatus = new LinkedHashMap<>();
+    private Map<String, SDLDefinitionStatus> sdlDefinitionStatusMap = new LinkedHashMap<>();
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
     public void setSdlRegistrationService(SDLRegistrationService sdlRegistrationService) {
@@ -49,7 +51,7 @@ public class SDLSchemaService {
                     bundlesSDLSchemaStatus.put(sdlResourceName, bundlesSDLSchemaStatus.put(sdlResourceName, new SDLSchemaInfo(sdlResourceName, SDLSchemaInfo.SDLSchemaStatus.SYNTAX_ERROR, ex.getMessage())));
                 }
             }
-            SDLJCRTypeChecker.checkForConsistencyWithJCR(typeDefinitionRegistry);
+            sdlDefinitionStatusMap = SDLJCRTypeChecker.checkForConsistencyWithJCR(typeDefinitionRegistry);
             SchemaGenerator schemaGenerator = new SchemaGenerator();
 
             try {
@@ -113,5 +115,9 @@ public class SDLSchemaService {
 
     public GraphQLSchema getGraphQLSchema() {
         return graphQLSchema;
+    }
+
+    public Map<String, SDLDefinitionStatus> getSdlDefinitionStatusMap() {
+        return sdlDefinitionStatusMap;
     }
 }

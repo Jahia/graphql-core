@@ -53,4 +53,16 @@ public class SDLDefinitionStatus {
                 this.mappedTypeModuleId,
                 this.statusDescription.toString());
     }
+
+    public String getStatus() {
+        switch(this.statusType) {
+            case MISSING_JCR_PROPERTY:
+                return "MISSING_JCR_PROPERTY";
+            case MISSING_JCR_NODE_TYPE:
+                return "MISSING_JCR_NODE_TYPE";
+            case OK:
+            default:
+                return "OK";
+        }
+    }
 }
