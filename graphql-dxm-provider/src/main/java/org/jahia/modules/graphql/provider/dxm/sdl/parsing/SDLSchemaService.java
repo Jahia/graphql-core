@@ -51,6 +51,30 @@ public class SDLSchemaService {
                     bundlesSDLSchemaStatus.put(sdlResourceName, bundlesSDLSchemaStatus.put(sdlResourceName, new SDLSchemaInfo(sdlResourceName, SDLSchemaInfo.SDLSchemaStatus.SYNTAX_ERROR, ex.getMessage())));
                 }
             }
+
+            //Verify that types which are being extended exist, remove those extensions that do not extend an existing type
+            HashMap<String, ObjectTypeDefinition> types = (HashMap<String, ObjectTypeDefinition>) typeDefinitionRegistry.getTypesMap(ObjectTypeDefinition.class);
+            boolean typeErrorsOccurred = false;
+            for (Map.Entry<String, List<ObjectTypeExtensionDefinition>> entry : typeDefinitionRegistry.objectTypeExtensions().entrySet()) {
+                if (!types.containsKey(entry.getKey())) {
+                    typeDefinitionRegistry.remove(entry.getValue().get(0));
+                    typeErrorsOccurred = true;
+                    logger.warn("Extension of type [" + entry.getKey() + "]" + " does not exist... removing from type registry.");
+                }
+            }
+            if (typeErrorsOccurred) {
+                TypeDefinitionRegistry reconstructedTypeDefinitionRegistry = new TypeDefinitionRegistry();
+                //Recreate type definition registry
+                typeDefinitionRegistry.objectTypeExtensions().forEach((key, value)-> {
+                    if (value.size() > 0 ) {
+                        value.forEach(objectTypeExtensionDefinition -> reconstructedTypeDefinitionRegistry.add(objectTypeExtensionDefinition));
+                    }
+                });
+                typeDefinitionRegistry.types().forEach((key, value)-> reconstructedTypeDefinitionRegistry.add(value));
+                typeDefinitionRegistry.getDirectiveDefinitions().forEach((key, value)-> reconstructedTypeDefinitionRegistry.add(value));
+                typeDefinitionRegistry = reconstructedTypeDefinitionRegistry;
+            }
+
             sdlDefinitionStatusMap = SDLJCRTypeChecker.checkForConsistencyWithJCR(typeDefinitionRegistry);
             SchemaGenerator schemaGenerator = new SchemaGenerator();
 
