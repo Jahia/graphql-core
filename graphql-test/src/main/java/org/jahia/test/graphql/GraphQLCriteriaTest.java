@@ -317,7 +317,9 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodeByDefaultConstraint() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"fr\", nodeConstraint: {property: \"jcr:title\", like: \"%subList2%\"}}) {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:content\", language: \"en\", "
+                + "              paths: \"/testList\", pathType: PARENT, "
+                + "           nodeConstraint: {property: \"jcr:title\", like: \"%subList2%\"}}) {"
                 + "            nodes {"
                 + "                 name"
                 + "		       }"
@@ -327,6 +329,9 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
         Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(1, nodeByName.size());
+        validateNode(nodeByName.get("testSubList2"), "testSubList2");
     }
     /**
      * test case for 'equals to' constraints comparison
