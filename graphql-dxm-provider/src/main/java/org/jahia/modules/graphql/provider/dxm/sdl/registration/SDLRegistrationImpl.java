@@ -103,7 +103,7 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         if (BundleUtils.isJahiaBundle(bundle)) {
             if (event != null && event.getType() == BundleEvent.UNINSTALLED) {
                 //Remove resource from bundle that was uninstalled
-                registerSDLResource(bundle.getState(), bundle.getSymbolicName(), null);
+                registerSDLResource(event.getType(), bundle.getSymbolicName(), null);
             } else {
                 URL url = bundle.getResource(GRAPHQL_EXTENSION_SDL);
                 if(url != null){
@@ -121,7 +121,7 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
                             }
                         }
                     }
-                    registerSDLResource(bundle.getState(), bundle.getSymbolicName(), url);
+                    registerSDLResource(event != null ? event.getType() : bundle.getState(), bundle.getSymbolicName(), url);
                     return true;
                 }
             }
@@ -145,6 +145,7 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
                     logger.debug("remove type registry for " + bundleName);
                     sdlResources.remove(bundleName);
                 }
+                break;
             case BundleEvent.RESOLVED:
             case BundleEvent.STARTED:
                 if(!sdlResources.containsKey(bundleName)) {
