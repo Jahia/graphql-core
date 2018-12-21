@@ -14,9 +14,17 @@
 
     <function>
         <description>get the renderers for the results data type</description>
-        <name>getSDLDefinitionsStatus</name>
+        <name>sdlDefinitionsStatus</name>
         <function-class>org.jahia.modules.graphql.provider.dxm.taglib.Functions</function-class>
         <function-signature>java.util.Map getSDLDefinitionsStatus()</function-signature>
-        <example>${graphql:getSDLDefinitionsStatus()}</example>
+        <example>${graphql:sdlDefinitionsStatus()}</example>
+    </function>
+
+    <function>
+        <description>get the renderers for the results data type</description>
+        <name>sdlSchemaStatus</name>
+        <function-class>org.jahia.modules.graphql.provider.dxm.taglib.Functions</function-class>
+        <function-signature>java.util.Map getBundlesSDLSchemaStatus()</function-signature>
+        <example>${graphql:sdlSchemaStatus()}</example>
     </function>
 </taglib>

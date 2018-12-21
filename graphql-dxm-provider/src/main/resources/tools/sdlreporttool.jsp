@@ -18,36 +18,65 @@
 
 <html>
 <head>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/modules/graphql-dxm-provider/css/sdlreporttool.css" type="text/css" />
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/modules/graphql-dxm-provider/css/sdlreporttool.css"
+          type="text/css"/>
 </head>
-<c:set var="sdlDefinitionsStatus" value="${graphql:getSDLDefinitionsStatus()}"/>
-    <body>
-        <h2>SDL Definitions</h2>
-        <div class="status-container">
-            <div class="status-header">
-                <div class="status-header-item" style="width:15%">
-                    Definition Type
-                </div>
-                <div class="status-header-item" style="width:65%">
-                    Message
-                </div>
-                <div class="status-header-item" style="width:10%">
-                    Status
-                </div>
-            </div>
-            <c:forEach items="${sdlDefinitionsStatus}" var="entry">
-                <div class="status-row">
-                    <div class="status-item" style="width:15%">
-                        <c:out value="${entry.key}"/>
-                    </div>
-                    <div class="status-item" style="width:65%">
-                        <c:out value="${entry.value}"/>
-                    </div>
-                    <div class="status-item" style="width:10%">
-                        <div class="status-icon ${entry.value.status == 'OK' ? "success" : "error"}"></div>
-                    </div>
-                </div>
-            </c:forEach>
+<c:set var="sdlDefinitionsStatus" value="${graphql:sdlDefinitionsStatus()}"/>
+<c:set var="sdlSchemaStatus" value="${graphql:sdlSchemaStatus()}"/>
+<body>
+<h2>SDL Definitions</h2>
+<div class="status-container">
+    <div class="status-header">
+        <div class="status-header-item" style="width:15%">
+            Definition Type
         </div>
-    </body>
+        <div class="status-header-item" style="width:65%">
+            Message
+        </div>
+        <div class="status-header-item" style="width:10%">
+            Status
+        </div>
+    </div>
+    <c:forEach items="${sdlDefinitionsStatus}" var="entry">
+        <div class="status-row">
+            <div class="status-item" style="width:15%">
+                <c:out value="${entry.key}"/>
+            </div>
+            <div class="status-item" style="width:65%">
+                <c:out value="${entry.value}"/>
+            </div>
+            <div class="status-item" style="width:10%">
+                <div class="status-icon ${entry.value.status == 'OK' ? "success" : "error"}"></div>
+            </div>
+        </div>
+    </c:forEach>
+</div>
+<h2>SDL Schema</h2>
+<div class="status-container">
+    <div class="status-header">
+        <div class="status-header-item" style="width:15%">
+            Module name
+        </div>
+        <div class="status-header-item" style="width:65%">
+            Message
+        </div>
+        <div class="status-header-item" style="width:10%">
+            Status
+        </div>
+    </div>
+    <c:forEach items="${sdlSchemaStatus}" var="entry">
+        <div class="status-row">
+            <div class="status-item" style="width:15%">
+                <c:out value="${entry.key}"/>
+            </div>
+            <div class="status-item" style="width:65%">
+                <c:out value="${entry.value.error}"/>
+            </div>
+            <div class="status-item" style="width:10%">
+                <div class="status-icon error"></div>
+            </div>
+        </div>
+    </c:forEach>
+</div>
+</body>
 </html>
