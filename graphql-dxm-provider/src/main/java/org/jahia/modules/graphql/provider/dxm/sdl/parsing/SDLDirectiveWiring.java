@@ -34,7 +34,7 @@ public class SDLDirectiveWiring implements SchemaDirectiveWiring {
         return GraphQLFieldDefinition.newFieldDefinition()
                 .name(environment.getElement().getName())
                 .dataFetcher(new PropertiesDataFetcher(field))
-                .argument(GraphQLArgument.newArgument().name("language").type(new GraphQLNonNull(GraphQLString)).build())
+                .argument(GraphQLArgument.newArgument().name("language").type(GraphQLString).build())
                 .type(GraphQLString)
                 .build();
     }

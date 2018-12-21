@@ -48,8 +48,8 @@ public class SDLJCRTypeChecker {
                     }
                     else {
                         try {
-                            ExtendedNodeType jcrNode = NodeTypeRegistry.getInstance().getNodeType(jcrNodeType);
-                            JahiaTemplatesPackage jahiaTemplatesPackage = jcrNode.getTemplatePackage();
+                            ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(jcrNodeType);
+                            JahiaTemplatesPackage jahiaTemplatesPackage = nodeType.getTemplatePackage();
                             if (jahiaTemplatesPackage != null) {
                                 status.setMappedTypeModuleId(jahiaTemplatesPackage.getBundle().getSymbolicName());
                                 status.setMappedTypeModuleName(jahiaTemplatesPackage.getName());
@@ -61,11 +61,11 @@ public class SDLJCRTypeChecker {
                             for (FieldDefinition def : fields) {
                                 for (Directive fieldDirective : def.getDirectives()) {
                                     if (fieldDirective.getName().equals("mapping") && fieldDirective.getArgument("property") != null) {
-                                        String jcrProperty = ((StringValue)fieldDirective.getArgument("property").getValue()).getValue();
-                                            if (jcrNode.getPropertyDefinition(jcrProperty) == null) {
+                                        String jcrPropertyName = ((StringValue)fieldDirective.getArgument("property").getValue()).getValue();
+                                            if (nodeType.getPropertyDefinition(jcrPropertyName) == null) {
                                                 toremove.add(entry.getKey());
                                                 status.setStatusType(SDLDefinitionStatusTypes.MISSING_JCR_PROPERTY);
-                                                status.setStatusDescription(new SDLDefinitionStatusDescription(jcrProperty));
+                                                status.setStatusDescription(new SDLDefinitionStatusDescription(jcrPropertyName));
                                                 break;
                                             }
                                     }
