@@ -45,7 +45,7 @@
             <div class="status-item" style="width:65%">
                 <c:out value="${entry.value}"/>
             </div>
-            <div class="status-item" style="width:10%">
+            <div class="status-item" style="width:10%;text-align: center">
                 <div class="status-icon ${entry.value.status == 'OK' ? "success" : "error"}"></div>
             </div>
         </div>
@@ -72,7 +72,7 @@
             <div class="status-item" style="width:65%">
                 <c:out value="${entry.value.error}"/>
             </div>
-            <div class="status-item" style="width:10%">
+            <div class="status-item" style="width:10%;text-align: center; ">
                 <div class="status-icon error"></div>
             </div>
         </div>

@@ -7,30 +7,36 @@ div.status-container {
 }
 
 div.status-row {
-    margin:3px;
+    display:flex;
+    flex-direction:row;
+    flex-wrap:wrap;
+    margin:0;
     width:100%;
-    padding: 5px 20px;
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(0, 45, 18, 0.22);
 }
 
 div.status-header {
     display:flex;
     flex-direction:row;
-    flex-wrap:nowrap;
+    flex-wrap:wrap;
     width:100%;
-    border-bottom: 1px solid rgba(0, 45, 18, 0.22);;
+    border-bottom: 1px solid rgba(0, 45, 18, 0.22);
+    padding: 20px 0;
 }
 
 div.status-header-item {
-    margin:5px;
-    padding: 5px 20px;
-    flex-wrap:wrap;
-    display: inline-block;
+    margin:0;
+    padding: 0 20px;
+    text-align: center;
+    font-weight: bold;
 }
 
 div.status-item {
-    padding-right:55px;
     flex-wrap:wrap;
-    display: inline-block;
+    display: flex;
+    padding: 10px 0;
+    margin-left: 10px;
 }
 
 div.status-icon {
@@ -38,7 +44,6 @@ div.status-icon {
     height: 25px;
     width: 25px;
     border-radius: 50%;
-    display: inline-block;
 }
 
 div.status-icon.success {
