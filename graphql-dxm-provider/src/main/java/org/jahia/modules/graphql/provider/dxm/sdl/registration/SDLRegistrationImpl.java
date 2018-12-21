@@ -156,6 +156,7 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
 
     private void registerSourceMonitorService(Bundle modulesProvider) {
         try {
+            hasModulesMonitoringActivated = Boolean.FALSE;
             if (modulesProvider != null && modulesProvider.loadClass("org.jahia.modules.external.modules.osgi.ModulesSourceMonitor") != null){
                 hasModulesMonitoringActivated = Boolean.TRUE;
                 unregisterSourceMonitorService();
