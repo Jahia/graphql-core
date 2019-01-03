@@ -90,7 +90,6 @@ public class DefaultConstraintHelper {
         }
     }
 
-    //@TODO implement nested constraints functionality if there is ever a need for it.
     private void buildConstraintType(ConstraintType type) {
         try {
             switch (type) {
