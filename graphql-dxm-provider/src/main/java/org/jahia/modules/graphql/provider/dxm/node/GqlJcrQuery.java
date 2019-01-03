@@ -293,8 +293,7 @@ public class GqlJcrQuery {
             QueryManager queryManager = session.getWorkspace().getQueryManager();
             QueryObjectModelFactory factory = queryManager.getQOMFactory();
             Selector source = factory.selector(criteria.getNodeType(), "node");
-            Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, criteria.getAll(),
-                    criteria.getAny(), criteria.getNone(), factory);
+            Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory);
             Ordering ordering = getOrderingByProperty(source.getSelectorName(), criteria, factory);
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, ordering == null ? null : new Ordering[]{ordering}, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
@@ -305,11 +304,11 @@ public class GqlJcrQuery {
     }
 
     private static Constraint getConstraintTree(final String selector, final GqlJcrNodeCriteriaInput criteria,
-                                                final List<GqlJcrNodeConstraintInput> extraAllConstraintInputs,
-                                                final List<GqlJcrNodeConstraintInput> extraAnyConstraintInputs,
-                                                final List<GqlJcrNodeConstraintInput> extraNoneConstraintInputs,
                                                 final QueryObjectModelFactory factory) throws RepositoryException {
 
+        final List<GqlJcrNodeConstraintInput> extraAllConstraintInputs = criteria.getAll();
+        final List<GqlJcrNodeConstraintInput> extraAnyConstraintInputs = criteria.getAny();
+        final List<GqlJcrNodeConstraintInput> extraNoneConstraintInputs = criteria.getNone();
         final LinkedHashSet<Constraint> constraints = new LinkedHashSet<>();
         final LinkedHashSet<Constraint> extraAnyConstraints = new LinkedHashSet<>();
         final LinkedHashSet<Constraint> extraNoneConstraints = new LinkedHashSet<>();
