@@ -3,7 +3,9 @@ div.status-container {
     display:flex;
     flex-direction:row;
     flex-wrap:wrap;
+    max-height: 90vh;
     width:100%;
+    overflow-y: scroll;
 }
 
 div.status-row {

@@ -70,10 +70,12 @@
                 <c:out value="${entry.key}"/>
             </div>
             <div class="status-item" style="width:65%">
-                <c:out value="${entry.value.error}"/>
+                <c:forEach items="${entry.value}" var="item">
+                    <div><c:out value="${item.error}"/></div>
+                </c:forEach>
             </div>
             <div class="status-item" style="width:10%;text-align: center; ">
-                <div class="status-icon error"></div>
+                <div class="status-icon ${empty entry.value ? "success" : "error"}"></div>
             </div>
         </div>
     </c:forEach>

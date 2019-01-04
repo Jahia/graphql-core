@@ -3,7 +3,8 @@ package org.jahia.modules.graphql.provider.dxm.sdl.parsing.status;
 public class SDLSchemaInfo {
     public enum SDLSchemaStatus {
         OK,
-        SYNTAX_ERROR
+        SYNTAX_ERROR,
+        MISSING_TYPE
     }
     private String error;
     private String bundle;
