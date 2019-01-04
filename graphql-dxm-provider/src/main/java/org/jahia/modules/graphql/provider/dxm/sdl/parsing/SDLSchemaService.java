@@ -193,6 +193,7 @@ public class SDLSchemaService {
                         ((GraphQLObjectType) fieldDefinition.getType()).getDirective("mapping").getArgument("node").getValue().toString());
                 GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition()
                         .name(fieldDefinition.getName())
+                        .description(fieldDefinition.getDescription())
                         .dataFetcher(dataFetcher)
                         .argument(dataFetcher.getArguments())
                         .type(fieldDefinition.getType()) // todo return a connection to type if finder is multiple
