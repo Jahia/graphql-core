@@ -40,11 +40,13 @@ public class SDLDirectiveWiring implements SchemaDirectiveWiring {
     public GraphQLFieldDefinition onField(SchemaDirectiveWiringEnvironment<GraphQLFieldDefinition> environment) {
         Field field = new Field(environment.getElement().getName());
 
+        GraphQLFieldDefinition def = environment.getElement();
+
         GraphQLFieldDefinition.Builder builder = GraphQLFieldDefinition.newFieldDefinition()
-                .name(environment.getElement().getName())
+                .name(def.getName())
                 .dataFetcher(new PropertiesDataFetcher(field))
                 .argument(GraphQLArgument.newArgument().name("language").type(GraphQLString).build())
-                .type(GraphQLString);
+                .type(def.getType());
 
         GraphQLDirective directive = environment.getDirective();
         if (directive != null && directive.getName().equals("mapping")) {
