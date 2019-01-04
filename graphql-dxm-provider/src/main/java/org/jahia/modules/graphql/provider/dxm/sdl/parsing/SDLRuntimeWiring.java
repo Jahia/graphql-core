@@ -15,6 +15,8 @@ public class SDLRuntimeWiring {
                     public DataFetcher getDefaultDataFetcher(FieldWiringEnvironment environment) {
                         return DataFetchingEnvironment::getSource;
                     }
-                }).build();
+                })
+                .directive("description", directiveWiring)
+                .build();
     }
 }

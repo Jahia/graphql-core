@@ -214,10 +214,17 @@ public class SDLSchemaService {
                         InputValueDefinition.newInputValueDefinition().name("node").type(TypeName.newTypeName("String").build()).build(),
                         InputValueDefinition.newInputValueDefinition().name("property").type(TypeName.newTypeName("String").build()).build()))
                 .build());
+        typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
+                .name("description")
+                .directiveLocations(Arrays.asList(
+                        DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
+                        DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
+                .inputValueDefinitions(Arrays.asList(
+                        InputValueDefinition.newInputValueDefinition().name("value").type(TypeName.newTypeName("String").build()).build()))
+                .build());
+
         return typeDefinitionRegistry;
     }
-
-    ;
 
     public List<GraphQLType> getSDLTypes() {
         List<GraphQLType> types = new ArrayList<>();
