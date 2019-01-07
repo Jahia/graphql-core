@@ -102,6 +102,7 @@ public class SDLSchemaService {
                     bundlesSDLSchemaStatus.put(sdlResourceName, new LinkedList<>(Arrays.asList(new SDLSchemaInfo(sdlResourceName, SDLSchemaInfo.SDLSchemaStatus.SYNTAX_ERROR, ex.getMessage()))));
                 }
             }
+
             final AtomicBoolean typeErrorsOccurred = new AtomicBoolean(false);
             for (Map.Entry<String, TypeCheck> entry : possibleMissingTypes.entrySet()) {
                 TypeDefinitionRegistry currentTypeRegistry = typeDefinitionRegistry;
@@ -117,115 +118,11 @@ public class SDLSchemaService {
                     typeErrorsOccurred.set(true);
                 });
             }
-            //Verify that types which are being extended exist, flag extensions that may not extend an existing type
-            HashMap<String, ObjectTypeDefinition> types = (HashMap<String, ObjectTypeDefinition>) typeDefinitionRegistry.getTypesMap(ObjectTypeDefinition.class);
-            LinkedHashMap<ObjectTypeExtensionDefinition, List<FieldDefinition>> possibleMissingQueryExtensionsDefinitions = new LinkedHashMap<>();
-            for (Map.Entry<String, List<ObjectTypeExtensionDefinition>> entry : typeDefinitionRegistry.objectTypeExtensions().entrySet()) {
-                //If this type extension is Query we will check to make sure all Field Definition Types exists
-                if (entry.getKey().equals("Query")) {
-                    TypeDefinitionRegistry currentTypeRegistry = typeDefinitionRegistry;
-                    //Verify that extensions in Query exist
-                    entry.getValue().forEach(objectTypeExtensionDefinition -> {
-                        List<FieldDefinition> possibleMissingFieldDefinitions = new LinkedList<>();
-                        objectTypeExtensionDefinition.getFieldDefinitions().forEach(fieldDefinition -> {
-                            String type = ((TypeName) ((ListType) fieldDefinition.getType()).getType()).getName();
-                            if (!currentTypeRegistry.getType(type).isPresent() || possibleMissingTypes.containsKey(type)) {
-                                //Flag field with potentially non existing type
-                                possibleMissingFieldDefinitions.add(fieldDefinition);
-                            }
-                        });
-                        if (possibleMissingFieldDefinitions.size() > 0) {
-                            possibleMissingQueryExtensionsDefinitions.put(objectTypeExtensionDefinition, possibleMissingFieldDefinitions);
-                        }
-                    });
-                    if (possibleMissingQueryExtensionsDefinitions.size() > 0) {
-                        typeErrorsOccurred.set(true);
-                    }
-                    continue;
-                }
 
-                if (!types.containsKey(entry.getKey())) {
-                    typeDefinitionRegistry.remove(entry.getValue().get(0));
-                    typeErrorsOccurred.set(true);
-                    bundleTypeDefinitionRegistry.forEach((key, value) -> {
-                        if(value.objectTypeExtensions().containsKey(entry.getKey())) {
-                            logger.warn("Extension of type [{}]" + " does not exist... removing from type registry. It is declared in {}",entry.getKey(),key);
-                            List<SDLSchemaInfo> bundleSdlSchemaInfoList = getOrCreateBundleSDLSchemaList(key);
-                            bundleSdlSchemaInfoList.add(new SDLSchemaInfo(key, SDLSchemaInfo.SDLSchemaStatus.SYNTAX_ERROR, "Extension of type [" + entry.getKey() + "]" + " does not exist... removing from type registry."));
-                            bundlesSDLSchemaStatus.put(key, bundleSdlSchemaInfoList);
-                        }
-                    });
-                }
-            }
-            if (typeErrorsOccurred.get()) {
-                TypeDefinitionRegistry reconstructedTypeDefinitionRegistry = new TypeDefinitionRegistry();
-                typeDefinitionRegistry.types().forEach((key, value) -> {
-                    //If there are types that are missing, then remove the field definitions
-                    //from the types which define these fields.
-                    //This excludes QUERY type
-                    if (!key.equals("Query") && possibleMissingTypes.size() > 0) {
-                        possibleMissingTypes.forEach((type, typeCheck) -> {
-                            if (key.equals(type)) {
-                                typeCheck.getFields().forEach(fieldDefinition -> ((ObjectTypeDefinition)value).getFieldDefinitions().remove(fieldDefinition));
-                                typeCheck.getInfos().forEach(sdlSchemaInfo -> {
-                                    //Add the SDL Schema Info for each bundle
-                                    List<SDLSchemaInfo> bundleSdlSchemaInfoList = getOrCreateBundleSDLSchemaList(sdlSchemaInfo.getBundle());
-                                    bundleSdlSchemaInfoList.add(sdlSchemaInfo);
-                                    bundlesSDLSchemaStatus.put(sdlSchemaInfo.getBundle(), bundleSdlSchemaInfoList);
-                                });
-                            }
-                        });
-                        //Skip registration of types that have no fields defined due to erroneous definitions
-                        if (((ObjectTypeDefinition)value).getFieldDefinitions().size() == 0) {
-                            return;
-                        }
-                    }
-                    reconstructedTypeDefinitionRegistry.add(value);
-                });
-                //Recreate type definition registry
-                typeDefinitionRegistry.objectTypeExtensions().forEach((key, value) -> {
-                    if (possibleMissingQueryExtensionsDefinitions.size() > 0 && key.equals("Query")) {
-                        //Verify that the collected extensions are referring to existing types
-                        value.forEach(queryObjectExtension -> {
-                            //If this extension is not in the collection, register it directly
-                            if (!possibleMissingQueryExtensionsDefinitions.containsKey(queryObjectExtension)) {
-                                reconstructedTypeDefinitionRegistry.add(queryObjectExtension);
-                                return;
-                            }
-                            List<FieldDefinition> fieldDefinitionsToRemove = new LinkedList<>();
-                            possibleMissingQueryExtensionsDefinitions.get(queryObjectExtension).forEach(fieldDefinition -> {
-                                String type = ((TypeName) ((ListType) fieldDefinition.getType()).getType()).getName();
-                                //Verify that each field is referencing a valid type
-                                if (!reconstructedTypeDefinitionRegistry.getType(type).isPresent()) {
-                                    //Add invalid field definitions to list and report them.
-                                    fieldDefinitionsToRemove.add(fieldDefinition);
-                                    bundleTypeDefinitionRegistry.forEach((bundle, typeRegistry) -> {
-                                        List<ObjectTypeExtensionDefinition> extensions = typeRegistry.objectTypeExtensions().get("Query");
-                                        Optional<ObjectTypeExtensionDefinition> found = extensions.stream().filter(extension -> extension.getFieldDefinitions().contains(fieldDefinition)).findFirst();
-                                        //Locate the bundle which defined this extension for logging and reporting purposes.
-                                        if (found.isPresent()) {
-                                            List<SDLSchemaInfo> bundleSdlSchemaInfoList = getOrCreateBundleSDLSchemaList(bundle);
-                                            bundleSdlSchemaInfoList.add(new SDLSchemaInfo(bundle, SDLSchemaInfo.SDLSchemaStatus.MISSING_TYPE, "Query extension field [" + fieldDefinition.getName() + "] of type [" + type + "]" + " does not exist... removing from type registry."));
-                                            bundlesSDLSchemaStatus.put(bundle, bundleSdlSchemaInfoList);
-                                        }
-                                    });
-                                }
-                            });
-                            queryObjectExtension.getFieldDefinitions().removeAll(fieldDefinitionsToRemove);
-                            //Register extensions that contain at least 1 field definition.
-                            if (queryObjectExtension.getFieldDefinitions().size() > 0) {
-                                reconstructedTypeDefinitionRegistry.add(queryObjectExtension);
-                            }
-                        });
-                        return;
-                    }
-                    if (value.size() > 0) {
-                        value.forEach(objectTypeExtensionDefinition -> reconstructedTypeDefinitionRegistry.add(objectTypeExtensionDefinition));
-                    }
-                });
-                typeDefinitionRegistry.getDirectiveDefinitions().forEach((key, value) -> reconstructedTypeDefinitionRegistry.add(value));
-                typeDefinitionRegistry = reconstructedTypeDefinitionRegistry;
-            }
+            LinkedHashMap<ObjectTypeExtensionDefinition, List<FieldDefinition>> possibleMissingQueryExtensionsDefinitions = verifyExtendedTypesExist(typeErrorsOccurred, typeDefinitionRegistry, possibleMissingTypes, bundleTypeDefinitionRegistry);
+            TypeDefinitionRegistry newRegistry = rebuildTypeDefinitionRegistry(typeErrorsOccurred, typeDefinitionRegistry, possibleMissingTypes, possibleMissingQueryExtensionsDefinitions, bundleTypeDefinitionRegistry);
+
+            if (newRegistry != null) typeDefinitionRegistry = newRegistry;
 
             sdlDefinitionStatusMap = SDLJCRTypeChecker.checkForConsistencyWithJCR(typeDefinitionRegistry);
             SchemaGenerator schemaGenerator = new SchemaGenerator();
@@ -346,5 +243,131 @@ public class SDLSchemaService {
         public List<SDLSchemaInfo> getInfos() {
             return infos;
         }
+    }
+
+    private LinkedHashMap<ObjectTypeExtensionDefinition, List<FieldDefinition>> verifyExtendedTypesExist(AtomicBoolean typeErrorsOccurred,
+                                                                                                         TypeDefinitionRegistry typeDefinitionRegistry,
+                                                                                                         LinkedHashMap<String, TypeCheck> possibleMissingTypes,
+                                                                                                         Map<String, TypeDefinitionRegistry> bundleTypeDefinitionRegistry) {
+        //Verify that types which are being extended exist, flag extensions that may not extend an existing type
+        HashMap<String, ObjectTypeDefinition> types = (HashMap<String, ObjectTypeDefinition>) typeDefinitionRegistry.getTypesMap(ObjectTypeDefinition.class);
+        LinkedHashMap<ObjectTypeExtensionDefinition, List<FieldDefinition>> possibleMissingQueryExtensionsDefinitions = new LinkedHashMap<>();
+        for (Map.Entry<String, List<ObjectTypeExtensionDefinition>> entry : typeDefinitionRegistry.objectTypeExtensions().entrySet()) {
+            //If this type extension is Query we will check to make sure all Field Definition Types exists
+            if (entry.getKey().equals("Query")) {
+                //Verify that extensions in Query exist
+                entry.getValue().forEach(objectTypeExtensionDefinition -> {
+                    List<FieldDefinition> possibleMissingFieldDefinitions = new LinkedList<>();
+                    objectTypeExtensionDefinition.getFieldDefinitions().forEach(fieldDefinition -> {
+                        String type = ((TypeName) ((ListType) fieldDefinition.getType()).getType()).getName();
+                        if (!typeDefinitionRegistry.getType(type).isPresent() || possibleMissingTypes.containsKey(type)) {
+                            //Flag field with potentially non existing type
+                            possibleMissingFieldDefinitions.add(fieldDefinition);
+                        }
+                    });
+                    if (possibleMissingFieldDefinitions.size() > 0) {
+                        possibleMissingQueryExtensionsDefinitions.put(objectTypeExtensionDefinition, possibleMissingFieldDefinitions);
+                    }
+                });
+                if (possibleMissingQueryExtensionsDefinitions.size() > 0) {
+                    typeErrorsOccurred.set(true);
+                }
+                continue;
+            }
+
+            if (!types.containsKey(entry.getKey())) {
+                typeDefinitionRegistry.remove(entry.getValue().get(0));
+                typeErrorsOccurred.set(true);
+                bundleTypeDefinitionRegistry.forEach((key, value) -> {
+                    if(value.objectTypeExtensions().containsKey(entry.getKey())) {
+                        logger.warn("Extension of type [{}]" + " does not exist... removing from type registry. It is declared in {}",entry.getKey(),key);
+                        List<SDLSchemaInfo> bundleSdlSchemaInfoList = getOrCreateBundleSDLSchemaList(key);
+                        bundleSdlSchemaInfoList.add(new SDLSchemaInfo(key, SDLSchemaInfo.SDLSchemaStatus.SYNTAX_ERROR, "Extension of type [" + entry.getKey() + "]" + " does not exist... removing from type registry."));
+                        bundlesSDLSchemaStatus.put(key, bundleSdlSchemaInfoList);
+                    }
+                });
+            }
+        }
+
+        return possibleMissingQueryExtensionsDefinitions;
+    }
+
+    private TypeDefinitionRegistry rebuildTypeDefinitionRegistry(AtomicBoolean typeErrorsOccurred,
+                                                                 TypeDefinitionRegistry typeDefinitionRegistry,
+                                                                 LinkedHashMap<String, TypeCheck> possibleMissingTypes,
+                                                                 LinkedHashMap<ObjectTypeExtensionDefinition, List<FieldDefinition>> possibleMissingQueryExtensionsDefinitions,
+                                                                 Map<String, TypeDefinitionRegistry> bundleTypeDefinitionRegistry) {
+        if (typeErrorsOccurred.get()) {
+            TypeDefinitionRegistry reconstructedTypeDefinitionRegistry = new TypeDefinitionRegistry();
+            typeDefinitionRegistry.types().forEach((key, value) -> {
+                //If there are types that are missing, then remove the field definitions
+                //from the types which define these fields.
+                //This excludes QUERY type
+                if (!key.equals("Query") && possibleMissingTypes.size() > 0) {
+                    possibleMissingTypes.forEach((type, typeCheck) -> {
+                        if (key.equals(type)) {
+                            typeCheck.getFields().forEach(fieldDefinition -> ((ObjectTypeDefinition)value).getFieldDefinitions().remove(fieldDefinition));
+                            typeCheck.getInfos().forEach(sdlSchemaInfo -> {
+                                //Add the SDL Schema Info for each bundle
+                                List<SDLSchemaInfo> bundleSdlSchemaInfoList = getOrCreateBundleSDLSchemaList(sdlSchemaInfo.getBundle());
+                                bundleSdlSchemaInfoList.add(sdlSchemaInfo);
+                                bundlesSDLSchemaStatus.put(sdlSchemaInfo.getBundle(), bundleSdlSchemaInfoList);
+                            });
+                        }
+                    });
+                    //Skip registration of types that have no fields defined due to erroneous definitions
+                    if (((ObjectTypeDefinition)value).getFieldDefinitions().size() == 0) {
+                        return;
+                    }
+                }
+                reconstructedTypeDefinitionRegistry.add(value);
+            });
+            //Recreate type definition registry
+            typeDefinitionRegistry.objectTypeExtensions().forEach((key, value) -> {
+                if (possibleMissingQueryExtensionsDefinitions.size() > 0 && key.equals("Query")) {
+                    //Verify that the collected extensions are referring to existing types
+                    value.forEach(queryObjectExtension -> {
+                        //If this extension is not in the collection, register it directly
+                        if (!possibleMissingQueryExtensionsDefinitions.containsKey(queryObjectExtension)) {
+                            reconstructedTypeDefinitionRegistry.add(queryObjectExtension);
+                            return;
+                        }
+                        List<FieldDefinition> fieldDefinitionsToRemove = new LinkedList<>();
+                        possibleMissingQueryExtensionsDefinitions.get(queryObjectExtension).forEach(fieldDefinition -> {
+                            String type = ((TypeName) ((ListType) fieldDefinition.getType()).getType()).getName();
+                            //Verify that each field is referencing a valid type
+                            if (!reconstructedTypeDefinitionRegistry.getType(type).isPresent()) {
+                                //Add invalid field definitions to list and report them.
+                                fieldDefinitionsToRemove.add(fieldDefinition);
+                                bundleTypeDefinitionRegistry.forEach((bundle, typeRegistry) -> {
+                                    List<ObjectTypeExtensionDefinition> extensions = typeRegistry.objectTypeExtensions().get("Query");
+                                    if (extensions != null) {
+                                        Optional<ObjectTypeExtensionDefinition> found = extensions.stream().filter(extension -> extension.getFieldDefinitions().contains(fieldDefinition)).findFirst();
+                                        //Locate the bundle which defined this extension for logging and reporting purposes.
+                                        if (found.isPresent()) {
+                                            List<SDLSchemaInfo> bundleSdlSchemaInfoList = getOrCreateBundleSDLSchemaList(bundle);
+                                            bundleSdlSchemaInfoList.add(new SDLSchemaInfo(bundle, SDLSchemaInfo.SDLSchemaStatus.MISSING_TYPE, "Query extension field [" + fieldDefinition.getName() + "] of type [" + type + "]" + " does not exist... removing from type registry."));
+                                            bundlesSDLSchemaStatus.put(bundle, bundleSdlSchemaInfoList);
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                        queryObjectExtension.getFieldDefinitions().removeAll(fieldDefinitionsToRemove);
+                        //Register extensions that contain at least 1 field definition.
+                        if (queryObjectExtension.getFieldDefinitions().size() > 0) {
+                            reconstructedTypeDefinitionRegistry.add(queryObjectExtension);
+                        }
+                    });
+                    return;
+                }
+                if (value.size() > 0) {
+                    value.forEach(objectTypeExtensionDefinition -> reconstructedTypeDefinitionRegistry.add(objectTypeExtensionDefinition));
+                }
+            });
+            typeDefinitionRegistry.getDirectiveDefinitions().forEach((key, value) -> reconstructedTypeDefinitionRegistry.add(value));
+            return reconstructedTypeDefinitionRegistry;
+        }
+        return null;
     }
 }
