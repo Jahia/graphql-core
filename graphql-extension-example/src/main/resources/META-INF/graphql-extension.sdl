@@ -1,4 +1,4 @@
-type NewsSDL @mapping(node:"jnt:news") @description(value:"This is news"){
+type NewsSDL @mapping(node:"jnt:news", ignoreDefaultQueries:true) @description(value:"This is news "){
     title(language:String): String @mapping(property:"jcr:title") @description(value:"This is title ")
     description(language:String): String
     file: String @description(value:"This is file")

@@ -144,17 +144,30 @@ public class SDLSchemaService {
         if (graphQLSchema != null) {
             List<GraphQLFieldDefinition> fieldDefinitions = graphQLSchema.getQueryType().getFieldDefinitions();
             for (GraphQLFieldDefinition fieldDefinition : fieldDefinitions) {
-                AllFinderDataFetcher dataFetcher = new AllFinderDataFetcher(fieldDefinition.getType() instanceof GraphQLList ?
-                        ((GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType()).getDirective("mapping").getArgument("node").getValue().toString() :
-                        ((GraphQLObjectType) fieldDefinition.getType()).getDirective("mapping").getArgument("node").getValue().toString());
-                GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition()
-                        .name(fieldDefinition.getName())
-                        .description(fieldDefinition.getDescription())
-                        .dataFetcher(dataFetcher)
-                        .argument(dataFetcher.getArguments())
-                        .type(fieldDefinition.getType()) // todo return a connection to type if finder is multiple
-                        .build();
-                defs.add(sdlDef);
+                GraphQLObjectType objectType = fieldDefinition.getType() instanceof GraphQLList ?
+                        (GraphQLObjectType) ((GraphQLList)fieldDefinition.getType()).getWrappedType() : (GraphQLObjectType) fieldDefinition.getType();
+
+                GraphQLDirective directive = objectType.getDirective("mapping");
+
+                if (directive != null) {
+                    String nodeType = directive.getArgument("node").getValue().toString();
+
+                    boolean shouldIgnoreDefaultQueries = false;
+                    if (directive.getArgument("ignoreDefaultQueries") != null) {
+                        shouldIgnoreDefaultQueries = (Boolean) directive.getArgument("ignoreDefaultQueries").getValue();
+                    }
+                    //TODO incorporate boolean into the rest of the logic
+
+                    AllFinderDataFetcher dataFetcher = new AllFinderDataFetcher(nodeType);
+                    GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition()
+                            .name(fieldDefinition.getName())
+                            .description(fieldDefinition.getDescription())
+                            .dataFetcher(dataFetcher)
+                            .argument(dataFetcher.getArguments())
+                            .type(fieldDefinition.getType()) // todo return a connection to type if finder is multiple
+                            .build();
+                    defs.add(sdlDef);
+                }
             }
         }
         return defs;
@@ -165,11 +178,13 @@ public class SDLSchemaService {
         typeDefinitionRegistry.add(new ObjectTypeDefinition("Query"));
         typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
                 .name("mapping")
-                .directiveLocations(Arrays.asList(DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
+                .directiveLocations(Arrays.asList(
+                        DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
                         DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
                 .inputValueDefinitions(Arrays.asList(
                         InputValueDefinition.newInputValueDefinition().name("node").type(TypeName.newTypeName("String").build()).build(),
-                        InputValueDefinition.newInputValueDefinition().name("property").type(TypeName.newTypeName("String").build()).build()))
+                        InputValueDefinition.newInputValueDefinition().name("property").type(TypeName.newTypeName("String").build()).build(),
+                        InputValueDefinition.newInputValueDefinition().name("ignoreDefaultQueries").type(TypeName.newTypeName("Boolean").build()).build()))
                 .build());
         typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
                 .name("description")
