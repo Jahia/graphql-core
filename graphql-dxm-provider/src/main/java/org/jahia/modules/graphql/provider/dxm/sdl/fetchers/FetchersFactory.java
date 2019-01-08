@@ -4,6 +4,12 @@ import graphql.schema.GraphQLFieldDefinition;
 
 public class FetchersFactory {
 
+    public enum DefaultFetcherNames {
+        all,
+        ById,
+        ByPath
+    }
+
     public enum FetcherTypes {
         ALL,
         ID,
@@ -13,25 +19,25 @@ public class FetchersFactory {
 
     public static FinderDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {
         String queryName = fieldDefinition.getName();
-        if (queryName.startsWith("all")) {
-            return getFetcherType(fieldDefinition, nodeType, FetcherTypes.ALL);
+        if (queryName.startsWith(DefaultFetcherNames.all.name())) {
+            return getFetcherType(nodeType, FetcherTypes.ALL);
         }
-        else if (queryName.endsWith("ById")) {
-            return getFetcherType(fieldDefinition, nodeType, FetcherTypes.ID);
+        else if (queryName.endsWith(DefaultFetcherNames.ById.name())) {
+            return getFetcherType(nodeType, FetcherTypes.ID);
         }
-        else if (queryName.endsWith("ByPath")) {
-            return getFetcherType(fieldDefinition, nodeType, FetcherTypes.PATH);
+        else if (queryName.endsWith(DefaultFetcherNames.ByPath.name())) {
+            return getFetcherType(nodeType, FetcherTypes.PATH);
         }
         else {
-            return getFetcherType(fieldDefinition, nodeType, FetcherTypes.PROPERTY);
+            return getFetcherType(nodeType, FetcherTypes.PROPERTY);
         }
     }
 
-    public static FinderDataFetcher getFetcherType(GraphQLFieldDefinition fieldDefinition, String nodeType, FetcherTypes type) {
+    public static FinderDataFetcher getFetcherType(final String nodeType, final FetcherTypes type) {
         switch(type) {
             case ALL : return new AllFinderDataFetcher(nodeType);
-            case ID :
-            case PATH :
+            case ID : return new ByIdFinderDataFetcher(nodeType, null);
+            case PATH : return new ByPathFinderDataFetcher(nodeType, null);
             case PROPERTY : //Extract property from fielDefinition name and return fetcher
             default: return null;
         }

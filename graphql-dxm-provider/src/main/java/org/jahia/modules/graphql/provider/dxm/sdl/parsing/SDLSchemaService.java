@@ -154,29 +154,9 @@ public class SDLSchemaService {
                 if (directive != null) {
                     String nodeType = directive.getArgument("node").getValue().toString();
 
-                    boolean shouldIgnoreDefaultQueries = false;
-                    if (directive.getArgument("ignoreDefaultQueries").getValue() != null) {
-                        shouldIgnoreDefaultQueries = (Boolean) directive.getArgument("ignoreDefaultQueries").getValue();
-                    }
-
-                    if (!shouldIgnoreDefaultQueries) {
-                        FinderDataFetcher idFetcher = FetchersFactory.getFetcherType(fieldDefinition, nodeType, FetchersFactory.FetcherTypes.ID);
-                        FinderDataFetcher pathFetcher = FetchersFactory.getFetcherType(fieldDefinition, nodeType, FetchersFactory.FetcherTypes.PATH);
-                        defs.add(GraphQLFieldDefinition.newFieldDefinition()
-                                .name(objectType.getName() + "ById")
-                                .description(fieldDefinition.getDescription())
-                                .dataFetcher(idFetcher)
-                                .argument(idFetcher.getArguments())
-                                .type(fieldDefinition.getType())
-                                .build());
-                        defs.add(GraphQLFieldDefinition.newFieldDefinition()
-                                .name(objectType.getName() + "ByPath")
-                                .description(fieldDefinition.getDescription())
-                                .dataFetcher(pathFetcher)
-                                .argument(pathFetcher.getArguments())
-                                .type(fieldDefinition.getType())
-                                .build());
-                    }
+                    /** implicit data fetcher for all customer types  **/
+                    this.applyDefaultFetcher(defs, directive, fieldDefinition.getType(), FetchersFactory.DefaultFetcherNames.ById.name());
+                    this.applyDefaultFetcher(defs, directive, fieldDefinition.getType(), FetchersFactory.DefaultFetcherNames.ByPath.name());
 
                     FinderDataFetcher fetcher = FetchersFactory.getFetcher(fieldDefinition, nodeType);
                     GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition()
@@ -189,8 +169,49 @@ public class SDLSchemaService {
                     defs.add(sdlDef);
                 }
             }
+
+            /** implicit data fetcher for all customer types  **/
+            for (GraphQLType type : graphQLSchema.getAdditionalTypes()) {
+               GraphQLDirective directive = ((GraphQLObjectType)type).getDirective("mapping");
+                this.applyDefaultFetcher(defs, directive, (GraphQLOutputType)type, FetchersFactory.DefaultFetcherNames.ById.name());
+                this.applyDefaultFetcher(defs, directive, (GraphQLOutputType)type, FetchersFactory.DefaultFetcherNames.ByPath.name());
+            }
         }
         return defs;
+    }
+
+    /**
+     *
+     * @param defs
+     * @param defaultFinder
+     */
+    private void applyDefaultFetcher(final List<GraphQLFieldDefinition> defs, final GraphQLDirective directive,
+                                      GraphQLOutputType type, final String defaultFinder){
+        boolean shouldIgnoreDefaultQueries = false;
+        if (directive.getArgument("ignoreDefaultQueries").getValue() != null) {
+            shouldIgnoreDefaultQueries = (Boolean) directive.getArgument("ignoreDefaultQueries").getValue();
+        }
+
+        if(!shouldIgnoreDefaultQueries){
+            GraphQLArgument argument = ((GraphQLObjectType) type).getDirective("mapping").getArgument("node");
+
+            FetchersFactory.FetcherTypes fetcherTypes = FetchersFactory.FetcherTypes.PROPERTY;
+            if (defaultFinder.equals("ById")) fetcherTypes = FetchersFactory.FetcherTypes.ID;
+            else if (defaultFinder.equals("ByPath")) fetcherTypes = FetchersFactory.FetcherTypes.PATH;
+
+            if(argument!=null){
+                FinderDataFetcher dataFetcher = FetchersFactory.getFetcherType(argument.getValue().toString(), fetcherTypes);
+                final String defaultFinderName = type.getName() + defaultFinder;
+                defs.add(GraphQLFieldDefinition.newFieldDefinition()
+                        .name(defaultFinderName)
+                        .description("default finder for " + defaultFinderName)
+                        .dataFetcher(dataFetcher)
+                        .argument(dataFetcher.getArguments())
+                        .type(type)
+                        .build());
+            }
+
+        }
     }
 
     private TypeDefinitionRegistry prepareTypeRegistryDefinition() {
