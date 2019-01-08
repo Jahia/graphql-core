@@ -7,6 +7,8 @@ import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.errors.SchemaProblem;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.AllFinderDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FetchersFactory;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLSchemaInfo;
 import org.jahia.modules.graphql.provider.dxm.sdl.registration.SDLRegistrationService;
@@ -153,17 +155,35 @@ public class SDLSchemaService {
                     String nodeType = directive.getArgument("node").getValue().toString();
 
                     boolean shouldIgnoreDefaultQueries = false;
-                    if (directive.getArgument("ignoreDefaultQueries") != null) {
+                    if (directive.getArgument("ignoreDefaultQueries").getValue() != null) {
                         shouldIgnoreDefaultQueries = (Boolean) directive.getArgument("ignoreDefaultQueries").getValue();
                     }
-                    //TODO incorporate boolean into the rest of the logic
 
-                    AllFinderDataFetcher dataFetcher = new AllFinderDataFetcher(nodeType);
+                    if (!shouldIgnoreDefaultQueries) {
+                        FinderDataFetcher idFetcher = FetchersFactory.getFetcherType(fieldDefinition, nodeType, FetchersFactory.FetcherTypes.ID);
+                        FinderDataFetcher pathFetcher = FetchersFactory.getFetcherType(fieldDefinition, nodeType, FetchersFactory.FetcherTypes.PATH);
+                        defs.add(GraphQLFieldDefinition.newFieldDefinition()
+                                .name(objectType.getName() + "ById")
+                                .description(fieldDefinition.getDescription())
+                                .dataFetcher(idFetcher)
+                                .argument(idFetcher.getArguments())
+                                .type(fieldDefinition.getType())
+                                .build());
+                        defs.add(GraphQLFieldDefinition.newFieldDefinition()
+                                .name(objectType.getName() + "ByPath")
+                                .description(fieldDefinition.getDescription())
+                                .dataFetcher(pathFetcher)
+                                .argument(pathFetcher.getArguments())
+                                .type(fieldDefinition.getType())
+                                .build());
+                    }
+
+                    FinderDataFetcher fetcher = FetchersFactory.getFetcher(fieldDefinition, nodeType);
                     GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition()
                             .name(fieldDefinition.getName())
                             .description(fieldDefinition.getDescription())
-                            .dataFetcher(dataFetcher)
-                            .argument(dataFetcher.getArguments())
+                            .dataFetcher(fetcher)
+                            .argument(fetcher.getArguments())
                             .type(fieldDefinition.getType()) // todo return a connection to type if finder is multiple
                             .build();
                     defs.add(sdlDef);

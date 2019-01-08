@@ -1,18 +1,18 @@
-type NewsSDL @mapping(node:"jnt:news", ignoreDefaultQueries:true) @description(value:"This is news "){
+type NewsSDL @mapping(node:"jnt:news", ignoreDefaultQueries: true) @description(value:"This is news "){
     title(language:String): String @mapping(property:"jcr:title") @description(value:"This is title ")
     description(language:String): String
     file: String @description(value:"This is file")
     date: String
 }
 
-type BrokenNewsSDL @mapping(node:"jnt:news"){
+type BrokenNewsSDL @mapping(node:"jnt:news", ignoreDefaultQueries: true){
     title(language:String): String @mapping(property:"jcr:title")
-    description(language:String): String @mapping(property:"jcr:doodoo")
+    description(language:String): String @mapping(property:"desc")
     file: String
     date: String
 }
 
-type BoozSDL @mapping(node:"jnt:booz"){
+type BoozSDL @mapping(node:"jnt:booz", ignoreDefaultQueries: true){
     title(language:String): String @mapping(property:"jcr:title")
     description(language:String): String
     file: String
