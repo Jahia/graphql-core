@@ -6,7 +6,6 @@ import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.errors.SchemaProblem;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.AllFinderDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderFetchersFactory;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
@@ -193,7 +192,10 @@ public class SDLSchemaService {
         }
 
         if(!shouldIgnoreDefaultQueries){
-            GraphQLArgument argument = ((GraphQLObjectType) type).getDirective("mapping").getArgument("node");
+            //when the type is defined in extending Query, it is type of GraphQLList like [MyType]
+            if (type instanceof GraphQLList) type = (GraphQLOutputType)((GraphQLList)type).getWrappedType();
+
+            GraphQLArgument argument = ((GraphQLObjectType)type).getDirective("mapping").getArgument("node");
 
             FinderFetchersFactory.FetcherTypes fetcherTypes = FinderFetchersFactory.FetcherTypes.PROPERTY;
             if (defaultFinder.equals("ById")) fetcherTypes = FinderFetchersFactory.FetcherTypes.ID;
