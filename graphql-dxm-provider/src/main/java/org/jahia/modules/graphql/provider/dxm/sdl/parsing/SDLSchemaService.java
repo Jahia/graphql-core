@@ -7,8 +7,8 @@ import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.errors.SchemaProblem;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.AllFinderDataFetcher;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FetchersFactory;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderFetchersFactory;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLSchemaInfo;
 import org.jahia.modules.graphql.provider.dxm.sdl.registration.SDLRegistrationService;
@@ -155,10 +155,10 @@ public class SDLSchemaService {
                     String nodeType = directive.getArgument("node").getValue().toString();
 
                     /** implicit data fetcher for all customer types  **/
-                    this.applyDefaultFetcher(defs, directive, fieldDefinition.getType(), FetchersFactory.DefaultFetcherNames.ById.name());
-                    this.applyDefaultFetcher(defs, directive, fieldDefinition.getType(), FetchersFactory.DefaultFetcherNames.ByPath.name());
+                    this.applyDefaultFetcher(defs, directive, fieldDefinition.getType(), FinderFetchersFactory.DefaultFetcherNames.ById.name());
+                    this.applyDefaultFetcher(defs, directive, fieldDefinition.getType(), FinderFetchersFactory.DefaultFetcherNames.ByPath.name());
 
-                    FinderDataFetcher fetcher = FetchersFactory.getFetcher(fieldDefinition, nodeType);
+                    FinderDataFetcher fetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                     GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition()
                             .name(fieldDefinition.getName())
                             .description(fieldDefinition.getDescription())
@@ -173,8 +173,8 @@ public class SDLSchemaService {
             /** implicit data fetcher for all customer types  **/
             for (GraphQLType type : graphQLSchema.getAdditionalTypes()) {
                GraphQLDirective directive = ((GraphQLObjectType)type).getDirective("mapping");
-                this.applyDefaultFetcher(defs, directive, (GraphQLOutputType)type, FetchersFactory.DefaultFetcherNames.ById.name());
-                this.applyDefaultFetcher(defs, directive, (GraphQLOutputType)type, FetchersFactory.DefaultFetcherNames.ByPath.name());
+                this.applyDefaultFetcher(defs, directive, (GraphQLOutputType)type, FinderFetchersFactory.DefaultFetcherNames.ById.name());
+                this.applyDefaultFetcher(defs, directive, (GraphQLOutputType)type, FinderFetchersFactory.DefaultFetcherNames.ByPath.name());
             }
         }
         return defs;
@@ -195,12 +195,12 @@ public class SDLSchemaService {
         if(!shouldIgnoreDefaultQueries){
             GraphQLArgument argument = ((GraphQLObjectType) type).getDirective("mapping").getArgument("node");
 
-            FetchersFactory.FetcherTypes fetcherTypes = FetchersFactory.FetcherTypes.PROPERTY;
-            if (defaultFinder.equals("ById")) fetcherTypes = FetchersFactory.FetcherTypes.ID;
-            else if (defaultFinder.equals("ByPath")) fetcherTypes = FetchersFactory.FetcherTypes.PATH;
+            FinderFetchersFactory.FetcherTypes fetcherTypes = FinderFetchersFactory.FetcherTypes.PROPERTY;
+            if (defaultFinder.equals("ById")) fetcherTypes = FinderFetchersFactory.FetcherTypes.ID;
+            else if (defaultFinder.equals("ByPath")) fetcherTypes = FinderFetchersFactory.FetcherTypes.PATH;
 
             if(argument!=null){
-                FinderDataFetcher dataFetcher = FetchersFactory.getFetcherType(argument.getValue().toString(), fetcherTypes);
+                FinderDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(argument.getValue().toString(), fetcherTypes);
                 final String defaultFinderName = type.getName() + defaultFinder;
                 defs.add(GraphQLFieldDefinition.newFieldDefinition()
                         .name(defaultFinderName)
