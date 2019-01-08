@@ -2,7 +2,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.GraphQLFieldDefinition;
 
-public class FetchersFactory {
+public class FinderFetchersFactory {
 
     public enum DefaultFetcherNames {
         all,
