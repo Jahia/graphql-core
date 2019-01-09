@@ -1,6 +1,11 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
+import graphql.language.FieldDefinition;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
+import org.apache.commons.lang.StringUtils;
 
 public class FinderFetchersFactory {
 
@@ -31,7 +36,7 @@ public class FinderFetchersFactory {
             return getFetcherType(finder, FetcherTypes.PATH);
         }
         else {
-            finder.setProperty(getMappedProperty(fieldDefinition));
+            finder.setProperty(getMappedProperty(queryName, fieldDefinition));
             return getFetcherType(finder, FetcherTypes.STRING);
         }
     }
@@ -46,7 +51,10 @@ public class FinderFetchersFactory {
         }
     }
 
-    public static String getMappedProperty(GraphQLFieldDefinition fieldDefinition) {
-        return fieldDefinition.getDirective("mapping").getArgument("property").getValue().toString();
+    public static String getMappedProperty(String queryName, GraphQLFieldDefinition fieldDefinition) {
+        String afterBy = StringUtils.uncapitalize(StringUtils.substringAfterLast(queryName, "By"));
+        GraphQLObjectType type = (GraphQLObjectType)((GraphQLList)fieldDefinition.getType()).getWrappedType();
+        GraphQLFieldDefinition fd = type.getFieldDefinition(afterBy);
+        return fd.getDirective("mapping").getArgument("property").getValue().toString();
     }
 }
