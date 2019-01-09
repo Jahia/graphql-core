@@ -10,12 +10,6 @@ public class SDLRuntimeWiring {
         return RuntimeWiring.newRuntimeWiring()
                 .type(newTypeWiring("Query").build())
                 .directive("mapping", directiveWiring)
-                .wiringFactory(new NoopWiringFactory(){
-                    @Override
-                    public DataFetcher getDefaultDataFetcher(FieldWiringEnvironment environment) {
-                        return DataFetchingEnvironment::getSource;
-                    }
-                })
                 .directive("description", directiveWiring)
                 .build();
     }
