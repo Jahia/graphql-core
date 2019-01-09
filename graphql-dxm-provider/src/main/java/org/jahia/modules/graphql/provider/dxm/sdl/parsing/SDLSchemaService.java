@@ -179,68 +179,6 @@ public class SDLSchemaService {
         return defs;
     }
 
-    /**
-     *
-     * @param defs
-     * @param defaultFinder
-     */
-    private void applyDefaultFetcher(final List<GraphQLFieldDefinition> defs, final GraphQLDirective directive,
-                                      GraphQLOutputType type, final String defaultFinder){
-        boolean shouldIgnoreDefaultQueries = false;
-        if (directive.getArgument("ignoreDefaultQueries").getValue() != null) {
-            shouldIgnoreDefaultQueries = (Boolean) directive.getArgument("ignoreDefaultQueries").getValue();
-        }
-
-        if(!shouldIgnoreDefaultQueries){
-            //when the type is defined in extending Query, it is type of GraphQLList like [MyType]
-            if (type instanceof GraphQLList) type = (GraphQLOutputType)((GraphQLList)type).getWrappedType();
-
-            GraphQLArgument argument = ((GraphQLObjectType)type).getDirective("mapping").getArgument("node");
-
-            FinderFetchersFactory.FetcherTypes fetcherTypes = FinderFetchersFactory.FetcherTypes.PROPERTY;
-            if (defaultFinder.equals("ById")) fetcherTypes = FinderFetchersFactory.FetcherTypes.ID;
-            else if (defaultFinder.equals("ByPath")) fetcherTypes = FinderFetchersFactory.FetcherTypes.PATH;
-
-            if(argument!=null){
-                FinderDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(argument.getValue().toString(), fetcherTypes);
-                final String defaultFinderName = type.getName() + defaultFinder;
-                defs.add(GraphQLFieldDefinition.newFieldDefinition()
-                        .name(defaultFinderName)
-                        .description("default finder for " + defaultFinderName)
-                        .dataFetcher(dataFetcher)
-                        .argument(dataFetcher.getArguments())
-                        .type(type)
-                        .build());
-            }
-
-        }
-    }
-
-    private TypeDefinitionRegistry prepareTypeRegistryDefinition() {
-        TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
-        typeDefinitionRegistry.add(new ObjectTypeDefinition("Query"));
-        typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
-                .name("mapping")
-                .directiveLocations(Arrays.asList(
-                        DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
-                        DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
-                .inputValueDefinitions(Arrays.asList(
-                        InputValueDefinition.newInputValueDefinition().name("node").type(TypeName.newTypeName("String").build()).build(),
-                        InputValueDefinition.newInputValueDefinition().name("property").type(TypeName.newTypeName("String").build()).build(),
-                        InputValueDefinition.newInputValueDefinition().name("ignoreDefaultQueries").type(TypeName.newTypeName("Boolean").build()).build()))
-                .build());
-        typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
-                .name("description")
-                .directiveLocations(Arrays.asList(
-                        DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
-                        DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
-                .inputValueDefinitions(Arrays.asList(
-                        InputValueDefinition.newInputValueDefinition().name("value").type(TypeName.newTypeName("String").build()).build()))
-                .build());
-
-        return typeDefinitionRegistry;
-    }
-
     public List<GraphQLType> getSDLTypes() {
         List<GraphQLType> types = new ArrayList<>();
         if (graphQLSchema != null) {
@@ -301,6 +239,68 @@ public class SDLSchemaService {
         public List<SDLSchemaInfo> getInfos() {
             return infos;
         }
+    }
+
+    /**
+     *
+     * @param defs
+     * @param defaultFinder
+     */
+    private void applyDefaultFetcher(final List<GraphQLFieldDefinition> defs, final GraphQLDirective directive,
+                                     GraphQLOutputType type, final String defaultFinder){
+        boolean shouldIgnoreDefaultQueries = false;
+        if (directive.getArgument("ignoreDefaultQueries").getValue() != null) {
+            shouldIgnoreDefaultQueries = (Boolean) directive.getArgument("ignoreDefaultQueries").getValue();
+        }
+
+        if(!shouldIgnoreDefaultQueries){
+            //when the type is defined in extending Query, it is type of GraphQLList like [MyType]
+            if (type instanceof GraphQLList) type = (GraphQLOutputType)((GraphQLList)type).getWrappedType();
+
+            GraphQLArgument argument = ((GraphQLObjectType)type).getDirective("mapping").getArgument("node");
+
+            FinderFetchersFactory.FetcherTypes fetcherTypes = FinderFetchersFactory.FetcherTypes.PROPERTY;
+            if (defaultFinder.equals(FinderFetchersFactory.DefaultFetcherNames.ById.name())) fetcherTypes = FinderFetchersFactory.FetcherTypes.ID;
+            else if (defaultFinder.equals(FinderFetchersFactory.DefaultFetcherNames.ByPath.name())) fetcherTypes = FinderFetchersFactory.FetcherTypes.PATH;
+
+            if(argument!=null){
+                FinderDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(argument.getValue().toString(), fetcherTypes);
+                final String defaultFinderName = type.getName() + defaultFinder;
+                defs.add(GraphQLFieldDefinition.newFieldDefinition()
+                        .name(defaultFinderName)
+                        .description("default finder for " + defaultFinderName)
+                        .dataFetcher(dataFetcher)
+                        .argument(dataFetcher.getArguments())
+                        .type(type)
+                        .build());
+            }
+
+        }
+    }
+
+    private TypeDefinitionRegistry prepareTypeRegistryDefinition() {
+        TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
+        typeDefinitionRegistry.add(new ObjectTypeDefinition("Query"));
+        typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
+                .name("mapping")
+                .directiveLocations(Arrays.asList(
+                        DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
+                        DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
+                .inputValueDefinitions(Arrays.asList(
+                        InputValueDefinition.newInputValueDefinition().name("node").type(TypeName.newTypeName("String").build()).build(),
+                        InputValueDefinition.newInputValueDefinition().name("property").type(TypeName.newTypeName("String").build()).build(),
+                        InputValueDefinition.newInputValueDefinition().name("ignoreDefaultQueries").type(TypeName.newTypeName("Boolean").build()).build()))
+                .build());
+        typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
+                .name("description")
+                .directiveLocations(Arrays.asList(
+                        DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
+                        DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
+                .inputValueDefinitions(Arrays.asList(
+                        InputValueDefinition.newInputValueDefinition().name("value").type(TypeName.newTypeName("String").build()).build()))
+                .build());
+
+        return typeDefinitionRegistry;
     }
 
     private LinkedHashMap<ObjectTypeExtensionDefinition, List<FieldDefinition>> verifyExtendedTypesExist(AtomicBoolean typeErrorsOccurred,

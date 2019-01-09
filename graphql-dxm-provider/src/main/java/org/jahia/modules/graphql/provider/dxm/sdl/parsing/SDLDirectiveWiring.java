@@ -7,6 +7,7 @@ import graphql.schema.idl.SchemaDirectiveWiringEnvironment;
 import graphql.schema.idl.SchemaDirectiveWiringEnvironmentImpl;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Field;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.PropertiesDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.PropertiesDataFetcherFactory;
 
 import static graphql.Scalars.GraphQLString;
 
@@ -44,7 +45,7 @@ public class SDLDirectiveWiring implements SchemaDirectiveWiring {
 
         GraphQLFieldDefinition.Builder builder = GraphQLFieldDefinition.newFieldDefinition()
                 .name(def.getName())
-                .dataFetcher(new PropertiesDataFetcher(field))
+                .dataFetcher(PropertiesDataFetcherFactory.getFetcher(field))
                 .argument(GraphQLArgument.newArgument().name("language").type(GraphQLString).build())
                 .type(def.getType());
 
