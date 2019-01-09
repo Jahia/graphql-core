@@ -14,32 +14,39 @@ public class FinderFetchersFactory {
         ALL,
         ID,
         PATH,
-        PROPERTY
+        STRING
     }
 
     public static FinderDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {
         String queryName = fieldDefinition.getName();
+        Finder finder = new Finder(queryName);
+        finder.setType(nodeType);
         if (queryName.startsWith(DefaultFetcherNames.all.name())) {
-            return getFetcherType(nodeType, FetcherTypes.ALL);
+            return getFetcherType(finder, FetcherTypes.ALL);
         }
         else if (queryName.endsWith(DefaultFetcherNames.ById.name())) {
-            return getFetcherType(nodeType, FetcherTypes.ID);
+            return getFetcherType(finder, FetcherTypes.ID);
         }
         else if (queryName.endsWith(DefaultFetcherNames.ByPath.name())) {
-            return getFetcherType(nodeType, FetcherTypes.PATH);
+            return getFetcherType(finder, FetcherTypes.PATH);
         }
         else {
-            return getFetcherType(nodeType, FetcherTypes.PROPERTY);
+            finder.setProperty(getMappedProperty(fieldDefinition));
+            return getFetcherType(finder, FetcherTypes.STRING);
         }
     }
 
-    public static FinderDataFetcher getFetcherType(final String nodeType, final FetcherTypes type) {
+    public static FinderDataFetcher getFetcherType(final Finder finder, final FetcherTypes type) {
         switch(type) {
-            case ALL : return new AllFinderDataFetcher(nodeType);
-            case ID : return new ByIdFinderDataFetcher(nodeType, null);
-            case PATH : return new ByPathFinderDataFetcher(nodeType, null);
-            case PROPERTY : //Extract property from fielDefinition name and return fetcher
+            case ALL : return new AllFinderDataFetcher(finder);
+            case ID : return new ByIdFinderDataFetcher(finder);
+            case PATH : return new ByPathFinderDataFetcher(finder);
+            case STRING : new StringFinderDataFetcher(finder);
             default: return null;
         }
+    }
+
+    public static String getMappedProperty(GraphQLFieldDefinition fieldDefinition) {
+        return fieldDefinition.getDirective("mapping").getArgument("property").getValue().toString();
     }
 }

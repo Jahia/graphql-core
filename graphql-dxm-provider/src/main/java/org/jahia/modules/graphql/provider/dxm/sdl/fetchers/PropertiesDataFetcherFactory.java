@@ -1,6 +1,7 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetcher;
+import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLScalarType;
 
