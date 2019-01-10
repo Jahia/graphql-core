@@ -22,7 +22,8 @@ public class FinderFetchersFactory {
         PATH,
         DATE,
         PROPERTY,
-        STRING
+        STRING,
+        BOOLEAN
     }
 
     public static FinderDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {
@@ -45,16 +46,18 @@ public class FinderFetchersFactory {
             GraphQLObjectType graphQLType = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
 
             //if it is scalar date type, apply date range fetcher
-            if (graphQLType.getFieldDefinition(propertyName).getType().getName().equals("Date")) {
-                return getWrappedFetcherType(graphQLType, finder, FetcherTypes.DATE);
+            switch (graphQLType.getFieldDefinition(propertyName).getType().getName()) {
+                case "Date" :
+                    return getWrappedFetcherType(graphQLType, finder, FetcherTypes.DATE);
+                case "Boolean" :
+                    return getWrappedFetcherType(graphQLType, finder, FetcherTypes.BOOLEAN);
+                default : return getFetcherType(finder, FetcherTypes.STRING);
             }
         }
         else {
             finder.setProperty(getMappedProperty(queryName, fieldDefinition));
             return getFetcherType(finder, FetcherTypes.STRING);
         }
-
-        return getFetcherType(finder, FetcherTypes.PROPERTY);
     }
 
     public static FinderDataFetcher getFetcherType(final Finder finder, final FetcherTypes type) {
@@ -67,16 +70,17 @@ public class FinderFetchersFactory {
         }
     }
 
-    public static FinderDataFetcher getWrappedFetcherType(GraphQLType wrappedType, final Finder finder, final FetcherTypes type) {
+    public static FinderDataFetcher getWrappedFetcherType(GraphQLObjectType wrappedType, final Finder finder, final FetcherTypes type) {
+        GraphQLDirective directive = wrappedType.getFieldDefinition(extractPropertyName(finder.getName())).getDirective("mapping");
+        if (directive!=null) {
+            finder.setProperty(directive.getArgument("property").getValue().toString());
+        }
+
         switch(type) {
             case DATE :
-                //set property mapping to the finder
-                GraphQLObjectType graphQLType = (GraphQLObjectType)wrappedType;
-                GraphQLDirective directive = graphQLType.getFieldDefinition(extractPropertyName(finder.getName())).getDirective("mapping");
-                if (directive!=null) {
-                    finder.setProperty(directive.getArgument("property").getValue().toString());
-                }
                 return new DateRangeDataFetcher(finder.getType(), finder);
+            case BOOLEAN :
+                return new BooleanFinderDataFetcher(finder.getType(), finder);
             default: return null;
         }
     }
