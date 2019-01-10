@@ -48,6 +48,7 @@ import graphql.annotations.processor.GraphQLAnnotationsComponent;
 import graphql.annotations.processor.ProcessingElementsContainer;
 import graphql.schema.*;
 import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.sdl.types.GraphQLDate;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
@@ -205,6 +206,8 @@ public class SpecializedTypesHandler {
                 type = GraphQLBoolean;
                 break;
             case PropertyType.DATE:
+                type = new GraphQLDate();
+                break;
             case PropertyType.DECIMAL:
             case PropertyType.LONG:
                 type = GraphQLLong;
