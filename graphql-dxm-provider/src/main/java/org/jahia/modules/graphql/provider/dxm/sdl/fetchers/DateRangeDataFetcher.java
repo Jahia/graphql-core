@@ -74,8 +74,8 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
     public static String ARG_AFTER = "after";
     public static String ARG_BEFORE = "before";
 
-    public DateRangeDataFetcher(String type, Finder finder){
-        super(type, finder);
+    public DateRangeDataFetcher(Finder finder){
+        super(finder.getType(), finder);
     }
 
     @Override

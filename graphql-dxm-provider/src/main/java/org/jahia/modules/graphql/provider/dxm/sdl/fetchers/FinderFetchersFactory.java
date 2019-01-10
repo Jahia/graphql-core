@@ -12,8 +12,7 @@ public class FinderFetchersFactory {
     public enum DefaultFetcherNames {
         all,
         ById,
-        ByPath,
-        Date
+        ByPath
     }
 
     public enum FetcherTypes {
@@ -21,9 +20,8 @@ public class FinderFetchersFactory {
         ID,
         PATH,
         DATE,
-        PROPERTY,
-        STRING,
-        BOOLEAN
+        NUMBER,
+        STRING
     }
 
     public static FinderDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {
@@ -32,6 +30,7 @@ public class FinderFetchersFactory {
         Finder finder = new Finder(queryName);
         finder.setType(nodeType);
 
+        //Handle all, byId and byPath cases
         if (queryName.startsWith(DefaultFetcherNames.all.name())) {
             return getFetcherType(finder, FetcherTypes.ALL);
         }
@@ -41,22 +40,17 @@ public class FinderFetchersFactory {
         else if (queryName.endsWith(DefaultFetcherNames.ByPath.name())) {
             return getFetcherType(finder, FetcherTypes.PATH);
         }
-        else if(fieldDefinition.getType() instanceof GraphQLList) {//determine data type of the property from query name
-            String propertyName = extractPropertyName(fieldDefinition.getName());
-            GraphQLObjectType graphQLType = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
 
-            //if it is scalar date type, apply date range fetcher
-            switch (graphQLType.getFieldDefinition(propertyName).getType().getName()) {
-                case "Date" :
-                    return getWrappedFetcherType(graphQLType, finder, FetcherTypes.DATE);
-                case "Boolean" :
-                    return getWrappedFetcherType(graphQLType, finder, FetcherTypes.BOOLEAN);
-                default : return getFetcherType(finder, FetcherTypes.STRING);
-            }
-        }
-        else {
-            finder.setProperty(getMappedProperty(queryName, fieldDefinition));
-            return getFetcherType(finder, FetcherTypes.STRING);
+        //Handle specialized types
+        String definitionPropertyName = getDefinitionProperty(queryName);
+        String propertyNameInJcr = getMappedProperty(definitionPropertyName, fieldDefinition);
+        String propertyType = getMappedType(definitionPropertyName, fieldDefinition);
+        finder.setProperty(propertyNameInJcr);
+
+        switch(propertyType) {
+            case "Date" : return getFetcherType(finder, FetcherTypes.DATE);
+            case "Number" : return getFetcherType(finder, FetcherTypes.NUMBER);
+            default : return getFetcherType(finder, FetcherTypes.STRING);
         }
     }
 
@@ -66,34 +60,24 @@ public class FinderFetchersFactory {
             case ID : return new ByIdFinderDataFetcher(finder);
             case PATH : return new ByPathFinderDataFetcher(finder);
             case STRING : return new StringFinderDataFetcher(finder);
+            case DATE : return new DateRangeDataFetcher(finder);
+            case NUMBER : return new NumberFinderDataFetcher(finder);
             default: return null;
         }
     }
 
-    public static FinderDataFetcher getWrappedFetcherType(GraphQLObjectType wrappedType, final Finder finder, final FetcherTypes type) {
-        GraphQLDirective directive = wrappedType.getFieldDefinition(extractPropertyName(finder.getName())).getDirective("mapping");
-        if (directive!=null) {
-            finder.setProperty(directive.getArgument("property").getValue().toString());
-        }
-
-        switch(type) {
-            case DATE :
-                return new DateRangeDataFetcher(finder.getType(), finder);
-            case BOOLEAN :
-                return new BooleanFinderDataFetcher(finder.getType(), finder);
-            default: return null;
-        }
+    public static String getDefinitionProperty(String queryName) {
+        return StringUtils.uncapitalize(StringUtils.substringAfterLast(queryName, "By"));
     }
 
-    private static String extractPropertyName(String queryName){
-        String propertyName = queryName.substring(queryName.lastIndexOf("By") + 2);
-        return WordUtils.uncapitalize(propertyName);
-    }
-
-    public static String getMappedProperty(String queryName, GraphQLFieldDefinition fieldDefinition) {
-        String afterBy = StringUtils.uncapitalize(StringUtils.substringAfterLast(queryName, "By"));
+    public static String getMappedProperty(String definitionPropertyName, GraphQLFieldDefinition fieldDefinition) {
         GraphQLObjectType type = (GraphQLObjectType)((GraphQLList)fieldDefinition.getType()).getWrappedType();
-        GraphQLFieldDefinition fd = type.getFieldDefinition(afterBy);
+        GraphQLFieldDefinition fd = type.getFieldDefinition(definitionPropertyName);
         return fd.getDirective("mapping").getArgument("property").getValue().toString();
+    }
+
+    public static String getMappedType(String definitionPropertyName, GraphQLFieldDefinition fieldDefinition) {
+        GraphQLObjectType graphQLType = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
+        return graphQLType.getFieldDefinition(definitionPropertyName).getType().getName();
     }
 }

@@ -131,9 +131,9 @@ public class NumberFinderDataFetcher extends FinderDataFetcher {
     }
 
     private String firstValidParameter(Map<String, Object> arguments) {
-        List<GraphQLArgument> args = getArguments();
-        for (GraphQLArgument arg : args) {
-            String argName = arg.getName();
+        Set<Map.Entry<String, Object>> args = arguments.entrySet();
+        for (Map.Entry<String, Object> arg : args) {
+            String argName = arg.getKey();
             if (argName.equals(PREVIEW) || argName.equals(LANGUAGE)) continue;
             return argName;
         }
