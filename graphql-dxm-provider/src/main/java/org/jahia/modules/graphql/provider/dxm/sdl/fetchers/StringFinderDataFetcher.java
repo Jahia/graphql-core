@@ -2,6 +2,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
+import org.apache.jackrabbit.util.Text;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
@@ -81,12 +82,12 @@ public class StringFinderDataFetcher extends FinderDataFetcher {
                 throw new RuntimeException(String.format("Entry point %s must have either 'contains' or 'equals' parameter", environment.getFieldDefinition().getName()));
 
             if (arguments.containsKey(CONTAINS)) {
-                String argument = (String) arguments.get(CONTAINS);
+                String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(CONTAINS));
                 String addOn = invert ? "not" : "";
                 statement = String.format("SELECT * FROM [%s] as n where %s contains(n.[%s], '%s')", type, addOn, finder.getProperty(), argument);
             }
             else if (arguments.containsKey(EQUALS)) {
-                String argument = (String) arguments.get(EQUALS);
+                String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(EQUALS));
                 String addOn = invert ? "<>" : "=";
                 statement = String.format("SELECT * FROM [%s] as n where n.[%s]%s'%s'", type, finder.getProperty(), addOn, argument);
             }
