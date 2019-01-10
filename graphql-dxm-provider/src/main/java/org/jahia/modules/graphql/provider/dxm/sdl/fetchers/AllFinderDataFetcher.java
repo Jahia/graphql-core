@@ -26,6 +26,10 @@ public class AllFinderDataFetcher extends FinderDataFetcher {
         super(type);
     }
 
+    public AllFinderDataFetcher(Finder finder) {
+        super(finder.getType(), finder);
+    }
+
     @Override
     public List<GraphQLArgument> getArguments() {
         return Arrays.asList(GraphQLArgument.newArgument().name("preview").type(Scalars.GraphQLBoolean).build(),

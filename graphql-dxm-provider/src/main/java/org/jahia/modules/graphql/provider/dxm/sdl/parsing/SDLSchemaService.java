@@ -6,6 +6,7 @@ import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.errors.SchemaProblem;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Finder;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderFetchersFactory;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
@@ -175,6 +176,7 @@ public class SDLSchemaService {
                this.applyDefaultFetcher(defs, directive, (GraphQLOutputType)type, FinderFetchersFactory.DefaultFetcherNames.ById.name());
                this.applyDefaultFetcher(defs, directive, (GraphQLOutputType)type, FinderFetchersFactory.DefaultFetcherNames.ByPath.name());
             }
+
         }
         return defs;
     }
@@ -259,13 +261,17 @@ public class SDLSchemaService {
 
             GraphQLArgument argument = ((GraphQLObjectType)type).getDirective("mapping").getArgument("node");
 
-            FinderFetchersFactory.FetcherTypes fetcherTypes = FinderFetchersFactory.FetcherTypes.PROPERTY;
+            FinderFetchersFactory.FetcherTypes fetcherTypes = FinderFetchersFactory.FetcherTypes.STRING;
             if (defaultFinder.equals(FinderFetchersFactory.DefaultFetcherNames.ById.name())) fetcherTypes = FinderFetchersFactory.FetcherTypes.ID;
             else if (defaultFinder.equals(FinderFetchersFactory.DefaultFetcherNames.ByPath.name())) fetcherTypes = FinderFetchersFactory.FetcherTypes.PATH;
 
             if(argument!=null){
                 final String finderName = type.getName() + defaultFinder;
-                FinderDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(null, argument.getValue().toString(), fetcherTypes);
+
+                Finder finder = new Finder();
+                finder.setType(argument.getValue().toString());
+                FinderDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(finder, fetcherTypes);
+                final String defaultFinderName = type.getName() + defaultFinder;
                 defs.add(GraphQLFieldDefinition.newFieldDefinition()
                         .name(finderName)
                         .description("default finder for " + finderName)

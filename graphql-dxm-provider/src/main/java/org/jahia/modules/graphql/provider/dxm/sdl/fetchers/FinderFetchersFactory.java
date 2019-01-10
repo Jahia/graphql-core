@@ -2,6 +2,10 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.*;
 import org.apache.commons.lang.WordUtils;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLObjectType;
+import org.apache.commons.lang.StringUtils;
 
 public class FinderFetchersFactory {
 
@@ -17,50 +21,62 @@ public class FinderFetchersFactory {
         ID,
         PATH,
         DATE,
-        PROPERTY
+        PROPERTY,
+        STRING
     }
 
     public static FinderDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {
         String queryName = fieldDefinition.getName();
 
+        Finder finder = new Finder(queryName);
+        finder.setType(nodeType);
+
         if (queryName.startsWith(DefaultFetcherNames.all.name())) {
-            return getFetcherType(fieldDefinition, nodeType, FetcherTypes.ALL);
+            return getFetcherType(finder, FetcherTypes.ALL);
         }
         else if (queryName.endsWith(DefaultFetcherNames.ById.name())) {
-            return getFetcherType(fieldDefinition, nodeType, FetcherTypes.ID);
+            return getFetcherType(finder, FetcherTypes.ID);
         }
         else if (queryName.endsWith(DefaultFetcherNames.ByPath.name())) {
-            return getFetcherType(fieldDefinition, nodeType, FetcherTypes.PATH);
+            return getFetcherType(finder, FetcherTypes.PATH);
         }
-        else if(fieldDefinition.getType() instanceof GraphQLList){//determine data type of the property from query name
+        else if(fieldDefinition.getType() instanceof GraphQLList) {//determine data type of the property from query name
             String propertyName = extractPropertyName(fieldDefinition.getName());
-            GraphQLObjectType graphQLType = (GraphQLObjectType)((GraphQLList) fieldDefinition.getType()).getWrappedType();
+            GraphQLObjectType graphQLType = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
 
             //if it is scalar date type, apply date range fetcher
-            if(graphQLType.getFieldDefinition(propertyName).getType().getName().equals("Date")){
-                return getFetcherType(fieldDefinition, nodeType, FetcherTypes.DATE);
+            if (graphQLType.getFieldDefinition(propertyName).getType().getName().equals("Date")) {
+                return getWrappedFetcherType(graphQLType, finder, FetcherTypes.DATE);
             }
         }
+        else {
+            finder.setProperty(getMappedProperty(queryName, fieldDefinition));
+            return getFetcherType(finder, FetcherTypes.STRING);
+        }
 
-        return getFetcherType(fieldDefinition, nodeType, FetcherTypes.PROPERTY);
+        return getFetcherType(finder, FetcherTypes.PROPERTY);
     }
 
-    public static FinderDataFetcher getFetcherType(final GraphQLFieldDefinition fieldDefinition, final String nodeType, final FetcherTypes type) {
+    public static FinderDataFetcher getFetcherType(final Finder finder, final FetcherTypes type) {
         switch(type) {
-            case ALL : return new AllFinderDataFetcher(nodeType);
-            case ID : return new ByIdFinderDataFetcher(nodeType);
-            case PATH : return new ByPathFinderDataFetcher(nodeType);
+            case ALL : return new AllFinderDataFetcher(finder);
+            case ID : return new ByIdFinderDataFetcher(finder);
+            case PATH : return new ByPathFinderDataFetcher(finder);
+            case STRING : return new StringFinderDataFetcher(finder);
+            default: return null;
+        }
+    }
+
+    public static FinderDataFetcher getWrappedFetcherType(GraphQLType wrappedType, final Finder finder, final FetcherTypes type) {
+        switch(type) {
             case DATE :
-                if(fieldDefinition==null) return null;
-                Finder finder = new Finder(fieldDefinition.getName());
                 //set property mapping to the finder
-                GraphQLObjectType graphQLType = (GraphQLObjectType)((GraphQLList) fieldDefinition.getType()).getWrappedType();
-                GraphQLDirective directive = graphQLType.getFieldDefinition(extractPropertyName(fieldDefinition.getName())).getDirective("mapping");
+                GraphQLObjectType graphQLType = (GraphQLObjectType)wrappedType;
+                GraphQLDirective directive = graphQLType.getFieldDefinition(extractPropertyName(finder.getName())).getDirective("mapping");
                 if (directive!=null) {
                     finder.setProperty(directive.getArgument("property").getValue().toString());
                 }
-                return new DateRangeDataFetcher(nodeType, finder);
-            case PROPERTY : //Extract property from field Definition name and return fetcher
+                return new DateRangeDataFetcher(finder.getType(), finder);
             default: return null;
         }
     }
@@ -70,4 +86,10 @@ public class FinderFetchersFactory {
         return WordUtils.uncapitalize(propertyName);
     }
 
+    public static String getMappedProperty(String queryName, GraphQLFieldDefinition fieldDefinition) {
+        String afterBy = StringUtils.uncapitalize(StringUtils.substringAfterLast(queryName, "By"));
+        GraphQLObjectType type = (GraphQLObjectType)((GraphQLList)fieldDefinition.getType()).getWrappedType();
+        GraphQLFieldDefinition fd = type.getFieldDefinition(afterBy);
+        return fd.getDirective("mapping").getArgument("property").getValue().toString();
+    }
 }

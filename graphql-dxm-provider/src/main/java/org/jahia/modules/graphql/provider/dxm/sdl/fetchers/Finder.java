@@ -8,6 +8,8 @@ public class Finder {
     private String type;
     private boolean multiple;
 
+    public Finder() {}
+
     public Finder(String name) {
         this.name = name;
 
