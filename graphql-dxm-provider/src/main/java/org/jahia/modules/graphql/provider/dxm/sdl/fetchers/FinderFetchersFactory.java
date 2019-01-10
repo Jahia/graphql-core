@@ -6,6 +6,7 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.services.content.JCRContentUtils;
 
 public class FinderFetchersFactory {
 
@@ -21,6 +22,7 @@ public class FinderFetchersFactory {
         PATH,
         DATE,
         NUMBER,
+        BOOLEAN,
         STRING
     }
 
@@ -49,6 +51,7 @@ public class FinderFetchersFactory {
 
         switch(propertyType) {
             case "Date" : return getFetcherType(finder, FetcherTypes.DATE);
+            case "Boolean" : return getFetcherType(finder, FetcherTypes.BOOLEAN);
             case "Number" : return getFetcherType(finder, FetcherTypes.NUMBER);
             default : return getFetcherType(finder, FetcherTypes.STRING);
         }
@@ -61,6 +64,7 @@ public class FinderFetchersFactory {
             case PATH : return new ByPathFinderDataFetcher(finder);
             case STRING : return new StringFinderDataFetcher(finder);
             case DATE : return new DateRangeDataFetcher(finder);
+            case BOOLEAN : return new BooleanFinderDataFetcher(finder);
             case NUMBER : return new NumberFinderDataFetcher(finder);
             default: return null;
         }

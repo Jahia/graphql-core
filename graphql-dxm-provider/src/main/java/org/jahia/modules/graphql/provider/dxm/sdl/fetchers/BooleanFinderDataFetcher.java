@@ -72,8 +72,8 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher{
 
     public static String ARG_VALUE = "value";
 
-    BooleanFinderDataFetcher(String type, Finder finder){
-        super(type, finder);
+    BooleanFinderDataFetcher(Finder finder){
+        super(finder.getType(), finder);
     }
 
     @Override
