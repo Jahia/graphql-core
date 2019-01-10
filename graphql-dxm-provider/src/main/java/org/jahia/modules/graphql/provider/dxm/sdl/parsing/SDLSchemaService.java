@@ -169,13 +169,6 @@ public class SDLSchemaService {
                     defs.add(sdlDef);
                 }
             }
-
-            /** implicit data fetcher for all customer types  **/
-            for (GraphQLType type : graphQLSchema.getAdditionalTypes()) {
-               GraphQLDirective directive = ((GraphQLObjectType)type).getDirective("mapping");
-                this.applyDefaultFetcher(defs, directive, (GraphQLOutputType)type, FinderFetchersFactory.DefaultFetcherNames.ById.name());
-                this.applyDefaultFetcher(defs, directive, (GraphQLOutputType)type, FinderFetchersFactory.DefaultFetcherNames.ByPath.name());
-            }
         }
         return defs;
     }
