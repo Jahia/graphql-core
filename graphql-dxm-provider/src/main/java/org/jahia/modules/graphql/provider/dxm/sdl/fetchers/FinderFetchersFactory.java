@@ -46,7 +46,7 @@ public class FinderFetchersFactory {
             case ALL : return new AllFinderDataFetcher(finder);
             case ID : return new ByIdFinderDataFetcher(finder);
             case PATH : return new ByPathFinderDataFetcher(finder);
-            case STRING : new StringFinderDataFetcher(finder);
+            case STRING : return new StringFinderDataFetcher(finder);
             default: return null;
         }
     }

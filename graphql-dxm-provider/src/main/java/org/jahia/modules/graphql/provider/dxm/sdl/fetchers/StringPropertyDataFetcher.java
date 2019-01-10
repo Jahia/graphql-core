@@ -17,7 +17,6 @@ public class StringPropertyDataFetcher implements DataFetcher<Object> {
         this.field = field;
     }
 
-    @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
         try {
             GqlJcrNode node = dataFetchingEnvironment.getSource();
