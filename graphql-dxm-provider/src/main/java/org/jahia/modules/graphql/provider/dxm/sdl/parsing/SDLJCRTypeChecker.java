@@ -2,6 +2,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.parsing;
 
 import graphql.language.*;
 import graphql.schema.idl.TypeDefinitionRegistry;
+import org.apache.commons.lang.ArrayUtils;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatusDescription;
@@ -49,6 +50,7 @@ public class SDLJCRTypeChecker {
                     else {
                         try {
                             ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(jcrNodeType);
+                            ExtendedNodeType[] superTypes = nodeType.getSupertypes();
                             JahiaTemplatesPackage jahiaTemplatesPackage = nodeType.getTemplatePackage();
                             if (jahiaTemplatesPackage != null) {
                                 status.setMappedTypeModuleId(jahiaTemplatesPackage.getBundle().getSymbolicName());
@@ -62,7 +64,7 @@ public class SDLJCRTypeChecker {
                                 for (Directive fieldDirective : def.getDirectives()) {
                                     if (fieldDirective.getName().equals("mapping") && fieldDirective.getArgument("property") != null) {
                                         String jcrPropertyName = ((StringValue)fieldDirective.getArgument("property").getValue()).getValue();
-                                            if (nodeType.getPropertyDefinition(jcrPropertyName) == null) {
+                                            if (!hasProperty((ExtendedNodeType[]) ArrayUtils.add(superTypes, nodeType), jcrPropertyName)) {
                                                 toremove.add(entry.getKey());
                                                 status.setStatusType(SDLDefinitionStatusTypes.MISSING_JCR_PROPERTY);
                                                 status.setStatusDescription(new SDLDefinitionStatusDescription(jcrPropertyName));
@@ -115,5 +117,12 @@ public class SDLJCRTypeChecker {
                     toClone.getComments());
 
         }
+    }
+
+    private static boolean hasProperty(ExtendedNodeType[] nodeTypes, String jcrPropertyName) {
+        for (ExtendedNodeType type : nodeTypes) {
+            if (type.getPropertyDefinition(jcrPropertyName) != null) return true;
+        }
+        return false;
     }
 }
