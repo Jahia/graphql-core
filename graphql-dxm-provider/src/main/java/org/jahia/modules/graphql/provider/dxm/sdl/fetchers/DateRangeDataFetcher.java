@@ -48,12 +48,15 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.utils.LanguageCodeConverters;
 import pl.touk.throwing.ThrowingFunction;
 
 import javax.jcr.RepositoryException;
@@ -65,6 +68,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLInt;
 import static graphql.Scalars.GraphQLString;
 
@@ -75,9 +79,11 @@ import static graphql.Scalars.GraphQLString;
  **/
 public class DateRangeDataFetcher extends FinderDataFetcher{
 
-    public static String ARG_AFTER = "after";
-    public static String ARG_BEFORE = "before";
-    public static String ARG_LASTDAYS = "lastDays";
+    private static final String ARG_AFTER = "after";
+    private static final String ARG_BEFORE = "before";
+    private static final String ARG_LASTDAYS = "lastDays";
+    private static final String PREVIEW = "preview";
+    private static final String LANGUAGE = "language";
 
     public DateRangeDataFetcher(Finder finder){
         super(finder.getType(), finder);
@@ -85,19 +91,50 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
 
     @Override
     public List<GraphQLArgument> getArguments() {
-        GraphQLArgument afterArg = GraphQLArgument.newArgument().name(ARG_AFTER).type(GraphQLString).build();
-        GraphQLArgument beforeArg = GraphQLArgument.newArgument().name(ARG_BEFORE).type(GraphQLString).build();
-        GraphQLArgument lastDaysArg = GraphQLArgument.newArgument().name(ARG_LASTDAYS).type(GraphQLInt).build();
-        return Arrays.asList(beforeArg, afterArg, lastDaysArg);
+        List<GraphQLArgument> args = new ArrayList<>();
+        args.add(GraphQLArgument.newArgument()
+                .name(ARG_AFTER)
+                .type(GraphQLString)
+                .description("Select content after date")
+                .build()
+        );
+        args.add(GraphQLArgument.newArgument()
+                .name(ARG_BEFORE)
+                .type(GraphQLString)
+                .description("Select content before date")
+                .build());
+        args.add(GraphQLArgument.newArgument()
+                .name(ARG_LASTDAYS)
+                .type(GraphQLInt)
+                .description("Select content within last days")
+                .build()
+        );
+        args.add(GraphQLArgument.newArgument()
+                .name(PREVIEW)
+                .type(GraphQLBoolean)
+                .description("Return content from live or default workspace")
+                .defaultValue(false)
+                .build());
+        args.add(GraphQLArgument.newArgument()
+                .name(LANGUAGE)
+                .type(GraphQLString)
+                .description("Content language, defaults to English")
+                .defaultValue("en")
+                .build());
+        return args;
     }
 
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
         if(hasValidArguments(environment)){
             try {
+                Map<String, Object> arguments = environment.getArguments();
                 String statement = this.buildSQL2Statement(environment);
 
-                JCRNodeIteratorWrapper it = JCRSessionFactory.getInstance().getCurrentUserSession().getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
+                boolean preview = (Boolean) arguments.get(PREVIEW);
+                Locale locale = LanguageCodeConverters.languageCodeToLocale((String) arguments.get(LANGUAGE));
+                JCRSessionWrapper currentUserSession = JCRSessionFactory.getInstance().getCurrentUserSession(preview ? Constants.EDIT_WORKSPACE : Constants.LIVE_WORKSPACE, locale);
+                JCRNodeIteratorWrapper it = currentUserSession.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
                 Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
                         .filter(node -> PermissionHelper.hasPermission(node, environment))
                         .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
