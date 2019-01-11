@@ -47,7 +47,7 @@ public class FinderFetchersFactory {
         String definitionPropertyName = getDefinitionProperty(queryName);
         String propertyNameInJcr = getMappedProperty(definitionPropertyName, fieldDefinition);
         String propertyType = getMappedType(definitionPropertyName, fieldDefinition);
-        finder.setProperty(propertyNameInJcr);
+        finder.setProperty(propertyNameInJcr != null ? propertyNameInJcr : definitionPropertyName);
 
         switch(propertyType) {
             case "Date" : return getFetcherType(finder, FetcherTypes.DATE);
@@ -77,6 +77,9 @@ public class FinderFetchersFactory {
     public static String getMappedProperty(String definitionPropertyName, GraphQLFieldDefinition fieldDefinition) {
         GraphQLObjectType type = (GraphQLObjectType)((GraphQLList)fieldDefinition.getType()).getWrappedType();
         GraphQLFieldDefinition fd = type.getFieldDefinition(definitionPropertyName);
+        if (fd == null) return null;
+        GraphQLDirective directive = fd.getDirective("mapping");
+        if (directive == null) return null;
         return fd.getDirective("mapping").getArgument("property").getValue().toString();
     }
 
