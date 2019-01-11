@@ -49,6 +49,7 @@ import graphql.schema.GraphQLArgument;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
@@ -141,10 +142,10 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
 
                 return stream.collect(Collectors.toList());
             } catch (RepositoryException e) {
-                throw new RuntimeException(e);
+                throw new DataFetchingException(e);
             }
         }else{
-            throw new RuntimeException("By date range data fetcher needs at least one argument of 'after', 'before' or 'lastDays'");
+            throw new DataFetchingException("By date range data fetcher needs at least one argument of 'after', 'before' or 'lastDays'");
         }
 
     }
