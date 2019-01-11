@@ -1,12 +1,10 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
-import graphql.schema.DataFetcher;
-
 public class Finder {
-    private String name;
-    private String property;
-    private String type;
-    private boolean multiple;
+    protected String name;
+    protected String property;
+    protected String type;
+    protected boolean multiple;
 
     public Finder() {}
 
@@ -21,6 +19,10 @@ public class Finder {
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getProperty() {

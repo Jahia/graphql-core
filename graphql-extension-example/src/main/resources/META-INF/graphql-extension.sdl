@@ -5,7 +5,12 @@ type NewsSDL @mapping(node:"jnt:news", ignoreDefaultQueries: true) @description(
     date: Date @mapping(property: "date")
 }
 
+type Images @mapping(node: "jmix:image", ignoreDefaultQueries: true) {
+    height: Int @mapping(property: "j:height")
+}
+
 extend type Query {
     newsByChecked: [NewsSDL]
     myNewsByDate: [NewsSDL]
+    myImagesByHeight: [Images]
 }

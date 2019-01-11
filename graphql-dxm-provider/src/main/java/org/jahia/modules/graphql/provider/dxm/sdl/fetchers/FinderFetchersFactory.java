@@ -52,7 +52,15 @@ public class FinderFetchersFactory {
         switch(propertyType) {
             case "Date" : return getFetcherType(finder, FetcherTypes.DATE);
             case "Boolean" : return getFetcherType(finder, FetcherTypes.BOOLEAN);
-            case "Number" : return getFetcherType(finder, FetcherTypes.NUMBER);
+            case "BigDecimal" :
+            case "BigInteger" :
+            case "Long" :
+            case "Short" :
+            case "Float" :
+            case "Int" :
+                NumberFinder f = NumberFinder.fromFinder(finder);
+                f.setNumberType(propertyType);
+                return getFetcherType(f, FetcherTypes.NUMBER);
             default : return getFetcherType(finder, FetcherTypes.STRING);
         }
     }
@@ -65,7 +73,7 @@ public class FinderFetchersFactory {
             case STRING : return new StringFinderDataFetcher(finder);
             case DATE : return new DateRangeDataFetcher(finder);
             case BOOLEAN : return new BooleanFinderDataFetcher(finder);
-            case NUMBER : return new NumberFinderDataFetcher(finder);
+            case NUMBER : return new NumberFinderDataFetcher((NumberFinder) finder);
             default: return null;
         }
     }

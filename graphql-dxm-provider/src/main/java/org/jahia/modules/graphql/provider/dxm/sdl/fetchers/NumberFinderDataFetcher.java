@@ -2,7 +2,8 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
-import org.apache.jackrabbit.util.Text;
+import graphql.schema.GraphQLInputType;
+import graphql.schema.GraphQLScalarType;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
@@ -17,6 +18,7 @@ import pl.touk.throwing.ThrowingFunction;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -31,12 +33,12 @@ public class NumberFinderDataFetcher extends FinderDataFetcher {
     private static final String LT = "lt";
     private static final String LTE = "lte";
     private static final String EQ = "eq";
-    private static final String NOTEQ = "!eq";
+    private static final String NOTEQ = "noteq";
     private static final String PREVIEW = "preview";
     private static final String LANGUAGE = "language";
 
 
-    public NumberFinderDataFetcher(Finder finder) {
+    public NumberFinderDataFetcher(NumberFinder finder) {
         super(finder.getType(), finder);
     }
 
@@ -45,32 +47,32 @@ public class NumberFinderDataFetcher extends FinderDataFetcher {
         List<GraphQLArgument> list = new ArrayList<>();
         list.add(GraphQLArgument.newArgument()
                 .name(GT)
-                .type(GraphQLLong)
+                .type(getGraphQLScalarType(((NumberFinder)finder).getNumberType()))
                 .description("Property greater than passed parameter")
                 .build());
         list.add(GraphQLArgument.newArgument()
                 .name(GTE)
-                .type(GraphQLLong)
+                .type(getGraphQLScalarType(((NumberFinder)finder).getNumberType()))
                 .description("Property greater than or equal to passed parameter")
                 .build());
         list.add(GraphQLArgument.newArgument()
                 .name(LT)
-                .type(GraphQLLong)
+                .type(getGraphQLScalarType(((NumberFinder)finder).getNumberType()))
                 .description("Property less than passed parameter")
                 .build());
         list.add(GraphQLArgument.newArgument()
                 .name(LTE)
-                .type(GraphQLLong)
+                .type(getGraphQLScalarType(((NumberFinder)finder).getNumberType()))
                 .description("Property less than or equal to passed parameter")
                 .build());
         list.add(GraphQLArgument.newArgument()
                 .name(EQ)
-                .type(GraphQLLong)
+                .type(getGraphQLScalarType(((NumberFinder)finder).getNumberType()))
                 .description("Property equal to passed parameter")
                 .build());
         list.add(GraphQLArgument.newArgument()
                 .name(NOTEQ)
-                .type(GraphQLLong)
+                .type(getGraphQLScalarType(((NumberFinder)finder).getNumberType()))
                 .description("Property not equal to passed parameter")
                 .build());
         list.add(GraphQLArgument.newArgument()
@@ -93,26 +95,23 @@ public class NumberFinderDataFetcher extends FinderDataFetcher {
         try {
             String statement = "SELECT * FROM [%s] as n where n.[%s]%s%s";
             Map<String, Object> arguments = environment.getArguments();
-            boolean invert = (Boolean)arguments.get("invert");
 
             String comparisonParameterName = firstValidParameter(arguments);
             if (comparisonParameterName == null)
                 throw new DataFetchingException(String.format("Entry point %s must have of on comparison parameter, look at the documentation for available parameter names.", environment.getFieldDefinition().getName()));
 
-            long argument = (long) arguments.get(comparisonParameterName);
-
             switch(comparisonParameterName) {
-                case LT : statement = String.format(statement, type, finder.getProperty(), "<", argument);
+                case LT : statement = String.format(statement, type, finder.getProperty(), "<", arguments.get(comparisonParameterName));
                     break;
-                case LTE : statement = String.format(statement, type, finder.getProperty(), "<=", argument);
+                case LTE : statement = String.format(statement, type, finder.getProperty(), "<=", arguments.get(comparisonParameterName));
                     break;
-                case GT : statement = String.format(statement, type, finder.getProperty(), ">", argument);
+                case GT : statement = String.format(statement, type, finder.getProperty(), ">", arguments.get(comparisonParameterName));
                     break;
-                case GTE : statement = String.format(statement, type, finder.getProperty(), ">=", argument);
+                case GTE : statement = String.format(statement, type, finder.getProperty(), ">=", arguments.get(comparisonParameterName));
                     break;
-                case EQ : statement = String.format(statement, type, finder.getProperty(), "=", argument);
+                case EQ : statement = String.format(statement, type, finder.getProperty(), "=", arguments.get(comparisonParameterName));
                     break;
-                case NOTEQ : statement = String.format(statement, type, finder.getProperty(), "<>", argument);
+                case NOTEQ : statement = String.format(statement, type, finder.getProperty(), "<>", arguments.get(comparisonParameterName));
                     break;
             }
 
@@ -138,5 +137,17 @@ public class NumberFinderDataFetcher extends FinderDataFetcher {
             return argName;
         }
         return null;
+    }
+
+    private GraphQLScalarType getGraphQLScalarType(String name) {
+        switch(name) {
+            case "Int" : return GraphQLInt;
+            case "Long" : return GraphQLLong;
+            case "BigInteger" : return GraphQLBigInteger;
+            case "BigDecimal" : return GraphQLBigDecimal;
+            case "Float" : return GraphQLFloat;
+            case "Short" : return GraphQLShort;
+            default : return GraphQLInt;
+        }
     }
 }
