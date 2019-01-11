@@ -47,6 +47,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.DateUtils;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
@@ -57,11 +58,14 @@ import pl.touk.throwing.ThrowingFunction;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static graphql.Scalars.GraphQLInt;
 import static graphql.Scalars.GraphQLString;
 
 /**
@@ -73,6 +77,7 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
 
     public static String ARG_AFTER = "after";
     public static String ARG_BEFORE = "before";
+    public static String ARG_LASTDAYS = "lastDays";
 
     public DateRangeDataFetcher(Finder finder){
         super(finder.getType(), finder);
@@ -82,7 +87,8 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
     public List<GraphQLArgument> getArguments() {
         GraphQLArgument afterArg = GraphQLArgument.newArgument().name(ARG_AFTER).type(GraphQLString).build();
         GraphQLArgument beforeArg = GraphQLArgument.newArgument().name(ARG_BEFORE).type(GraphQLString).build();
-        return Arrays.asList(beforeArg, afterArg);
+        GraphQLArgument lastDaysArg = GraphQLArgument.newArgument().name(ARG_LASTDAYS).type(GraphQLInt).build();
+        return Arrays.asList(beforeArg, afterArg, lastDaysArg);
     }
 
     @Override
@@ -101,7 +107,7 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
                 throw new RuntimeException(e);
             }
         }else{
-            throw new RuntimeException("By date range data fetcher needs at least one argument of after or before");
+            throw new RuntimeException("By date range data fetcher needs at least one argument of 'after', 'before' or 'lastDays'");
         }
 
     }
@@ -115,6 +121,13 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
     private String buildSQL2Statement(DataFetchingEnvironment environment){
         String after = environment.getArgument(ARG_AFTER);
         String before = environment.getArgument(ARG_BEFORE);
+        Integer lastDays = environment.getArgument(ARG_LASTDAYS);
+
+        if(lastDays!=null){
+            Date afterDate = DateUtils.addDays(new Date(), - lastDays);
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSXXX");
+            after = dateFormat.format(afterDate);
+        }
 
         SQL2DateTypeQuery sql2 = new SQL2DateTypeQuery();
         sql2.selectFrom(type).where().and(
@@ -132,8 +145,11 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
      * @return
      */
     private boolean hasValidArguments(DataFetchingEnvironment environment){
-        if (StringUtils.isBlank(environment.getArgument(ARG_AFTER)) &&
-                StringUtils.isBlank(environment.getArgument(ARG_BEFORE))){
+        if(environment.getArguments().size() < 1){
+            return false;
+        }
+        else if (environment.getArgument(ARG_LASTDAYS) !=null &&
+                (!StringUtils.isBlank(environment.getArgument(ARG_AFTER)) || !StringUtils.isBlank(environment.getArgument(ARG_BEFORE)))){
             return false;
         }else{
             return true;
