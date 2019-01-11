@@ -287,6 +287,7 @@ public class SDLSchemaService {
     private TypeDefinitionRegistry prepareTypeRegistryDefinition() {
         TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
         typeDefinitionRegistry.add(new ObjectTypeDefinition("Query"));
+        typeDefinitionRegistry.add(new ScalarTypeDefinition("Date"));
         typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
                 .name("mapping")
                 .directiveLocations(Arrays.asList(
@@ -430,6 +431,7 @@ public class SDLSchemaService {
                 }
             });
             typeDefinitionRegistry.getDirectiveDefinitions().forEach((key, value) -> reconstructedTypeDefinitionRegistry.add(value));
+            typeDefinitionRegistry.scalars().forEach((key, value) -> reconstructedTypeDefinitionRegistry.add(value));
             return reconstructedTypeDefinitionRegistry;
         }
         return null;

@@ -1,4 +1,3 @@
-scalar Date
 type NewsSDL @mapping(node:"jnt:news", ignoreDefaultQueries: true) @description(value:"This is news"){
     title(language:String): String @description(value:"This is title ") @mapping(property:"jcr:title")
     description(language:String): String @mapping(property:"desc")
