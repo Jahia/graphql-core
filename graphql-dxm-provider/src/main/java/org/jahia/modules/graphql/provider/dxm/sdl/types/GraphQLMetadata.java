@@ -89,7 +89,7 @@ public class GraphQLMetadata extends GraphQLScalarType {
             public Metadata parseValue(Object input) {
                 Metadata result = convertImpl(input);
                 if (result == null) {
-                    throw new CoercingParseValueException("Invalid value '" + input + "' for Date");
+                    throw new CoercingParseValueException("Invalid value '" + input + "' for Metadata");
                 }
                 return result;
             }
