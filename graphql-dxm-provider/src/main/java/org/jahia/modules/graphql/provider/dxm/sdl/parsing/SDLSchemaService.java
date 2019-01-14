@@ -49,6 +49,8 @@ public class SDLSchemaService {
             Map<String, TypeDefinitionRegistry> bundleTypeDefinitionRegistry = new LinkedHashMap<>();
             LinkedHashMap<String, TypeCheck> possibleMissingTypes = new LinkedHashMap<>();
             for (Map.Entry<String, URL> entry : sdlRegistrationService.getSDLResources().entrySet()) {
+                if (entry.getKey().equals("graphql-core")) continue;
+
                 String sdlResourceName = entry.getKey();
                 try {
                     TypeDefinitionRegistry parsedRegistry = schemaParser.parse(new InputStreamReader(entry.getValue().openStream()));
