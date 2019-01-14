@@ -46,12 +46,15 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.utils.LanguageCodeConverters;
 import pl.touk.throwing.ThrowingFunction;
 
 import javax.jcr.RepositoryException;
@@ -62,6 +65,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static graphql.Scalars.GraphQLBoolean;
+import static graphql.Scalars.GraphQLString;
 
 /**
  * Created at 10 Jan$
@@ -70,7 +74,9 @@ import static graphql.Scalars.GraphQLBoolean;
  **/
 public class BooleanFinderDataFetcher extends FinderDataFetcher{
 
-    public static String ARG_VALUE = "value";
+    public static String VALUE = "value";
+    private static final String PREVIEW = "preview";
+    private static final String LANGUAGE = "language";
 
     BooleanFinderDataFetcher(Finder finder){
         super(finder.getType(), finder);
@@ -78,16 +84,42 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher{
 
     @Override
     public List<GraphQLArgument> getArguments() {
-        return Arrays.asList(GraphQLArgument.newArgument().name(ARG_VALUE).type(GraphQLBoolean).build());
+        List<GraphQLArgument> arguments = new ArrayList<>();
+        arguments.add(GraphQLArgument
+                .newArgument()
+                .name(VALUE)
+                .description("select content if boolean value true or false")
+                .type(GraphQLBoolean)
+                .defaultValue(true)
+                .build());
+        arguments.add(GraphQLArgument
+                .newArgument()
+                .name(PREVIEW)
+                .description("Return content from live or default workspace")
+                .type(GraphQLBoolean)
+                .defaultValue(false)
+                .build());
+        arguments.add(GraphQLArgument
+                .newArgument()
+                .name(LANGUAGE)
+                .description("Content language, defaults to English")
+                .type(GraphQLString)
+                .defaultValue("en")
+                .build());
+        return arguments;
     }
 
     @Override
     public Object get(DataFetchingEnvironment environment) {
         if(hasValidArguments(environment)){
             try {
+                Map<String, Object> arguments = environment.getArguments();
                 String statement = buildSQL2Statement(environment);
 
-                JCRNodeIteratorWrapper it = JCRSessionFactory.getInstance().getCurrentUserSession().getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
+                boolean preview = arguments.get(PREVIEW) == null ? true : (Boolean) arguments.get(PREVIEW);
+                Locale locale = LanguageCodeConverters.languageCodeToLocale((String) arguments.get(LANGUAGE));
+                JCRSessionWrapper currentUserSession = JCRSessionFactory.getInstance().getCurrentUserSession(preview ? Constants.EDIT_WORKSPACE : Constants.LIVE_WORKSPACE, locale);
+                JCRNodeIteratorWrapper it = currentUserSession.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
                 Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
                         .filter(node -> PermissionHelper.hasPermission(node, environment))
                         .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
@@ -108,7 +140,7 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher{
      * @return
      */
     private String buildSQL2Statement(DataFetchingEnvironment environment){
-        Boolean value = environment.getArgument(ARG_VALUE);
+        Boolean value = environment.getArgument(VALUE);
 
         return "SELECT * FROM [" + type + "] WHERE [" + finder.getProperty() +"] = " + value;
 
@@ -121,7 +153,7 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher{
      * @return
      */
     private boolean hasValidArguments(DataFetchingEnvironment environment){
-        if (environment.getArgument(ARG_VALUE)==null){
+        if (environment.getArgument(VALUE)==null){
             return false;
         }else{
             return true;
