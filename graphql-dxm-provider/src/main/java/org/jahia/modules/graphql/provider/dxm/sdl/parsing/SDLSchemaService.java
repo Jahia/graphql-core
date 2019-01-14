@@ -110,15 +110,14 @@ public class SDLSchemaService {
                 TypeDefinitionRegistry currentTypeRegistry = typeDefinitionRegistry;
                 TypeCheck typeCheck = entry.getValue();
                 List<FieldDefinition> fieldDefinitions = typeCheck.getFields();
-                IntStream.range(0, fieldDefinitions.size()).forEach(i -> {
+                for (int i = 0; i < fieldDefinitions.size(); i++) {
                     if (currentTypeRegistry.getType(fieldDefinitions.get(i).getType()).isPresent()) {
                         //remove field definition types that have been registered through SDL files provided from other bundles
                         typeCheck.getFields().remove(i);
                         typeCheck.getInfos().remove(i);
-                        return;
                     }
                     typeErrorsOccurred.set(true);
-                });
+                }
             }
 
             LinkedHashMap<ObjectTypeExtensionDefinition, List<FieldDefinition>> possibleMissingQueryExtensionsDefinitions = verifyExtendedTypesExist(typeErrorsOccurred, typeDefinitionRegistry, possibleMissingTypes, bundleTypeDefinitionRegistry);
