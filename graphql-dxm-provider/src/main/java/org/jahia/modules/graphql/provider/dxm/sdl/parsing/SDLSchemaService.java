@@ -287,6 +287,7 @@ public class SDLSchemaService {
         TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
         typeDefinitionRegistry.add(new ObjectTypeDefinition("Query"));
         typeDefinitionRegistry.add(new ScalarTypeDefinition("Date"));
+        typeDefinitionRegistry.add(new ScalarTypeDefinition("Metadata"));
         typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
                 .name("mapping")
                 .directiveLocations(Arrays.asList(

@@ -43,55 +43,51 @@ package org.jahia.modules.graphql.provider.dxm.sdl.types;
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
+
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 import graphql.language.StringValue;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseValueException;
-import graphql.schema.CoercingSerializeException;
 import graphql.schema.GraphQLScalarType;
-import org.jahia.modules.graphql.provider.dxm.util.DateTimeUtils;
 
-import java.time.LocalDateTime;
+import java.lang.reflect.Type;
 import java.util.Date;
+import java.util.List;
 
-public class GraphQLDate extends GraphQLScalarType {
+/**
+ * Created at 14 Jan$
+ *
+ * @author chooliyip
+ **/
+public class GraphQLMetadata extends GraphQLScalarType {
 
-    private static final String DEFAULT_NAME = "Date";
+    private static final String DEFAULT_NAME = "Metadata";
 
-    public GraphQLDate() {
+    public GraphQLMetadata() {
         this(DEFAULT_NAME);
     }
 
-    public GraphQLDate(final String name) {
-        super(name, "Date type", new Coercing<Date, String>() {
-            private Date convertImpl(Object input) {
-                if(input instanceof Long){
-                    return new Date((Long)input);
-                }else if (input instanceof String) {
-                    LocalDateTime localDateTime = DateTimeUtils.parseDate((String) input);
-
-                    if (localDateTime != null) {
-                        return DateTimeUtils.toDate(localDateTime);
-                    }
+    public GraphQLMetadata(final String name) {
+        super(name, "Metadata type", new Coercing<Metadata, String>() {
+            private Metadata convertImpl(Object input) {
+                if (input instanceof String) {
+                    Gson gson = new Gson();
+                    Type type = new TypeToken<List<Metadata>>() {}.getType();
+                    return gson.fromJson((String)input, type);
                 }
                 return null;
             }
 
             @Override
             public String serialize(Object input) {
-                if (input instanceof Date) {
-                    return DateTimeUtils.toISOString((Date) input);
-                } else {
-                    Date result = convertImpl(input);
-                    if (result == null) {
-                        throw new CoercingSerializeException("Invalid value '" + input + "' for Date");
-                    }
-                    return DateTimeUtils.toISOString(result);
-                }
+                Gson gson = new Gson();
+                return gson.toJson(input);
             }
 
             @Override
-            public Date parseValue(Object input) {
-                Date result = convertImpl(input);
+            public Metadata parseValue(Object input) {
+                Metadata result = convertImpl(input);
                 if (result == null) {
                     throw new CoercingParseValueException("Invalid value '" + input + "' for Date");
                 }
@@ -99,13 +95,83 @@ public class GraphQLDate extends GraphQLScalarType {
             }
 
             @Override
-            public Date parseLiteral(Object input) {
+            public Metadata parseLiteral(Object input) {
                 if (!(input instanceof StringValue)) return null;
                 String value = ((StringValue) input).getValue();
-                Date result = convertImpl(value);
+                Metadata result = convertImpl(value);
                 return result;
             }
         });
     }
+
+}
+
+class Metadata {
+
+    private Date created;
+    private String createdBy;
+    private Date modified;
+    private String modifiedBy;
+    private Date published;
+    private String publishedBy;
+
+    public Metadata(Date created, String createdBy, Date modified, String modifiedBy, Date published, String publishedBy){
+        this.created = created;
+        this.createdBy = createdBy;
+        this.modified = modified;
+        this.modifiedBy = modifiedBy;
+        this.published = published;
+        this.publishedBy = publishedBy;
+    }
+
+    public Date getCreated() {
+        return created;
+    }
+
+    public void setCreated(Date created) {
+        this.created = created;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Date getModified() {
+        return modified;
+    }
+
+    public void setModified(Date modified) {
+        this.modified = modified;
+    }
+
+    public String getModifiedBy() {
+        return modifiedBy;
+    }
+
+    public void setModifiedBy(String modifiedBy) {
+        this.modifiedBy = modifiedBy;
+    }
+
+    public Date getPublished() {
+        return published;
+    }
+
+    public void setPublished(Date published) {
+        this.published = published;
+    }
+
+    public String getPublishedBy() {
+        return publishedBy;
+    }
+
+    public void setPublishedBy(String publishedBy) {
+        this.publishedBy = publishedBy;
+    }
+
+
 
 }
