@@ -1,0 +1,10 @@
+type Asset @mapping(node: "jnt:file", ignoreDefaultQueries: true) @description(value:"Asset type for files") {
+    type: String @mapping(property: "type")
+    size: Long @mapping(property: "size")
+    url: String @mapping (property: "url")
+}
+
+type ImageAsset @mapping(node: "jmix:image", ignoreDefaultQueries: true) @description(value:"Asset type for image") {
+    height: Long @mapping(property: "j:height")
+    width: Long @mapping(property: "j:width")
+}
