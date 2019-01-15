@@ -86,14 +86,16 @@ public class SDLJCRTypeChecker {
                 ObjectTypeDefinition def = (ObjectTypeDefinition) typeDefinitionRegistry.getType(removedType).get();
                 typeDefinitionRegistry.remove(typeDefinitionRegistry.getType(removedType).get());
                 typeDefinitionRegistry.add(new CustomTypeDefinition(def, statuses.get(def.getName()).toString()));
-                List<FieldDefinition> fieldDefinitions = typeDefinitionRegistry.objectTypeExtensions().get("Query").get(0).getFieldDefinitions();
-                fieldDefinitions.removeIf(fd -> {
-                    if (fd.getType() instanceof ListType) {
-                        return ((TypeName) ((ListType) fd.getType()).getType()).getName().equals(removedType);
-                    }
-                    //TODO handle other types if applicable
-                    return false;
-                });
+                if (typeDefinitionRegistry.objectTypeExtensions().get("Query") != null) {
+                    List<FieldDefinition> fieldDefinitions = typeDefinitionRegistry.objectTypeExtensions().get("Query").get(0).getFieldDefinitions();
+                    fieldDefinitions.removeIf(fd -> {
+                        if (fd.getType() instanceof ListType) {
+                            return ((TypeName) ((ListType) fd.getType()).getType()).getName().equals(removedType);
+                        }
+                        //TODO handle other types if applicable
+                        return false;
+                    });
+                }
             }
         }
         printStatuses(statuses);
