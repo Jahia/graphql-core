@@ -121,7 +121,7 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
                             }
                         }
                     }
-                    registerSDLResource(event != null ? event.getType() : bundle.getState(), bundle.getSymbolicName(), url);
+                    registerSDLResource(event != null ? event.getType() : bundle.getState() == Bundle.ACTIVE ? BundleEvent.STARTED : BundleEvent.UNINSTALLED, bundle.getSymbolicName(), url);
                     return true;
                 }
             }
@@ -137,20 +137,16 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
      */
     private void registerSDLResource(int bundleEventType, String bundleName , final URL sdlResource){
         switch (bundleEventType) {
-            case BundleEvent.STOPPED:
-            case BundleEvent.STOPPING:
-            case BundleEvent.UNINSTALLED:
-            case BundleEvent.UNRESOLVED:
-                if(sdlResources.containsKey(bundleName)) {
-                    logger.debug("remove type registry for " + bundleName);
-                    sdlResources.remove(bundleName);
-                }
-                break;
-            case BundleEvent.RESOLVED:
             case BundleEvent.STARTED:
                 if(!sdlResources.containsKey(bundleName)) {
                     logger.debug("add new type registry for " + bundleName);
                     sdlResources.put(bundleName, sdlResource);
+                }
+                break;
+            default:
+                if(sdlResources.containsKey(bundleName)) {
+                    logger.debug("remove type registry for " + bundleName);
+                    sdlResources.remove(bundleName);
                 }
         }
     }
