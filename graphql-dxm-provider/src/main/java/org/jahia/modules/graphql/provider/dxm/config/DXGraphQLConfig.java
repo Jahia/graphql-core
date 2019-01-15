@@ -47,7 +47,6 @@ import org.apache.commons.lang.StringUtils;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,15 +81,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         return "DX GraphQL configurations";
     }
 
-    @Activate
-    public void activate(ComponentContext context) {
-        this.componentContext = context;
-    }
-
     @Override
     public void updated(String pid, Dictionary<String, ?> properties) throws ConfigurationException {
-        componentContext.disableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
-
         if (properties == null) {
             return;
         }
@@ -129,7 +121,6 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 keysForPid.add(key);
             }
         }
-        componentContext.enableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
         corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
     }
 

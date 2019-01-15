@@ -56,7 +56,6 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.servlet.*;
-import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
@@ -96,7 +95,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private GraphQLObjectType queryType;
     private GraphQLObjectType mutationType;
     private GraphQLObjectType subscriptionType;
-    private DXGraphQLConfig dxGraphQLConfig;
 
     private DXRelay relay;
 
@@ -132,11 +130,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     public void removeExtensionProvider(DXGraphQLExtensionsProvider provider) {
         this.extensionsProviders.remove(provider);
-    }
-
-    @Reference
-    public void bindDxGraphQLConfig(DXGraphQLConfig dxGraphQLConfig) {
-        this.dxGraphQLConfig = dxGraphQLConfig;
     }
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
