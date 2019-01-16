@@ -169,8 +169,8 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
 
         SQL2DateTypeQuery sql2 = new SQL2DateTypeQuery();
         sql2.selectFrom(type).where().and(
-                sql2.constrain(SQL2DateTypeQuery.OPERATOR_GTE, finder.getProperty(), sql2.castDate(after)),
-                sql2.constrain(SQL2DateTypeQuery.OPERATOR_LTE, finder.getProperty(), sql2.castDate(before))
+                sql2.constrain(sql2.OPERATOR_GTE, finder.getProperty(), sql2.castDate(after)),
+                sql2.constrain(sql2.OPERATOR_LTE, finder.getProperty(), sql2.castDate(before))
         );
 
         return sql2.getStatement();
@@ -194,58 +194,54 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
         }
     }
 
-}
+    private class SQL2DateTypeQuery {
 
-class SQL2DateTypeQuery {
+        public String SPACE = " ";
+        public String START_WITH_SPACE = " * ";
+        public String OPERATOR_GTE = ">=";
+        public String OPERATOR_LTE = "<=";
 
-    public static String SPACE = " ";
-    public static String START_WITH_SPACE = " * ";
-    public static String OPERATOR_GTE = ">=";
-    public static String OPERATOR_LTE = "<=";
+        final StringBuffer sb = new StringBuffer();
 
-    enum SQL2Syntax {
-        SELECT, FROM, WHERE, AND, OR
-    }
-
-    final StringBuffer sb = new StringBuffer();
-
-    SQL2DateTypeQuery(){
-        //void
-    }
-
-    public SQL2DateTypeQuery selectFrom(String type){
-        sb.append(SQL2Syntax.SELECT + START_WITH_SPACE + SQL2Syntax.FROM + " [\"" + type + "\"]");
-        return this;
-    }
-
-    public SQL2DateTypeQuery where(){
-        sb.append(SPACE);
-        sb.append(SQL2Syntax.WHERE);
-        return this;
-    }
-
-    public SQL2DateTypeQuery and(String... constrains){
-        final List<String> trimedConstrains = Arrays.stream(constrains).filter(Objects::nonNull).collect(Collectors.toList());
-        sb.append(SPACE);
-        for (int i=0; i<trimedConstrains.size();i++){
-            if(!StringUtils.isBlank(trimedConstrains.get(i))){
-                if(i>0) sb.append(SPACE + SQL2Syntax.AND + SPACE);
-                sb.append(trimedConstrains.get(i));
-            }
+        SQL2DateTypeQuery(){
+            //void
         }
-        return this;
+
+        public SQL2DateTypeQuery selectFrom(String type){
+            sb.append("SELECT" + START_WITH_SPACE + "FROM" + " [\"" + type + "\"]");
+            return this;
+        }
+
+        public SQL2DateTypeQuery where(){
+            sb.append(SPACE);
+            sb.append("WHERE");
+            return this;
+        }
+
+        public SQL2DateTypeQuery and(String... constrains){
+            final List<String> trimedConstrains = Arrays.stream(constrains).filter(Objects::nonNull).collect(Collectors.toList());
+            sb.append(SPACE);
+            for (int i=0; i<trimedConstrains.size();i++){
+                if(!StringUtils.isBlank(trimedConstrains.get(i))){
+                    if(i>0) sb.append(SPACE + "AND" + SPACE);
+                    sb.append(trimedConstrains.get(i));
+                }
+            }
+            return this;
+        }
+
+        public String constrain(String operator, String property, String value){
+            return StringUtils.isBlank(value) ? null : "[" + property + "]" + SPACE + operator + SPACE + value;
+        }
+
+        public String castDate(String value){
+            return StringUtils.isBlank(value) ? null : "CAST('" + value + "' AS DATE)";
+        }
+
+        public String getStatement(){
+            return sb.toString();
+        }
     }
 
-    public String constrain(String operator, String property, String value){
-        return StringUtils.isBlank(value) ? null : "[" + property + "]" + SPACE + operator + SPACE + value;
-    }
-
-    public String castDate(String value){
-        return StringUtils.isBlank(value) ? null : "CAST('" + value + "' AS DATE)";
-    }
-
-    public String getStatement(){
-        return sb.toString();
-    }
 }
 
