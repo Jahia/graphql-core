@@ -4,7 +4,7 @@ public class SDLSchemaInfo {
     public enum SDLSchemaStatus {
         OK,
         SYNTAX_ERROR,
-        MISSING_TYPE
+        DEFINITION_ERROR
     }
     private String error;
     private String bundle;

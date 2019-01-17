@@ -36,7 +36,6 @@ div.status-header-item {
 
 div.status-item {
     flex-wrap:wrap;
-    display: flex;
     padding: 10px 0;
     margin-left: 10px;
 }

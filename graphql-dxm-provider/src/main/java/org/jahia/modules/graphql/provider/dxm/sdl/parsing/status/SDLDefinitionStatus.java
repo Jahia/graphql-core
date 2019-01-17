@@ -5,22 +5,18 @@ public class SDLDefinitionStatus {
     private String mapsToType;
     private String mappedTypeModuleName;
     private String mappedTypeModuleId;
-    private SDLDefinitionStatusTypes statusType;
-    private SDLDefinitionStatusDescription statusDescription;
+    private String statusParam;
+    private SDLDefinitionStatusType statusType;
 
-    public SDLDefinitionStatus(String name, SDLDefinitionStatusTypes status) {
+    public SDLDefinitionStatus(String name, SDLDefinitionStatusType status) {
         this.name = name;
         this.statusType = status;
-        this.statusDescription = new SDLDefinitionStatusDescription(status);
     }
 
-    public SDLDefinitionStatus(String name, String mapsToType, String mappedTypeModuleName, String mappedTypeModuleId, SDLDefinitionStatusTypes status) {
+    public SDLDefinitionStatus(String name, SDLDefinitionStatusType status, String statusParam) {
         this.name = name;
-        this.mapsToType = mapsToType;
-        this.mappedTypeModuleName = mappedTypeModuleName;
-        this.mappedTypeModuleId = mappedTypeModuleId;
         this.statusType = status;
-        this.statusDescription = new SDLDefinitionStatusDescription(status);
+        this.statusParam = statusParam;
     }
 
     public void setMapsToType(String mapsToType) {
@@ -35,13 +31,9 @@ public class SDLDefinitionStatus {
         this.mappedTypeModuleId = mappedTypeModuleId;
     }
 
-    public void setStatusType(SDLDefinitionStatusTypes statusType) {
+    public void setStatusType(SDLDefinitionStatusType statusType, String statusParam) {
         this.statusType = statusType;
-    }
-
-    public void setStatusDescription(SDLDefinitionStatusDescription statusDescription) {
-        statusDescription.setMessage(statusType);
-        this.statusDescription = statusDescription;
+        this.statusParam = statusParam;
     }
 
     @Override
@@ -51,18 +43,14 @@ public class SDLDefinitionStatus {
                 this.mapsToType,
                 this.mappedTypeModuleName,
                 this.mappedTypeModuleId,
-                this.statusDescription.toString());
+                getStatusString());
     }
 
-    public String getStatus() {
-        switch(this.statusType) {
-            case MISSING_JCR_PROPERTY:
-                return "MISSING_JCR_PROPERTY";
-            case MISSING_JCR_NODE_TYPE:
-                return "MISSING_JCR_NODE_TYPE";
-            case OK:
-            default:
-                return "OK";
-        }
+    public String getStatusString() {
+        return statusType.getMessage(statusParam);
+    }
+
+    public SDLDefinitionStatusType getStatus() {
+        return statusType;
     }
 }
