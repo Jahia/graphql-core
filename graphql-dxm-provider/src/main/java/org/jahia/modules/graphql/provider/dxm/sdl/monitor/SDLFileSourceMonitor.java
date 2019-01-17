@@ -3,6 +3,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.monitor;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.jahia.modules.external.modules.osgi.ModulesSourceMonitor;
+import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
@@ -44,7 +45,7 @@ public class SDLFileSourceMonitor implements ModulesSourceMonitor {
     @Override
     public void handleFile(File file) {
         logger.debug("Processing file {}", file);
-        componentContext.disableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
-        componentContext.enableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
+        componentContext.disableComponent(DXGraphQLProvider.class.getName());
+        componentContext.enableComponent(DXGraphQLProvider.class.getName());
     }
 }

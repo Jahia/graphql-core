@@ -1,6 +1,7 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.registration;
 
 import org.jahia.modules.external.modules.osgi.ModulesSourceMonitor;
+import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.modules.graphql.provider.dxm.sdl.monitor.SDLFileSourceMonitor;
 import org.jahia.osgi.BundleUtils;
 import org.osgi.framework.*;
@@ -62,8 +63,8 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
             }
         }
         if (sdlResourcesDiscovered) {
-            componentContext.disableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
-            componentContext.enableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
+            componentContext.disableComponent(DXGraphQLProvider.class.getName());
+            componentContext.enableComponent(DXGraphQLProvider.class.getName());
         }
     }
 
@@ -93,8 +94,8 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         if (checkForSDLResourceInBundle(bundle, event)) {
             logger.debug("received event {} for bundle {} ", new Object[]{status.get(eventType), event.getBundle().getSymbolicName()});
             if (eventType == BundleEvent.STARTED || eventType == BundleEvent.STOPPED) {
-                componentContext.disableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
-                componentContext.enableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
+                componentContext.disableComponent(DXGraphQLProvider.class.getName());
+                componentContext.enableComponent(DXGraphQLProvider.class.getName());
             }
         }
     }
