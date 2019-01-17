@@ -28,6 +28,10 @@ public class FinderFetchersFactory {
             this.prefix = prefix;
             this.suffix = suffix;
         }
+
+        public String getName(String base) {
+            return (prefix != null ? (prefix + base) : StringUtils.uncapitalize(base)) + (suffix != null ? suffix : "");
+        }
     }
 
     public static FinderDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {

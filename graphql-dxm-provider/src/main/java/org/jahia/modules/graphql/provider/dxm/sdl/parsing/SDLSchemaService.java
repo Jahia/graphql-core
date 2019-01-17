@@ -182,6 +182,7 @@ public class SDLSchemaService {
             if (type instanceof GraphQLObjectType) {
                 GraphQLDirective directive = ((GraphQLObjectType) type).getDirective(MAPPING_DIRECTIVE);
                 if (directive != null) {
+                    applyDefaultFetcher(defs, directive, new GraphQLList(type), FinderFetchersFactory.FetcherType.ALL);
                     applyDefaultFetcher(defs, directive, (GraphQLOutputType) type, FinderFetchersFactory.FetcherType.ID);
                     applyDefaultFetcher(defs, directive, (GraphQLOutputType) type, FinderFetchersFactory.FetcherType.PATH);
                 }
@@ -202,25 +203,19 @@ public class SDLSchemaService {
 
         if (!shouldIgnoreDefaultQueries) {
             //when the type is defined in extending Query, it is type of GraphQLList like [MyType]
+            GraphQLOutputType baseType = type;
             if (type instanceof GraphQLList) {
-                type = (GraphQLOutputType) ((GraphQLList) type).getWrappedType();
+                baseType = (GraphQLOutputType) ((GraphQLList) type).getWrappedType();
             }
 
-            GraphQLArgument argument = ((GraphQLObjectType) type).getDirective(MAPPING_DIRECTIVE).getArgument(MAPPING_DIRECTIVE_NODE);
-
-            FinderFetchersFactory.FetcherType fetcherType = FinderFetchersFactory.FetcherType.STRING;
-            if (defaultFinder.equals(FinderFetchersFactory.FetcherType.ID)) {
-                fetcherType = FinderFetchersFactory.FetcherType.ID;
-            } else if (defaultFinder.equals(FinderFetchersFactory.FetcherType.PATH)) {
-                fetcherType = FinderFetchersFactory.FetcherType.PATH;
-            }
+            GraphQLArgument argument = ((GraphQLObjectType) baseType).getDirective(MAPPING_DIRECTIVE).getArgument(MAPPING_DIRECTIVE_NODE);
 
             if (argument != null) {
-                final String finderName = type.getName() + defaultFinder;
+                final String finderName = defaultFinder.getName(baseType.getName());
 
                 Finder finder = new Finder();
                 finder.setType(argument.getValue().toString());
-                FinderDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(finder, fetcherType);
+                FinderDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(finder, defaultFinder);
                 defs.add(GraphQLFieldDefinition.newFieldDefinition()
                         .name(finderName)
                         .description("default finder for " + finderName)

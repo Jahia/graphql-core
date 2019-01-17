@@ -6,6 +6,7 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
 import org.jahia.services.content.JCRSessionFactory;
 
+import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +28,8 @@ public class ByIdFinderDataFetcher extends FinderDataFetcher {
     public GqlJcrNode get(DataFetchingEnvironment environment) {
         try {
             return new GqlJcrNodeImpl(JCRSessionFactory.getInstance().getCurrentUserSession().getNodeByIdentifier(environment.getArgument("id")));
+        } catch (ItemNotFoundException e) {
+            return null;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }

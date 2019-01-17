@@ -6,6 +6,7 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
 import org.jahia.services.content.JCRSessionFactory;
 
+import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +31,8 @@ public class ByPathFinderDataFetcher extends FinderDataFetcher {
     public GqlJcrNode get(DataFetchingEnvironment environment) {
         try {
             return new GqlJcrNodeImpl(JCRSessionFactory.getInstance().getCurrentUserSession().getNode(environment.getArgument("path")));
+        } catch (PathNotFoundException e) {
+            return null;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
