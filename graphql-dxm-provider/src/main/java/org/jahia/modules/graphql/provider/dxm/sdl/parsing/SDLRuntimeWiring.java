@@ -1,8 +1,9 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.parsing;
 
-import graphql.schema.idl.RuntimeWiring;
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.idl.*;
 import org.jahia.modules.graphql.provider.dxm.sdl.types.GraphQLDate;
-import org.jahia.modules.graphql.provider.dxm.sdl.types.GraphQLMetadata;
 
 import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
 
@@ -12,7 +13,13 @@ public class SDLRuntimeWiring {
         return RuntimeWiring.newRuntimeWiring()
                 .type(newTypeWiring("Query").build())
                 .directive(SDLSchemaService.MAPPING_DIRECTIVE, new MappingDirectiveWiring())
-                .scalar(new GraphQLDate()).scalar(new GraphQLMetadata())
+                .wiringFactory(new NoopWiringFactory() {
+                    @Override
+                    public DataFetcher getDefaultDataFetcher(FieldWiringEnvironment environment) {
+                        return DataFetchingEnvironment::getSource;
+                    }
+                })
+                .scalar(new GraphQLDate())
                 .build();
     }
 

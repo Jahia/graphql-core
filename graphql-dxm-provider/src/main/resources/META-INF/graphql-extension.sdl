@@ -1,15 +1,39 @@
-"""Asset type for files"""
-type Asset @mapping(node: "jnt:file", ignoreDefaultQueries: true) {
-    type: String @mapping(property: "type")
-    size: Long @mapping(property: "size")
-    url: String @mapping (property: "url")
+"""
+Metadata properties for all content
+"""
+type Metadata @mapping(node:"jnt:content", ignoreDefaultQueries: true) {
+    "Date of creation for the associated content"
+    created : Date @mapping(property:"jcr:created")
+
+    createdBy : String @mapping(property:"jcr:createdBy")
+
+    lastModified : Date @mapping(property:"jcr:lastModified")
+
+    lastModifiedBy : String @mapping(property:"jcr:lastModifiedBy")
+
+    lastPublished : Date @mapping(property:"j:lastPublished")
+
+    lastPublishedBy : String @mapping(property:"j:lastPublishedBy")
 }
 
-"""Asset type for image"""
-type ImageAsset @mapping(node: "jmix:image", ignoreDefaultQueries: true) {
-    type: String @mapping(property: "type")
-    size: Long @mapping(property: "size")
-    url: String @mapping (property: "url")
+"""
+Asset type for files
+"""
+type Asset @mapping(node: "jnt:file", ignoreDefaultQueries: true) @description(value:"Asset type for files") {
+    metadata: Metadata
+    type: String @mapping(property: "jcr:content.contentType")
+    size: Long @mapping(property: "jcr:content.contentLength")
+}
+
+"""
+Asset type for image
+"""
+type ImageAsset @mapping(node: "jmix:image,jnt:file", ignoreDefaultQueries: true) {
+    metadata: Metadata
+    type: String @mapping(property: "jcr:content.contentType") @description(value:"Mime type of image")
+    size: Long @mapping(property: "jcr:content.contentLength")
     height: Long @mapping(property: "j:height")
     width: Long @mapping(property: "j:width")
+
 }
+

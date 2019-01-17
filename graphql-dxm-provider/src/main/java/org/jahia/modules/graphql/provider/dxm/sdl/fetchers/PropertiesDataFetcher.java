@@ -76,12 +76,22 @@ public class PropertiesDataFetcher implements DataFetcher<Object> {
                 jcrNodeWrapper = NodeHelper.getNodeInLanguage(jcrNodeWrapper, dataFetchingEnvironment.getArgument("language"));
             }
 
-            if (!jcrNodeWrapper.hasProperty(field.getProperty())) {
+            String fieldProperty = field.getProperty();
+            if (fieldProperty.contains(".")) {
+                String[] propertyName = fieldProperty.split("\\.");
+                if(!jcrNodeWrapper.hasNode(propertyName[0])) {
+                    return null;
+                }
+                jcrNodeWrapper = jcrNodeWrapper.getNode(propertyName[0]);
+                fieldProperty = propertyName[1];
+            }
+
+            if (!jcrNodeWrapper.hasProperty(fieldProperty)) {
                 return null;
             }
 
 
-            JCRPropertyWrapper property = jcrNodeWrapper.getProperty(field.getProperty());
+            JCRPropertyWrapper property = jcrNodeWrapper.getProperty(fieldProperty);
 
             if (!property.isMultiple()) {
                 return getString(property.getValue());

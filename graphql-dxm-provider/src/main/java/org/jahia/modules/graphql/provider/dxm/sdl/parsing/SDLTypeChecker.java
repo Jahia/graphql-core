@@ -54,16 +54,26 @@ public class SDLTypeChecker {
         List<Directive> directives = typeDefinition.getDirectives();
         for (Directive directive : directives) {
             if (directive.getName().equals(SDLSchemaService.MAPPING_DIRECTIVE) && directive.getArgument(SDLSchemaService.MAPPING_DIRECTIVE_NODE) != null) {
-                String jcrNodeType = ((StringValue) directive.getArgument(SDLSchemaService.MAPPING_DIRECTIVE_NODE).getValue()).getValue();
+                String[] jcrNodeTypes = ((StringValue) directive.getArgument("node").getValue()).getValue().split(",");
+                String nodeTypeName = null;
                 try {
-                    ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(jcrNodeType);
-                    ExtendedNodeType[] superTypes = nodeType.getSupertypes();
-                    JahiaTemplatesPackage jahiaTemplatesPackage = nodeType.getTemplatePackage();
-                    if (jahiaTemplatesPackage != null) {
-                        status.setMappedTypeModuleId(jahiaTemplatesPackage.getBundle().getSymbolicName());
-                        status.setMappedTypeModuleName(jahiaTemplatesPackage.getName());
+                    ExtendedNodeType[] allTypes = null;
+                    for (String jcrNodeType : jcrNodeTypes) {
+                        nodeTypeName = jcrNodeType;
+                        ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(jcrNodeType);
+                        ExtendedNodeType[] superTypes = nodeType.getSupertypes();
+                        JahiaTemplatesPackage jahiaTemplatesPackage = nodeType.getTemplatePackage();
+                        if (jahiaTemplatesPackage != null) {
+                            status.setMappedTypeModuleId(jahiaTemplatesPackage.getBundle().getSymbolicName());
+                            status.setMappedTypeModuleName(jahiaTemplatesPackage.getName());
+                        }
+                        status.setMapsToType(jcrNodeType);
+                        if (allTypes == null) {
+                            allTypes = (ExtendedNodeType[]) ArrayUtils.add(superTypes, nodeType);
+                        } else {
+                            allTypes = (ExtendedNodeType[]) ArrayUtils.addAll(allTypes, (ExtendedNodeType[]) ArrayUtils.add(superTypes, nodeType));
+                        }
                     }
-                    status.setMapsToType(jcrNodeType);
 
                     //Check field directives and make sure all properties can be found on the jcr node type
                     List<FieldDefinition> fields = ((ObjectTypeDefinition) typeDefinition).getFieldDefinitions();
@@ -72,7 +82,12 @@ public class SDLTypeChecker {
                         Directive fieldDirective = def.getDirective(SDLSchemaService.MAPPING_DIRECTIVE);
                         if (fieldDirective != null && fieldDirective.getArgument(SDLSchemaService.MAPPING_DIRECTIVE_PROPERTY) != null) {
                             String jcrPropertyName = ((StringValue) fieldDirective.getArgument(SDLSchemaService.MAPPING_DIRECTIVE_PROPERTY).getValue()).getValue();
-                            if (!hasProperty((ExtendedNodeType[]) ArrayUtils.add(superTypes, nodeType), jcrPropertyName)) {
+                            if (jcrPropertyName.contains(".")) {
+                                if (!hasChildren(allTypes, jcrPropertyName.split("\\.")[0])) {
+                                    missing.add(jcrPropertyName);
+                                }
+                            } else
+                            if (!hasProperty(allTypes, jcrPropertyName)) {
                                 missing.add(jcrPropertyName);
                             }
                         }
@@ -81,7 +96,7 @@ public class SDLTypeChecker {
                         status.setStatusType(SDLDefinitionStatusType.MISSING_JCR_PROPERTY, StringUtils.join(missing, ","));
                     }
                 } catch (NoSuchNodeTypeException e) {
-                    status.setStatusType(SDLDefinitionStatusType.MISSING_JCR_NODE_TYPE, jcrNodeType);
+                    status.setStatusType(SDLDefinitionStatusType.MISSING_JCR_NODE_TYPE, nodeTypeName);
                 }
             }
         }
@@ -95,6 +110,13 @@ public class SDLTypeChecker {
     private static boolean hasProperty(ExtendedNodeType[] nodeTypes, String jcrPropertyName) {
         for (ExtendedNodeType type : nodeTypes) {
             if (type.getPropertyDefinition(jcrPropertyName) != null) return true;
+        }
+        return false;
+    }
+
+    private static boolean hasChildren(ExtendedNodeType[] nodeTypes, String jcrPropertyName) {
+        for (ExtendedNodeType type : nodeTypes) {
+            if (type.getChildNodeDefinitionsAsMap().containsKey(jcrPropertyName)) return true;
         }
         return false;
     }

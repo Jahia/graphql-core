@@ -12,7 +12,7 @@ public abstract class FinderDataFetcher implements DataFetcher {
     protected Finder finder;
 
     public FinderDataFetcher(String type, Finder finder) {
-        this.type = type;
+        this.type = type.split(",")[0];
         this.finder = finder;
     }
 
