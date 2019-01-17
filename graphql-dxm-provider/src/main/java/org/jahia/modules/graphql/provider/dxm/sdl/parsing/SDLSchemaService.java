@@ -35,8 +35,6 @@ public class SDLSchemaService {
     public static final String MAPPING_DIRECTIVE_NODE = "node";
     public static final String MAPPING_DIRECTIVE_PROPERTY = "property";
     public static final String MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES = "ignoreDefaultQueries";
-    public static final String DESCRIPTION_DIRECTIVE = "description";
-    public static final String DESCRIPTION_DIRECTIVE_VALUE = "value";
 
     private static Logger logger = LoggerFactory.getLogger(SDLSchemaService.class);
 
@@ -87,7 +85,7 @@ public class SDLSchemaService {
                 graphQLSchema = schemaGenerator.makeExecutableSchema(
                         SchemaGenerator.Options.defaultOptions().enforceSchemaDirectives(false),
                         cleanedTypeRegistry,
-                        SDLRuntimeWiring.runtimeWiring(new SDLDirectiveWiring())
+                        SDLRuntimeWiring.runtimeWiring()
                 );
             } catch (Exception e) {
                 logger.warn("Invalid type definition(s) detected during schema generation: " + e.getMessage());
@@ -249,14 +247,6 @@ public class SDLSchemaService {
                         InputValueDefinition.newInputValueDefinition().name(MAPPING_DIRECTIVE_NODE).type(TypeName.newTypeName(GraphQLString.getName()).build()).build(),
                         InputValueDefinition.newInputValueDefinition().name(MAPPING_DIRECTIVE_PROPERTY).type(TypeName.newTypeName(GraphQLString.getName()).build()).build(),
                         InputValueDefinition.newInputValueDefinition().name(MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).type(TypeName.newTypeName(GraphQLBoolean.getName()).build()).build()))
-                .build());
-        typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
-                .name(DESCRIPTION_DIRECTIVE)
-                .directiveLocations(Arrays.asList(
-                        DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
-                        DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
-                .inputValueDefinitions(Arrays.asList(
-                        InputValueDefinition.newInputValueDefinition().name(DESCRIPTION_DIRECTIVE_VALUE).type(TypeName.newTypeName(GraphQLString.getName()).build()).build()))
                 .build());
 
         return typeDefinitionRegistry;
