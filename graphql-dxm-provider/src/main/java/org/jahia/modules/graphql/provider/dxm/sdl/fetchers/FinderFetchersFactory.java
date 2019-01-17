@@ -1,29 +1,33 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
-import graphql.schema.*;
-import org.apache.commons.lang.WordUtils;
+import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import org.apache.commons.lang.StringUtils;
-import org.jahia.services.content.JCRContentUtils;
+import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
 
 public class FinderFetchersFactory {
 
-    public enum DefaultFetcherNames {
-        all,
-        ById,
-        ByPath
-    }
+    public enum FetcherType {
+        ALL("all", null),
+        ID(null, "ById"),
+        PATH(null, "ByPath"),
+        DATE(),
+        NUMBER(),
+        BOOLEAN(),
+        STRING();
 
-    public enum FetcherTypes {
-        ALL,
-        ID,
-        PATH,
-        DATE,
-        NUMBER,
-        BOOLEAN,
-        STRING
+        String prefix;
+        String suffix;
+
+        FetcherType() {
+        }
+
+        FetcherType(String prefix, String suffix) {
+            this.prefix = prefix;
+            this.suffix = suffix;
+        }
     }
 
     public static FinderDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {
@@ -33,14 +37,10 @@ public class FinderFetchersFactory {
         finder.setType(nodeType);
 
         //Handle all, byId and byPath cases
-        if (queryName.startsWith(DefaultFetcherNames.all.name())) {
-            return getFetcherType(finder, FetcherTypes.ALL);
-        }
-        else if (queryName.endsWith(DefaultFetcherNames.ById.name())) {
-            return getFetcherType(finder, FetcherTypes.ID);
-        }
-        else if (queryName.endsWith(DefaultFetcherNames.ByPath.name())) {
-            return getFetcherType(finder, FetcherTypes.PATH);
+        for (FetcherType fetcherType : FetcherType.values()) {
+            if ((fetcherType.prefix != null && queryName.startsWith(fetcherType.prefix)) || (fetcherType.suffix != null && queryName.endsWith(fetcherType.suffix))) {
+                return getFetcherType(finder, fetcherType);
+            }
         }
 
         //Handle specialized types
@@ -50,8 +50,8 @@ public class FinderFetchersFactory {
         finder.setProperty(propertyNameInJcr != null ? propertyNameInJcr : definitionPropertyName);
 
         switch(propertyType) {
-            case "Date" : return getFetcherType(finder, FetcherTypes.DATE);
-            case "Boolean" : return getFetcherType(finder, FetcherTypes.BOOLEAN);
+            case "Date" : return getFetcherType(finder, FetcherType.DATE);
+            case "Boolean" : return getFetcherType(finder, FetcherType.BOOLEAN);
             case "BigDecimal" :
             case "BigInteger" :
             case "Long" :
@@ -60,12 +60,12 @@ public class FinderFetchersFactory {
             case "Int" :
                 NumberFinder f = NumberFinder.fromFinder(finder);
                 f.setNumberType(propertyType);
-                return getFetcherType(f, FetcherTypes.NUMBER);
-            default : return getFetcherType(finder, FetcherTypes.STRING);
+                return getFetcherType(f, FetcherType.NUMBER);
+            default : return getFetcherType(finder, FetcherType.STRING);
         }
     }
 
-    public static FinderDataFetcher getFetcherType(final Finder finder, final FetcherTypes type) {
+    public static FinderDataFetcher getFetcherType(final Finder finder, final FetcherType type) {
         switch(type) {
             case ALL : return new AllFinderDataFetcher(finder);
             case ID : return new ByIdFinderDataFetcher(finder);
@@ -86,9 +86,9 @@ public class FinderFetchersFactory {
         GraphQLObjectType type = (GraphQLObjectType)((GraphQLList)fieldDefinition.getType()).getWrappedType();
         GraphQLFieldDefinition fd = type.getFieldDefinition(definitionPropertyName);
         if (fd == null) return null;
-        GraphQLDirective directive = fd.getDirective("mapping");
+        GraphQLDirective directive = fd.getDirective(SDLSchemaService.MAPPING_DIRECTIVE);
         if (directive == null) return null;
-        return fd.getDirective("mapping").getArgument("property").getValue().toString();
+        return fd.getDirective(SDLSchemaService.MAPPING_DIRECTIVE).getArgument(SDLSchemaService.MAPPING_DIRECTIVE_PROPERTY).getValue().toString();
     }
 
     public static String getMappedType(String definitionPropertyName, GraphQLFieldDefinition fieldDefinition) {

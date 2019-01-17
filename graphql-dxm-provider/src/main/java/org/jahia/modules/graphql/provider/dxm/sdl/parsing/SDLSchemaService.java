@@ -26,8 +26,18 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.*;
 
+import static graphql.Scalars.GraphQLBoolean;
+import static graphql.Scalars.GraphQLString;
+
 @Component(service = SDLSchemaService.class, immediate = true)
 public class SDLSchemaService {
+    public static final String MAPPING_DIRECTIVE = "mapping";
+    public static final String MAPPING_DIRECTIVE_NODE = "node";
+    public static final String MAPPING_DIRECTIVE_PROPERTY = "property";
+    public static final String MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES = "ignoreDefaultQueries";
+    public static final String DESCRIPTION_DIRECTIVE = "description";
+    public static final String DESCRIPTION_DIRECTIVE_VALUE = "value";
+
     private static Logger logger = LoggerFactory.getLogger(SDLSchemaService.class);
 
     private GraphQLSchema graphQLSchema;
@@ -45,27 +55,11 @@ public class SDLSchemaService {
             graphQLSchema = null;
             bundlesSDLSchemaStatus.clear();
             sdlDefinitionStatusMap.clear();
-            SchemaParser schemaParser = new SchemaParser();
+
             TypeDefinitionRegistry typeDefinitionRegistry = prepareTypeRegistryDefinition();
             Map<TypeDefinition, String> sources = new HashMap<>();
 
-            for (Map.Entry<String, URL> entry : sdlRegistrationService.getSDLResources().entrySet()) {
-                if (entry.getKey().equals("graphql-core")) continue;
-
-                String bundle = entry.getKey();
-                try {
-                    TypeDefinitionRegistry parsedRegistry = schemaParser.parse(new InputStreamReader(entry.getValue().openStream()));
-                    parsedRegistry.types().forEach((key,type) -> sources.put(type, bundle));
-                    parsedRegistry.objectTypeExtensions().forEach((type,list) -> list.forEach(ext -> sources.put(ext, bundle)));
-                    typeDefinitionRegistry.merge(parsedRegistry);
-                    getOrCreateBundleSDLSchemaList(bundle);
-                } catch (IOException ex) {
-                    logger.error("Failed to read sdl resource.", ex);
-                } catch (GraphQLException ex) {
-                    logger.warn("Failed to merge schema from bundle [{}]: {}", bundle, ex.getMessage());
-                    getOrCreateBundleSDLSchemaList(bundle).add(new SDLSchemaInfo(bundle, SDLSchemaInfo.SDLSchemaStatus.SYNTAX_ERROR, ex.getMessage()));
-                }
-            }
+            parseResources(typeDefinitionRegistry, sources);
 
             Set<TypeDefinition> invalidTypes = new HashSet<>();
             do {
@@ -85,10 +79,10 @@ public class SDLSchemaService {
             SchemaGenerator schemaGenerator = new SchemaGenerator();
 
             TypeDefinitionRegistry cleanedTypeRegistry = new TypeDefinitionRegistry();
-            typeDefinitionRegistry.types().forEach((k,t)-> cleanedTypeRegistry.add(t));
-            typeDefinitionRegistry.objectTypeExtensions().forEach((k,t)-> t.forEach(cleanedTypeRegistry::add));
-            typeDefinitionRegistry.scalars().forEach((k,t) -> cleanedTypeRegistry.add(t));
-            typeDefinitionRegistry.getDirectiveDefinitions().forEach((k,t) -> cleanedTypeRegistry.add(t));
+            typeDefinitionRegistry.types().forEach((k, t) -> cleanedTypeRegistry.add(t));
+            typeDefinitionRegistry.objectTypeExtensions().forEach((k, t) -> t.forEach(cleanedTypeRegistry::add));
+            typeDefinitionRegistry.scalars().forEach((k, t) -> cleanedTypeRegistry.add(t));
+            typeDefinitionRegistry.getDirectiveDefinitions().forEach((k, t) -> cleanedTypeRegistry.add(t));
             try {
                 graphQLSchema = schemaGenerator.makeExecutableSchema(
                         SchemaGenerator.Options.defaultOptions().enforceSchemaDirectives(false),
@@ -101,40 +95,51 @@ public class SDLSchemaService {
         }
     }
 
+    private void parseResources(TypeDefinitionRegistry typeDefinitionRegistry, Map<TypeDefinition, String> sources) {
+        SchemaParser schemaParser = new SchemaParser();
+        for (Map.Entry<String, URL> entry : sdlRegistrationService.getSDLResources().entrySet()) {
+            if (entry.getKey().equals("graphql-core")) continue;
+
+            String bundle = entry.getKey();
+            try {
+                TypeDefinitionRegistry parsedRegistry = schemaParser.parse(new InputStreamReader(entry.getValue().openStream()));
+                parsedRegistry.types().forEach((key, type) -> sources.put(type, bundle));
+                parsedRegistry.objectTypeExtensions().forEach((type, list) -> list.forEach(ext -> sources.put(ext, bundle)));
+                typeDefinitionRegistry.merge(parsedRegistry);
+                getOrCreateBundleSDLSchemaList(bundle);
+            } catch (IOException ex) {
+                logger.error("Failed to read sdl resource.", ex);
+            } catch (GraphQLException ex) {
+                logger.warn("Failed to merge schema from bundle [{}]: {}", bundle, ex.getMessage());
+                getOrCreateBundleSDLSchemaList(bundle).add(new SDLSchemaInfo(bundle, SDLSchemaInfo.SDLSchemaStatus.SYNTAX_ERROR, ex.getMessage()));
+            }
+        }
+    }
+
     public List<GraphQLFieldDefinition> getSDLQueries() {
         List<GraphQLFieldDefinition> defs = new ArrayList<>();
         if (graphQLSchema != null) {
+
+            /** implicit data fetcher for all customer types  **/
+            applyDefaultFetchers(defs);
+
             List<GraphQLFieldDefinition> fieldDefinitions = graphQLSchema.getQueryType().getFieldDefinitions();
             for (GraphQLFieldDefinition fieldDefinition : fieldDefinitions) {
                 GraphQLObjectType objectType = fieldDefinition.getType() instanceof GraphQLList ?
-                        (GraphQLObjectType) ((GraphQLList)fieldDefinition.getType()).getWrappedType() : (GraphQLObjectType) fieldDefinition.getType();
+                        (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType() : (GraphQLObjectType) fieldDefinition.getType();
 
-                GraphQLDirective directive = objectType.getDirective("mapping");
+                GraphQLDirective directive = objectType.getDirective(MAPPING_DIRECTIVE);
 
                 if (directive != null) {
-                    String nodeType = directive.getArgument("node").getValue().toString();
-
-                    /** implicit data fetcher for all customer types  **/
-                    this.applyDefaultFetcher(defs, directive, fieldDefinition.getType(), FinderFetchersFactory.DefaultFetcherNames.ById.name());
-                    this.applyDefaultFetcher(defs, directive, fieldDefinition.getType(), FinderFetchersFactory.DefaultFetcherNames.ByPath.name());
+                    String nodeType = directive.getArgument(MAPPING_DIRECTIVE_NODE).getValue().toString();
 
                     FinderDataFetcher fetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
-                    GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition()
-                            .name(fieldDefinition.getName())
-                            .description(fieldDefinition.getDescription())
+                    GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
                             .dataFetcher(fetcher)
                             .argument(fetcher.getArguments())
-                            .type(fieldDefinition.getType()) // todo return a connection to type if finder is multiple
                             .build();
                     defs.add(sdlDef);
                 }
-            }
-
-            /** implicit data fetcher for all customer types  **/
-            for (GraphQLType type : graphQLSchema.getAdditionalTypes()) {
-               GraphQLDirective directive = ((GraphQLObjectType)type).getDirective("mapping");
-               this.applyDefaultFetcher(defs, directive, (GraphQLOutputType)type, FinderFetchersFactory.DefaultFetcherNames.ById.name());
-               this.applyDefaultFetcher(defs, directive, (GraphQLOutputType)type, FinderFetchersFactory.DefaultFetcherNames.ByPath.name());
             }
 
         }
@@ -174,35 +179,50 @@ public class SDLSchemaService {
         return bundlesSDLSchemaStatus.get(bundle);
     }
 
+    private void applyDefaultFetchers(List<GraphQLFieldDefinition> defs) {
+        for (GraphQLType type : graphQLSchema.getAllTypesAsList()) {
+            if (type instanceof GraphQLObjectType) {
+                GraphQLDirective directive = ((GraphQLObjectType) type).getDirective(MAPPING_DIRECTIVE);
+                if (directive != null) {
+                    applyDefaultFetcher(defs, directive, (GraphQLOutputType) type, FinderFetchersFactory.FetcherType.ID);
+                    applyDefaultFetcher(defs, directive, (GraphQLOutputType) type, FinderFetchersFactory.FetcherType.PATH);
+                }
+            }
+        }
+    }
+
     /**
-     *
      * @param defs
      * @param defaultFinder
      */
     private void applyDefaultFetcher(final List<GraphQLFieldDefinition> defs, final GraphQLDirective directive,
-                                     GraphQLOutputType type, final String defaultFinder){
+                                     GraphQLOutputType type, final FinderFetchersFactory.FetcherType defaultFinder) {
         boolean shouldIgnoreDefaultQueries = false;
-        if (directive.getArgument("ignoreDefaultQueries").getValue() != null) {
-            shouldIgnoreDefaultQueries = (Boolean) directive.getArgument("ignoreDefaultQueries").getValue();
+        if (directive.getArgument(MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).getValue() != null) {
+            shouldIgnoreDefaultQueries = (Boolean) directive.getArgument(MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).getValue();
         }
 
-        if(!shouldIgnoreDefaultQueries){
+        if (!shouldIgnoreDefaultQueries) {
             //when the type is defined in extending Query, it is type of GraphQLList like [MyType]
-            if (type instanceof GraphQLList) type = (GraphQLOutputType)((GraphQLList)type).getWrappedType();
+            if (type instanceof GraphQLList) {
+                type = (GraphQLOutputType) ((GraphQLList) type).getWrappedType();
+            }
 
-            GraphQLArgument argument = ((GraphQLObjectType)type).getDirective("mapping").getArgument("node");
+            GraphQLArgument argument = ((GraphQLObjectType) type).getDirective(MAPPING_DIRECTIVE).getArgument(MAPPING_DIRECTIVE_NODE);
 
-            FinderFetchersFactory.FetcherTypes fetcherTypes = FinderFetchersFactory.FetcherTypes.STRING;
-            if (defaultFinder.equals(FinderFetchersFactory.DefaultFetcherNames.ById.name())) fetcherTypes = FinderFetchersFactory.FetcherTypes.ID;
-            else if (defaultFinder.equals(FinderFetchersFactory.DefaultFetcherNames.ByPath.name())) fetcherTypes = FinderFetchersFactory.FetcherTypes.PATH;
+            FinderFetchersFactory.FetcherType fetcherType = FinderFetchersFactory.FetcherType.STRING;
+            if (defaultFinder.equals(FinderFetchersFactory.FetcherType.ID)) {
+                fetcherType = FinderFetchersFactory.FetcherType.ID;
+            } else if (defaultFinder.equals(FinderFetchersFactory.FetcherType.PATH)) {
+                fetcherType = FinderFetchersFactory.FetcherType.PATH;
+            }
 
-            if(argument!=null){
+            if (argument != null) {
                 final String finderName = type.getName() + defaultFinder;
 
                 Finder finder = new Finder();
                 finder.setType(argument.getValue().toString());
-                FinderDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(finder, fetcherTypes);
-                final String defaultFinderName = type.getName() + defaultFinder;
+                FinderDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(finder, fetcherType);
                 defs.add(GraphQLFieldDefinition.newFieldDefinition()
                         .name(finderName)
                         .description("default finder for " + finderName)
@@ -221,22 +241,22 @@ public class SDLSchemaService {
         typeDefinitionRegistry.add(new ScalarTypeDefinition("Date"));
         typeDefinitionRegistry.add(new ScalarTypeDefinition("Metadata"));
         typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
-                .name("mapping")
+                .name(MAPPING_DIRECTIVE)
                 .directiveLocations(Arrays.asList(
                         DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
                         DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
                 .inputValueDefinitions(Arrays.asList(
-                        InputValueDefinition.newInputValueDefinition().name("node").type(TypeName.newTypeName("String").build()).build(),
-                        InputValueDefinition.newInputValueDefinition().name("property").type(TypeName.newTypeName("String").build()).build(),
-                        InputValueDefinition.newInputValueDefinition().name("ignoreDefaultQueries").type(TypeName.newTypeName("Boolean").build()).build()))
+                        InputValueDefinition.newInputValueDefinition().name(MAPPING_DIRECTIVE_NODE).type(TypeName.newTypeName(GraphQLString.getName()).build()).build(),
+                        InputValueDefinition.newInputValueDefinition().name(MAPPING_DIRECTIVE_PROPERTY).type(TypeName.newTypeName(GraphQLString.getName()).build()).build(),
+                        InputValueDefinition.newInputValueDefinition().name(MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).type(TypeName.newTypeName(GraphQLBoolean.getName()).build()).build()))
                 .build());
         typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
-                .name("description")
+                .name(DESCRIPTION_DIRECTIVE)
                 .directiveLocations(Arrays.asList(
                         DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
                         DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
                 .inputValueDefinitions(Arrays.asList(
-                        InputValueDefinition.newInputValueDefinition().name("value").type(TypeName.newTypeName("String").build()).build()))
+                        InputValueDefinition.newInputValueDefinition().name(DESCRIPTION_DIRECTIVE_VALUE).type(TypeName.newTypeName(GraphQLString.getName()).build()).build()))
                 .build());
 
         return typeDefinitionRegistry;

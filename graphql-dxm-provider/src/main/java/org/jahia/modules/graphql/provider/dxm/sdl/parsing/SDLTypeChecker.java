@@ -53,8 +53,8 @@ public class SDLTypeChecker {
         SDLDefinitionStatus status = new SDLDefinitionStatus(typeDefinition.getName(), SDLDefinitionStatusType.OK);
         List<Directive> directives = typeDefinition.getDirectives();
         for (Directive directive : directives) {
-            if (directive.getName().equals("mapping") && directive.getArgument("node") != null) {
-                String jcrNodeType = ((StringValue) directive.getArgument("node").getValue()).getValue();
+            if (directive.getName().equals(SDLSchemaService.MAPPING_DIRECTIVE) && directive.getArgument(SDLSchemaService.MAPPING_DIRECTIVE_NODE) != null) {
+                String jcrNodeType = ((StringValue) directive.getArgument(SDLSchemaService.MAPPING_DIRECTIVE_NODE).getValue()).getValue();
                 try {
                     ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(jcrNodeType);
                     ExtendedNodeType[] superTypes = nodeType.getSupertypes();
@@ -69,9 +69,9 @@ public class SDLTypeChecker {
                     List<FieldDefinition> fields = ((ObjectTypeDefinition) typeDefinition).getFieldDefinitions();
                     List<String> missing = new ArrayList<>();
                     for (FieldDefinition def : fields) {
-                        Directive fieldDirective = def.getDirective("mapping");
-                        if (fieldDirective != null && fieldDirective.getArgument("property") != null) {
-                            String jcrPropertyName = ((StringValue) fieldDirective.getArgument("property").getValue()).getValue();
+                        Directive fieldDirective = def.getDirective(SDLSchemaService.MAPPING_DIRECTIVE);
+                        if (fieldDirective != null && fieldDirective.getArgument(SDLSchemaService.MAPPING_DIRECTIVE_PROPERTY) != null) {
+                            String jcrPropertyName = ((StringValue) fieldDirective.getArgument(SDLSchemaService.MAPPING_DIRECTIVE_PROPERTY).getValue()).getValue();
                             if (!hasProperty((ExtendedNodeType[]) ArrayUtils.add(superTypes, nodeType), jcrPropertyName)) {
                                 missing.add(jcrPropertyName);
                             }

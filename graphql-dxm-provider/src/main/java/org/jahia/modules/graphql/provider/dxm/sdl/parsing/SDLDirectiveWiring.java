@@ -15,8 +15,8 @@ public class SDLDirectiveWiring implements SchemaDirectiveWiring {
         GraphQLObjectType.Builder builder = GraphQLObjectType.newObject(environment.getElement());
 
         GraphQLDirective directive = environment.getDirective();
-        if (directive != null && directive.getName().equals("description")) {
-            builder.description(environment.getDirective().getArgument("value").getValue().toString());
+        if (directive != null && directive.getName().equals(SDLSchemaService.DESCRIPTION_DIRECTIVE)) {
+            builder.description(environment.getDirective().getArgument(SDLSchemaService.DESCRIPTION_DIRECTIVE_VALUE).getValue().toString());
         }
         return builder.build();
     }
@@ -30,12 +30,12 @@ public class SDLDirectiveWiring implements SchemaDirectiveWiring {
         GraphQLFieldDefinition.Builder builder = GraphQLFieldDefinition.newFieldDefinition(def);
 
         GraphQLDirective directive = environment.getDirective();
-        if (directive != null && directive.getName().equals("mapping")) {
+        if (directive != null && directive.getName().equals(SDLSchemaService.MAPPING_DIRECTIVE)) {
             Field field = new Field(environment.getElement().getName());
-            field.setProperty(environment.getDirective().getArgument("property").getValue().toString());
+            field.setProperty(environment.getDirective().getArgument(SDLSchemaService.MAPPING_DIRECTIVE_PROPERTY).getValue().toString());
             builder.dataFetcher(PropertiesDataFetcherFactory.getFetcher(def, field));
-        } else if (directive != null && directive.getName().equals("description")) {
-            builder.description(environment.getDirective().getArgument("value").getValue().toString());
+        } else if (directive != null && directive.getName().equals(SDLSchemaService.DESCRIPTION_DIRECTIVE)) {
+            builder.description(environment.getDirective().getArgument(SDLSchemaService.DESCRIPTION_DIRECTIVE_VALUE).getValue().toString());
         }
         return builder.build();
     }
