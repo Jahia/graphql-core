@@ -5,6 +5,7 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.idl.SchemaDirectiveWiring;
 import graphql.schema.idl.SchemaDirectiveWiringEnvironment;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Field;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.PropertiesDataFetcherFactory;
 
@@ -27,7 +28,7 @@ public class MappingDirectiveWiring implements SchemaDirectiveWiring {
         GraphQLDirective directive = environment.getDirective();
 
         Field field = new Field(environment.getElement().getName());
-        field.setProperty(directive.getArgument(SDLSchemaService.MAPPING_DIRECTIVE_PROPERTY).getValue().toString());
+        field.setProperty(directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue().toString());
 
         return GraphQLFieldDefinition.newFieldDefinition(def)
                 .dataFetcher(PropertiesDataFetcherFactory.getFetcher(def, field))

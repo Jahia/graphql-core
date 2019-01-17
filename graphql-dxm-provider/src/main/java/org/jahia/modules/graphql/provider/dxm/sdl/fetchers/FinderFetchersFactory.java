@@ -5,7 +5,7 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import org.apache.commons.lang.StringUtils;
-import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 
 public class FinderFetchersFactory {
 
@@ -101,9 +101,9 @@ public class FinderFetchersFactory {
         GraphQLObjectType type = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
         GraphQLFieldDefinition fd = type.getFieldDefinition(definitionPropertyName);
         if (fd == null) return null;
-        GraphQLDirective directive = fd.getDirective(SDLSchemaService.MAPPING_DIRECTIVE);
+        GraphQLDirective directive = fd.getDirective(SDLConstants.MAPPING_DIRECTIVE);
         if (directive == null) return null;
-        return fd.getDirective(SDLSchemaService.MAPPING_DIRECTIVE).getArgument(SDLSchemaService.MAPPING_DIRECTIVE_PROPERTY).getValue().toString();
+        return fd.getDirective(SDLConstants.MAPPING_DIRECTIVE).getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue().toString();
     }
 
     public static String getMappedType(String definitionPropertyName, GraphQLFieldDefinition fieldDefinition) {

@@ -6,6 +6,7 @@ import graphql.schema.*;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Finder;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderFetchersFactory;
@@ -31,10 +32,6 @@ import static graphql.Scalars.GraphQLString;
 
 @Component(service = SDLSchemaService.class, immediate = true)
 public class SDLSchemaService {
-    public static final String MAPPING_DIRECTIVE = "mapping";
-    public static final String MAPPING_DIRECTIVE_NODE = "node";
-    public static final String MAPPING_DIRECTIVE_PROPERTY = "property";
-    public static final String MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES = "ignoreDefaultQueries";
 
     private static Logger logger = LoggerFactory.getLogger(SDLSchemaService.class);
 
@@ -126,10 +123,10 @@ public class SDLSchemaService {
                 GraphQLObjectType objectType = fieldDefinition.getType() instanceof GraphQLList ?
                         (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType() : (GraphQLObjectType) fieldDefinition.getType();
 
-                GraphQLDirective directive = objectType.getDirective(MAPPING_DIRECTIVE);
+                GraphQLDirective directive = objectType.getDirective(SDLConstants.MAPPING_DIRECTIVE);
 
                 if (directive != null) {
-                    String nodeType = directive.getArgument(MAPPING_DIRECTIVE_NODE).getValue().toString();
+                    String nodeType = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
 
                     FinderDataFetcher fetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                     GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
@@ -180,7 +177,7 @@ public class SDLSchemaService {
     private void applyDefaultFetchers(List<GraphQLFieldDefinition> defs) {
         for (GraphQLType type : graphQLSchema.getAllTypesAsList()) {
             if (type instanceof GraphQLObjectType) {
-                GraphQLDirective directive = ((GraphQLObjectType) type).getDirective(MAPPING_DIRECTIVE);
+                GraphQLDirective directive = ((GraphQLObjectType) type).getDirective(SDLConstants.MAPPING_DIRECTIVE);
                 if (directive != null) {
                     applyDefaultFetcher(defs, directive, new GraphQLList(type), FinderFetchersFactory.FetcherType.ALL);
                     applyDefaultFetcher(defs, directive, (GraphQLOutputType) type, FinderFetchersFactory.FetcherType.ID);
@@ -197,8 +194,8 @@ public class SDLSchemaService {
     private void applyDefaultFetcher(final List<GraphQLFieldDefinition> defs, final GraphQLDirective directive,
                                      GraphQLOutputType type, final FinderFetchersFactory.FetcherType defaultFinder) {
         boolean shouldIgnoreDefaultQueries = false;
-        if (directive.getArgument(MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).getValue() != null) {
-            shouldIgnoreDefaultQueries = (Boolean) directive.getArgument(MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).getValue();
+        if (directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).getValue() != null) {
+            shouldIgnoreDefaultQueries = (Boolean) directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).getValue();
         }
 
         if (!shouldIgnoreDefaultQueries) {
@@ -208,7 +205,7 @@ public class SDLSchemaService {
                 baseType = (GraphQLOutputType) ((GraphQLList) type).getWrappedType();
             }
 
-            GraphQLArgument argument = ((GraphQLObjectType) baseType).getDirective(MAPPING_DIRECTIVE).getArgument(MAPPING_DIRECTIVE_NODE);
+            GraphQLArgument argument = ((GraphQLObjectType) baseType).getDirective(SDLConstants.MAPPING_DIRECTIVE).getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE);
 
             if (argument != null) {
                 final String finderName = defaultFinder.getName(baseType.getName());
@@ -233,14 +230,14 @@ public class SDLSchemaService {
         typeDefinitionRegistry.add(new ObjectTypeDefinition("Query"));
         typeDefinitionRegistry.add(new ScalarTypeDefinition("Date"));
         typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
-                .name(MAPPING_DIRECTIVE)
+                .name(SDLConstants.MAPPING_DIRECTIVE)
                 .directiveLocations(Arrays.asList(
                         DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
                         DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
                 .inputValueDefinitions(Arrays.asList(
-                        InputValueDefinition.newInputValueDefinition().name(MAPPING_DIRECTIVE_NODE).type(TypeName.newTypeName(GraphQLString.getName()).build()).build(),
-                        InputValueDefinition.newInputValueDefinition().name(MAPPING_DIRECTIVE_PROPERTY).type(TypeName.newTypeName(GraphQLString.getName()).build()).build(),
-                        InputValueDefinition.newInputValueDefinition().name(MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).type(TypeName.newTypeName(GraphQLBoolean.getName()).build()).build()))
+                        InputValueDefinition.newInputValueDefinition().name(SDLConstants.MAPPING_DIRECTIVE_NODE).type(TypeName.newTypeName(GraphQLString.getName()).build()).build(),
+                        InputValueDefinition.newInputValueDefinition().name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).type(TypeName.newTypeName(GraphQLString.getName()).build()).build(),
+                        InputValueDefinition.newInputValueDefinition().name(SDLConstants.MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).type(TypeName.newTypeName(GraphQLBoolean.getName()).build()).build()))
                 .build());
 
         return typeDefinitionRegistry;

@@ -22,7 +22,7 @@ public class ByIdFinderDataFetcher extends FinderDataFetcher {
     @Override
     public List<GraphQLArgument> getArguments() {
         List<GraphQLArgument> defaultArguments = getDefaultArguments();
-        defaultArguments.add(GraphQLArgument.newArgument().name("path").type(GraphQLString).build());
+        defaultArguments.add(GraphQLArgument.newArgument().name("id").type(GraphQLString).build());
         return defaultArguments;
     }
 

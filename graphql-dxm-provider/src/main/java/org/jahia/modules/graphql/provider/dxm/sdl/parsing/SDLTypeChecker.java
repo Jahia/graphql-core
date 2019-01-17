@@ -5,6 +5,7 @@ import graphql.schema.idl.TypeDefinitionRegistry;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.data.templates.JahiaTemplatesPackage;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatusType;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +29,17 @@ public class SDLTypeChecker {
             SDLDefinitionStatus l = checkForFieldsConsistency(objectTypeDefinition, typeDefinitionRegistry);
             if (l.getStatus() != SDLDefinitionStatusType.OK) {
                 return l;
+            } else if (!objectTypeDefinition.getName().equalsIgnoreCase("query")) {
+                // append id and path fields
+                List<FieldDefinition> fieldDefinitions = objectTypeDefinition.getFieldDefinitions();
+                FieldDefinition uuid = FieldDefinition.newFieldDefinition().name("uuid").type(TypeName.newTypeName("String").build())
+                        .directive(Directive.newDirective().name(SDLConstants.MAPPING_DIRECTIVE).arguments(Collections.singletonList(Argument.newArgument().name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).value(new StringValue(SDLConstants.IDENTIFIER)).build())).build()).build();
+                if (fieldDefinitions.stream().noneMatch((definition) -> definition.getName().equalsIgnoreCase(uuid.getName())))
+                    fieldDefinitions.add(uuid);
+                FieldDefinition path = FieldDefinition.newFieldDefinition().name("path").type(TypeName.newTypeName("String").build())
+                        .directive(Directive.newDirective().name(SDLConstants.MAPPING_DIRECTIVE).arguments(Collections.singletonList(Argument.newArgument().name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).value(new StringValue(SDLConstants.PATH)).build())).build()).build();
+                if (fieldDefinitions.stream().noneMatch((definition) -> definition.getName().equalsIgnoreCase(path.getName())))
+                    fieldDefinitions.add(path);
             }
         }
         return checkForConsistencyWithJCR(type);
@@ -53,8 +66,8 @@ public class SDLTypeChecker {
         SDLDefinitionStatus status = new SDLDefinitionStatus(typeDefinition.getName(), SDLDefinitionStatusType.OK);
         List<Directive> directives = typeDefinition.getDirectives();
         for (Directive directive : directives) {
-            if (directive.getName().equals(SDLSchemaService.MAPPING_DIRECTIVE) && directive.getArgument(SDLSchemaService.MAPPING_DIRECTIVE_NODE) != null) {
-                String[] jcrNodeTypes = ((StringValue) directive.getArgument("node").getValue()).getValue().split(",");
+            if (directive.getName().equals(SDLConstants.MAPPING_DIRECTIVE) && directive.getArgument(SDLConstants.MAPPING_DIRECTIVE) != null) {
+                String[] jcrNodeTypes = ((StringValue) directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue()).getValue().split(",");
                 String nodeTypeName = null;
                 try {
                     ExtendedNodeType[] allTypes = null;
@@ -79,16 +92,17 @@ public class SDLTypeChecker {
                     List<FieldDefinition> fields = ((ObjectTypeDefinition) typeDefinition).getFieldDefinitions();
                     List<String> missing = new ArrayList<>();
                     for (FieldDefinition def : fields) {
-                        Directive fieldDirective = def.getDirective(SDLSchemaService.MAPPING_DIRECTIVE);
-                        if (fieldDirective != null && fieldDirective.getArgument(SDLSchemaService.MAPPING_DIRECTIVE_PROPERTY) != null) {
-                            String jcrPropertyName = ((StringValue) fieldDirective.getArgument(SDLSchemaService.MAPPING_DIRECTIVE_PROPERTY).getValue()).getValue();
-                            if (jcrPropertyName.contains(".")) {
-                                if (!hasChildren(allTypes, jcrPropertyName.split("\\.")[0])) {
+                        Directive fieldDirective = def.getDirective(SDLConstants.MAPPING_DIRECTIVE);
+                        if (fieldDirective != null && fieldDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY) != null) {
+                            String jcrPropertyName = ((StringValue) fieldDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue()).getValue();
+                            if (!SDLConstants.PATH.equalsIgnoreCase(jcrPropertyName) && !SDLConstants.IDENTIFIER.equalsIgnoreCase(jcrPropertyName)) {
+                                if (jcrPropertyName.contains(".")) {
+                                    if (!hasChildren(allTypes, jcrPropertyName.split("\\.")[0])) {
+                                        missing.add(jcrPropertyName);
+                                    }
+                                } else if (!hasProperty(allTypes, jcrPropertyName)) {
                                     missing.add(jcrPropertyName);
                                 }
-                            } else
-                            if (!hasProperty(allTypes, jcrPropertyName)) {
-                                missing.add(jcrPropertyName);
                             }
                         }
                     }

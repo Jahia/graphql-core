@@ -45,15 +45,12 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
-import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.utils.LanguageCodeConverters;
 import pl.touk.throwing.ThrowingFunction;
 
 import javax.jcr.RepositoryException;
@@ -64,7 +61,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static graphql.Scalars.GraphQLBoolean;
-import static graphql.Scalars.GraphQLString;
 
 /**
  * Created at 10 Jan$
@@ -74,8 +70,6 @@ import static graphql.Scalars.GraphQLString;
 public class BooleanFinderDataFetcher extends FinderDataFetcher {
 
     private static final String VALUE = "value";
-    private static final String PREVIEW = "preview";
-    private static final String LANGUAGE = "language";
 
     BooleanFinderDataFetcher(Finder finder) {
         super(finder.getType(), finder);
