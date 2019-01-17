@@ -1,5 +1,3 @@
-package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
-
 /*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
@@ -43,6 +41,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
+package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
@@ -72,13 +71,13 @@ import static graphql.Scalars.GraphQLString;
  *
  * @author chooliyip
  **/
-public class BooleanFinderDataFetcher extends FinderDataFetcher{
+public class BooleanFinderDataFetcher extends FinderDataFetcher {
 
-    public static String VALUE = "value";
+    private static final String VALUE = "value";
     private static final String PREVIEW = "preview";
     private static final String LANGUAGE = "language";
 
-    BooleanFinderDataFetcher(Finder finder){
+    BooleanFinderDataFetcher(Finder finder) {
         super(finder.getType(), finder);
     }
 
@@ -111,7 +110,7 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher{
 
     @Override
     public Object get(DataFetchingEnvironment environment) {
-        if(hasValidArguments(environment)){
+        if (hasValidArguments(environment)) {
             try {
                 Map<String, Object> arguments = environment.getArguments();
                 String statement = buildSQL2Statement(environment);
@@ -128,7 +127,7 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher{
             } catch (RepositoryException e) {
                 throw new RuntimeException(e);
             }
-        }else{
+        } else {
             throw new RuntimeException("By boolean data fetcher needs 'value' argument");
         }
     }
@@ -139,10 +138,10 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher{
      * @param environment
      * @return
      */
-    private String buildSQL2Statement(DataFetchingEnvironment environment){
+    private String buildSQL2Statement(DataFetchingEnvironment environment) {
         Boolean value = environment.getArgument(VALUE);
 
-        return "SELECT * FROM [" + type + "] WHERE [" + finder.getProperty() +"] = " + value;
+        return "SELECT * FROM [" + type + "] WHERE [" + finder.getProperty() + "] = " + value;
 
     }
 
@@ -152,10 +151,10 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher{
      * @param environment
      * @return
      */
-    private boolean hasValidArguments(DataFetchingEnvironment environment){
-        if (environment.getArgument(VALUE)==null){
+    private boolean hasValidArguments(DataFetchingEnvironment environment) {
+        if (environment.getArgument(VALUE) == null) {
             return false;
-        }else{
+        } else {
             return true;
         }
     }

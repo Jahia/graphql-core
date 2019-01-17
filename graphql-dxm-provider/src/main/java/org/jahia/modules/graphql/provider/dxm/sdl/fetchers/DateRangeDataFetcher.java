@@ -1,5 +1,3 @@
-package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
-
 /*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
@@ -43,6 +41,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
+package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
@@ -69,16 +68,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static graphql.Scalars.GraphQLBoolean;
-import static graphql.Scalars.GraphQLInt;
-import static graphql.Scalars.GraphQLString;
+import static graphql.Scalars.*;
 
 /**
  * Created at Jan, 2019
  *
  * @author chooliyip
  **/
-public class DateRangeDataFetcher extends FinderDataFetcher{
+public class DateRangeDataFetcher extends FinderDataFetcher {
 
     private static final String ARG_AFTER = "after";
     private static final String ARG_BEFORE = "before";
@@ -86,7 +83,7 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
     private static final String PREVIEW = "preview";
     private static final String LANGUAGE = "language";
 
-    public DateRangeDataFetcher(Finder finder){
+    public DateRangeDataFetcher(Finder finder) {
         super(finder.getType(), finder);
     }
 
@@ -127,7 +124,7 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
 
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
-        if(hasValidArguments(environment)){
+        if (hasValidArguments(environment)) {
             try {
                 Map<String, Object> arguments = environment.getArguments();
                 String statement = this.buildSQL2Statement(environment);
@@ -144,7 +141,7 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
             } catch (RepositoryException e) {
                 throw new DataFetchingException(e);
             }
-        }else{
+        } else {
             throw new DataFetchingException("By date range data fetcher needs at least one argument of 'after', 'before' or 'lastDays'");
         }
 
@@ -156,13 +153,13 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
      * @param environment
      * @return
      */
-    private String buildSQL2Statement(DataFetchingEnvironment environment){
+    private String buildSQL2Statement(DataFetchingEnvironment environment) {
         String after = environment.getArgument(ARG_AFTER);
         String before = environment.getArgument(ARG_BEFORE);
         Integer lastDays = environment.getArgument(ARG_LASTDAYS);
 
-        if(lastDays!=null){
-            Date afterDate = DateUtils.addDays(new Date(), - lastDays);
+        if (lastDays != null) {
+            Date afterDate = DateUtils.addDays(new Date(), -lastDays);
             DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSXXX");
             after = dateFormat.format(afterDate);
         }
@@ -182,14 +179,13 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
      * @param environment
      * @return
      */
-    private boolean hasValidArguments(DataFetchingEnvironment environment){
-        if(environment.getArguments().size() < 1){
+    private boolean hasValidArguments(DataFetchingEnvironment environment) {
+        if (environment.getArguments().size() < 1) {
             return false;
-        }
-        else if (environment.getArgument(ARG_LASTDAYS) !=null &&
-                (!StringUtils.isBlank(environment.getArgument(ARG_AFTER)) || !StringUtils.isBlank(environment.getArgument(ARG_BEFORE)))){
+        } else if (environment.getArgument(ARG_LASTDAYS) != null &&
+                (!StringUtils.isBlank(environment.getArgument(ARG_AFTER)) || !StringUtils.isBlank(environment.getArgument(ARG_BEFORE)))) {
             return false;
-        }else{
+        } else {
             return true;
         }
     }
@@ -203,42 +199,42 @@ public class DateRangeDataFetcher extends FinderDataFetcher{
 
         final StringBuffer sb = new StringBuffer();
 
-        SQL2DateTypeQuery(){
+        SQL2DateTypeQuery() {
             //void
         }
 
-        public SQL2DateTypeQuery selectFrom(String type){
+        public SQL2DateTypeQuery selectFrom(String type) {
             sb.append("SELECT" + START_WITH_SPACE + "FROM" + " [\"" + type + "\"]");
             return this;
         }
 
-        public SQL2DateTypeQuery where(){
+        public SQL2DateTypeQuery where() {
             sb.append(SPACE);
             sb.append("WHERE");
             return this;
         }
 
-        public SQL2DateTypeQuery and(String... constrains){
+        public SQL2DateTypeQuery and(String... constrains) {
             final List<String> trimedConstrains = Arrays.stream(constrains).filter(Objects::nonNull).collect(Collectors.toList());
             sb.append(SPACE);
-            for (int i=0; i<trimedConstrains.size();i++){
-                if(!StringUtils.isBlank(trimedConstrains.get(i))){
-                    if(i>0) sb.append(SPACE + "AND" + SPACE);
+            for (int i = 0; i < trimedConstrains.size(); i++) {
+                if (!StringUtils.isBlank(trimedConstrains.get(i))) {
+                    if (i > 0) sb.append(SPACE + "AND" + SPACE);
                     sb.append(trimedConstrains.get(i));
                 }
             }
             return this;
         }
 
-        public String constrain(String operator, String property, String value){
+        public String constrain(String operator, String property, String value) {
             return StringUtils.isBlank(value) ? null : "[" + property + "]" + SPACE + operator + SPACE + value;
         }
 
-        public String castDate(String value){
+        public String castDate(String value) {
             return StringUtils.isBlank(value) ? null : "CAST('" + value + "' AS DATE)";
         }
 
-        public String getStatement(){
+        public String getStatement() {
             return sb.toString();
         }
     }

@@ -1,5 +1,3 @@
-package org.jahia.modules.graphql.provider.dxm.sdl.types;
-
 /*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
@@ -43,6 +41,8 @@ package org.jahia.modules.graphql.provider.dxm.sdl.types;
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
+package org.jahia.modules.graphql.provider.dxm.sdl.types;
+
 import graphql.language.StringValue;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseValueException;
@@ -55,18 +55,15 @@ import java.util.Date;
 
 public class GraphQLDate extends GraphQLScalarType {
 
-    private static final String DEFAULT_NAME = "Date";
+    public static final String DATE_NAME = "Date";
+    public static final String DATE_DESCRIPTION = "Date type";
 
     public GraphQLDate() {
-        this(DEFAULT_NAME);
-    }
-
-    public GraphQLDate(final String name) {
-        super(name, "Date type", new Coercing<Date, String>() {
+        super(DATE_NAME, DATE_DESCRIPTION, new Coercing<Date, String>() {
             private Date convertImpl(Object input) {
-                if(input instanceof Long){
-                    return new Date((Long)input);
-                }else if (input instanceof String) {
+                if (input instanceof Long) {
+                    return new Date((Long) input);
+                } else if (input instanceof String) {
                     LocalDateTime localDateTime = DateTimeUtils.parseDate((String) input);
 
                     if (localDateTime != null) {

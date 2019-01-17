@@ -30,12 +30,12 @@ public class ByPropertyMultipleFinderDataFetcher extends FinderDataFetcher {
     }
 
     @Override
-    public List<GqlJcrNode>  get(DataFetchingEnvironment environment) {
+    public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
         try {
             String statement = "select * from [\"" + type + "\"] where [\"" + finder.getProperty() + "\"]=\"" + environment.getArgument("eq") + "\"";
             JCRNodeIteratorWrapper it = JCRSessionFactory.getInstance().getCurrentUserSession().getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
-            Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
-                    .filter(node-> PermissionHelper.hasPermission(node, environment))
+            Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
+                    .filter(node -> PermissionHelper.hasPermission(node, environment))
                     .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
 
             return stream.collect(Collectors.toList());

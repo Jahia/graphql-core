@@ -1,5 +1,3 @@
-package org.jahia.modules.graphql.provider.dxm.sdl.types;
-
 /*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
@@ -43,6 +41,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.types;
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
+package org.jahia.modules.graphql.provider.dxm.sdl.types;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -73,8 +72,9 @@ public class GraphQLMetadata extends GraphQLScalarType {
             private Metadata convertImpl(Object input) {
                 if (input instanceof String) {
                     Gson gson = new Gson();
-                    Type type = new TypeToken<List<Metadata>>() {}.getType();
-                    return gson.fromJson((String)input, type);
+                    Type type = new TypeToken<List<Metadata>>() {
+                    }.getType();
+                    return gson.fromJson((String) input, type);
                 }
                 return null;
             }
@@ -115,7 +115,7 @@ class Metadata {
     private Date published;
     private String publishedBy;
 
-    public Metadata(Date created, String createdBy, Date modified, String modifiedBy, Date published, String publishedBy){
+    public Metadata(Date created, String createdBy, Date modified, String modifiedBy, Date published, String publishedBy) {
         this.created = created;
         this.createdBy = createdBy;
         this.modified = modified;
@@ -171,7 +171,6 @@ class Metadata {
     public void setPublishedBy(String publishedBy) {
         this.publishedBy = publishedBy;
     }
-
 
 
 }

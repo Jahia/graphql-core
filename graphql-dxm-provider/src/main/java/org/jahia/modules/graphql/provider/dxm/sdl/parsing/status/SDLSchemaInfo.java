@@ -6,6 +6,7 @@ public class SDLSchemaInfo {
         SYNTAX_ERROR,
         DEFINITION_ERROR
     }
+
     private String error;
     private String bundle;
     private SDLSchemaStatus status;

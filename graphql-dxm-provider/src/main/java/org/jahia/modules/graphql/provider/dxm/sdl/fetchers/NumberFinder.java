@@ -3,7 +3,8 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 public class NumberFinder extends Finder {
     private String numberType;
 
-    private NumberFinder() {}
+    private NumberFinder() {
+    }
 
     public static NumberFinder fromFinder(Finder finder) {
         NumberFinder f = new NumberFinder();

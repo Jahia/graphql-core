@@ -6,7 +6,8 @@ public class Finder {
     protected String type;
     protected boolean multiple;
 
-    public Finder() {}
+    public Finder() {
+    }
 
     public Finder(String name) {
         this.name = name;

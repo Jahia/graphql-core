@@ -29,18 +29,18 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
     private ComponentContext componentContext;
     private Boolean hasModulesMonitoringActivated = Boolean.FALSE;
 
-    private static Map<Integer,String> status = new HashMap<>();
+    private static Map<Integer, String> status = new HashMap<>();
 
     static {
-        status.put(BundleEvent.INSTALLED,"installed");
-        status.put(BundleEvent.UNINSTALLED,"uninstalled");
-        status.put(BundleEvent.RESOLVED,"resolved");
-        status.put(BundleEvent.UNRESOLVED,"unresolved");
-        status.put(BundleEvent.STARTED,"started");
-        status.put(BundleEvent.STARTING,"starting");
-        status.put(BundleEvent.STOPPED,"stopped");
-        status.put(BundleEvent.STOPPING,"started");
-        status.put(BundleEvent.UPDATED,"updated");
+        status.put(BundleEvent.INSTALLED, "installed");
+        status.put(BundleEvent.UNINSTALLED, "uninstalled");
+        status.put(BundleEvent.RESOLVED, "resolved");
+        status.put(BundleEvent.UNRESOLVED, "unresolved");
+        status.put(BundleEvent.STARTED, "started");
+        status.put(BundleEvent.STARTING, "starting");
+        status.put(BundleEvent.STOPPED, "stopped");
+        status.put(BundleEvent.STOPPING, "started");
+        status.put(BundleEvent.UPDATED, "updated");
     }
 
     private ServiceRegistration<ModulesSourceMonitor> serviceRegistration = null;
@@ -56,7 +56,7 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         Bundle modulesProvider = BundleUtils.getBundleBySymbolicName("external-provider-modules", null);
         registerSourceMonitorService(modulesProvider);
 
-        for (Bundle bundle: bundleContext.getBundles()) {
+        for (Bundle bundle : bundleContext.getBundles()) {
             if (checkForSDLResourceInBundle(bundle, null)) {
                 sdlResourcesDiscovered = true;
             }
@@ -68,7 +68,7 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
     }
 
     @Deactivate
-    public void deactivate(){
+    public void deactivate() {
         unregisterSourceMonitorService();
     }
 
@@ -82,8 +82,8 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         Bundle bundle = event.getBundle();
         //Handle specific case of external-provider-modules bundle
         int eventType = event.getType();
-        if(event.getBundle().getSymbolicName().equals("external-provider-modules")) {
-            if(eventType == BundleEvent.STARTED ) {
+        if (event.getBundle().getSymbolicName().equals("external-provider-modules")) {
+            if (eventType == BundleEvent.STARTED) {
                 registerSourceMonitorService(event.getBundle());
             } else if (eventType == BundleEvent.STOPPED) {
                 unregisterSourceMonitorService();
@@ -91,8 +91,8 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         }
 
         if (checkForSDLResourceInBundle(bundle, event)) {
-            logger.debug("received event {} for bundle {} ",new Object[]{status.get(eventType),event.getBundle().getSymbolicName()});
-            if(eventType == BundleEvent.STARTED || eventType == BundleEvent.STOPPED) {
+            logger.debug("received event {} for bundle {} ", new Object[]{status.get(eventType), event.getBundle().getSymbolicName()});
+            if (eventType == BundleEvent.STARTED || eventType == BundleEvent.STOPPED) {
                 componentContext.disableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
                 componentContext.enableComponent("org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider");
             }
@@ -106,9 +106,9 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
                 registerSDLResource(event.getType(), bundle.getSymbolicName(), null);
             } else {
                 URL url = bundle.getResource(GRAPHQL_EXTENSION_SDL);
-                if(url != null){
-                    logger.debug("get bundle schema {}",new Object[]{url.getPath()});
-                    if(hasModulesMonitoringActivated) {
+                if (url != null) {
+                    logger.debug("get bundle schema {}", new Object[]{url.getPath()});
+                    if (hasModulesMonitoringActivated) {
                         String sourcesFolder = bundle.getHeaders().get(JAHIA_SOURCE_FOLDERS);
                         if (sourcesFolder != null) {
                             File file = new File(sourcesFolder + SRC_MAIN_RESOURCES + GRAPHQL_EXTENSION_SDL);
@@ -131,20 +131,21 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
 
     /**
      * Registers or deregisters a bundle's graphql-extension.sdl in the sdl registry
+     *
      * @param bundleEventType - Current state of the bundle
-     * @param bundleName - Name of the bundle
-     * @param sdlResource - URL resource pointing to SDL file (graphql-extension.sdl) in bundle
+     * @param bundleName      - Name of the bundle
+     * @param sdlResource     - URL resource pointing to SDL file (graphql-extension.sdl) in bundle
      */
-    private void registerSDLResource(int bundleEventType, String bundleName , final URL sdlResource){
+    private void registerSDLResource(int bundleEventType, String bundleName, final URL sdlResource) {
         switch (bundleEventType) {
             case BundleEvent.STARTED:
-                if(!sdlResources.containsKey(bundleName)) {
+                if (!sdlResources.containsKey(bundleName)) {
                     logger.debug("add new type registry for " + bundleName);
                     sdlResources.put(bundleName, sdlResource);
                 }
                 break;
             default:
-                if(sdlResources.containsKey(bundleName)) {
+                if (sdlResources.containsKey(bundleName)) {
                     logger.debug("remove type registry for " + bundleName);
                     sdlResources.remove(bundleName);
                 }
@@ -154,20 +155,20 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
     private void registerSourceMonitorService(Bundle modulesProvider) {
         try {
             hasModulesMonitoringActivated = Boolean.FALSE;
-            if (modulesProvider != null && modulesProvider.loadClass("org.jahia.modules.external.modules.osgi.ModulesSourceMonitor") != null){
+            if (modulesProvider != null && modulesProvider.loadClass("org.jahia.modules.external.modules.osgi.ModulesSourceMonitor") != null) {
                 hasModulesMonitoringActivated = Boolean.TRUE;
                 unregisterSourceMonitorService();
                 serviceRegistration = bundleContext.registerService(ModulesSourceMonitor.class, new SDLFileSourceMonitor(bundleContext, componentContext), null);
             }
         } catch (ClassNotFoundException e) {
-            if(logger.isDebugEnabled()) {
-                logger.error(e.getMessage(),e);
+            if (logger.isDebugEnabled()) {
+                logger.error(e.getMessage(), e);
             }
         }
     }
 
     private void unregisterSourceMonitorService() {
-        if(serviceRegistration!=null) {
+        if (serviceRegistration != null) {
             serviceRegistration.unregister();
         }
     }

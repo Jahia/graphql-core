@@ -1,6 +1,8 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
-import graphql.schema.*;
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLArgument;
 
 import java.util.List;
 

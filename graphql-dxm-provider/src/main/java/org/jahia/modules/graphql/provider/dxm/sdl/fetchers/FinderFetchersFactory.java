@@ -49,32 +49,43 @@ public class FinderFetchersFactory {
         String propertyType = getMappedType(definitionPropertyName, fieldDefinition);
         finder.setProperty(propertyNameInJcr != null ? propertyNameInJcr : definitionPropertyName);
 
-        switch(propertyType) {
-            case "Date" : return getFetcherType(finder, FetcherType.DATE);
-            case "Boolean" : return getFetcherType(finder, FetcherType.BOOLEAN);
-            case "BigDecimal" :
-            case "BigInteger" :
-            case "Long" :
-            case "Short" :
-            case "Float" :
-            case "Int" :
+        switch (propertyType) {
+            case "Date":
+                return getFetcherType(finder, FetcherType.DATE);
+            case "Boolean":
+                return getFetcherType(finder, FetcherType.BOOLEAN);
+            case "BigDecimal":
+            case "BigInteger":
+            case "Long":
+            case "Short":
+            case "Float":
+            case "Int":
                 NumberFinder f = NumberFinder.fromFinder(finder);
                 f.setNumberType(propertyType);
                 return getFetcherType(f, FetcherType.NUMBER);
-            default : return getFetcherType(finder, FetcherType.STRING);
+            default:
+                return getFetcherType(finder, FetcherType.STRING);
         }
     }
 
     public static FinderDataFetcher getFetcherType(final Finder finder, final FetcherType type) {
-        switch(type) {
-            case ALL : return new AllFinderDataFetcher(finder);
-            case ID : return new ByIdFinderDataFetcher(finder);
-            case PATH : return new ByPathFinderDataFetcher(finder);
-            case STRING : return new StringFinderDataFetcher(finder);
-            case DATE : return new DateRangeDataFetcher(finder);
-            case BOOLEAN : return new BooleanFinderDataFetcher(finder);
-            case NUMBER : return new NumberFinderDataFetcher((NumberFinder) finder);
-            default: return null;
+        switch (type) {
+            case ALL:
+                return new AllFinderDataFetcher(finder);
+            case ID:
+                return new ByIdFinderDataFetcher(finder);
+            case PATH:
+                return new ByPathFinderDataFetcher(finder);
+            case STRING:
+                return new StringFinderDataFetcher(finder);
+            case DATE:
+                return new DateRangeDataFetcher(finder);
+            case BOOLEAN:
+                return new BooleanFinderDataFetcher(finder);
+            case NUMBER:
+                return new NumberFinderDataFetcher((NumberFinder) finder);
+            default:
+                return null;
         }
     }
 
@@ -83,7 +94,7 @@ public class FinderFetchersFactory {
     }
 
     public static String getMappedProperty(String definitionPropertyName, GraphQLFieldDefinition fieldDefinition) {
-        GraphQLObjectType type = (GraphQLObjectType)((GraphQLList)fieldDefinition.getType()).getWrappedType();
+        GraphQLObjectType type = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
         GraphQLFieldDefinition fd = type.getFieldDefinition(definitionPropertyName);
         if (fd == null) return null;
         GraphQLDirective directive = fd.getDirective(SDLSchemaService.MAPPING_DIRECTIVE);
