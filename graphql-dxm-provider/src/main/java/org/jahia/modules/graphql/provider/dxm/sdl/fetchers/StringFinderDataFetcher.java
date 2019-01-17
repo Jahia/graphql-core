@@ -30,8 +30,6 @@ public class StringFinderDataFetcher extends FinderDataFetcher {
     private static final String CONTAINS = "contains";
     private static final String EQUALS = "equals";
     private static final String INVERT = "invert";
-    private static final String PREVIEW = "preview";
-    private static final String LANGUAGE = "language";
 
 
     public StringFinderDataFetcher(Finder finder) {
@@ -40,7 +38,7 @@ public class StringFinderDataFetcher extends FinderDataFetcher {
 
     @Override
     public List<GraphQLArgument> getArguments() {
-        List<GraphQLArgument> list = new ArrayList<>();
+        List<GraphQLArgument> list = getDefaultArguments();
         list.add(GraphQLArgument.newArgument()
                 .name(CONTAINS)
                 .type(GraphQLString)
@@ -56,18 +54,6 @@ public class StringFinderDataFetcher extends FinderDataFetcher {
                 .type(GraphQLBoolean)
                 .description("Inverts 'contains' or 'equals' argument to get either 'not contains' or 'not equals'. Default value is 'false'")
                 .defaultValue(false)
-                .build());
-        list.add(GraphQLArgument.newArgument()
-                .name(PREVIEW)
-                .type(GraphQLBoolean)
-                .description("Return content from live or default workspace")
-                .defaultValue(false)
-                .build());
-        list.add(GraphQLArgument.newArgument()
-                .name(LANGUAGE)
-                .type(GraphQLString)
-                .description("Content language, defaults to English")
-                .defaultValue("en")
                 .build());
         return list;
     }
@@ -92,9 +78,7 @@ public class StringFinderDataFetcher extends FinderDataFetcher {
                 statement = String.format("SELECT * FROM [%s] as n where n.[%s]%s'%s'", type, finder.getProperty(), addOn, argument);
             }
 
-            boolean preview = (Boolean) arguments.get(PREVIEW);
-            Locale locale = LanguageCodeConverters.languageCodeToLocale((String) arguments.get(LANGUAGE));
-            JCRSessionWrapper currentUserSession = JCRSessionFactory.getInstance().getCurrentUserSession(preview ? Constants.EDIT_WORKSPACE : Constants.LIVE_WORKSPACE, locale);
+            JCRSessionWrapper currentUserSession = getCurrentUserSession(environment);
             JCRNodeIteratorWrapper it = currentUserSession.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
             Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
                     .filter(node -> PermissionHelper.hasPermission(node, environment))

@@ -83,27 +83,13 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher {
 
     @Override
     public List<GraphQLArgument> getArguments() {
-        List<GraphQLArgument> arguments = new ArrayList<>();
+        List<GraphQLArgument> arguments = getDefaultArguments();
         arguments.add(GraphQLArgument
                 .newArgument()
                 .name(VALUE)
                 .description("select content if boolean value true or false")
                 .type(GraphQLBoolean)
                 .defaultValue(true)
-                .build());
-        arguments.add(GraphQLArgument
-                .newArgument()
-                .name(PREVIEW)
-                .description("Return content from live or default workspace")
-                .type(GraphQLBoolean)
-                .defaultValue(false)
-                .build());
-        arguments.add(GraphQLArgument
-                .newArgument()
-                .name(LANGUAGE)
-                .description("Content language, defaults to English")
-                .type(GraphQLString)
-                .defaultValue("en")
                 .build());
         return arguments;
     }
@@ -114,10 +100,7 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher {
             try {
                 Map<String, Object> arguments = environment.getArguments();
                 String statement = buildSQL2Statement(environment);
-
-                boolean preview = arguments.get(PREVIEW) == null ? true : (Boolean) arguments.get(PREVIEW);
-                Locale locale = LanguageCodeConverters.languageCodeToLocale((String) arguments.get(LANGUAGE));
-                JCRSessionWrapper currentUserSession = JCRSessionFactory.getInstance().getCurrentUserSession(preview ? Constants.EDIT_WORKSPACE : Constants.LIVE_WORKSPACE, locale);
+                JCRSessionWrapper currentUserSession = getCurrentUserSession(environment);
                 JCRNodeIteratorWrapper it = currentUserSession.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
                 Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
                         .filter(node -> PermissionHelper.hasPermission(node, environment))

@@ -21,13 +21,15 @@ public class ByIdFinderDataFetcher extends FinderDataFetcher {
 
     @Override
     public List<GraphQLArgument> getArguments() {
-        return Collections.singletonList(GraphQLArgument.newArgument().name("id").type(GraphQLString).build());
+        List<GraphQLArgument> defaultArguments = getDefaultArguments();
+        defaultArguments.add(GraphQLArgument.newArgument().name("path").type(GraphQLString).build());
+        return defaultArguments;
     }
 
     @Override
     public GqlJcrNode get(DataFetchingEnvironment environment) {
         try {
-            return new GqlJcrNodeImpl(JCRSessionFactory.getInstance().getCurrentUserSession().getNodeByIdentifier(environment.getArgument("id")));
+            return new GqlJcrNodeImpl(getCurrentUserSession(environment).getNodeByIdentifier(environment.getArgument("id")));
         } catch (ItemNotFoundException e) {
             return null;
         } catch (RepositoryException e) {
