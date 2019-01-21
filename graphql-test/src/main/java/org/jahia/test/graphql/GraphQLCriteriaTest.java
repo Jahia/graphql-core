@@ -94,7 +94,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
 
-            try{
+            try {
                 JCRNodeWrapper node = session.getRootNode().addNode("testList", "jnt:contentList");
                 nodeUuid = node.getIdentifier();
 
@@ -103,7 +103,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 subNode1.addMixin("jmix:keywords");
                 subNode1.setProperty("jcr:title", subnodeTitleEn1);
                 subNode1.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
-                subNode1.setProperty("j:keywords", new String[]{"keyword 1", "keyword 2"});
+                subNode1.setProperty("j:keywords", new String[] {"keyword 1", "keyword 2"});
                 Calendar calendar1 = Calendar.getInstance();
                 calendar1.setTime(subnode1Published);
                 subNode1.setProperty("j:lastPublished", calendar1);
@@ -111,7 +111,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
                 JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
                 subNode2.addMixin("jmix:tagged");
-                subNode2.setProperty("j:tagList", new String[]{"sometag", "keyword"});
+                subNode2.setProperty("j:tagList", new String[] {"sometag", "keyword"});
                 subNode2.setProperty("jcr:title", subnodeTitleEn2);
                 Calendar calendar2 = Calendar.getInstance();
                 calendar2.setTime(subnode2Published);
@@ -136,7 +136,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 subNodeUuid43 = subNode4.addNode("testSubList4_3", "jnt:contentList").getIdentifier();
 
                 session.save();
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             return null;
@@ -482,7 +482,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
                 + "              paths: \"/testList\", pathType: PARENT, "
-                + "               nodeConstraint: {property: \"j:lastPublished\", gte: \""+datetimeToString(subnode2Published)+"\"}}) {"
+                + "               nodeConstraint: {property: \"j:lastPublished\", gte: \"" + datetimeToString(subnode2Published) + "\"}}) {"
                 + "            nodes {"
                 + "                name"
                 + "                lastPublished: property(name: \"j:lastPublished\") {"
@@ -725,7 +725,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
                 + "               all: [{property: \"j:liveProperties\", exists: true}], "
                 + "               any: [{property: \"j:keywords\", exists: true}, {property: \"j:tagList\", exists: true}], "
-                + "               none: [{property: \"j:lastPublished\", lte: \""+datetimeToString(subnode3Published)+"\"}]"
+                + "               none: [{property: \"j:lastPublished\", lte: \"" + datetimeToString(subnode3Published) + "\"}]"
                 + "            }) {"
                 + "            nodes {"
                 + "                name"
@@ -751,7 +751,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
                 + "               all: [{property: \"j:liveProperties\", exists: true}, {like: \"%subList2%\"}], "
                 + "               any: [{property: \"j:keywords\", exists: true}, {like: \"%subList2%\"}], "
-                + "               none: [{property: \"j:lastPublished\", lte: \""+datetimeToString(subnode3Published)+"\"}, {like: \"%subList2%\"}]"
+                + "               none: [{property: \"j:lastPublished\", lte: \"" + datetimeToString(subnode3Published) + "\"}, {like: \"%subList2%\"}]"
                 + "            }) {"
                 + "            nodes {"
                 + "                name"
@@ -853,9 +853,8 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         Assert.assertEquals(0, nodes.length());
     }
 
-    private static String datetimeToString(Date date){
+    private static String datetimeToString(Date date) {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSXXX");
         return dateFormat.format(date);
     }
-
 }
