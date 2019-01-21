@@ -71,7 +71,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeConstraintInput.QueryFunctions.*;
+import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeConstraintInput.QueryFunction.*;
 import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLanguage.SQL2;
 
 /**
@@ -81,7 +81,7 @@ import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLangu
 @GraphQLDescription("JCR Queries")
 public class GqlJcrQuery {
 
-    private static Logger logger = LoggerFactory.getLogger(GqlJcrQuery.class);
+    private static final Logger logger = LoggerFactory.getLogger(GqlJcrQuery.class);
 
     private static final NodeConstraintConvertor[] NODE_CONSTRAINT_CONVERTORS = {
         new NodeConstraintConvertorLike(),
@@ -295,7 +295,7 @@ public class GqlJcrQuery {
             Selector source = factory.selector(criteria.getNodeType(), "node");
             Constraint constraintTree = getConstraintTree(source.getSelectorName(), criteria, factory);
             Ordering ordering = getOrderingByProperty(source.getSelectorName(), criteria, factory);
-            QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, ordering == null ? null : new Ordering[]{ordering}, null);
+            QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, ordering == null ? null : new Ordering[] {ordering}, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
             return NodeHelper.getPaginatedNodesList(it, null, null, null, fieldFilter, environment, fieldSorter, fieldGrouping);
         } catch (RepositoryException e) {
@@ -309,6 +309,7 @@ public class GqlJcrQuery {
         final List<GqlJcrNodeConstraintInput> extraAllConstraintInputs = criteria.getAll();
         final List<GqlJcrNodeConstraintInput> extraAnyConstraintInputs = criteria.getAny();
         final List<GqlJcrNodeConstraintInput> extraNoneConstraintInputs = criteria.getNone();
+
         final LinkedHashSet<Constraint> constraints = new LinkedHashSet<>();
         final LinkedHashSet<Constraint> extraAnyConstraints = new LinkedHashSet<>();
         final LinkedHashSet<Constraint> extraNoneConstraints = new LinkedHashSet<>();
@@ -346,23 +347,26 @@ public class GqlJcrQuery {
             }
             constraints.add(constraint);
         }
-        //Build default properties constraint
+
+        // Build default properties constraint.
         Constraint result = null;
         if (criteria.getNodeConstraint() != null && criteria.getNodeConstraint().getContains() != null) {
             DefaultConstraintHelper defaultConstraintHelper = new DefaultConstraintHelper(factory, selector);
             result = defaultConstraintHelper.buildDefaultPropertiesConstraint(criteria.getNodeConstraint().getContains());
         }
+
         // Build the result.
         if (constraints.isEmpty()) {
             return null;
         } else {
-            // apply and constraints for mandatory and All.
+
+            // Apply and constraints for mandatory and All.
             List<GqlJcrNodeConstraintInput> constraintInputList = new ArrayList<>();
             constraintInputList.add(criteria.getNodeConstraint());
-            if(extraAllConstraintInputs!=null && !extraAllConstraintInputs.isEmpty()){
+            if (extraAllConstraintInputs != null && !extraAllConstraintInputs.isEmpty()) {
                 constraintInputList.addAll(extraAllConstraintInputs);
             }
-            constraintInputList.forEach( nodeConstraintInput -> {
+            constraintInputList.forEach(nodeConstraintInput -> {
                 if ((nodeConstraintInput == null || (nodeConstraintInput.getContains() != null && nodeConstraintInput.getProperty() == null))) {
                     return;
                 }
@@ -373,9 +377,9 @@ public class GqlJcrQuery {
                 result = result != null ? factory.and(result, constraintIt.next()) : constraintIt.next();
             }
 
-            //apply Any constraints
-            if(extraAnyConstraintInputs!=null && !extraAnyConstraintInputs.isEmpty()){
-                extraAnyConstraintInputs.forEach( nodeConstraintInput -> extraAnyConstraints.add(convertToConstraint(selector, nodeConstraintInput, factory)) );
+            // Apply Any constraints.
+            if (extraAnyConstraintInputs != null && !extraAnyConstraintInputs.isEmpty()) {
+                extraAnyConstraintInputs.forEach(nodeConstraintInput -> extraAnyConstraints.add(convertToConstraint(selector, nodeConstraintInput, factory)));
                 constraintIt = extraAnyConstraints.iterator();
                 Constraint anyResult = constraintIt.next();
                 while (constraintIt.hasNext()) {
@@ -384,9 +388,9 @@ public class GqlJcrQuery {
                 result = factory.and(result, anyResult);
             }
 
-            //apply None constraints
-            if(extraNoneConstraintInputs!=null && !extraNoneConstraintInputs.isEmpty()){
-                extraNoneConstraintInputs.forEach( nodeConstraintInput -> extraNoneConstraints.add(convertToConstraint(selector, nodeConstraintInput, factory)) );
+            // Apply None constraints.
+            if (extraNoneConstraintInputs != null && !extraNoneConstraintInputs.isEmpty()) {
+                extraNoneConstraintInputs.forEach(nodeConstraintInput -> extraNoneConstraints.add(convertToConstraint(selector, nodeConstraintInput, factory)));
                 constraintIt = extraNoneConstraints.iterator();
                 while (constraintIt.hasNext()) {
                     result = factory.and(result, factory.not(constraintIt.next()));
@@ -399,7 +403,7 @@ public class GqlJcrQuery {
 
     private static Constraint convertToConstraint(final String selector,
                                                   final GqlJcrNodeConstraintInput nodeConstraintInput,
-                                                  final QueryObjectModelFactory factory){
+                                                  final QueryObjectModelFactory factory) {
         if (nodeConstraintInput != null) {
             Constraint constraint = null;
             for (NodeConstraintConvertor nodeConstraintConvertor : NODE_CONSTRAINT_CONVERTORS) {
@@ -412,7 +416,7 @@ public class GqlJcrQuery {
                         throwNoneOrMultipleNodeConstraintsException();
                     }
                     constraint = c;
-                } catch (RepositoryException e){
+                } catch (RepositoryException e) {
                     e.printStackTrace();
                     logger.error("failed to convert node constraint ", e);
                 }
@@ -429,8 +433,8 @@ public class GqlJcrQuery {
     private static Ordering getOrderingByProperty(String selector, GqlJcrNodeCriteriaInput criteria, QueryObjectModelFactory factory) throws RepositoryException {
         GqlOrdering gqlOrdering = criteria.getOrdering();
         Ordering ordering = null;
-        if(gqlOrdering != null){
-            switch (gqlOrdering.getOrderType()){
+        if (gqlOrdering != null) {
+            switch (gqlOrdering.getOrderType()) {
                 case ASC:
                     ordering = factory.ascending(factory.propertyValue(selector, gqlOrdering.getProperty()));
                     break;
@@ -477,8 +481,8 @@ public class GqlJcrQuery {
     }
 
     private static void validateNodeConstraintProperty(GqlJcrNodeConstraintInput nodeConstraint) {
-        if (nodeConstraint.getProperty() == null && nodeConstraint.getContains()==null
-            && (nodeConstraint.getFunction()==null || (!nodeConstraint.getFunction().equals(NODE_NAME) && !nodeConstraint.getFunction().equals(NODE_LOCAL_NAME)))) {
+        if (nodeConstraint.getProperty() == null && nodeConstraint.getContains() == null
+            && (nodeConstraint.getFunction() == null || (!nodeConstraint.getFunction().equals(NODE_NAME) && !nodeConstraint.getFunction().equals(NODE_LOCAL_NAME)))) {
             throw new GqlJcrWrongInputException("'property' field is required");
         }
     }
@@ -489,37 +493,29 @@ public class GqlJcrQuery {
         String getFieldName();
     }
 
-    /**
-     * Apply constraint function to target property value
-     *
-     * @param nodeConstraint
-     * @param selector
-     * @param factory
-     * @return
-     * @throws RepositoryException
-     */
     private static DynamicOperand applyConstraintFunctions(GqlJcrNodeConstraintInput nodeConstraint, String selector, QueryObjectModelFactory factory)
-            throws RepositoryException{
-            PropertyValue value = nodeConstraint.getProperty() != null ?  factory.propertyValue(selector, nodeConstraint.getProperty()) : null;
-            if(nodeConstraint.getFunction()==null) return value;
+            throws RepositoryException {
 
-            switch (nodeConstraint.getFunction()){
-                case LOWER_CASE:
-                    return factory.lowerCase(value);
-                case UPPER_CASE:
-                    return factory.upperCase(value);
-                case NODE_NAME:
-                    return factory.nodeName(selector);
-                case NODE_LOCAL_NAME:
-                    return factory.nodeLocalName(selector);
-                default: return value;
-            }
+        PropertyValue value = nodeConstraint.getProperty() != null ?  factory.propertyValue(selector, nodeConstraint.getProperty()) : null;
+        GqlJcrNodeConstraintInput.QueryFunction function = nodeConstraint.getFunction();
+        if (function == null) {
+            return value;
+        }
 
+        switch (function) {
+            case LOWER_CASE:
+                return factory.lowerCase(value);
+            case UPPER_CASE:
+                return factory.upperCase(value);
+            case NODE_NAME:
+                return factory.nodeName(selector);
+            case NODE_LOCAL_NAME:
+                return factory.nodeLocalName(selector);
+            default:
+                return value;
+        }
     }
 
-    /**
-     * Constraint for "like" operator
-     */
     private static class NodeConstraintConvertorLike implements NodeConstraintConvertor {
 
         @Override
@@ -541,9 +537,6 @@ public class GqlJcrQuery {
         }
     }
 
-    /**
-     * Constraint for "contains" operator
-     */
     private static class NodeConstraintConvertorContains implements NodeConstraintConvertor {
 
         @Override
@@ -563,9 +556,6 @@ public class GqlJcrQuery {
         }
     }
 
-    /**
-     * Constraint for "equals to" operator
-     */
     private static class NodeConstraintConvertorEquals implements NodeConstraintConvertor {
 
         @Override
@@ -587,9 +577,6 @@ public class GqlJcrQuery {
         }
     }
 
-    /**
-     * Constraint for "not equals to" operator
-     */
     private static class NodeConstraintConvertorNotEquals implements NodeConstraintConvertor {
 
         @Override
@@ -611,9 +598,6 @@ public class GqlJcrQuery {
         }
     }
 
-    /**
-     * Constraint for "less than" operator
-     */
     private static class NodeConstraintConvertorLessThan implements NodeConstraintConvertor {
 
         @Override
@@ -635,9 +619,6 @@ public class GqlJcrQuery {
         }
     }
 
-    /**
-     * Constraint for "greater than" operator
-     */
     private static class NodeConstraintConvertorGreaterThan implements NodeConstraintConvertor {
 
         @Override
@@ -659,9 +640,6 @@ public class GqlJcrQuery {
         }
     }
 
-    /**
-     * Constraint for "less than or equals to" operator
-     */
     private static class NodeConstraintConvertorLessThanOrEqualsTo implements NodeConstraintConvertor {
 
         @Override
@@ -683,9 +661,6 @@ public class GqlJcrQuery {
         }
     }
 
-    /**
-     * Constraint for "greater than or equals to" operator
-     */
     private static class NodeConstraintConvertorGreaterThanOrEqualsTo implements NodeConstraintConvertor {
 
         @Override
@@ -707,17 +682,16 @@ public class GqlJcrQuery {
         }
     }
 
-    /**
-     * Constraint for "exists" operator
-     */
     private static class NodeConstraintConvertorExists implements NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+
             Boolean value = nodeConstraint.getExists();
-            if(value == null) {
+            if (value == null) {
                 return null;
             }
+
             Constraint constraint = factory.propertyExistence(selector, nodeConstraint.getProperty());
             return value ? constraint : factory.not(constraint);
         }
@@ -728,15 +702,13 @@ public class GqlJcrQuery {
         }
     }
 
-    /**
-     * Constraint for "lastDays" operator
-     */
     private static class NodeConstraintConvertorLastDays implements NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
+
             Integer value = nodeConstraint.getLastDays();
-            if(value == null) {
+            if (value == null) {
                 return null;
             }
 
@@ -762,5 +734,4 @@ public class GqlJcrQuery {
             return SQL2;
         }
     }
-
 }

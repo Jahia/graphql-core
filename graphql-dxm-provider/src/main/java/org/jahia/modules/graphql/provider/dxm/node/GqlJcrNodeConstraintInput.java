@@ -53,32 +53,36 @@ import graphql.annotations.annotationTypes.GraphQLName;
 @GraphQLDescription("An optional part of the JCR node criteria to filter nodes, specifically by their arbitrary properties")
 public class GqlJcrNodeConstraintInput {
 
-    public static String LIKE = "like";
-    public static String CONTAINS = "contains";
-    public static String EQUALS = "equals";
-    public static String NOTEQUALS = "notEquals";
-    public static String LT = "lt";
-    public static String GT = "gt";
-    public static String LTE = "lte";
-    public static String GTE = "gte";
-    public static String EXISTS = "exists";
-    public static String LASTDAYS = "lastDays";
+    public static final String LIKE = "like";
+    public static final String CONTAINS = "contains";
+    public static final String EQUALS = "equals";
+    public static final String NOTEQUALS = "notEquals";
+    public static final String LT = "lt";
+    public static final String GT = "gt";
+    public static final String LTE = "lte";
+    public static final String GTE = "gte";
+    public static final String EXISTS = "exists";
+    public static final String LASTDAYS = "lastDays";
 
-    public enum QueryFunctions{
-        @GraphQLDescription("query function for lower case comparison")
+    public enum QueryFunction {
+
+        @GraphQLDescription("Query function for lower case comparison")
         LOWER_CASE,
-        @GraphQLDescription("query function for upper case comparison")
+
+        @GraphQLDescription("Query function for upper case comparison")
         UPPER_CASE,
-        @GraphQLDescription("query function for node name comparison")
+
+        @GraphQLDescription("Query function for node name comparison")
         NODE_NAME,
-        @GraphQLDescription("query function for node local name comparison")
+
+        @GraphQLDescription("Query function for node local name comparison")
         NODE_LOCAL_NAME
     }
 
     private String like;
     private String contains;
     private String property;
-    private QueryFunctions function;
+    private QueryFunction function;
     private String equals;
     private String notEquals;
     private String lt;
@@ -109,7 +113,7 @@ public class GqlJcrNodeConstraintInput {
         @GraphQLName("like") @GraphQLDescription("A value to compare the node property value to, using the 'like' operator") String like,
         @GraphQLName("contains") @GraphQLDescription("A search expression to match the node property value(s) against, either specific property only or all node properties, dependent on the 'property' parameter value passed") String contains,
         @GraphQLName("property") @GraphQLDescription("The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values") String property,
-        @GraphQLName("function") @GraphQLDescription("The query function name for the node for comparison") QueryFunctions function,
+        @GraphQLName("function") @GraphQLDescription("The query function name for the node for comparison") QueryFunction function,
         @GraphQLName("equals") @GraphQLDescription("A value to compare the node property value to, using the 'equals to' operator") String equals,
         @GraphQLName("notEquals") @GraphQLDescription("A value to compare the node property value to, using the 'not equals to' operator") String notEquals,
         @GraphQLName("lt") @GraphQLDescription("A value to compare the node property value to, using the 'less than' operator") String lt,
@@ -166,7 +170,7 @@ public class GqlJcrNodeConstraintInput {
     @GraphQLField
     @GraphQLName("function")
     @GraphQLDescription("The query function name for the node for comparison")
-    public QueryFunctions getFunction() {
+    public QueryFunction getFunction() {
         return function;
     }
 
