@@ -2,6 +2,7 @@
 Metadata properties for all content
 """
 type Metadata @mapping(node:"jnt:content", ignoreDefaultQueries: true) {
+
     "Date of creation for the associated content"
     created : Date @mapping(property:"jcr:created")
 
@@ -19,7 +20,7 @@ type Metadata @mapping(node:"jnt:content", ignoreDefaultQueries: true) {
 """
 Asset type for files
 """
-type Asset @mapping(node: "jnt:file", ignoreDefaultQueries: true) @description(value:"Asset type for files") {
+type Asset @mapping(node: "jnt:file", ignoreDefaultQueries: true) {
     metadata: Metadata
     type: String @mapping(property: "jcr:content.contentType")
     size: Long @mapping(property: "jcr:content.contentLength")
@@ -30,7 +31,7 @@ Asset type for image
 """
 type ImageAsset @mapping(node: "jmix:image,jnt:file", ignoreDefaultQueries: true) {
     metadata: Metadata
-    type: String @mapping(property: "jcr:content.contentType") @description(value:"Mime type of image")
+    type: String @mapping(property: "jcr:content.contentType")
     size: Long @mapping(property: "jcr:content.contentLength")
     height: Long @mapping(property: "j:height")
     width: Long @mapping(property: "j:width")
