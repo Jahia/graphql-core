@@ -31,6 +31,7 @@ Asset type for image
 """
 type ImageAsset @mapping(node: "jmix:image,jnt:file", ignoreDefaultQueries: true) {
     metadata: Metadata
+    "Mime type of image"
     type: String @mapping(property: "jcr:content.contentType")
     size: Long @mapping(property: "jcr:content.contentLength")
     height: Long @mapping(property: "j:height")
