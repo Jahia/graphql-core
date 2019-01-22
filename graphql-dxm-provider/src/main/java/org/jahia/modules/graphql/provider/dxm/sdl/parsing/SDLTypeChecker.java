@@ -45,23 +45,6 @@ public class SDLTypeChecker {
         return checkForConsistencyWithJCR(type);
     }
 
-    private static SDLDefinitionStatus checkForFieldsConsistency(ObjectTypeDefinition objectTypeDefinition, TypeDefinitionRegistry typeDefinitionRegistry) {
-        if (objectTypeDefinition.getFieldDefinitions().isEmpty()) {
-            return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_FIELDS);
-        } else {
-            List<String> l = new ArrayList<>();
-            objectTypeDefinition.getFieldDefinitions().forEach(fieldDefinition -> {
-                if (!typeDefinitionRegistry.getType(fieldDefinition.getType()).isPresent()) {
-                    l.add(fieldDefinition.getType().toString());
-                }
-            });
-            if (!l.isEmpty()) {
-                return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_TYPE, StringUtils.join(l, ','));
-            }
-        }
-        return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.OK);
-    }
-
     public static SDLDefinitionStatus checkForConsistencyWithJCR(TypeDefinition typeDefinition) {
         SDLDefinitionStatus status = new SDLDefinitionStatus(typeDefinition.getName(), SDLDefinitionStatusType.OK);
         List<Directive> directives = typeDefinition.getDirectives();
@@ -119,6 +102,23 @@ public class SDLTypeChecker {
 
     public static void printStatuses(Map<String, SDLDefinitionStatus> statusMap) {
         statusMap.values().forEach(e -> logger.info(e.toString()));
+    }
+
+    private static SDLDefinitionStatus checkForFieldsConsistency(ObjectTypeDefinition objectTypeDefinition, TypeDefinitionRegistry typeDefinitionRegistry) {
+        if (objectTypeDefinition.getFieldDefinitions().isEmpty()) {
+            return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_FIELDS);
+        } else {
+            List<String> l = new ArrayList<>();
+            objectTypeDefinition.getFieldDefinitions().forEach(fieldDefinition -> {
+                if (!typeDefinitionRegistry.getType(fieldDefinition.getType()).isPresent()) {
+                    l.add(fieldDefinition.getType().toString());
+                }
+            });
+            if (!l.isEmpty()) {
+                return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_TYPE, StringUtils.join(l, ','));
+            }
+        }
+        return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.OK);
     }
 
     private static boolean hasProperty(ExtendedNodeType[] nodeTypes, String jcrPropertyName) {
