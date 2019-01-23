@@ -60,13 +60,13 @@ import javax.jcr.RepositoryException;
  *
  * @author chooliyip
  **/
-public class ReferenceObjectDataFetcher implements DataFetcher<Object> {
+public class ObjectDataFetcher implements DataFetcher<Object> {
 
-    private static Logger logger = LoggerFactory.getLogger(ReferenceObjectDataFetcher.class);
+    private static Logger logger = LoggerFactory.getLogger(ObjectDataFetcher.class);
 
     private Field field;
 
-    public ReferenceObjectDataFetcher(Field field) {
+    public ObjectDataFetcher(Field field) {
         this.field = field;
     }
 
@@ -75,10 +75,18 @@ public class ReferenceObjectDataFetcher implements DataFetcher<Object> {
         GqlJcrNode node = environment.getSource();
         JCRNodeWrapper jcrNode = node.getNode();
         try {
-            logger.debug("Property reference to object type {}", field.getType());
-
-            JCRPropertyWrapper propertyNode = jcrNode.getProperty(field.getProperty());
-            return new GqlJcrNodeImpl(((JCRPropertyWrapperImpl) propertyNode).getNode());
+            if (jcrNode.hasNode(field.getProperty())) {
+                logger.debug("Fetch child {}", field.getType());
+                //Treat property as child
+                JCRNodeWrapper subNode = jcrNode.getNode(field.getProperty());
+                return new GqlJcrNodeImpl(subNode);
+            }
+            else {
+                logger.debug("Fetch reference {}", field.getType());
+                //Treat property as weak reference
+                JCRPropertyWrapper propertyNode = jcrNode.getProperty(field.getProperty());
+                return new GqlJcrNodeImpl(((JCRPropertyWrapperImpl) propertyNode).getReferencedNode());
+            }
         } catch (RepositoryException e) {
             return null;
         }

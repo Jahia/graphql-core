@@ -23,6 +23,8 @@ public class SDLTypeChecker {
 
     private static Logger logger = LoggerFactory.getLogger(SDLTypeChecker.class);
 
+    private SDLTypeChecker() {}
+
     public static SDLDefinitionStatus checkType(TypeDefinition type, TypeDefinitionRegistry typeDefinitionRegistry) {
         if (type instanceof ObjectTypeDefinition) {
             ObjectTypeDefinition objectTypeDefinition = (ObjectTypeDefinition) type;
@@ -73,7 +75,8 @@ public class SDLTypeChecker {
 
                     //Check field directives and make sure all properties can be found on the jcr node type
                     List<FieldDefinition> fields = ((ObjectTypeDefinition) typeDefinition).getFieldDefinitions();
-                    List<String> missing = new ArrayList<>();
+                    List<String> missingProps = new ArrayList<>();
+                    List<String> missingChildren = new ArrayList<>();
                     for (FieldDefinition def : fields) {
                         Directive fieldDirective = def.getDirective(SDLConstants.MAPPING_DIRECTIVE);
                         if (fieldDirective != null && fieldDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY) != null) {
@@ -81,16 +84,19 @@ public class SDLTypeChecker {
                             if (!SDLConstants.PATH.equalsIgnoreCase(jcrPropertyName) && !SDLConstants.IDENTIFIER.equalsIgnoreCase(jcrPropertyName)) {
                                 if (jcrPropertyName.contains(".")) {
                                     if (!hasChildren(allTypes, jcrPropertyName.split("\\.")[0])) {
-                                        missing.add(jcrPropertyName);
+                                        missingChildren.add(jcrPropertyName);
                                     }
-                                } else if (!hasProperty(allTypes, jcrPropertyName)) {
-                                    missing.add(jcrPropertyName);
+                                } else if (!hasChildren(allTypes, jcrPropertyName) && !hasProperty(allTypes, jcrPropertyName)) {
+                                    missingProps.add(jcrPropertyName);
                                 }
                             }
                         }
                     }
-                    if (!missing.isEmpty()) {
-                        status.setStatusType(SDLDefinitionStatusType.MISSING_JCR_PROPERTY, StringUtils.join(missing, ","));
+                    if (!missingProps.isEmpty()) {
+                        status.setStatusType(SDLDefinitionStatusType.MISSING_JCR_PROPERTY, StringUtils.join(missingProps, ","));
+                    }
+                    if (!missingChildren.isEmpty()) {
+                        status.setStatusType(SDLDefinitionStatusType.MISSING_JCR_CHILD, StringUtils.join(missingChildren, ","));
                     }
                 } catch (NoSuchNodeTypeException e) {
                     status.setStatusType(SDLDefinitionStatusType.MISSING_JCR_NODE_TYPE, nodeTypeName);

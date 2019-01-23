@@ -36,6 +36,5 @@ type ImageAsset @mapping(node: "jmix:image,jnt:file", ignoreDefaultQueries: true
     size: Long @mapping(property: "jcr:content.contentLength")
     height: Long @mapping(property: "j:height")
     width: Long @mapping(property: "j:width")
-
 }
 

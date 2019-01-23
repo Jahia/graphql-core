@@ -49,6 +49,8 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import java.util.Collections;
@@ -60,11 +62,12 @@ import java.util.stream.Collectors;
  *
  * @author chooliyip
  **/
-public class ReferenceListDataFetcher implements DataFetcher<List> {
+public class ListDataFetcher implements DataFetcher<List> {
 
+    private static Logger logger = LoggerFactory.getLogger(ListDataFetcher.class);
     Field field;
 
-    public ReferenceListDataFetcher(Field field){
+    public ListDataFetcher(Field field){
         this.field = field;
     }
 
@@ -78,11 +81,22 @@ public class ReferenceListDataFetcher implements DataFetcher<List> {
             GraphQLArgument nodeProperty = mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE);
             if (nodeProperty != null) {
                 try {
-                    JCRNodeWrapper subNode = jcrNode.getNode(field.getProperty());
                     String nodeType = nodeProperty.getValue().toString();
-                    return JCRContentUtils.getChildrenOfType(subNode, nodeType).stream()
-                            .map(GqlJcrNodeImpl::new)
-                            .collect(Collectors.toList());
+                    if (field == null) {
+                        logger.debug("Fetch children of type {}", nodeType);
+                        //Case when child name is not specified, get children directly from jcrNode
+                        return JCRContentUtils.getChildrenOfType(jcrNode, nodeType).stream()
+                                .map(GqlJcrNodeImpl::new)
+                                .collect(Collectors.toList());
+                    }
+                    else {
+                        logger.debug("Fetch children of type {} from child {}", nodeType, field.getProperty());
+                        //Case when child mapping is specified, get children from mapped node
+                        JCRNodeWrapper subNode = jcrNode.getNode(field.getProperty());
+                        return JCRContentUtils.getChildrenOfType(subNode, nodeType).stream()
+                                .map(GqlJcrNodeImpl::new)
+                                .collect(Collectors.toList());
+                    }
                 }
                 catch (RepositoryException e) {
                     //Do nothing, return empty list below

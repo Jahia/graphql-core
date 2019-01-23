@@ -32,10 +32,10 @@ public class PropertiesDataFetcherFactory {
                 return new FileContentFetcher(field, propertyValue.split("\\.")[1]);
         } else
             if (graphQLFieldDefinition.getType() instanceof GraphQLObjectType) {
-                return new ReferenceObjectDataFetcher(field);
+                return new ObjectDataFetcher(field);
         } else
             if (graphQLFieldDefinition.getType() instanceof GraphQLList) {
-                return new ReferenceListDataFetcher(field);
+                return new ListDataFetcher(field);
         }
         return new PropertiesDataFetcher(field);
     }
