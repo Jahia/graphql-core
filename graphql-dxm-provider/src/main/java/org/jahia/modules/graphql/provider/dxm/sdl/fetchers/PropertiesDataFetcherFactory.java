@@ -14,7 +14,7 @@ public class PropertiesDataFetcherFactory {
     public static DataFetcher getFetcher(GraphQLFieldDefinition graphQLFieldDefinition, Field field) {
         GraphQLDirective mapping = graphQLFieldDefinition.getDirective(SDLConstants.MAPPING_DIRECTIVE);
         GraphQLArgument property = mapping != null ? mapping.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY) : null;
-        String propertyValue = property != null? property.getValue().toString() : null;
+        String propertyValue = property != null ? property.getValue().toString() : null;
 
         if (SDLConstants.IDENTIFIER.equalsIgnoreCase(propertyValue)) {
             return environment -> {
