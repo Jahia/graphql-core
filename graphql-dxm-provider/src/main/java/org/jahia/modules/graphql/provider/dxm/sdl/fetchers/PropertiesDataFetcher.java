@@ -117,10 +117,6 @@ public class PropertiesDataFetcher implements DataFetcher<Object> {
                 return value.getLong();
             case PropertyType.DOUBLE:
                 return value.getDouble();
-            case PropertyType.REFERENCE:
-            case PropertyType.WEAKREFERENCE:
-                // todo Handle references
-                return value.getString();
             default:
                 return value.getString();
         }

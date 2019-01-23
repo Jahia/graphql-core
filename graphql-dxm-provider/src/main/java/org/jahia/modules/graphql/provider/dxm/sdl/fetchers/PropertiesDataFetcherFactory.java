@@ -7,6 +7,10 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRPropertyWrapper;
+import org.jahia.services.content.JCRPropertyWrapperImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
@@ -14,6 +18,8 @@ import java.util.Collections;
 import java.util.stream.Collectors;
 
 public class PropertiesDataFetcherFactory {
+
+    private static Logger logger = LoggerFactory.getLogger(PropertiesDataFetcherFactory.class);
 
     public static DataFetcher getFetcher(GraphQLFieldDefinition graphQLFieldDefinition, Field field) {
         GraphQLDirective mapping = graphQLFieldDefinition.getDirective(SDLConstants.MAPPING_DIRECTIVE);
@@ -38,10 +44,11 @@ public class PropertiesDataFetcherFactory {
                         GqlJcrNode node = environment.getSource();
                         JCRNodeWrapper jcrNode = node.getNode();
                         try {
-                            JCRNodeWrapper subNode = jcrNode.getNode(field.getProperty());
-                            return new GqlJcrNodeImpl(subNode);
-                        }
-                        catch (RepositoryException e) {
+                            logger.debug("Property reference to object type {}", field.getType());
+
+                            JCRPropertyWrapper propertyNode = jcrNode.getProperty(field.getProperty());
+                            return new GqlJcrNodeImpl(((JCRPropertyWrapperImpl) propertyNode).getNode());
+                        } catch (RepositoryException e) {
                             return null;
                         }
                     };
