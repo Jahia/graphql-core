@@ -156,8 +156,7 @@ public class GqlJcrQuery {
     @GraphQLNonNull
     @GraphQLName("nodeById")
     @GraphQLDescription("Get GraphQL representation of a node by its UUID")
-    public GqlJcrNode getNodeById(@GraphQLName("uuid") @GraphQLNonNull @GraphQLDescription("The UUID of the node") String uuid)
-            throws BaseGqlClientException {
+    public GqlJcrNode getNodeById(@GraphQLName("uuid") @GraphQLNonNull @GraphQLDescription("The UUID of the node") String uuid){
         try {
             return getGqlNodeById(uuid);
         } catch (RepositoryException e) {
@@ -176,8 +175,7 @@ public class GqlJcrQuery {
     @GraphQLNonNull
     @GraphQLName("nodeByPath")
     @GraphQLDescription("Get GraphQL representation of a node by its path")
-    public GqlJcrNode getNodeByPath(@GraphQLName("path") @GraphQLNonNull @GraphQLDescription("The path of the node") String path)
-            throws BaseGqlClientException {
+    public GqlJcrNode getNodeByPath(@GraphQLName("path") @GraphQLNonNull @GraphQLDescription("The path of the node") String path) {
         try {
             return getGqlNodeByPath(path);
         } catch (RepositoryException e) {
@@ -196,8 +194,7 @@ public class GqlJcrQuery {
     @GraphQLNonNull
     @GraphQLName("nodesById")
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their UUIDs")
-    public Collection<GqlJcrNode> getNodesById(@GraphQLName("uuids") @GraphQLNonNull @GraphQLDescription("The UUIDs of the nodes") Collection<@GraphQLNonNull String> uuids)
-            throws BaseGqlClientException {
+    public Collection<GqlJcrNode> getNodesById(@GraphQLName("uuids") @GraphQLNonNull @GraphQLDescription("The UUIDs of the nodes") Collection<@GraphQLNonNull String> uuids){
         try {
             List<GqlJcrNode> nodes = new ArrayList<>(uuids.size());
             for (String uuid : uuids) {
@@ -220,8 +217,7 @@ public class GqlJcrQuery {
     @GraphQLNonNull
     @GraphQLName("nodesByPath")
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their paths")
-    public Collection<GqlJcrNode> getNodesByPath(@GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("The paths of the nodes") Collection<@GraphQLNonNull String> paths)
-            throws BaseGqlClientException {
+    public Collection<GqlJcrNode> getNodesByPath(@GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("The paths of the nodes") Collection<@GraphQLNonNull String> paths){
         try {
             List<GqlJcrNode> nodes = new ArrayList<>(paths.size());
             for (String path : paths) {
@@ -256,7 +252,7 @@ public class GqlJcrQuery {
             @GraphQLName("fieldSorter") @GraphQLDescription("sort by GraphQL field values") FieldSorterInput fieldSorter,
             @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields by criteria") FieldGroupingInput fieldGrouping,
             DataFetchingEnvironment environment
-    ) throws BaseGqlClientException {
+    ){
         try {
             QueryManagerWrapper queryManager = getSession(language).getWorkspace().getQueryManager();
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
@@ -287,7 +283,7 @@ public class GqlJcrQuery {
         @GraphQLName("fieldSorter") @GraphQLDescription("sort by GraphQL field values") FieldSorterInput fieldSorter,
         @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields by criteria") FieldGroupingInput fieldGrouping,
         DataFetchingEnvironment environment
-    ) throws BaseGqlClientException {
+    ){
         try {
             Session session = getSession(criteria.getLanguage());
             QueryManager queryManager = session.getWorkspace().getQueryManager();
@@ -303,21 +299,26 @@ public class GqlJcrQuery {
         }
     }
 
+    /**
+     * Generate constraints by criteria input, the principle constraints for nodeType, paths and pathType are unique
+     * In the nodeConstraint, it supports single constraint as well as complex constraints with multiple level child constraints
+     * which are composite by all/any/none
+     *
+     * @param selector
+     * @param criteria
+     * @param factory
+     * @return
+     * @throws RepositoryException
+     */
     private static Constraint getConstraintTree(final String selector, final GqlJcrNodeCriteriaInput criteria,
                                                 final QueryObjectModelFactory factory) throws RepositoryException {
 
-        final List<GqlJcrNodeConstraintInput> extraAllConstraintInputs = criteria.getAll();
-        final List<GqlJcrNodeConstraintInput> extraAnyConstraintInputs = criteria.getAny();
-        final List<GqlJcrNodeConstraintInput> extraNoneConstraintInputs = criteria.getNone();
-
         final LinkedHashSet<Constraint> constraints = new LinkedHashSet<>();
-        final LinkedHashSet<Constraint> extraAnyConstraints = new LinkedHashSet<>();
-        final LinkedHashSet<Constraint> extraNoneConstraints = new LinkedHashSet<>();
 
         // Add path constraint if any.
         Collection<String> paths = criteria.getPaths();
         if (paths != null && !paths.isEmpty()) {
-            Constraint constraint;
+            Constraint principleConstraint;
             GqlJcrNodeCriteriaInput.PathType pathType = criteria.getPathType();
             if (pathType == null) {
                 pathType = GqlJcrNodeCriteriaInput.PathType.ANCESTOR;
@@ -325,27 +326,27 @@ public class GqlJcrQuery {
             Iterator<String> pathsIt = paths.iterator();
             switch (pathType) {
                 case ANCESTOR:
-                    constraint = factory.descendantNode(selector, pathsIt.next());
+                    principleConstraint = factory.descendantNode(selector, pathsIt.next());
                     while (pathsIt.hasNext()) {
-                        constraint = factory.or(constraint, factory.descendantNode(selector, pathsIt.next()));
+                        principleConstraint = factory.or(principleConstraint, factory.descendantNode(selector, pathsIt.next()));
                     }
                     break;
                 case PARENT:
-                    constraint = factory.childNode(selector, pathsIt.next());
+                    principleConstraint = factory.childNode(selector, pathsIt.next());
                     while (pathsIt.hasNext()) {
-                        constraint = factory.or(constraint, factory.childNode(selector, pathsIt.next()));
+                        principleConstraint = factory.or(principleConstraint, factory.childNode(selector, pathsIt.next()));
                     }
                     break;
                 case OWN:
-                    constraint = factory.sameNode(selector, pathsIt.next());
+                    principleConstraint = factory.sameNode(selector, pathsIt.next());
                     while (pathsIt.hasNext()) {
-                        constraint = factory.or(constraint, factory.sameNode(selector, pathsIt.next()));
+                        principleConstraint = factory.or(principleConstraint, factory.sameNode(selector, pathsIt.next()));
                     }
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown path type: " + pathType);
             }
-            constraints.add(constraint);
+            constraints.add(principleConstraint);
         }
 
         // Build default properties constraint.
@@ -359,68 +360,95 @@ public class GqlJcrQuery {
         if (constraints.isEmpty()) {
             return null;
         } else {
-
-            // Apply and constraints for mandatory and All.
-            List<GqlJcrNodeConstraintInput> constraintInputList = new ArrayList<>();
-            constraintInputList.add(criteria.getNodeConstraint());
-            if (extraAllConstraintInputs != null && !extraAllConstraintInputs.isEmpty()) {
-                constraintInputList.addAll(extraAllConstraintInputs);
-            }
-            constraintInputList.forEach(nodeConstraintInput -> {
-                if ((nodeConstraintInput == null || (nodeConstraintInput.getContains() != null && nodeConstraintInput.getProperty() == null))) {
-                    return;
-                }
-                constraints.add(convertToConstraint(selector, nodeConstraintInput, factory));
-            });
-            Iterator<Constraint> constraintIt = constraints.iterator();
-            while (constraintIt.hasNext()) {
-                result = result != null ? factory.and(result, constraintIt.next()) : constraintIt.next();
+            if (criteria.getNodeConstraint()!=null) {
+                constraints.add(compositeChildConstraints(selector, criteria.getNodeConstraint(), factory));
             }
 
-            // Apply Any constraints.
-            if (extraAnyConstraintInputs != null && !extraAnyConstraintInputs.isEmpty()) {
-                extraAnyConstraintInputs.forEach(nodeConstraintInput -> extraAnyConstraints.add(convertToConstraint(selector, nodeConstraintInput, factory)));
-                constraintIt = extraAnyConstraints.iterator();
-                Constraint anyResult = constraintIt.next();
-                while (constraintIt.hasNext()) {
-                    anyResult = factory.or(anyResult, constraintIt.next());
-                }
-                result = factory.and(result, anyResult);
+            for(Constraint constraint : constraints){
+                result = result != null ? factory.and(result, constraint) : constraint;
             }
 
-            // Apply None constraints.
-            if (extraNoneConstraintInputs != null && !extraNoneConstraintInputs.isEmpty()) {
-                extraNoneConstraintInputs.forEach(nodeConstraintInput -> extraNoneConstraints.add(convertToConstraint(selector, nodeConstraintInput, factory)));
-                constraintIt = extraNoneConstraints.iterator();
-                while (constraintIt.hasNext()) {
-                    result = factory.and(result, factory.not(constraintIt.next()));
-                }
-            }
-
+            logger.debug("Generate composite constraints {} ", result);
             return result;
         }
     }
 
+    /**
+     * Support all/any/none composite constraints recursively
+     * Only one type of composite constraint is allowed on each level
+     * And if child has simple constraint then not allow any composite constraint
+     *
+     *
+     * @param selector
+     * @param constraintInput
+     * @param factory
+     * @return
+     * @throws RepositoryException
+     */
+    private static Constraint compositeChildConstraints(final String selector, final GqlJcrNodeConstraintInput constraintInput,
+                                                        final QueryObjectModelFactory factory) throws RepositoryException {
+        validateNodeCompositeConstraintConflict(constraintInput);
+
+        final List<GqlJcrNodeConstraintInput> allConstraintInputs = constraintInput.getAll();
+        final List<GqlJcrNodeConstraintInput> anyConstraintInputs = constraintInput.getAny();
+        final List<GqlJcrNodeConstraintInput> noneConstraintInputs = constraintInput.getNone();
+
+        if (allConstraintInputs!=null && !allConstraintInputs.isEmpty()) {
+            return getCompositeConstraints(selector, allConstraintInputs, factory, "all");
+        } else if (anyConstraintInputs!=null && !anyConstraintInputs.isEmpty()) {
+            return getCompositeConstraints(selector, anyConstraintInputs, factory, "any");
+        } else if (noneConstraintInputs!=null && !noneConstraintInputs.isEmpty()) {
+            return getCompositeConstraints(selector, noneConstraintInputs, factory, "none");
+        } else {
+            return convertToConstraint(selector, constraintInput, factory);
+        }
+    }
+
+    /**
+     *
+     * @param selector
+     * @param constraintInputs
+     * @param factory
+     * @param operator
+     * @return
+     * @throws RepositoryException
+     */
+    private static Constraint getCompositeConstraints(final String selector, List<GqlJcrNodeConstraintInput> constraintInputs,
+                                                      final QueryObjectModelFactory factory, String operator) throws RepositoryException {
+        Constraint result = null;
+        for(GqlJcrNodeConstraintInput subConstraintInput : constraintInputs){
+            Constraint subConstraint = compositeChildConstraints(selector, subConstraintInput ,factory);
+            switch (operator){
+                case "all"  :
+                    result = (result!=null ? factory.and(result, subConstraint) : subConstraint);
+                    break;
+                case "any"  :
+                    result = (result!=null ? factory.or(result, subConstraint) : subConstraint);
+                    break;
+                case "none" :
+                    result = (result!=null ? factory.and(result, factory.not(subConstraint)) : factory.not(subConstraint));
+                    break;
+                default     :
+                    //do nothing for default
+            }
+        }
+        return result;
+    }
+
     private static Constraint convertToConstraint(final String selector,
                                                   final GqlJcrNodeConstraintInput nodeConstraintInput,
-                                                  final QueryObjectModelFactory factory) {
+                                                  final QueryObjectModelFactory factory) throws RepositoryException {
         if (nodeConstraintInput != null) {
             Constraint constraint = null;
             for (NodeConstraintConvertor nodeConstraintConvertor : NODE_CONSTRAINT_CONVERTORS) {
-                try{
-                    Constraint c = nodeConstraintConvertor.convert(nodeConstraintInput, factory, selector);
-                    if (c == null) {
-                        continue;
-                    }
-                    if (constraint != null) {
-                        throwNoneOrMultipleNodeConstraintsException();
-                    }
-                    constraint = c;
-                } catch (RepositoryException e) {
-                    e.printStackTrace();
-                    logger.error("failed to convert node constraint ", e);
+                Constraint c = nodeConstraintConvertor.convert(nodeConstraintInput, factory, selector);
+                if (c == null) {
+                    continue;
                 }
-
+                if (constraint != null) {
+                    throwNoneOrMultipleNodeConstraintsException();
+                }
+                constraint = c;
             }
             if (constraint == null) {
                 throwNoneOrMultipleNodeConstraintsException();
@@ -480,6 +508,12 @@ public class GqlJcrQuery {
         throw new GqlJcrWrongInputException("Exactly one contraint field expected, either " + constraintNames);
     }
 
+    /**
+     * Validate if property field is missing when node constraint perform contains/like/equals/notEquals/lt/lte/gt/gte/exists ... etc
+     * other than the composite constraint all/any/none
+     *
+     * @param nodeConstraint
+     */
     private static void validateNodeConstraintProperty(GqlJcrNodeConstraintInput nodeConstraint) {
         if (nodeConstraint.getProperty() == null && nodeConstraint.getContains() == null
             && (nodeConstraint.getFunction() == null || (!nodeConstraint.getFunction().equals(NODE_NAME) && !nodeConstraint.getFunction().equals(NODE_LOCAL_NAME)))) {
@@ -487,8 +521,21 @@ public class GqlJcrQuery {
         }
     }
 
-    private interface NodeConstraintConvertor {
+    /**
+     * Validate if composite constraint all/any/none is missed with other constraints in the same level
+     *
+     * @param nodeConstraint
+     */
+    private static void validateNodeCompositeConstraintConflict(GqlJcrNodeConstraintInput nodeConstraint){
+        if ((nodeConstraint.getAll()!=null || nodeConstraint.getAny()!=null || nodeConstraint.getNone()!=null)
+                && (nodeConstraint.getContains()!=null || nodeConstraint.getLike()!=null || nodeConstraint.getFunction()!=null
+                || nodeConstraint.getExists()!=null || nodeConstraint.getEquals()!=null || nodeConstraint.getGt()!=null
+                || nodeConstraint.getGte()!=null || nodeConstraint.getLt()!=null || nodeConstraint.getLte()!=null
+                || nodeConstraint.getLastDays()!=null || nodeConstraint.getProperty()!=null || nodeConstraint.getNotEquals()!=null))
+            throw new GqlJcrWrongInputException("Composite constraints all/any/none cannot be mixed with other constraints in the same level");
+    }
 
+    private interface NodeConstraintConvertor {
         Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException;
         String getFieldName();
     }
@@ -533,7 +580,7 @@ public class GqlJcrQuery {
 
         @Override
         public String getFieldName() {
-            return GqlJcrNodeConstraintInput.LIKE;
+            return GqlJcrNodeConstraintInput.FieldNames.LIKE.getValue();
         }
     }
 
@@ -552,7 +599,7 @@ public class GqlJcrQuery {
 
         @Override
         public String getFieldName() {
-            return GqlJcrNodeConstraintInput.CONTAINS;
+            return GqlJcrNodeConstraintInput.FieldNames.CONTAINS.getValue();
         }
     }
 
@@ -573,7 +620,7 @@ public class GqlJcrQuery {
 
         @Override
         public String getFieldName() {
-            return GqlJcrNodeConstraintInput.EQUALS;
+            return GqlJcrNodeConstraintInput.FieldNames.EQUALS.getValue();
         }
     }
 
@@ -594,7 +641,7 @@ public class GqlJcrQuery {
 
         @Override
         public String getFieldName() {
-            return GqlJcrNodeConstraintInput.NOTEQUALS;
+            return GqlJcrNodeConstraintInput.FieldNames.NOTEQUALS.getValue();
         }
     }
 
@@ -615,7 +662,7 @@ public class GqlJcrQuery {
 
         @Override
         public String getFieldName() {
-            return GqlJcrNodeConstraintInput.LT;
+            return GqlJcrNodeConstraintInput.FieldNames.LT.getValue();
         }
     }
 
@@ -636,7 +683,7 @@ public class GqlJcrQuery {
 
         @Override
         public String getFieldName() {
-            return GqlJcrNodeConstraintInput.GT;
+            return GqlJcrNodeConstraintInput.FieldNames.GT.getValue();
         }
     }
 
@@ -657,7 +704,7 @@ public class GqlJcrQuery {
 
         @Override
         public String getFieldName() {
-            return GqlJcrNodeConstraintInput.LTE;
+            return GqlJcrNodeConstraintInput.FieldNames.LTE.getValue();
         }
     }
 
@@ -678,7 +725,7 @@ public class GqlJcrQuery {
 
         @Override
         public String getFieldName() {
-            return GqlJcrNodeConstraintInput.GTE;
+            return GqlJcrNodeConstraintInput.FieldNames.GTE.getValue();
         }
     }
 
@@ -698,7 +745,7 @@ public class GqlJcrQuery {
 
         @Override
         public String getFieldName() {
-            return GqlJcrNodeConstraintInput.EXISTS;
+            return GqlJcrNodeConstraintInput.FieldNames.EXISTS.getValue();
         }
     }
 
@@ -723,7 +770,7 @@ public class GqlJcrQuery {
 
         @Override
         public String getFieldName() {
-            return GqlJcrNodeConstraintInput.LASTDAYS;
+            return GqlJcrNodeConstraintInput.FieldNames.LASTDAYS.getValue();
         }
     }
 

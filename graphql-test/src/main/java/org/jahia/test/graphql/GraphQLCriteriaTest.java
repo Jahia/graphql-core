@@ -94,51 +94,47 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
 
-            try {
-                JCRNodeWrapper node = session.getRootNode().addNode("testList", "jnt:contentList");
-                nodeUuid = node.getIdentifier();
+            JCRNodeWrapper node = session.getRootNode().addNode("testList", "jnt:contentList");
+            nodeUuid = node.getIdentifier();
 
-                JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
-                subNode1.addMixin("jmix:liveProperties");
-                subNode1.addMixin("jmix:keywords");
-                subNode1.setProperty("jcr:title", subnodeTitleEn1);
-                subNode1.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
-                subNode1.setProperty("j:keywords", new String[] {"keyword 1", "keyword 2"});
-                Calendar calendar1 = Calendar.getInstance();
-                calendar1.setTime(subnode1Published);
-                subNode1.setProperty("j:lastPublished", calendar1);
-                subNodeUuid1 = subNode1.getIdentifier();
+            JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
+            subNode1.addMixin("jmix:liveProperties");
+            subNode1.addMixin("jmix:keywords");
+            subNode1.setProperty("jcr:title", subnodeTitleEn1);
+            subNode1.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
+            subNode1.setProperty("j:keywords", new String[] {"keyword 1", "keyword 2"});
+            Calendar calendar1 = Calendar.getInstance();
+            calendar1.setTime(subnode1Published);
+            subNode1.setProperty("j:lastPublished", calendar1);
+            subNodeUuid1 = subNode1.getIdentifier();
 
-                JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
-                subNode2.addMixin("jmix:tagged");
-                subNode2.setProperty("j:tagList", new String[] {"sometag", "keyword"});
-                subNode2.setProperty("jcr:title", subnodeTitleEn2);
-                Calendar calendar2 = Calendar.getInstance();
-                calendar2.setTime(subnode2Published);
-                subNode2.setProperty("j:lastPublished", calendar2);
-                subNodeUuid2 = subNode2.getIdentifier();
+            JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
+            subNode2.addMixin("jmix:tagged");
+            subNode2.setProperty("j:tagList", new String[] {"sometag", "keyword"});
+            subNode2.setProperty("jcr:title", subnodeTitleEn2);
+            Calendar calendar2 = Calendar.getInstance();
+            calendar2.setTime(subnode2Published);
+            subNode2.setProperty("j:lastPublished", calendar2);
+            subNodeUuid2 = subNode2.getIdentifier();
 
-                JCRNodeWrapper subNode3 = node.addNode("testSubList3", "jnt:contentList");
-                Calendar calendar3 = Calendar.getInstance();
-                calendar3.setTime(subnode3Published);
-                subNode3.setProperty("j:lastPublished", calendar3);
-                subNodeUuid3 = subNode3.getIdentifier();
+            JCRNodeWrapper subNode3 = node.addNode("testSubList3", "jnt:contentList");
+            Calendar calendar3 = Calendar.getInstance();
+            calendar3.setTime(subnode3Published);
+            subNode3.setProperty("j:lastPublished", calendar3);
+            subNodeUuid3 = subNode3.getIdentifier();
 
-                JCRNodeWrapper subNode4 = node.addNode("testSubList4", "jnt:contentList");
-                subNode4.addMixin("jmix:liveProperties");
-                subNode4.setProperty("j:liveProperties", new String[] {"liveProperty3", "liveProperty4"});
-                Calendar calendar4 = Calendar.getInstance();
-                calendar4.setTime(subnode4Published);
-                subNode4.setProperty("j:lastPublished", calendar4);
-                subNodeUuid4 = subNode4.getIdentifier();
-                subNodeUuid41 = subNode4.addNode("testSubList4_1", "jnt:contentList").getIdentifier();
-                subNodeUuid42 = subNode4.addNode("testSubList4_2", "jnt:contentList").getIdentifier();
-                subNodeUuid43 = subNode4.addNode("testSubList4_3", "jnt:contentList").getIdentifier();
+            JCRNodeWrapper subNode4 = node.addNode("testSubList4", "jnt:contentList");
+            subNode4.addMixin("jmix:liveProperties");
+            subNode4.setProperty("j:liveProperties", new String[] {"liveProperty3", "liveProperty4"});
+            Calendar calendar4 = Calendar.getInstance();
+            calendar4.setTime(subnode4Published);
+            subNode4.setProperty("j:lastPublished", calendar4);
+            subNodeUuid4 = subNode4.getIdentifier();
+            subNodeUuid41 = subNode4.addNode("testSubList4_1", "jnt:contentList").getIdentifier();
+            subNodeUuid42 = subNode4.addNode("testSubList4_2", "jnt:contentList").getIdentifier();
+            subNodeUuid43 = subNode4.addNode("testSubList4_3", "jnt:contentList").getIdentifier();
 
-                session.save();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            session.save();
             return null;
         });
 
@@ -270,7 +266,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", pathType: ANCESTOR, "
                 + "            nodeConstraint: {contains: \"keyword\"}}) {"
                 + "            nodes {"
                 + "                name"
@@ -591,9 +587,9 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
                 + "              paths: \"/testList\", pathType: PARENT, "
-                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
-                + "               all: [{property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}]"
-                + "            }) {"
+                + "               nodeConstraint: { all:["
+                + "               {property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}"
+                + "            ]}}) {"
                 + "            nodes {"
                 + "                name"
                 + "                title: property(name: \"jcr:title\") {value}"
@@ -615,11 +611,14 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
                 + "              paths: \"/testList\", pathType: PARENT, "
-                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
-                + "               all: [{property: \"j:liveProperties\", exists: true}, {like: \"%subList1%\"}]"
-                + "            }) {"
+                + "               nodeConstraint: { all:["
+                + "                  { property: \"j:liveProperties\", exists: true},"
+                + "                  { like: \"%subList1%\"}"
+                + "                    ]}"
+                + "                  }){"
                 + "            nodes {"
                 + "                name"
+                + "                title: property(name: \"jcr:title\") {value}"
                 + "		       }"
                 + "        }"
                 + "    }"
@@ -634,9 +633,9 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
                 + "              paths: \"/testList\", pathType: PARENT, "
-                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
-                + "               any: [{property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}]"
-                + "            }) {"
+                + "               nodeConstraint: {any:[ "
+                + "               {property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}"
+                + "            ]}}) {"
                 + "            nodes {"
                 + "                name"
                 + "                title: property(name: \"jcr:title\") {value}"
@@ -659,11 +658,14 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
                 + "              paths: \"/testList\", pathType: PARENT, "
-                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
-                + "               any: [{property: \"j:liveProperties\", exists: true}, {like: \"%subList1%\"}]"
-                + "            }) {"
+                + "               nodeConstraint: { any:["
+                + "                  { property: \"j:liveProperties\", exists: true},"
+                + "                  { like: \"%subList1%\"}"
+                + "                    ]}"
+                + "                  }){"
                 + "            nodes {"
                 + "                name"
+                + "                title: property(name: \"jcr:title\") {value}"
                 + "		       }"
                 + "        }"
                 + "    }"
@@ -678,9 +680,9 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
                 + "              paths: \"/testList\", pathType: PARENT, "
-                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
-                + "               none: [{property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}]"
-                + "            }) {"
+                + "               nodeConstraint: { none:[ "
+                + "               {property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}"
+                + "            ]}}) {"
                 + "            nodes {"
                 + "                name"
                 + "                title: property(name: \"jcr:title\") {value}"
@@ -703,9 +705,9 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
                 + "              paths: \"/testList\", pathType: PARENT, "
-                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
-                + "               none: [{property: \"j:liveProperties\", exists: true}, {like: \"%subList2%\"}]"
-                + "            }) {"
+                + "               nodeConstraint: { none: [ "
+                + "               {property: \"j:liveProperties\", exists: true}, {like: \"%subList2%\"}"
+                + "            ]}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"
@@ -719,27 +721,32 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     @Test
     public void shouldRetrieveNodeByAllAnyNoneConstraints() throws Exception {
         JSONObject result = executeQuery("{"
-                + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
-                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
-                + "               all: [{property: \"j:liveProperties\", exists: true}], "
-                + "               any: [{property: \"j:keywords\", exists: true}, {property: \"j:tagList\", exists: true}], "
-                + "               none: [{property: \"j:lastPublished\", lte: \"" + datetimeToString(subnode3Published) + "\"}]"
-                + "            }) {"
-                + "            nodes {"
-                + "                name"
-                + "                title: property(name: \"jcr:title\") {value}"
-                + "		       }"
-                + "        }"
-                + "    }"
-                + "}");
+                        + "    jcr {"
+                        + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                        + "              paths: \"/testList\", pathType: PARENT, "
+                        + "               nodeConstraint: { all:["
+                        + "                  { any:[{ property: \"j:keywords\", exists: true}, { property: \"j:tagList\", exists: true}]},"
+                        + "                  { none:["
+                        + "                          {property: \"name\", function: NODE_NAME, equals: \"landing\"},"
+                        + "                          {property: \"jcr:lastPublished\", , lte: \"" + datetimeToString(subnode3Published)+"\"}"
+                        + "                          ]"
+                        + "                       }]"
+                        + "                    }"
+                        + "                  }){"
+                        + "            nodes {"
+                        + "                name"
+                        + "                title: property(name: \"jcr:title\") {value}"
+                        + "		       }"
+                        + "        }"
+                        + "    }"
+                        + "}");
 
         JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
         Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
 
-        Assert.assertEquals(1, nodeByName.size());
+        Assert.assertEquals(2, nodeByName.size());
         validateNode(nodeByName.get("testSubList1"), "testSubList1");
+        validateNode(nodeByName.get("testSubList2"), "testSubList2");
     }
 
     @Test
@@ -748,13 +755,18 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
                 + "              paths: \"/testList\", pathType: PARENT, "
-                + "               nodeConstraint: {property: \"j:lastPublished\", exists: true}, "
-                + "               all: [{property: \"j:liveProperties\", exists: true}, {like: \"%subList2%\"}], "
-                + "               any: [{property: \"j:keywords\", exists: true}, {like: \"%subList2%\"}], "
-                + "               none: [{property: \"j:lastPublished\", lte: \"" + datetimeToString(subnode3Published) + "\"}, {like: \"%subList2%\"}]"
-                + "            }) {"
+                + "               nodeConstraint: { all:["
+                + "                  { any:[{ property: \"j:keywords\", exists: true}, { like: \"%subList1%\"}]},"
+                + "                  { none:["
+                + "                          {property: \"name\", function: NODE_NAME, equals: \"landing\"},"
+                + "                          {property: \"jcr:lastPublished\", , lte: \"" + datetimeToString(subnode3Published)+"\"}"
+                + "                          ]"
+                + "                       }]"
+                + "                    }"
+                + "                  }){"
                 + "            nodes {"
                 + "                name"
+                + "                title: property(name: \"jcr:title\") {value}"
                 + "		       }"
                 + "        }"
                 + "    }"

@@ -90,9 +90,6 @@ public class GqlJcrNodeCriteriaInput {
     private GqlJcrNodeConstraintInput nodeConstraint;
     private String language;
     private GqlOrdering ordering;
-    private List<GqlJcrNodeConstraintInput> all;
-    private List<GqlJcrNodeConstraintInput> any;
-    private List<GqlJcrNodeConstraintInput> none;
 
     /**
      * Create a criteria input instance.
@@ -110,10 +107,7 @@ public class GqlJcrNodeCriteriaInput {
         @GraphQLName("paths") @GraphQLDescription("Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter; null or empty array means no path restrictions") Collection<String> paths,
         @GraphQLName("nodeConstraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") GqlJcrNodeConstraintInput nodeConstraint,
         @GraphQLName("language") @GraphQLDescription("Language to access node properties in; must be a valid language code in case any internationalized properties are used for filtering, does not matter for non-internationalized ones") String language,
-        @GraphQLName("ordering") @GraphQLDescription("Ordering strategies") GqlOrdering ordering,
-        @GraphQLName("all") @GraphQLDescription("Constraints list for all the items should be matched") List<GqlJcrNodeConstraintInput> all,
-        @GraphQLName("any") @GraphQLDescription("Constraints list for anyone of the items should be matched") List<GqlJcrNodeConstraintInput> any,
-        @GraphQLName("none") @GraphQLDescription("Constraints list for none of the items should be matched") List<GqlJcrNodeConstraintInput> none
+        @GraphQLName("ordering") @GraphQLDescription("Ordering strategies") GqlOrdering ordering
     ) {
         this.nodeType = nodeType;
         this.paths = paths;
@@ -121,9 +115,6 @@ public class GqlJcrNodeCriteriaInput {
         this.nodeConstraint = nodeConstraint;
         this.ordering = ordering;
         this.language = language;
-        this.all = all;
-        this.any = any;
-        this.none = none;
     }
 
     /**
@@ -182,23 +173,5 @@ public class GqlJcrNodeCriteriaInput {
     @GraphQLDescription("Ordering strategies")
     public GqlOrdering getOrdering() {
         return ordering;
-    }
-
-    @GraphQLField
-    @GraphQLDescription("Constraints list for all the items should be matched")
-    public List<GqlJcrNodeConstraintInput> getAll() {
-        return all;
-    }
-
-    @GraphQLField
-    @GraphQLDescription("Constraints list for anyone of the items should be matched")
-    public List<GqlJcrNodeConstraintInput> getAny() {
-        return any;
-    }
-
-    @GraphQLField
-    @GraphQLDescription("Constraints list for none of the items should be matched")
-    public List<GqlJcrNodeConstraintInput> getNone() {
-        return none;
     }
 }
