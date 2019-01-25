@@ -17,7 +17,25 @@ type Images @mapping(node: "jmix:image", ignoreDefaultQueries: true) {
     height: Int @mapping(property: "j:height")
 }
 
+type Text @mapping(node:"jnt:bigText", ignoreDefaultQueries: true) {
+	text: String @mapping(property:"text")
+}
+
+type SDLTest @mapping(node: "sdl:test", ignoreDefaultQueries: true) {
+    title: String @mapping(property: "jcr:title")
+    body: String @mapping(property: "body")
+    image: ImageAsset @mapping(property: "image")
+    subtexts: [Text]
+    subTest: SDLSubTest @mapping(property: "subTest")
+    metadata: Metadata
+}
+
+type SDLSubTest @mapping(node: "sdl:subtest", ignoreDefaultQueries: true) {
+    body: String @mapping(property:"body")
+}
+
 extend type Query {
+    allSDLTest: [SDLTest]
     newsByChecked: [NewsSDL]
     myNewsByDate: [NewsSDL]
     myImagesByHeight: [Images]

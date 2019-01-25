@@ -47,16 +47,13 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
-import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.utils.LanguageCodeConverters;
 import pl.touk.throwing.ThrowingFunction;
 
 import javax.jcr.RepositoryException;
@@ -149,8 +146,8 @@ public class DateRangeDataFetcher extends FinderDataFetcher {
 
         SQL2DateTypeQuery sql2 = new SQL2DateTypeQuery();
         sql2.selectFrom(type).where().and(
-                sql2.constrain(sql2.OPERATOR_GTE, finder.getProperty(), sql2.castDate(after)),
-                sql2.constrain(sql2.OPERATOR_LTE, finder.getProperty(), sql2.castDate(before))
+                sql2.constrain(SQL2DateTypeQuery.OPERATOR_GTE, finder.getProperty(), sql2.castDate(after)),
+                sql2.constrain(SQL2DateTypeQuery.OPERATOR_LTE, finder.getProperty(), sql2.castDate(before))
         );
 
         return sql2.getStatement();
@@ -162,25 +159,19 @@ public class DateRangeDataFetcher extends FinderDataFetcher {
      * @param environment
      * @return
      */
-    private boolean hasValidArguments(DataFetchingEnvironment environment) {
-        if (environment.getArguments().size() < 1) {
-            return false;
-        } else if (environment.getArgument(ARG_LASTDAYS) != null &&
-                (!StringUtils.isBlank(environment.getArgument(ARG_AFTER)) || !StringUtils.isBlank(environment.getArgument(ARG_BEFORE)))) {
-            return false;
-        } else {
-            return true;
-        }
+    private static boolean hasValidArguments(DataFetchingEnvironment environment) {
+        return !(environment.getArguments().size() < 1 || (environment.getArgument(ARG_LASTDAYS) != null &&
+                (!StringUtils.isBlank(environment.getArgument(ARG_AFTER)) || !StringUtils.isBlank(environment.getArgument(ARG_BEFORE)))));
     }
 
     private class SQL2DateTypeQuery {
 
-        public String SPACE = " ";
-        public String START_WITH_SPACE = " * ";
-        public String OPERATOR_GTE = ">=";
-        public String OPERATOR_LTE = "<=";
+        public static final String SPACE = " ";
+        public static final String START_WITH_SPACE = " * ";
+        public static final String OPERATOR_GTE = ">=";
+        public static final String OPERATOR_LTE = "<=";
 
-        final StringBuffer sb = new StringBuffer();
+        final StringBuilder sb = new StringBuilder();
 
         SQL2DateTypeQuery() {
             //void

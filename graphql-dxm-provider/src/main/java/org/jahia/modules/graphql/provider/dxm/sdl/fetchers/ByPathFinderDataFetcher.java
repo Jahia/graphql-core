@@ -1,16 +1,13 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
-import graphql.Scalars;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
-import org.jahia.services.content.JCRSessionFactory;
 
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static graphql.Scalars.GraphQLString;
@@ -38,7 +35,7 @@ public class ByPathFinderDataFetcher extends FinderDataFetcher {
         } catch (PathNotFoundException e) {
             return null;
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 }

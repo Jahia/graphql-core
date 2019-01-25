@@ -78,6 +78,7 @@ public class SDLSchemaService {
             typeDefinitionRegistry.objectTypeExtensions().forEach((k, t) -> t.forEach(cleanedTypeRegistry::add));
             typeDefinitionRegistry.scalars().forEach((k, t) -> cleanedTypeRegistry.add(t));
             typeDefinitionRegistry.getDirectiveDefinitions().forEach((k, t) -> cleanedTypeRegistry.add(t));
+            typeDefinitionRegistry.enumTypeExtensions().forEach((k, t) -> t.forEach(cleanedTypeRegistry::add));
             try {
                 graphQLSchema = schemaGenerator.makeExecutableSchema(
                         SchemaGenerator.Options.defaultOptions().enforceSchemaDirectives(false),
@@ -85,7 +86,7 @@ public class SDLSchemaService {
                         SDLRuntimeWiring.runtimeWiring()
                 );
             } catch (Exception e) {
-                logger.warn("Invalid type definition(s) detected during schema generation: " + e.getMessage());
+                logger.warn("Invalid type definition(s) detected during schema generation {} ", e.getMessage());
             }
         }
     }
