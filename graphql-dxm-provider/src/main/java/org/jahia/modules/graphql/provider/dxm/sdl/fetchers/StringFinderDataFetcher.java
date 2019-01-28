@@ -5,8 +5,11 @@ import graphql.schema.GraphQLArgument;
 import org.apache.jackrabbit.util.Text;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
+import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -60,12 +63,13 @@ public class StringFinderDataFetcher extends FinderDataFetcher {
 
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
+        FieldSorterInput sorterInput = getFieldSorterInput(environment);
         try {
             String statement = String.format("SELECT * FROM [%s] as n where n.[%s]=''", type, finder.getProperty());
             Map<String, Object> arguments = environment.getArguments();
-            boolean invert = (Boolean) arguments.get("invert");
+            boolean invert = (Boolean) arguments.get(INVERT);
 
-            if (!arguments.containsKey(EQUALS) && !arguments.containsKey("contains"))
+            if (!arguments.containsKey(EQUALS) && !arguments.containsKey(CONTAINS))
                 throw new DataFetchingException(String.format("Entry point %s must have either 'contains' or 'equals' parameter", environment.getFieldDefinition().getName()));
 
             if (arguments.containsKey(CONTAINS)) {
@@ -84,7 +88,10 @@ public class StringFinderDataFetcher extends FinderDataFetcher {
                     .filter(node -> PermissionHelper.hasPermission(node, environment))
                     .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
 
-            return stream.collect(Collectors.toList());
+            return sorterInput!=null ?
+                    stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment))).collect(Collectors.toList())
+                    :
+                    stream.collect(Collectors.toList());
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }

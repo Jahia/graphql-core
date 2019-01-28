@@ -43,10 +43,13 @@
  */
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLArgument;
+import graphql.schema.*;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
+import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -77,35 +80,37 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher {
 
     @Override
     public List<GraphQLArgument> getArguments() {
-        List<GraphQLArgument> arguments = getDefaultArguments();
-        arguments.add(GraphQLArgument
+        return Collections.singletonList(GraphQLArgument
                 .newArgument()
                 .name(VALUE)
                 .description("select content if boolean value true or false")
                 .type(GraphQLBoolean)
                 .defaultValue(true)
                 .build());
-        return arguments;
     }
 
     @Override
     public Object get(DataFetchingEnvironment environment) {
+        FieldSorterInput sorterInput = getFieldSorterInput(environment);
         if (hasValidArguments(environment)) {
             try {
-                Map<String, Object> arguments = environment.getArguments();
                 String statement = buildSQL2Statement(environment);
                 JCRSessionWrapper currentUserSession = getCurrentUserSession(environment);
-                JCRNodeIteratorWrapper it = currentUserSession.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
+                JCRNodeIteratorWrapper it = currentUserSession
+                        .getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
                 Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
                         .filter(node -> PermissionHelper.hasPermission(node, environment))
                         .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
 
-                return stream.collect(Collectors.toList());
+                return sorterInput!=null ?
+                        stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment))).collect(Collectors.toList())
+                        :
+                        stream.collect(Collectors.toList());
             } catch (RepositoryException e) {
-                throw new RuntimeException(e);
+                throw new DataFetchingException(e);
             }
         } else {
-            throw new RuntimeException("By boolean data fetcher needs 'value' argument");
+            throw new DataFetchingException("By boolean data fetcher needs 'value' argument");
         }
     }
 

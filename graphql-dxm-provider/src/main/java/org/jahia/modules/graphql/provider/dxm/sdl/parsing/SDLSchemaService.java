@@ -3,11 +3,15 @@ package org.jahia.modules.graphql.provider.dxm.sdl.parsing;
 import graphql.GraphQLException;
 import graphql.annotations.connection.PaginatedDataConnectionFetcher;
 import graphql.annotations.dataFetchers.connection.ConnectionDataFetcher;
+import graphql.annotations.processor.GraphQLAnnotationsComponent;
+import graphql.annotations.processor.ProcessingElementsContainer;
 import graphql.language.*;
 import graphql.schema.*;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
+import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
+import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.relay.DXEdge;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
@@ -47,6 +51,7 @@ public class SDLSchemaService {
     private SDLRegistrationService sdlRegistrationService;
     private Map<String, List<SDLSchemaInfo>> bundlesSDLSchemaStatus = new TreeMap<>();
     private Map<String, SDLDefinitionStatus> sdlDefinitionStatusMap = new TreeMap<>();
+    private Map<String, GraphQLInputType> sdlSpecialInputTypes = new HashMap<>();
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
     public void setSdlRegistrationService(SDLRegistrationService sdlRegistrationService) {
@@ -86,7 +91,6 @@ public class SDLSchemaService {
             typeDefinitionRegistry.objectTypeExtensions().forEach((k, t) -> t.forEach(cleanedTypeRegistry::add));
             typeDefinitionRegistry.scalars().forEach((k, t) -> cleanedTypeRegistry.add(t));
             typeDefinitionRegistry.getDirectiveDefinitions().forEach((k, t) -> cleanedTypeRegistry.add(t));
-            typeDefinitionRegistry.enumTypeExtensions().forEach((k, t) -> t.forEach(cleanedTypeRegistry::add));
             try {
                 graphQLSchema = schemaGenerator.makeExecutableSchema(
                         SchemaGenerator.Options.defaultOptions().enforceSchemaDirectives(false),
@@ -270,4 +274,26 @@ public class SDLSchemaService {
     public void setRelay(DXRelay relay) {
         this.relay = relay;
     }
+
+    /**
+     * Inject
+     *
+     * @param graphQLAnnotations
+     * @param container
+     */
+    public void setSdlSpecialInputTypes(GraphQLAnnotationsComponent graphQLAnnotations, ProcessingElementsContainer container){
+        this.sdlSpecialInputTypes.clear();
+        this.sdlSpecialInputTypes.put("FieldSorterInput", graphQLAnnotations.getInputTypeProcessor().getInputTypeOrRef(FieldSorterInput.class, container));
+    }
+
+    /**
+     * Getter for the special input types map
+     *
+     * @param name
+     * @return
+     */
+    public GraphQLInputType getSdlSpecialInputType(String name){
+        return this.sdlSpecialInputTypes.get(name);
+    }
+
 }

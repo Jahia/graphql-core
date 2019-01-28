@@ -4,6 +4,10 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
 import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
+import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.settings.SettingsBean;
@@ -13,6 +17,7 @@ import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLString;
@@ -25,6 +30,11 @@ public abstract class FinderDataFetcher implements DataFetcher {
     static final String PREVIEW = "preview";
     static final String LANGUAGE = "language";
 
+    private static final String SORT_BY = "sortBy";
+    private static final String FIELD_NAME = "fieldName";
+    private static final String SORT_TYPE = "sortType";
+    private static final String IGNORE_CASE = "ignoreCase";
+
     public FinderDataFetcher(String type, Finder finder) {
         this.type = type.split(",")[0];
         this.finder = finder;
@@ -35,7 +45,7 @@ public abstract class FinderDataFetcher implements DataFetcher {
     }
 
     static Locale getLocale(DataFetchingEnvironment environment) {
-        String language = environment.getArgument("language");
+        String language = environment.getArgument(LANGUAGE);
         if (language == null) return SettingsBean.getInstance().getDefaultLocale();
         return LanguageCodeConverters.languageCodeToLocale(language);
     }
@@ -45,7 +55,7 @@ public abstract class FinderDataFetcher implements DataFetcher {
     }
 
     protected static JCRSessionWrapper getCurrentUserSession(DataFetchingEnvironment environment, Locale locale) throws RepositoryException {
-        Boolean preview = environment.getArgument("preview");
+        Boolean preview = environment.getArgument(PREVIEW);
         if (preview == null) {
             preview = Boolean.FALSE;
         }
@@ -57,7 +67,14 @@ public abstract class FinderDataFetcher implements DataFetcher {
     }
 
     protected static List<GraphQLArgument> getDefaultArguments() {
+        SDLSchemaService sdlSchemaService = BundleUtils.getOsgiService(SDLSchemaService.class, null);
         List<GraphQLArgument> list = new ArrayList<>();
+        list.add(GraphQLArgument
+                .newArgument()
+                .name(SORT_BY)
+                .description("sort filter object")
+                .type(sdlSchemaService.getSdlSpecialInputType("FieldSorterInput"))
+                .build());
         list.add(GraphQLArgument.newArgument()
                 .name(PREVIEW)
                 .type(GraphQLBoolean)
@@ -71,6 +88,19 @@ public abstract class FinderDataFetcher implements DataFetcher {
                 .defaultValue("en")
                 .build());
         return list;
+    }
+
+    protected FieldSorterInput getFieldSorterInput(DataFetchingEnvironment environment){
+        Map sortByFitler = environment.getArgument(SORT_BY);
+        if(sortByFitler!=null){
+            return new FieldSorterInput(
+                    (String)sortByFitler.get(FIELD_NAME),
+                    (SorterHelper.SortType) sortByFitler.get(SORT_TYPE),
+                    (Boolean)sortByFitler.get(IGNORE_CASE)
+            );
+        } else {
+            return null;
+        }
     }
 
     public abstract Object get(DataFetchingEnvironment environment);

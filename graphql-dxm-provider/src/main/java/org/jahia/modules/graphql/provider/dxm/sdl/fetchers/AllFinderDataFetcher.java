@@ -62,54 +62,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static graphql.Scalars.GraphQLBoolean;
-import static graphql.Scalars.GraphQLString;
-
 public class AllFinderDataFetcher extends FinderDataFetcher {
-
-    private static final String SORT_BY = "sortBy";
-    private static final String FIELD_NAME = "fieldName";
-    private static final String SORT_ORDER = "sortOrder";
-    private static final String IGNORE_CASE = "ingoreCase";
 
     public AllFinderDataFetcher(Finder finder) {
         super(finder.getType(), finder);
     }
 
     @Override
-    public List<GraphQLArgument> getArguments() {
-        List<GraphQLInputObjectField> sortFilterInputFields = new ArrayList<>();
-
-        sortFilterInputFields.add(new GraphQLInputObjectField(FIELD_NAME, GraphQLString));
-        sortFilterInputFields.add(new GraphQLInputObjectField(SORT_ORDER, new GraphQLEnumType("SortOrder", "sort order",
-                Arrays.asList(new GraphQLEnumValueDefinition("ASC", "", SorterHelper.SortType.ASC),
-                              new GraphQLEnumValueDefinition("DESC", "", SorterHelper.SortType.DESC)))));
-        sortFilterInputFields.add(new GraphQLInputObjectField(IGNORE_CASE, GraphQLBoolean));
-
-        GraphQLInputObjectType sortFitlerInputType = new GraphQLInputObjectType("SortFilter",
-                "sort filters", sortFilterInputFields);
-        List<GraphQLArgument> arguments = getDefaultArguments();
-        arguments.add(GraphQLArgument
-                .newArgument()
-                .name(SORT_BY)
-                .description("sort filter object")
-                .type(sortFitlerInputType)
-                .build());
-        return arguments;
-    }
-
-    @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment){
-        Map sortByFitler = environment.getArgument(SORT_BY);
-        FieldSorterInput sorterInput = null;
-        if(sortByFitler!=null){
-            sorterInput = new FieldSorterInput(
-                    (String)sortByFitler.get(FIELD_NAME),
-                    (SorterHelper.SortType) sortByFitler.get(SORT_ORDER),
-                    (Boolean)sortByFitler.get(IGNORE_CASE)
-            );
-        }
-
+        FieldSorterInput sorterInput = getFieldSorterInput(environment);
         try {
             String statement = "select * from [\"" + type + "\"]";
             JCRNodeIteratorWrapper it = getCurrentUserSession(environment)
@@ -119,8 +80,7 @@ public class AllFinderDataFetcher extends FinderDataFetcher {
                     .execute()
                     .getNodes();
 
-            Stream<GqlJcrNode> stream = StreamSupport
-                    .stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
+            Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
                     .filter(node -> PermissionHelper.hasPermission(node, environment))
                     .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
 
