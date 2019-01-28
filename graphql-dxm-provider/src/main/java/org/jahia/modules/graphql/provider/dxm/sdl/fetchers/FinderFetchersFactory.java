@@ -35,7 +35,7 @@ public class FinderFetchersFactory {
     }
 
     public static FinderDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {
-        String queryName = fieldDefinition.getName();
+        String queryName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
 
         Finder finder = new Finder(queryName);
         finder.setType(nodeType);

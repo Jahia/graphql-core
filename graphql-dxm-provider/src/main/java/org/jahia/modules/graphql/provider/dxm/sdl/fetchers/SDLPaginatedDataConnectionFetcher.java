@@ -45,7 +45,6 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.annotations.connection.ConnectionFetcher;
 import graphql.relay.*;
-import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
@@ -61,8 +60,8 @@ public class SDLPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T
 
     private FinderDataFetcher fetcher;
 
-    public SDLPaginatedDataConnectionFetcher(Finder finder) {
-        fetcher = new AllFinderDataFetcher(finder);
+    public SDLPaginatedDataConnectionFetcher(FinderDataFetcher fetcher) {
+        this.fetcher = fetcher;
     }
 
     @Override

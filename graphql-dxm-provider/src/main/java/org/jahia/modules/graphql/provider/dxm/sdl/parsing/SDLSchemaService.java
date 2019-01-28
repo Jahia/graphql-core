@@ -129,21 +129,22 @@ public class SDLSchemaService {
                 if (directive != null) {
                     String nodeType = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
 
-                    if (fieldDefinition.getName().contains("Connection")) {
-                        String typeName = fieldDefinition.getName().replace("Connection", "");
+                    if (fieldDefinition.getName().contains(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
+                        String typeName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
                         GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList)fieldDefinition.getType()).getWrappedType();
                         GraphQLObjectType connectionType = relay.connectionType(
                                 typeName,
                                 relay.edgeType(node.getName(), node, null, Collections.emptyList()),
                                 Collections.emptyList());
 
-                        Finder f = new Finder(nodeType);
-                                    f.setType(nodeType);
-                        SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(f);
+                        FinderDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
+                        List<GraphQLArgument> args = relay.getConnectionFieldArguments();
+                        args.addAll(typeFetcher.getArguments());
+                        SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(typeFetcher);
                         GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
                                 .dataFetcher(fetcher)
                                 .type(connectionType)
-                                .argument(relay.getConnectionFieldArguments())
+                                .argument(args)
                                 .build();
                         defs.add(sdlDef);
                     }
