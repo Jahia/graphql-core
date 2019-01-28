@@ -32,10 +32,18 @@ public class FinderFetchersFactory {
         public String getName(String base) {
             return (prefix != null ? (prefix + base) : StringUtils.uncapitalize(base)) + (suffix != null ? suffix : "");
         }
+
+        public String getPrefix() {
+            return prefix;
+        }
+
+        public String getSuffix() {
+            return suffix;
+        }
     }
 
     public static FinderDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {
-        String queryName = fieldDefinition.getName();
+        String queryName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
 
         Finder finder = new Finder(queryName);
         finder.setType(nodeType);

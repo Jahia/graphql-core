@@ -1,8 +1,6 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.parsing;
 
 import graphql.GraphQLException;
-import graphql.annotations.connection.PaginatedDataConnectionFetcher;
-import graphql.annotations.dataFetchers.connection.ConnectionDataFetcher;
 import graphql.annotations.processor.GraphQLAnnotationsComponent;
 import graphql.annotations.processor.ProcessingElementsContainer;
 import graphql.language.*;
@@ -11,16 +9,9 @@ import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
-import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
-import org.jahia.modules.graphql.provider.dxm.relay.DXEdge;
-import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
-import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Finder;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderDataFetcher;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderFetchersFactory;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.StringFinderDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.*;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatusType;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLSchemaInfo;
@@ -141,18 +132,33 @@ public class SDLSchemaService {
                 if (directive != null) {
                     String nodeType = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
 
-                    if (fieldDefinition.getName().contains("Connection")) {
-                        String typeName = fieldDefinition.getName().replace("Connection", "");
-                        GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList)fieldDefinition.getType()).getWrappedType();
-                        GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
-                                .dataFetcher(environment -> environment.getSource())
-                                .type(relay.connectionType(
-                                        typeName,
-                                        relay.edgeType(node.getName(), node, null, Collections.emptyList()),
-                                        Collections.emptyList()))
-                                .argument(relay.getConnectionFieldArguments())
-                                .build();
-                        defs.add(sdlDef);
+                    //Handle connections
+                    if (fieldDefinition.getName().contains(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
+                        String typeName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
+
+                        //Process compatible queries and report ones that are not compatible
+                        if (!typeName.endsWith(FinderFetchersFactory.FetcherType.PATH.getSuffix()) && !typeName.endsWith(FinderFetchersFactory.FetcherType.ID.getSuffix())) {
+                            GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList)fieldDefinition.getType()).getWrappedType();
+                            GraphQLObjectType connectionType = relay.connectionType(
+                                    typeName,
+                                    relay.edgeType(node.getName(), node, null, Collections.emptyList()),
+                                    Collections.emptyList());
+
+                            FinderDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
+                            List<GraphQLArgument> args = relay.getConnectionFieldArguments();
+                            args.addAll(typeFetcher.getArguments());
+                            SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(typeFetcher);
+                            GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
+                                    .dataFetcher(fetcher)
+                                    .type(connectionType)
+                                    .argument(args)
+                                    .build();
+                            defs.add(sdlDef);
+                        }
+                        else {
+                            //TODO report this query
+                            logger.error("You cannot use this type of query as connection {}", fieldDefinition.getName());
+                        }
                     }
                     else {
                         FinderDataFetcher fetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
