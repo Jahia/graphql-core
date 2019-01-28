@@ -94,7 +94,7 @@ public class SDLPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T
     private List<Edge<T>> buildEdges(DXPaginatedData<T> paginatedData) {
         Iterator<T> data = paginatedData.iterator();
         List<Edge<T>> edges = new ArrayList<>();
-        for (; data.hasNext(); ) {
+        while (data.hasNext()) {
             T entity = data.next();
             edges.add(new DXEdge<>(entity, paginatedData.getIndex(entity), new DefaultConnectionCursor(paginatedData.getCursor(entity))));
         }
