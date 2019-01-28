@@ -38,3 +38,5 @@ type ImageAsset @mapping(node: "jmix:image,jnt:file", ignoreDefaultQueries: true
     width: Long @mapping(property: "j:width")
 }
 
+
+

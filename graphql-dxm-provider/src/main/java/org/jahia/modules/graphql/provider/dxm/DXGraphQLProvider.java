@@ -148,6 +148,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         GraphQLExtensionsHandler extensionsHandler = graphQLAnnotations.getExtensionsHandler();
 
         relay = new DXRelay();
+        sdlSchemaService.setRelay(relay);
         container.setRelay(relay);
 
         connectionTypes.put("JCRNodeConnection", GqlJcrNodeConnection.class);
