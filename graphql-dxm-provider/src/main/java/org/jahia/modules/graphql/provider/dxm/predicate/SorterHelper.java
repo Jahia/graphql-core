@@ -24,12 +24,10 @@
 package org.jahia.modules.graphql.provider.dxm.predicate;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
-import org.apache.commons.collections.ComparatorUtils;
 import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 
 /**
  * Class with sorting algorithm
@@ -110,6 +108,6 @@ public class SorterHelper {
             throw new IllegalArgumentException("Unknown sort direction : " + sortType);
         }
         return ((object, obj) -> SortAlgorithm.evaluate(object, sortFilter.getFieldName(), environment.getFieldValue(obj,
-                sortFilter.getFieldName()), sortFilter.isIgnoreCase()==null? true : sortFilter.isIgnoreCase(), environment));
+                sortFilter.getFieldName()), (sortFilter.isIgnoreCase()==null || sortFilter.isIgnoreCase()), environment));
     }
 }
