@@ -190,7 +190,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         }
 
         //Generate schema from user defined SDL
-        sdlSchemaService.setSDLSpecialInputTypes(graphQLAnnotations, container);
+        sdlSchemaService.refreshSpecialInputTypes(graphQLAnnotations, container);
         sdlSchemaService.generateSchema();
         specializedTypesHandler.initializeTypes();
     }

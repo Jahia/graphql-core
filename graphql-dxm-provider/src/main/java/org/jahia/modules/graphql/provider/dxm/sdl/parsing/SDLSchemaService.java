@@ -45,7 +45,22 @@ public class SDLSchemaService {
     private SDLRegistrationService sdlRegistrationService;
     private Map<String, List<SDLSchemaInfo>> bundlesSDLSchemaStatus = new TreeMap<>();
     private Map<String, SDLDefinitionStatus> sdlDefinitionStatusMap = new TreeMap<>();
-    private Map<String, GraphQLInputType> sdlSpecialInputTypes = new HashMap<>();
+    private Map<Object, GraphQLInputType> sdlSpecialInputTypes = new HashMap<>();
+
+    private enum SpecialInputTypes {
+
+        //add input type def here
+        FIELD_SORTER_INPUT("FieldSorterInput", FieldSorterInput.class);
+
+        private String name;
+        private Class klass;
+
+        SpecialInputTypes(String name, Class klass) {
+            this.name = name;
+            this.klass = klass;
+        }
+
+    }
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
     public void setSdlRegistrationService(SDLRegistrationService sdlRegistrationService) {
@@ -283,14 +298,16 @@ public class SDLSchemaService {
     }
 
     /**
-     * Inject
+     * clean and add the annotated input types from annotations
      *
      * @param graphQLAnnotations
      * @param container
      */
-    public void setSDLSpecialInputTypes(GraphQLAnnotationsComponent graphQLAnnotations, ProcessingElementsContainer container) {
+    public void refreshSpecialInputTypes(GraphQLAnnotationsComponent graphQLAnnotations, ProcessingElementsContainer container) {
         this.sdlSpecialInputTypes.clear();
-        this.sdlSpecialInputTypes.put("FieldSorterInput", graphQLAnnotations.getInputTypeProcessor().getInputTypeOrRef(FieldSorterInput.class, container));
+        for (SpecialInputTypes specialInputType : SpecialInputTypes.values()) {
+            this.sdlSpecialInputTypes.put(specialInputType.name, graphQLAnnotations.getInputTypeProcessor().getInputTypeOrRef(specialInputType.klass, container));
+        }
     }
 
     /**
