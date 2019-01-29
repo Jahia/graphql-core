@@ -4,11 +4,8 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
 import org.apache.jackrabbit.util.Text;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
-import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
-import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -18,7 +15,6 @@ import pl.touk.throwing.ThrowingFunction;
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -60,7 +56,6 @@ public class StringFinderDataFetcher extends FinderDataFetcher {
 
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
-        FieldSorterInput sorterInput = getFieldSorterInput(environment);
         try {
             String statement = String.format("SELECT * FROM [%s] as n where n.[%s]=''", type, finder.getProperty());
             Map<String, Object> arguments = environment.getArguments();
@@ -84,11 +79,7 @@ public class StringFinderDataFetcher extends FinderDataFetcher {
             Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
                     .filter(node -> PermissionHelper.hasPermission(node, environment))
                     .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
-
-            return sorterInput!=null ?
-                    stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment))).collect(Collectors.toList())
-                    :
-                    stream.collect(Collectors.toList());
+            return resolveCollection(stream, environment);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }

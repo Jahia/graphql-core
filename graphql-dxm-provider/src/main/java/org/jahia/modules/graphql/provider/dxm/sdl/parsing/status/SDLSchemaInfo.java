@@ -1,12 +1,6 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.parsing.status;
 
 public class SDLSchemaInfo {
-    public enum SDLSchemaStatus {
-        OK,
-        SYNTAX_ERROR,
-        DEFINITION_ERROR
-    }
-
     private String error;
     private String bundle;
     private SDLSchemaStatus status;
@@ -47,5 +41,11 @@ public class SDLSchemaInfo {
 
     public void setStatus(SDLSchemaStatus status) {
         this.status = status;
+    }
+
+    public enum SDLSchemaStatus {
+        OK,
+        SYNTAX_ERROR,
+        DEFINITION_ERROR
     }
 }

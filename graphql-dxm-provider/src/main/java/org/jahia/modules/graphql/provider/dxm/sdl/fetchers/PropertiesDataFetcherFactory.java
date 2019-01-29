@@ -7,7 +7,7 @@ import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 
 public class PropertiesDataFetcherFactory {
 
-    private PropertiesDataFetcherFactory(){
+    private PropertiesDataFetcherFactory() {
         //void
     }
 
@@ -22,16 +22,16 @@ public class PropertiesDataFetcherFactory {
                 return node.getUuid();
             };
         } else if (SDLConstants.PATH.equalsIgnoreCase(propertyValue)) {
-                return environment -> {
-                    GqlJcrNode node = environment.getSource();
-                    return node.getPath();
-                };
+            return environment -> {
+                GqlJcrNode node = environment.getSource();
+                return node.getPath();
+            };
         } else if (propertyValue != null && propertyValue.startsWith(Constants.JCR_CONTENT) && propertyValue.contains(".")) {
-                return new FileContentFetcher(field, propertyValue.split("\\.")[1]);
+            return new FileContentFetcher(field, propertyValue.split("\\.")[1]);
         } else if (graphQLFieldDefinition.getType() instanceof GraphQLObjectType) {
-                return new ObjectDataFetcher(field);
+            return new ObjectDataFetcher(field);
         } else if (graphQLFieldDefinition.getType() instanceof GraphQLList) {
-                return new ListDataFetcher(field);
+            return new ListDataFetcher(field);
         }
         return new PropertiesDataFetcher(field);
     }

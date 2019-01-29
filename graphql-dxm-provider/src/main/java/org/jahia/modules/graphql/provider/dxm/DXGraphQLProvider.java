@@ -143,7 +143,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         graphQLObjectHandler.getTypeRetriever().getGraphQLFieldRetriever().setAlwaysPrettify(true);
         container = graphQLAnnotations.createContainer();
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
-        ((DefaultTypeFunction)defaultTypeFunction).register(this);
+        ((DefaultTypeFunction) defaultTypeFunction).register(this);
 
         GraphQLExtensionsHandler extensionsHandler = graphQLAnnotations.getExtensionsHandler();
 
@@ -190,7 +190,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         }
 
         //Generate schema from user defined SDL
-        sdlSchemaService.setSdlSpecialInputTypes(graphQLAnnotations, container);
+        sdlSchemaService.setSDLSpecialInputTypes(graphQLAnnotations, container);
         sdlSchemaService.generateSchema();
         specializedTypesHandler.initializeTypes();
     }
@@ -244,7 +244,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     private TypeFunction defaultTypeFunction;
 
-    @Reference(target = "(type=default)", policy=ReferencePolicy.DYNAMIC, policyOption= ReferencePolicyOption.GREEDY)
+    @Reference(target = "(type=default)", policy = ReferencePolicy.DYNAMIC, policyOption = ReferencePolicyOption.GREEDY)
     public void setDefaultTypeFunction(TypeFunction defaultTypeFunction) {
         this.defaultTypeFunction = defaultTypeFunction;
     }
@@ -271,6 +271,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         } else {
             klass = (Class<?>) arg.getType();
         }
-        return defaultTypeFunction.buildType(input, klass, arg,container);
+        return defaultTypeFunction.buildType(input, klass, arg, container);
     }
 }

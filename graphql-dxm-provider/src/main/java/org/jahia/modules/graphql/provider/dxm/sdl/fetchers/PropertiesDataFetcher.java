@@ -79,7 +79,7 @@ public class PropertiesDataFetcher implements DataFetcher<Object> {
             String fieldProperty = field.getProperty();
             if (fieldProperty.contains(".")) {
                 String[] propertyName = fieldProperty.split("\\.");
-                if(!jcrNodeWrapper.hasNode(propertyName[0])) {
+                if (!jcrNodeWrapper.hasNode(propertyName[0])) {
                     return null;
                 }
                 jcrNodeWrapper = jcrNodeWrapper.getNode(propertyName[0]);

@@ -5,6 +5,8 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
 import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
 import org.jahia.osgi.BundleUtils;
@@ -18,22 +20,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLString;
 
 public abstract class FinderDataFetcher implements DataFetcher {
 
-    protected String type;
-    protected Finder finder;
-
     static final String PREVIEW = "preview";
     static final String LANGUAGE = "language";
-
     private static final String SORT_BY = "sortBy";
     private static final String FIELD_NAME = "fieldName";
     private static final String SORT_TYPE = "sortType";
     private static final String IGNORE_CASE = "ignoreCase";
+    protected String type;
+    protected Finder finder;
 
     public FinderDataFetcher(String type, Finder finder) {
         this.type = type.split(",")[0];
@@ -62,10 +64,6 @@ public abstract class FinderDataFetcher implements DataFetcher {
         return JCRSessionFactory.getInstance().getCurrentUserSession(preview ? Constants.EDIT_WORKSPACE : Constants.LIVE_WORKSPACE, locale);
     }
 
-    public List<GraphQLArgument> getArguments() {
-        return getDefaultArguments();
-    }
-
     protected static List<GraphQLArgument> getDefaultArguments() {
         SDLSchemaService sdlSchemaService = BundleUtils.getOsgiService(SDLSchemaService.class, null);
         List<GraphQLArgument> list = new ArrayList<>();
@@ -73,7 +71,7 @@ public abstract class FinderDataFetcher implements DataFetcher {
                 .newArgument()
                 .name(SORT_BY)
                 .description("sort filter object")
-                .type(sdlSchemaService.getSdlSpecialInputType("FieldSorterInput"))
+                .type(sdlSchemaService.getSDLSpecialInputType("FieldSorterInput"))
                 .build());
         list.add(GraphQLArgument.newArgument()
                 .name(PREVIEW)
@@ -90,17 +88,22 @@ public abstract class FinderDataFetcher implements DataFetcher {
         return list;
     }
 
-    protected FieldSorterInput getFieldSorterInput(DataFetchingEnvironment environment){
-        Map sortByFitler = environment.getArgument(SORT_BY);
-        if(sortByFitler!=null){
-            return new FieldSorterInput(
-                    (String)sortByFitler.get(FIELD_NAME),
-                    (SorterHelper.SortType) sortByFitler.get(SORT_TYPE),
-                    (Boolean)sortByFitler.get(IGNORE_CASE)
-            );
+    public List<GraphQLArgument> getArguments() {
+        return getDefaultArguments();
+    }
+
+    protected List<GqlJcrNode> resolveCollection(Stream<GqlJcrNode> stream, DataFetchingEnvironment environment) {
+        FieldSorterInput sorterInput = getFieldSorterInput(environment);
+        if (sorterInput != null) {
+            return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment))).collect(Collectors.toList());
         } else {
-            return null;
+            return stream.collect(Collectors.toList());
         }
+    }
+
+    private FieldSorterInput getFieldSorterInput(DataFetchingEnvironment environment) {
+        Map sortByFilter = environment.getArgument(SORT_BY);
+        return sortByFilter != null ? new FieldSorterInput((String) sortByFilter.get(FIELD_NAME), (SorterHelper.SortType) sortByFilter.get(SORT_TYPE), (Boolean) sortByFilter.get(IGNORE_CASE)) : null;
     }
 
     public abstract Object get(DataFetchingEnvironment environment);

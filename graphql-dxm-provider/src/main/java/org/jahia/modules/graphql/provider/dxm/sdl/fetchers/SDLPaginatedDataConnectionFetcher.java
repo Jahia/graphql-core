@@ -1,4 +1,4 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
@@ -69,7 +69,7 @@ public class SDLPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T
         List<GqlJcrNode> l = (List<GqlJcrNode>) fetcher.get(environment);
         DXPaginatedData<T> paginatedData = (DXPaginatedData<T>) PaginationHelper.paginate(l, environment);
         if (paginatedData == null) {
-            return new DefaultConnection<>(Collections.emptyList(), new DefaultPageInfo(null,null,false,false));
+            return new DefaultConnection<>(Collections.emptyList(), new DefaultPageInfo(null, null, false, false));
         }
         List<Edge<T>> edges = buildEdges(paginatedData);
         PageInfo pageInfo = getPageInfo(edges, paginatedData);

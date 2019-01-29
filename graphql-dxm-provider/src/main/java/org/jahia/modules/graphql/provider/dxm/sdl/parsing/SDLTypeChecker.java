@@ -23,7 +23,8 @@ public class SDLTypeChecker {
 
     private static Logger logger = LoggerFactory.getLogger(SDLTypeChecker.class);
 
-    private SDLTypeChecker() {}
+    private SDLTypeChecker() {
+    }
 
     public static SDLDefinitionStatus checkType(TypeDefinition type, TypeDefinitionRegistry typeDefinitionRegistry) {
         if (type instanceof ObjectTypeDefinition) {
@@ -56,7 +57,7 @@ public class SDLTypeChecker {
                 ExtendedNodeType[] allTypes;
                 try {
                     allTypes = checkNodeTypes(jcrNodeTypes, status);
-                } catch(NoSuchNodeTypeException ex) {
+                } catch (NoSuchNodeTypeException ex) {
                     return status;
                 }
                 //Check field directives and make sure all properties can be found on the jcr node type
@@ -112,7 +113,7 @@ public class SDLTypeChecker {
         return false;
     }
 
-    private static ExtendedNodeType[] checkNodeTypes(String[] jcrNodeTypes, SDLDefinitionStatus status) throws NoSuchNodeTypeException{
+    private static ExtendedNodeType[] checkNodeTypes(String[] jcrNodeTypes, SDLDefinitionStatus status) throws NoSuchNodeTypeException {
         ExtendedNodeType[] allTypes = null;
         for (String jcrNodeType : jcrNodeTypes) {
             if (!NodeTypeRegistry.getInstance().hasNodeType(jcrNodeType)) {
