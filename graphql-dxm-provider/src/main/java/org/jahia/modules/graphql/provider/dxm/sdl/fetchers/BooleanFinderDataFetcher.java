@@ -43,7 +43,8 @@
  */
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
-import graphql.schema.*;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLArgument;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
@@ -102,7 +103,7 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher {
                         .filter(node -> PermissionHelper.hasPermission(node, environment))
                         .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
 
-                return sorterInput!=null ?
+                return sorterInput != null ?
                         stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment))).collect(Collectors.toList())
                         :
                         stream.collect(Collectors.toList());
@@ -134,10 +135,6 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher {
      * @return
      */
     private boolean hasValidArguments(DataFetchingEnvironment environment) {
-        if (environment.getArgument(VALUE) == null) {
-            return false;
-        } else {
-            return true;
-        }
+        return environment.getArgument(VALUE) != null;
     }
 }

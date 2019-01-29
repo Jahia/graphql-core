@@ -43,7 +43,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
-import graphql.schema.*;
+import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
@@ -57,7 +57,10 @@ import pl.touk.throwing.ThrowingFunction;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -69,7 +72,7 @@ public class AllFinderDataFetcher extends FinderDataFetcher {
     }
 
     @Override
-    public List<GqlJcrNode> get(DataFetchingEnvironment environment){
+    public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
         FieldSorterInput sorterInput = getFieldSorterInput(environment);
         try {
             String statement = "select * from [\"" + type + "\"]";
@@ -84,7 +87,7 @@ public class AllFinderDataFetcher extends FinderDataFetcher {
                     .filter(node -> PermissionHelper.hasPermission(node, environment))
                     .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
 
-            return sorterInput!=null ?
+            return sorterInput != null ?
                     stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment))).collect(Collectors.toList())
                     :
                     stream.collect(Collectors.toList());

@@ -9,39 +9,6 @@ import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 
 public class FinderFetchersFactory {
 
-    public enum FetcherType {
-        ALL("all", null),
-        ID(null, "ById"),
-        PATH(null, "ByPath"),
-        DATE(),
-        NUMBER(),
-        BOOLEAN(),
-        STRING();
-
-        String prefix;
-        String suffix;
-
-        FetcherType() {
-        }
-
-        FetcherType(String prefix, String suffix) {
-            this.prefix = prefix;
-            this.suffix = suffix;
-        }
-
-        public String getName(String base) {
-            return (prefix != null ? (prefix + base) : StringUtils.uncapitalize(base)) + (suffix != null ? suffix : "");
-        }
-
-        public String getPrefix() {
-            return prefix;
-        }
-
-        public String getSuffix() {
-            return suffix;
-        }
-    }
-
     public static FinderDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {
         String queryName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
 
@@ -117,5 +84,38 @@ public class FinderFetchersFactory {
     public static String getMappedType(String definitionPropertyName, GraphQLFieldDefinition fieldDefinition) {
         GraphQLObjectType graphQLType = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
         return graphQLType.getFieldDefinition(definitionPropertyName).getType().getName();
+    }
+
+    public enum FetcherType {
+        ALL("all", null),
+        ID(null, "ById"),
+        PATH(null, "ByPath"),
+        DATE(),
+        NUMBER(),
+        BOOLEAN(),
+        STRING();
+
+        String prefix;
+        String suffix;
+
+        FetcherType() {
+        }
+
+        FetcherType(String prefix, String suffix) {
+            this.prefix = prefix;
+            this.suffix = suffix;
+        }
+
+        public String getName(String base) {
+            return (prefix != null ? (prefix + base) : StringUtils.uncapitalize(base)) + (suffix != null ? suffix : "");
+        }
+
+        public String getPrefix() {
+            return prefix;
+        }
+
+        public String getSuffix() {
+            return suffix;
+        }
     }
 }

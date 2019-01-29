@@ -25,11 +25,6 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
     private static final String JAHIA_SOURCE_FOLDERS = "Jahia-Source-Folders";
     private static final String SRC_MAIN_RESOURCES = "/src/main/resources/";
     private static final String GRAPHQL_EXTENSION_SDL = "META-INF/graphql-extension.sdl";
-    private final Map<String, URL> sdlResources = new ConcurrentHashMap<>();
-    private BundleContext bundleContext;
-    private ComponentContext componentContext;
-    private Boolean hasModulesMonitoringActivated = Boolean.FALSE;
-
     private static Map<Integer, String> status = new HashMap<>();
 
     static {
@@ -44,6 +39,10 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         status.put(BundleEvent.UPDATED, "updated");
     }
 
+    private final Map<String, URL> sdlResources = new ConcurrentHashMap<>();
+    private BundleContext bundleContext;
+    private ComponentContext componentContext;
+    private Boolean hasModulesMonitoringActivated = Boolean.FALSE;
     private ServiceRegistration<ModulesSourceMonitor> serviceRegistration = null;
 
     @Activate

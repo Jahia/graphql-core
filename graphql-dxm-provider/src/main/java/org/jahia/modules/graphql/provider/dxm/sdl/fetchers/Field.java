@@ -26,7 +26,7 @@ public class Field {
         return type;
     }
 
-    public void setType(String type){
+    public void setType(String type) {
         this.type = type;
     }
 

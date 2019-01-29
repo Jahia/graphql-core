@@ -85,7 +85,7 @@ public class StringFinderDataFetcher extends FinderDataFetcher {
                     .filter(node -> PermissionHelper.hasPermission(node, environment))
                     .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
 
-            return sorterInput!=null ?
+            return sorterInput != null ?
                     stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment))).collect(Collectors.toList())
                     :
                     stream.collect(Collectors.toList());

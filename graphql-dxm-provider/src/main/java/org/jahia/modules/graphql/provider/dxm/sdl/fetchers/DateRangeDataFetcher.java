@@ -68,7 +68,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static graphql.Scalars.*;
+import static graphql.Scalars.GraphQLInt;
+import static graphql.Scalars.GraphQLString;
 
 /**
  * Created at Jan, 2019
@@ -83,6 +84,17 @@ public class DateRangeDataFetcher extends FinderDataFetcher {
 
     public DateRangeDataFetcher(Finder finder) {
         super(finder.getType(), finder);
+    }
+
+    /**
+     * Either one of the argument of after or before is needed
+     *
+     * @param environment
+     * @return
+     */
+    private static boolean hasValidArguments(DataFetchingEnvironment environment) {
+        return !(environment.getArguments().size() < 1 || (environment.getArgument(ARG_LASTDAYS) != null &&
+                (!StringUtils.isBlank(environment.getArgument(ARG_AFTER)) || !StringUtils.isBlank(environment.getArgument(ARG_BEFORE)))));
     }
 
     @Override
@@ -121,7 +133,7 @@ public class DateRangeDataFetcher extends FinderDataFetcher {
                         .filter(node -> PermissionHelper.hasPermission(node, environment))
                         .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
 
-                return sorterInput!=null ?
+                return sorterInput != null ?
                         stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment))).collect(Collectors.toList())
                         :
                         stream.collect(Collectors.toList());
@@ -158,17 +170,6 @@ public class DateRangeDataFetcher extends FinderDataFetcher {
         );
 
         return sql2.getStatement();
-    }
-
-    /**
-     * Either one of the argument of after or before is needed
-     *
-     * @param environment
-     * @return
-     */
-    private static boolean hasValidArguments(DataFetchingEnvironment environment) {
-        return !(environment.getArguments().size() < 1 || (environment.getArgument(ARG_LASTDAYS) != null &&
-                (!StringUtils.isBlank(environment.getArgument(ARG_AFTER)) || !StringUtils.isBlank(environment.getArgument(ARG_BEFORE)))));
     }
 
     private class SQL2DateTypeQuery {
