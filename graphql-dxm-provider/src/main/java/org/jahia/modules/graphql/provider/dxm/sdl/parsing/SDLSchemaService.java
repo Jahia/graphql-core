@@ -288,7 +288,7 @@ public class SDLSchemaService {
      * @param graphQLAnnotations
      * @param container
      */
-    public void setSdlSpecialInputTypes(GraphQLAnnotationsComponent graphQLAnnotations, ProcessingElementsContainer container) {
+    public void setSDLSpecialInputTypes(GraphQLAnnotationsComponent graphQLAnnotations, ProcessingElementsContainer container) {
         this.sdlSpecialInputTypes.clear();
         this.sdlSpecialInputTypes.put("FieldSorterInput", graphQLAnnotations.getInputTypeProcessor().getInputTypeOrRef(FieldSorterInput.class, container));
     }
@@ -299,7 +299,7 @@ public class SDLSchemaService {
      * @param name
      * @return
      */
-    public GraphQLInputType getSdlSpecialInputType(String name) {
+    public GraphQLInputType getSDLSpecialInputType(String name) {
         return this.sdlSpecialInputTypes.get(name);
     }
 

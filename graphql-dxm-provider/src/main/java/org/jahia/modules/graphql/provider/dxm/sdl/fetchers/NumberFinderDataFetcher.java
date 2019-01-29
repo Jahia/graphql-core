@@ -4,11 +4,8 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLScalarType;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
-import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
-import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -18,7 +15,6 @@ import pl.touk.throwing.ThrowingFunction;
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -76,7 +72,6 @@ public class NumberFinderDataFetcher extends FinderDataFetcher {
 
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
-        FieldSorterInput sorterInput = getFieldSorterInput(environment);
         try {
             String statement = "SELECT * FROM [%s] as n where n.[%s]%s%s";
             Map<String, Object> arguments = environment.getArguments();
@@ -106,17 +101,12 @@ public class NumberFinderDataFetcher extends FinderDataFetcher {
                     break;
                 default:
             }
-
             JCRSessionWrapper currentUserSession = getCurrentUserSession(environment);
             JCRNodeIteratorWrapper it = currentUserSession.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
             Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
                     .filter(node -> PermissionHelper.hasPermission(node, environment))
                     .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
-
-            return sorterInput != null ?
-                    stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment))).collect(Collectors.toList())
-                    :
-                    stream.collect(Collectors.toList());
+            return resolveCollection(stream, environment);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
