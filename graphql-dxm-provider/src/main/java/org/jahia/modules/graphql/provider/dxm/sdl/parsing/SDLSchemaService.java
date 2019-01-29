@@ -31,6 +31,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLString;
@@ -97,7 +98,7 @@ public class SDLSchemaService {
 
             TypeDefinitionRegistry cleanedTypeRegistry = new TypeDefinitionRegistry();
             typeDefinitionRegistry.types().forEach((k, t) -> cleanedTypeRegistry.add(t));
-            typeDefinitionRegistry.objectTypeExtensions().forEach((k, t) -> t.forEach(cleanedTypeRegistry::add));
+            typeDefinitionRegistry.objectTypeExtensions().forEach((k, t) -> t.forEach(e -> cleanObjectExtensions(e, sources, cleanedTypeRegistry)));
             typeDefinitionRegistry.scalars().forEach((k, t) -> cleanedTypeRegistry.add(t));
             typeDefinitionRegistry.getDirectiveDefinitions().forEach((k, t) -> cleanedTypeRegistry.add(t));
             try {
@@ -109,6 +110,24 @@ public class SDLSchemaService {
             } catch (Exception e) {
                 logger.warn("Invalid type definition(s) detected during schema generation {} ", e.getMessage());
             }
+        }
+    }
+
+    private void cleanObjectExtensions(ObjectTypeExtensionDefinition e, Map<TypeDefinition, String> sources, TypeDefinitionRegistry cleanedTypeRegistry) {
+        List<FieldDefinition> fieldDefinitions = e.getFieldDefinitions().stream().filter(f -> {
+            if (f.getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX) && (f.getName().contains(FinderFetchersFactory.FetcherType.PATH.getSuffix()) || f.getName().contains(FinderFetchersFactory.FetcherType.ID.getSuffix()))) {
+                //Remove extensions that are not compatible with a connection type
+                String bundleName = sources.get(e);
+                getOrCreateBundleSDLSchemaList(bundleName).add(new SDLSchemaInfo(bundleName, SDLSchemaInfo.SDLSchemaStatus.DEFINITION_ERROR, MessageFormat.format("You cannot use [{0}] as a query connection extension", f.getName())));
+                logger.error("You cannot use [{}] as a query connection extension", f.getName());
+                return true;
+            }
+            return false;
+        }).collect(Collectors.toList());
+        e.getFieldDefinitions().removeAll(fieldDefinitions);
+        if (!e.getFieldDefinitions().isEmpty()) {
+            //Add extensions that still have valid field definitions defined
+            cleanedTypeRegistry.add(e);
         }
     }
 
@@ -153,29 +172,22 @@ public class SDLSchemaService {
                     //Handle connections
                     if (fieldDefinition.getName().contains(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
                         String typeName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
+                        GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
+                        GraphQLObjectType connectionType = relay.connectionType(
+                                typeName,
+                                relay.edgeType(node.getName(), node, null, Collections.emptyList()),
+                                Collections.emptyList());
 
-                        //Process compatible queries and report ones that are not compatible
-                        if (!typeName.endsWith(FinderFetchersFactory.FetcherType.PATH.getSuffix()) && !typeName.endsWith(FinderFetchersFactory.FetcherType.ID.getSuffix())) {
-                            GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
-                            GraphQLObjectType connectionType = relay.connectionType(
-                                    typeName,
-                                    relay.edgeType(node.getName(), node, null, Collections.emptyList()),
-                                    Collections.emptyList());
-
-                            FinderDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
-                            List<GraphQLArgument> args = relay.getConnectionFieldArguments();
-                            args.addAll(typeFetcher.getArguments());
-                            SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(typeFetcher);
-                            GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
-                                    .dataFetcher(fetcher)
-                                    .type(connectionType)
-                                    .argument(args)
-                                    .build();
-                            defs.add(sdlDef);
-                        } else {
-                            //TODO report this query
-                            logger.error("You cannot use this type of query as connection {}", fieldDefinition.getName());
-                        }
+                        FinderDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
+                        List<GraphQLArgument> args = relay.getConnectionFieldArguments();
+                        args.addAll(typeFetcher.getArguments());
+                        SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(typeFetcher);
+                        GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
+                                .dataFetcher(fetcher)
+                                .type(connectionType)
+                                .argument(args)
+                                .build();
+                        defs.add(sdlDef);
                     } else {
                         FinderDataFetcher fetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                         GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
