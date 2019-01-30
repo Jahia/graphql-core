@@ -27,7 +27,8 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * Class with sorting algorithm
@@ -51,7 +52,7 @@ public class SorterHelper {
         DESC
     }
 
-    private static HashMap<SortType, SorterHelper.FieldSorterAlgorithm> SORT_BY_DIRECTION = new HashMap<>();
+    private static final Map<SortType, FieldSorterAlgorithm> SORT_BY_DIRECTION = new EnumMap<>(SortType.class);
 
     @FunctionalInterface interface FieldSorterAlgorithm {
         int evaluate(Object source, String fieldName, Object fieldValue, boolean ignoreCase, FieldEvaluator environment);
@@ -103,11 +104,11 @@ public class SorterHelper {
         if (sortType == null) {
             sortType = SorterHelper.SortType.ASC;
         }
-        SorterHelper.FieldSorterAlgorithm SortAlgorithm = SORT_BY_DIRECTION.get(sortType);
-        if (SortAlgorithm == null) {
+        SorterHelper.FieldSorterAlgorithm sorterAlgorithm = SORT_BY_DIRECTION.get(sortType);
+        if (sorterAlgorithm == null) {
             throw new IllegalArgumentException("Unknown sort direction : " + sortType);
         }
-        return ((object, obj) -> SortAlgorithm.evaluate(object, sortFilter.getFieldName(), environment.getFieldValue(obj,
+        return ((object, obj) -> sorterAlgorithm.evaluate(object, sortFilter.getFieldName(), environment.getFieldValue(obj,
                 sortFilter.getFieldName()), (sortFilter.isIgnoreCase()==null || sortFilter.isIgnoreCase()), environment));
     }
 }
