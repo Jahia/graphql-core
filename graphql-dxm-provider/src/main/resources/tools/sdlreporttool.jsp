@@ -38,14 +38,15 @@
         </div>
     </div>
     <c:forEach items="${sdlDefinitionsStatus}" var="entry">
-        <div class="status-row">
-            <div class="status-item" style="width:15%">
+        <div class="status-row" data-sdl-type="${entry.key}">
+            <div class="status-item" data-sdl-type-name="${entry.key}" style="width:15%">
                 <c:out value="${entry.key}"/>
             </div>
-            <div class="status-item" style="width:65%">
+            <div class="status-item" data-sdl-type-message="${entry.value}" style="width:65%">
                 <c:out value="${entry.value}"/>
             </div>
-            <div class="status-item" style="width:10%;text-align: center">
+            <div class="status-item" data-sdl-type-status="${entry.value.status == 'OK' ? "success" : "error"}"
+                 style="width:10%;text-align: center">
                 <div class="status-icon ${entry.value.status == 'OK' ? "success" : "error"}"></div>
             </div>
         </div>
@@ -65,16 +66,17 @@
         </div>
     </div>
     <c:forEach items="${sdlSchemaStatus}" var="entry">
-        <div class="status-row">
-            <div class="status-item" style="width:15%">
+        <div class="status-row" data-sdl-module="${entry.key}">
+            <div class="status-item" data-sdl-module-name="${entry.key}" style="width:15%">
                 <c:out value="${entry.key}"/>
             </div>
-            <div class="status-item" style="width:65%">
-                <c:forEach items="${entry.value}" var="item">
-                    <div><c:out value="${item.error}"/></div>
+            <div class="status-item" data-sdl-module-messages style="width:65%">
+                <c:forEach items="${entry.value}" var="item" varStatus="status">
+                    <div data-sdl-module-message="${status.index}"><c:out value="${item.error}"/></div>
                 </c:forEach>
             </div>
-            <div class="status-item" style="width:10%;text-align: center; ">
+            <div class="status-item" data-sdl-module-status="${empty entry.value ? "success" : "error"}"
+                 style="width:10%;text-align: center; ">
                 <div class="status-icon ${empty entry.value ? "success" : "error"}"></div>
             </div>
         </div>
