@@ -102,7 +102,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
             subNode1.addMixin("jmix:keywords");
             subNode1.setProperty("jcr:title", subnodeTitleEn1);
             subNode1.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
-            subNode1.setProperty("j:keywords", new String[] {"keyword 1", "keyword 2"});
+            subNode1.setProperty("j:keywords", new String[] {"keyword 1", "keyword 2", "keyword"});
             Calendar calendar1 = Calendar.getInstance();
             calendar1.setTime(subnode1Published);
             subNode1.setProperty("j:lastPublished", calendar1);
@@ -548,9 +548,10 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
         Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
 
-        Assert.assertEquals(2, nodeByName.size());
+        Assert.assertEquals(3, nodeByName.size());
         validateNode(nodeByName.get("testSubList1"), "testSubList1");
         validateNode(nodeByName.get("testSubList2"), "testSubList2");
+        validateNode(nodeByName.get("testSubList3"), "testSubList3");
     }
 
 

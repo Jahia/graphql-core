@@ -30,7 +30,7 @@ public class DefaultConstraintHelper {
     }
 
     // j:nodename must be first property to be processed.
-    private static final List<String> PROPERTIES = Arrays.asList("j:nodename", Constants.JCR_TITLE, Constants.JCR_KEYWORDS, "j:tagList");
+    private static final List<String> PROPERTIES = Arrays.asList("j:nodename", Constants.JCR_TITLE, Constants.KEYWORDS, "j:tagList");
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultConstraintHelper.class);
 
@@ -60,9 +60,7 @@ public class DefaultConstraintHelper {
                 case "j:tagList":
                     String tagLowercase = searchTerm.toLowerCase();
                     List<String> tags = Arrays.asList(tagLowercase.split(" "));
-                    tags.forEach(tag -> {
-                        buildConstraintOperator(ConstraintOperator.EQUAL_TO, ConstraintFunction.NONE, property, tag);
-                    });
+                    tags.forEach(tag -> buildConstraintOperator(ConstraintOperator.EQUAL_TO, ConstraintFunction.NONE, property, tag));
                     buildConstraintType(ConstraintType.OR);
                     return;
                 default:
@@ -96,12 +94,12 @@ public class DefaultConstraintHelper {
         try {
             switch (type) {
                 case OR:
-                    while (buffer.size() > 0) {
+                    while (!buffer.isEmpty()) {
                         result = result != null ? factory.or(result, buffer.removeFirst()) : buffer.removeFirst();
                     }
                     return;
                 case AND:
-                    while (buffer.size() > 0) {
+                    while (!buffer.isEmpty()) {
                         result = result != null ? factory.and(result, buffer.removeFirst()) : buffer.removeFirst();
                     }
                     return;

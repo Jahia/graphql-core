@@ -349,14 +349,8 @@ public class GqlJcrQuery {
             constraints.add(principleConstraint);
         }
 
-        // Build default properties constraint.
-        Constraint result = null;
-        if (criteria.getNodeConstraint() != null && criteria.getNodeConstraint().getContains() != null) {
-            DefaultConstraintHelper defaultConstraintHelper = new DefaultConstraintHelper(factory, selector);
-            result = defaultConstraintHelper.buildDefaultPropertiesConstraint(criteria.getNodeConstraint().getContains());
-        }
-
         // Build the result.
+        Constraint result = null;
         if (constraints.isEmpty()) {
             return null;
         } else {
@@ -594,7 +588,8 @@ public class GqlJcrQuery {
                 return null;
             }
 
-            return factory.fullTextSearch(selector, nodeConstraint.getProperty(), factory.literal(new ValueImpl(value)));
+            DefaultConstraintHelper defaultConstraintHelper = new DefaultConstraintHelper(factory, selector);
+            return defaultConstraintHelper.buildDefaultPropertiesConstraint(value);
         }
 
         @Override
