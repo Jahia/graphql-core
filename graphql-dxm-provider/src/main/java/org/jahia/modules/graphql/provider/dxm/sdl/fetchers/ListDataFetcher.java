@@ -53,8 +53,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -85,16 +87,16 @@ public class ListDataFetcher implements DataFetcher<List> {
                     if (field == null) {
                         logger.debug("Fetch children of type {}", nodeType);
                         //Case when child name is not specified, get children directly from jcrNode
-                        return JCRContentUtils.getChildrenOfType(jcrNode, nodeType).stream()
-                                .map(GqlJcrNodeImpl::new)
-                                .collect(Collectors.toList());
+                        return resolveChildren(jcrNode, nodeType);
                     } else {
-                        logger.debug("Fetch children of type {} from child {}", nodeType, field.getProperty());
-                        //Case when child mapping is specified, get children from mapped node
-                        JCRNodeWrapper subNode = jcrNode.getNode(field.getProperty());
-                        return JCRContentUtils.getChildrenOfType(subNode, nodeType).stream()
-                                .map(GqlJcrNodeImpl::new)
-                                .collect(Collectors.toList());
+                        //Case when property is a weak reference
+                        if (jcrNode.hasProperty(field.getProperty())) {
+                            return resolveProperty(jcrNode);
+                        } else {
+                            //Case when child mapping is specified, get children from mapped node
+                            logger.debug("Fetch children of type {} from child {}", nodeType, field.getProperty());
+                            return resolveChildren(jcrNode.getNode(field.getProperty()), nodeType);
+                        }
                     }
                 } catch (RepositoryException e) {
                     //Do nothing, return empty list below
@@ -104,4 +106,22 @@ public class ListDataFetcher implements DataFetcher<List> {
         return Collections.emptyList();
     }
 
+    private List<GqlJcrNodeImpl> resolveProperty(JCRNodeWrapper jcrNode) throws RepositoryException{
+        logger.debug("Fetch weak reference {}", field.getProperty());
+        return Arrays.stream(jcrNode.getProperty(field.getProperty()).getRealValues()).
+                map(value -> {
+                    try {
+                        return new GqlJcrNodeImpl(value.getNode());
+                    } catch (RepositoryException ex) {
+                        logger.error("Failed to retrieve node from value {}", value);
+                        return null;
+                    }
+                }).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    private List<GqlJcrNode> resolveChildren(JCRNodeWrapper node, String nodeType) {
+        return JCRContentUtils.getChildrenOfType(node, nodeType).stream()
+                .map(GqlJcrNodeImpl::new)
+                .collect(Collectors.toList());
+    }
 }
