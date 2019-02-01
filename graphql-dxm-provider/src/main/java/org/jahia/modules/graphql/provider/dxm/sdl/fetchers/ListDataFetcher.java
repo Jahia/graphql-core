@@ -106,7 +106,7 @@ public class ListDataFetcher implements DataFetcher<List> {
         return Collections.emptyList();
     }
 
-    private List<GqlJcrNodeImpl> resolveProperty(JCRNodeWrapper jcrNode) throws RepositoryException{
+    private List<GqlJcrNodeImpl> resolveProperty(JCRNodeWrapper jcrNode) throws RepositoryException {
         logger.debug("Fetch weak reference {}", field.getProperty());
         return Arrays.stream(jcrNode.getProperty(field.getProperty()).getRealValues()).
                 map(value -> {
