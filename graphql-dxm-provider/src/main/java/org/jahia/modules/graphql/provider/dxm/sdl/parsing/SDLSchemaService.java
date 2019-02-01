@@ -249,10 +249,6 @@ public class SDLSchemaService {
         }
     }
 
-    /**
-     * @param defs
-     * @param defaultFinder
-     */
     private void applyDefaultFetcher(final List<GraphQLFieldDefinition> defs, final GraphQLDirective directive,
                                      GraphQLOutputType type, final FinderFetchersFactory.FetcherType defaultFinder) {
         boolean shouldIgnoreDefaultQueries = false;
@@ -309,12 +305,6 @@ public class SDLSchemaService {
         this.relay = relay;
     }
 
-    /**
-     * clean and add the annotated input types from annotations
-     *
-     * @param graphQLAnnotations
-     * @param container
-     */
     public void refreshSpecialInputTypes(GraphQLAnnotationsComponent graphQLAnnotations, ProcessingElementsContainer container) {
         this.sdlSpecialInputTypes.clear();
         for (SpecialInputTypes specialInputType : SpecialInputTypes.values()) {
@@ -322,12 +312,6 @@ public class SDLSchemaService {
         }
     }
 
-    /**
-     * Getter for the special input types map
-     *
-     * @param name
-     * @return
-     */
     public GraphQLInputType getSDLSpecialInputType(String name) {
         return this.sdlSpecialInputTypes.get(name);
     }
