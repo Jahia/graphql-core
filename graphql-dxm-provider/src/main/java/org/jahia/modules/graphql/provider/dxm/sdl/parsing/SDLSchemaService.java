@@ -61,6 +61,13 @@ public class SDLSchemaService {
             this.klass = klass;
         }
 
+        public String getName() {
+            return name;
+        }
+
+        public Class getKlass() {
+            return klass;
+        }
     }
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
