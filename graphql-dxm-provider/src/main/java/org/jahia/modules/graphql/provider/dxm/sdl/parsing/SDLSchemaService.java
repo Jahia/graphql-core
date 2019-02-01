@@ -48,7 +48,7 @@ public class SDLSchemaService {
     private Map<String, SDLDefinitionStatus> sdlDefinitionStatusMap = new TreeMap<>();
     private Map<Object, GraphQLInputType> sdlSpecialInputTypes = new HashMap<>();
 
-    private enum SpecialInputTypes {
+    public enum SpecialInputTypes {
 
         //add input type def here
         FIELD_SORTER_INPUT("FieldSorterInput", FieldSorterInput.class);

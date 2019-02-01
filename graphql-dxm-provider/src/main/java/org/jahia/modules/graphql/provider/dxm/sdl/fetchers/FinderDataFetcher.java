@@ -70,8 +70,8 @@ public abstract class FinderDataFetcher implements DataFetcher {
         list.add(GraphQLArgument
                 .newArgument()
                 .name(SORT_BY)
-                .description("sort filter object")
-                .type(sdlSchemaService.getSDLSpecialInputType("FieldSorterInput"))
+                .description("Sort filter object")
+                .type(sdlSchemaService.getSDLSpecialInputType(SDLSchemaService.SpecialInputTypes.FIELD_SORTER_INPUT.name()))
                 .build());
         list.add(GraphQLArgument.newArgument()
                 .name(PREVIEW)
