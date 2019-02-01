@@ -2,6 +2,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl;
 
 public class SDLConstants {
     public static final String IDENTIFIER = "identifier";
+    public static final String URL = "url";
     public static final String PATH = "path";
     public static final String MAPPING_DIRECTIVE_PROPERTY = "property";
     public static final String MAPPING_DIRECTIVE = "mapping";

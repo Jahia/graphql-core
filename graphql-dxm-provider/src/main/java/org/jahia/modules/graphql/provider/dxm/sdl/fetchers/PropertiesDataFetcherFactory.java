@@ -26,6 +26,11 @@ public class PropertiesDataFetcherFactory {
                 GqlJcrNode node = environment.getSource();
                 return node.getPath();
             };
+        } else if (SDLConstants.URL.equalsIgnoreCase(propertyValue)) {
+            return environment -> {
+                GqlJcrNode node = environment.getSource();
+                return node.getNode().getUrl();
+            };
         } else if (propertyValue != null && propertyValue.startsWith(Constants.JCR_CONTENT) && propertyValue.contains(".")) {
             return new FileContentFetcher(field, propertyValue.split("\\.")[1]);
         } else if (graphQLFieldDefinition.getType() instanceof GraphQLObjectType) {
