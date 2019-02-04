@@ -16,17 +16,17 @@ public class PropertiesDataFetcherFactory {
         GraphQLArgument property = mapping != null ? mapping.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY) : null;
         String propertyValue = property != null ? property.getValue().toString() : null;
 
-        if (SDLConstants.IDENTIFIER.equalsIgnoreCase(propertyValue)) {
+        if (SDLConstants.IDENTIFIER.equals(propertyValue)) {
             return environment -> {
                 GqlJcrNode node = environment.getSource();
                 return node.getUuid();
             };
-        } else if (SDLConstants.PATH.equalsIgnoreCase(propertyValue)) {
+        } else if (SDLConstants.PATH.equals(propertyValue)) {
             return environment -> {
                 GqlJcrNode node = environment.getSource();
                 return node.getPath();
             };
-        } else if (SDLConstants.URL.equalsIgnoreCase(propertyValue)) {
+        } else if (SDLConstants.URL.equals(propertyValue)) {
             return environment -> {
                 GqlJcrNode node = environment.getSource();
                 return node.getNode().getUrl();

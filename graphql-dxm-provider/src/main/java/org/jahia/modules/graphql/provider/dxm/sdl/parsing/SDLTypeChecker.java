@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import java.util.*;
+
 import static graphql.Scalars.GraphQLString;
 
 public class SDLTypeChecker {
@@ -32,7 +33,7 @@ public class SDLTypeChecker {
             SDLDefinitionStatus l = checkForFieldsConsistency(objectTypeDefinition, typeDefinitionRegistry);
             if (l.getStatus() != SDLDefinitionStatusType.OK) {
                 return l;
-            } else if (!objectTypeDefinition.getName().equalsIgnoreCase("query")) {
+            } else if (!objectTypeDefinition.getName().equals("Query")) {
                 addDefaultFields(objectTypeDefinition);
             }
         }
@@ -42,20 +43,56 @@ public class SDLTypeChecker {
     private static void addDefaultFields(ObjectTypeDefinition objectTypeDefinition) {
         // append id, path and url fields
         List<FieldDefinition> fieldDefinitions = objectTypeDefinition.getFieldDefinitions();
-        FieldDefinition uuid = FieldDefinition.newFieldDefinition().name("uuid").type(TypeName.newTypeName(GraphQLString.getName()).build())
-                .directive(Directive.newDirective().name(SDLConstants.MAPPING_DIRECTIVE).arguments(Collections.singletonList(Argument.newArgument().name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).value(new StringValue(SDLConstants.IDENTIFIER)).build())).build()).build();
-        if (fieldDefinitions.stream().noneMatch(definition -> definition.getName().equalsIgnoreCase(uuid.getName())))
+        FieldDefinition uuid = FieldDefinition.newFieldDefinition()
+                .name("uuid")
+                .type(TypeName.newTypeName(GraphQLString.getName()).build())
+                .directive(Directive.newDirective()
+                        .name(SDLConstants.MAPPING_DIRECTIVE)
+                        .arguments(Collections.singletonList(Argument.newArgument()
+                                .name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY)
+                                .value(new StringValue(SDLConstants.IDENTIFIER))
+                                .build()))
+                        .build())
+                .build();
+
+        if (fieldDefinitions.stream().noneMatch(definition -> definition.getName().equals(uuid.getName()))) {
             fieldDefinitions.add(uuid);
-        FieldDefinition path = FieldDefinition.newFieldDefinition().name("path").type(TypeName.newTypeName(GraphQLString.getName()).build())
-                .directive(Directive.newDirective().name(SDLConstants.MAPPING_DIRECTIVE).arguments(Collections.singletonList(Argument.newArgument().name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).value(new StringValue(SDLConstants.PATH)).build())).build()).build();
-        if (fieldDefinitions.stream().noneMatch(definition -> definition.getName().equalsIgnoreCase(path.getName())))
+        }
+
+        FieldDefinition path = FieldDefinition.newFieldDefinition()
+                .name("path")
+                .type(TypeName.newTypeName(GraphQLString.getName()).build())
+                .directive(Directive.newDirective()
+                        .name(SDLConstants.MAPPING_DIRECTIVE)
+                        .arguments(Collections.singletonList(Argument.newArgument()
+                                .name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY)
+                                .value(new StringValue(SDLConstants.PATH))
+                                .build()))
+                        .build())
+                .build();
+
+        if (fieldDefinitions.stream().noneMatch(definition -> definition.getName().equals(path.getName()))) {
             fieldDefinitions.add(path);
-        FieldDefinition url = FieldDefinition.newFieldDefinition().name("url").type(TypeName.newTypeName(GraphQLString.getName()).build())
-                .directive(Directive.newDirective().name(SDLConstants.MAPPING_DIRECTIVE).arguments(Collections.singletonList(Argument.newArgument().name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).value(new StringValue(SDLConstants.URL)).build())).build()).build();
+        }
+
+        FieldDefinition url = FieldDefinition.newFieldDefinition()
+                .name("url")
+                .type(TypeName.newTypeName(GraphQLString.getName()).build())
+                .directive(Directive.newDirective()
+                        .name(SDLConstants.MAPPING_DIRECTIVE)
+                        .arguments(Collections.singletonList(Argument.newArgument()
+                                .name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY)
+                                .value(new StringValue(SDLConstants.URL))
+                                .build()))
+                        .build())
+                .build();
+
         List<Directive> directives = objectTypeDefinition.getDirectives();
-        //Add url field definition only if the node type or subtype is nt:file
-        if (fieldDefinitions.stream().noneMatch(definition -> definition.getName().equalsIgnoreCase(url.getName()))
-                && directives.stream().anyMatch(directive -> directive.getName().equalsIgnoreCase(SDLConstants.MAPPING_DIRECTIVE) && directive.getArguments().stream().anyMatch(arg -> arg.getName().equalsIgnoreCase(SDLConstants.MAPPING_DIRECTIVE_NODE) && isNodeOfTypeFile(((StringValue)arg.getValue()).getValue())))) {
+        //Add url field definition only if the node type of subtype is nt:file
+        if (fieldDefinitions.stream().noneMatch(definition -> definition.getName().equals(url.getName()))
+                && directives.stream().anyMatch(directive -> directive.getName().equals(SDLConstants.MAPPING_DIRECTIVE)
+                && directive.getArguments().stream().anyMatch(arg -> arg.getName().equals(SDLConstants.MAPPING_DIRECTIVE_NODE)
+                && isNodeOfTypeFile(((StringValue) arg.getValue()).getValue())))) {
             fieldDefinitions.add(url);
         }
     }
@@ -64,12 +101,14 @@ public class SDLTypeChecker {
         //Check if the supplied string of comma delimited node(s) is a type or subtype of nt:file
         return Arrays.stream(type.split(",")).anyMatch(s -> {
             try {
-                return NodeTypeRegistry.getInstance().hasNodeType(s.trim()) && NodeTypeRegistry.getInstance().getNodeType(s.trim()).isNodeType(Constants.NT_FILE);
-            } catch(RepositoryException ex) {
+                NodeTypeRegistry registry = NodeTypeRegistry.getInstance();
+                return registry.hasNodeType(s.trim()) && registry.getNodeType(s.trim()).isNodeType(Constants.NT_FILE);
+            } catch (RepositoryException ex) {
                 return false;
             }
         });
     }
+
     private static SDLDefinitionStatus checkForConsistencyWithJCR(TypeDefinition typeDefinition) {
         SDLDefinitionStatus status = new SDLDefinitionStatus(typeDefinition.getName(), SDLDefinitionStatusType.OK);
         List<Directive> directives = typeDefinition.getDirectives();
