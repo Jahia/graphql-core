@@ -11,6 +11,7 @@ import graphql.schema.idl.TypeDefinitionRegistry;
 import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Finder;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderFetchersFactory;
@@ -167,6 +168,7 @@ public class SDLSchemaService {
             applyDefaultFetchers(defs);
 
             List<GraphQLFieldDefinition> fieldDefinitions = graphQLSchema.getQueryType().getFieldDefinitions();
+            Map<String, GraphQLObjectType> edges = new HashMap<>();
             for (GraphQLFieldDefinition fieldDefinition : fieldDefinitions) {
                 GraphQLObjectType objectType = fieldDefinition.getType() instanceof GraphQLList ?
                         (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType() : (GraphQLObjectType) fieldDefinition.getType();
@@ -180,14 +182,21 @@ public class SDLSchemaService {
                     if (fieldDefinition.getName().contains(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
                         String typeName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
                         GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
+                        GraphQLObjectType edge = edges.get(node.getName());
+
+                        if (edge == null) {
+                            edge = relay.edgeType(node.getName(), node, null, Collections.emptyList());
+                            edges.put(node.getName(), edge);
+                        }
+
                         GraphQLObjectType connectionType = relay.connectionType(
                                 typeName,
-                                relay.edgeType(node.getName(), node, null, Collections.emptyList()),
+                                edge,
                                 Collections.emptyList());
 
                         FinderDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                         List<GraphQLArgument> args = relay.getConnectionFieldArguments();
-                        args.addAll(typeFetcher.getArguments());
+                        args.add(SDLUtil.wrapArgumentsInType(String.format("%s%s", typeName, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX), typeFetcher.getArguments()));
                         SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(typeFetcher);
                         GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
                                 .dataFetcher(fetcher)

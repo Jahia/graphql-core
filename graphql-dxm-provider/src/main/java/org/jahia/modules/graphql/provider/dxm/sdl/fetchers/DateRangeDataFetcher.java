@@ -7,6 +7,7 @@ import org.apache.commons.lang.time.DateUtils;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -47,8 +48,9 @@ public class DateRangeDataFetcher extends FinderDataFetcher {
      * @return
      */
     private static boolean hasValidArguments(DataFetchingEnvironment environment) {
-        return !(environment.getArguments().size() < 1 || (environment.getArgument(ARG_LASTDAYS) != null &&
-                (!StringUtils.isBlank(environment.getArgument(ARG_AFTER)) || !StringUtils.isBlank(environment.getArgument(ARG_BEFORE)))));
+        return !(SDLUtil.getArgumentsSize(environment) == 0
+                || (SDLUtil.getArgument(ARG_LASTDAYS, environment) != null
+                && (!StringUtils.isBlank((String) SDLUtil.getArgument(ARG_AFTER, environment)) || !StringUtils.isBlank((String) SDLUtil.getArgument(ARG_BEFORE, environment)))));
     }
 
     @Override
@@ -101,9 +103,9 @@ public class DateRangeDataFetcher extends FinderDataFetcher {
      * @return
      */
     private String buildSQL2Statement(DataFetchingEnvironment environment) {
-        String after = environment.getArgument(ARG_AFTER);
-        String before = environment.getArgument(ARG_BEFORE);
-        Integer lastDays = environment.getArgument(ARG_LASTDAYS);
+        String after = (String) SDLUtil.getArgument(ARG_AFTER, environment);
+        String before = (String) SDLUtil.getArgument(ARG_BEFORE, environment);
+        Integer lastDays = (Integer) SDLUtil.getArgument(ARG_LASTDAYS, environment);
 
         if (lastDays != null) {
             Date afterDate = DateUtils.addDays(new Date(), -lastDays);

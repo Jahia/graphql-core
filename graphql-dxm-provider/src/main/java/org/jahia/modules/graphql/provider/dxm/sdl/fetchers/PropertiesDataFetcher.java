@@ -47,6 +47,7 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRValueWrapper;
@@ -72,8 +73,8 @@ public class PropertiesDataFetcher implements DataFetcher<Object> {
 
             JCRNodeWrapper jcrNodeWrapper = node.getNode();
 
-            if (dataFetchingEnvironment.getArgument("language") != null) {
-                jcrNodeWrapper = NodeHelper.getNodeInLanguage(jcrNodeWrapper, dataFetchingEnvironment.getArgument("language"));
+            if (SDLUtil.getArgument("language", dataFetchingEnvironment) != null) {
+                jcrNodeWrapper = NodeHelper.getNodeInLanguage(jcrNodeWrapper, (String) SDLUtil.getArgument("language", dataFetchingEnvironment));
             }
 
             String fieldProperty = field.getProperty();

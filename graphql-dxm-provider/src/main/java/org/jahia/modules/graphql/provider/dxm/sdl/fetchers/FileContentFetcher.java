@@ -4,6 +4,7 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.RepositoryException;
@@ -25,8 +26,8 @@ public class FileContentFetcher implements DataFetcher {
 
             JCRNodeWrapper jcrNodeWrapper = node.getNode();
 
-            if (environment.getArgument("language") != null) {
-                jcrNodeWrapper = NodeHelper.getNodeInLanguage(jcrNodeWrapper, environment.getArgument("language"));
+            if (SDLUtil.getArgument("language", environment) != null) {
+                jcrNodeWrapper = NodeHelper.getNodeInLanguage(jcrNodeWrapper, (String) SDLUtil.getArgument("language", environment));
             }
 
             if (fileProperty.equalsIgnoreCase("contentType")) {

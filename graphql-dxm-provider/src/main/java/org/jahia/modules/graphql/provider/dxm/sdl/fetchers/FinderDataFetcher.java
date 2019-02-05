@@ -8,6 +8,8 @@ import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
 import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
@@ -16,6 +18,7 @@ import org.jahia.settings.SettingsBean;
 import org.jahia.utils.LanguageCodeConverters;
 
 import javax.jcr.RepositoryException;
+import javax.management.ObjectName;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -46,8 +49,8 @@ public abstract class FinderDataFetcher implements DataFetcher {
         this(type, null);
     }
 
-    static Locale getLocale(DataFetchingEnvironment environment) {
-        String language = environment.getArgument(LANGUAGE);
+    protected static Locale getLocale(DataFetchingEnvironment environment) {
+        String language = (String) SDLUtil.getArgument(LANGUAGE, environment);
         if (language == null) return SettingsBean.getInstance().getDefaultLocale();
         return LanguageCodeConverters.languageCodeToLocale(language);
     }
@@ -57,7 +60,7 @@ public abstract class FinderDataFetcher implements DataFetcher {
     }
 
     protected static JCRSessionWrapper getCurrentUserSession(DataFetchingEnvironment environment, Locale locale) throws RepositoryException {
-        Boolean preview = environment.getArgument(PREVIEW);
+        Boolean preview = (Boolean) SDLUtil.getArgument(PREVIEW, environment);
         if (preview == null) {
             preview = Boolean.FALSE;
         }
@@ -102,7 +105,7 @@ public abstract class FinderDataFetcher implements DataFetcher {
     }
 
     private FieldSorterInput getFieldSorterInput(DataFetchingEnvironment environment) {
-        Map sortByFilter = environment.getArgument(SORT_BY);
+        Map sortByFilter = (Map) SDLUtil.getArgument(SORT_BY, environment);
         return sortByFilter != null ? new FieldSorterInput((String) sortByFilter.get(FIELD_NAME), (SorterHelper.SortType) sortByFilter.get(SORT_TYPE), (Boolean) sortByFilter.get(IGNORE_CASE)) : null;
     }
 

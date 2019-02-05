@@ -5,6 +5,7 @@ import graphql.schema.GraphQLArgument;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -70,7 +71,7 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher {
      * @return
      */
     private String buildSQL2Statement(DataFetchingEnvironment environment) {
-        Boolean value = environment.getArgument(VALUE);
+        Boolean value = (Boolean) SDLUtil.getArgument(VALUE, environment);
 
         return "SELECT * FROM [" + type + "] WHERE [" + finder.getProperty() + "] = " + value;
 
@@ -83,6 +84,6 @@ public class BooleanFinderDataFetcher extends FinderDataFetcher {
      * @return
      */
     private boolean hasValidArguments(DataFetchingEnvironment environment) {
-        return environment.getArgument(VALUE) != null;
+        return SDLUtil.getArgument(VALUE, environment) != null;
     }
 }

@@ -6,6 +6,7 @@ import graphql.schema.GraphQLScalarType;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -74,7 +75,7 @@ public class NumberFinderDataFetcher extends FinderDataFetcher {
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
         try {
             String statement = "SELECT * FROM [%s] as n where n.[%s]%s%s";
-            Map<String, Object> arguments = environment.getArguments();
+            Map<String, Object> arguments = SDLUtil.getArguments(environment);
 
             String comparisonParameterName = firstValidParameter(arguments);
             if (comparisonParameterName == null)

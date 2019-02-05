@@ -4,6 +4,7 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 
@@ -28,7 +29,7 @@ public class ByPropertySingleFinderDataFetcher extends FinderDataFetcher {
     @Override
     public GqlJcrNode get(DataFetchingEnvironment environment) {
         try {
-            String statement = "select * from [\"" + type + "\"] where [\"" + finder.getProperty() + "\"]=\"" + environment.getArgument("eq") + "\"";
+            String statement = "select * from [\"" + type + "\"] where [\"" + finder.getProperty() + "\"]=\"" + SDLUtil.getArgument("eq", environment) + "\"";
             NodeIterator it = JCRSessionFactory.getInstance().getCurrentUserSession().getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
             if (it.hasNext()) {
                 return new GqlJcrNodeImpl((JCRNodeWrapper) it.nextNode());
