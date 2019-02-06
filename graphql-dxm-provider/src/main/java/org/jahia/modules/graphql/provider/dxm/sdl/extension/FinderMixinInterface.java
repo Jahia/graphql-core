@@ -12,7 +12,7 @@ public interface FinderMixinInterface {
 
         String mixinName;
 
-        FinderMixins(String mfFinderMixin) {
+        FinderMixin(String mfFinderMixin) {
             mixinName = mfFinderMixin;
         }
 
