@@ -6,6 +6,19 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import java.util.List;
 
 public interface FinderMixinInterface {
+    enum FinderMixins {
+        MF_PERSONALIZATION("mfFinderMixin");
+
+        String mixinName;
+
+        FinderMixins(String mfFinderMixin) {
+            mixinName = mfFinderMixin;
+        }
+
+        public String getMixinName() {
+            return mixinName;
+        }
+    }
     FinderMixinInterface getInstance();
     List<GraphQLArgument> getArguments();
     GqlJcrNode resolveNode(GqlJcrNode gqlJcrNode);
