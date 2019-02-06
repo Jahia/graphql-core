@@ -46,8 +46,11 @@ package org.jahia.modules.graphql.provider.dxm;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedType;
+import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderMixinInterface;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 
 public interface DXGraphQLExtensionsProvider {
 
@@ -59,6 +62,8 @@ public interface DXGraphQLExtensionsProvider {
         return BundleScanner.getClasses(this,SpecializedType.class);
     }
 
-
+    default Map<String, FinderMixinInterface> getFinderMixins() {
+        return Collections.emptyMap();
+    }
 
 }

@@ -12,6 +12,7 @@ import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
+import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderMixinInterface;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Finder;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderFetchersFactory;
@@ -48,6 +49,7 @@ public class SDLSchemaService {
     private Map<String, List<SDLSchemaInfo>> bundlesSDLSchemaStatus = new TreeMap<>();
     private Map<String, SDLDefinitionStatus> sdlDefinitionStatusMap = new TreeMap<>();
     private Map<Object, GraphQLInputType> sdlSpecialInputTypes = new HashMap<>();
+    private Map<String, FinderMixinInterface> finderMixins = new HashMap<>();
 
     public enum SpecialInputTypes {
 
@@ -330,6 +332,10 @@ public class SDLSchemaService {
 
     public GraphQLInputType getSDLSpecialInputType(String name) {
         return this.sdlSpecialInputTypes.get(name);
+    }
+
+    public void addFinderMixins(Map<String, FinderMixinInterface> mixins) {
+        finderMixins.putAll(mixins);
     }
 
 }

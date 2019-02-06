@@ -59,6 +59,7 @@ import graphql.servlet.*;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
+import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderMixinInterface;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
 import org.osgi.service.component.annotations.*;
 import org.reactivestreams.Publisher;
@@ -160,6 +161,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         extensionsProviders.add(this);
 
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
+            sdlSchemaService.addFinderMixins(extensionsProvider.getFinderMixins());
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
                 extensionsHandler.registerTypeExtension(aClass, container);
                 if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
