@@ -7,7 +7,7 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import java.util.List;
 
 public interface FinderMixinInterface {
-    enum FinderMixins {
+    enum FinderMixin {
         MF_PERSONALIZATION("mfFinderMixin");
 
         String mixinName;
