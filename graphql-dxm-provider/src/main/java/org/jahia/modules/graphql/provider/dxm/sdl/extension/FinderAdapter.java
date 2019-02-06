@@ -25,7 +25,7 @@ public class FinderAdapter implements DataFetcher {
         if (mixinForFinder == null) return originalFinderResult;
 
         if (originalFinderResult instanceof GqlJcrNode) {
-            return mixinForFinder.resolveNode((GqlJcrNode) originalFinderResult);
+            return mixinForFinder.resolveNode((GqlJcrNode) originalFinderResult, environment);
         }
 
         throw new DataFetchingException(String.format("Unsupported type in adapter: %s", originalFinderResult.getClass().toString()));
