@@ -350,4 +350,7 @@ public class SDLSchemaService {
         finderMixins.putAll(mixins);
     }
 
+    public void clearFinderMixins() {
+        finderMixins.clear();
+    }
 }
