@@ -13,6 +13,7 @@ import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderMixinInterface;
+import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderAdapter;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Finder;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderFetchersFactory;
@@ -288,12 +289,23 @@ public class SDLSchemaService {
 
                 Finder finder = new Finder();
                 finder.setType(argument.getValue().toString());
+                List<GraphQLArgument> args = new ArrayList<>();
                 FinderDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(finder, defaultFinder);
+                args.addAll(dataFetcher.getArguments());
+                FinderMixinInterface finderMixinFetcher = null;
+
+                if (finderMixins.containsKey(FinderMixinInterface.FinderMixin.MF_PERSONALIZATION.getMixinName())
+                        && (finderName.endsWith(FinderFetchersFactory.FetcherType.ID.getSuffix()) || finderName.endsWith(FinderFetchersFactory.FetcherType.PATH.getSuffix()))) {
+                    FinderMixinInterface finderMixin = finderMixins.get(FinderMixinInterface.FinderMixin.MF_PERSONALIZATION.getMixinName());
+                    finderMixinFetcher = finderMixin.getInstance();
+                    args.addAll(finderMixinFetcher.getArguments());
+                }
+
                 defs.add(GraphQLFieldDefinition.newFieldDefinition()
                         .name(finderName)
                         .description("default finder for " + finderName)
-                        .dataFetcher(dataFetcher)
-                        .argument(dataFetcher.getArguments())
+                        .dataFetcher(new FinderAdapter(dataFetcher, finderMixinFetcher))
+                        .argument(args)
                         .type(type)
                         .build());
             }
