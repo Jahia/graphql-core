@@ -4,16 +4,14 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderDataFetcher;
-
-import java.util.List;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderBaseDataFetcher;
 
 public class FinderAdapter implements DataFetcher {
 
-    private FinderDataFetcher originalFinder;
+    private FinderBaseDataFetcher originalFinder;
     private FinderMixinInterface mixinForFinder;
 
-    public FinderAdapter(FinderDataFetcher originalFinder, FinderMixinInterface mixinForFinder) {
+    public FinderAdapter(FinderBaseDataFetcher originalFinder, FinderMixinInterface mixinForFinder) {
         this.originalFinder = originalFinder;
         this.mixinForFinder = mixinForFinder;
     }

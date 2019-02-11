@@ -13,7 +13,7 @@ import java.util.List;
 
 import static graphql.Scalars.GraphQLString;
 
-public class ByIdFinderDataFetcher extends FinderDataFetcher {
+public class ByIdFinderDataFetcher extends FinderBaseDataFetcher {
 
     public ByIdFinderDataFetcher(Finder finder) {
         super(finder.getType(), finder);

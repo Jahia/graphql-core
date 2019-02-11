@@ -14,10 +14,7 @@ import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderMixinInterface;
 import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderAdapter;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Finder;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderDataFetcher;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderFetchersFactory;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.SDLPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.*;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatusType;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLSchemaInfo;
@@ -197,10 +194,10 @@ public class SDLSchemaService {
                                 edge,
                                 Collections.emptyList());
 
-                        FinderDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
+                        FinderBaseDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                         List<GraphQLArgument> args = relay.getConnectionFieldArguments();
                         args.add(SDLUtil.wrapArgumentsInType(String.format("%s%s", typeName, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX), typeFetcher.getArguments()));
-                        SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(typeFetcher);
+                        SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher((FinderListDataFetcher) typeFetcher);
                         GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
                                 .dataFetcher(fetcher)
                                 .type(connectionType)
@@ -208,7 +205,7 @@ public class SDLSchemaService {
                                 .build();
                         defs.add(sdlDef);
                     } else {
-                        FinderDataFetcher fetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
+                        FinderBaseDataFetcher fetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                         GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
                                 .dataFetcher(fetcher)
                                 .argument(fetcher.getArguments())
@@ -290,7 +287,7 @@ public class SDLSchemaService {
                 Finder finder = new Finder();
                 finder.setType(argument.getValue().toString());
                 List<GraphQLArgument> args = new ArrayList<>();
-                FinderDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(finder, defaultFinder);
+                FinderBaseDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(finder, defaultFinder);
                 args.addAll(dataFetcher.getArguments());
                 FinderMixinInterface finderMixinFetcher = null;
 
@@ -309,7 +306,6 @@ public class SDLSchemaService {
                         .type(type)
                         .build());
             }
-
         }
     }
 

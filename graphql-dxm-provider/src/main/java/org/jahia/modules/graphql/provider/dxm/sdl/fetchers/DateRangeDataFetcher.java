@@ -31,7 +31,7 @@ import static graphql.Scalars.GraphQLString;
  *
  * @author chooliyip
  **/
-public class DateRangeDataFetcher extends FinderDataFetcher {
+public class DateRangeDataFetcher extends FinderListDataFetcher {
 
     private static final String ARG_AFTER = "after";
     private static final String ARG_BEFORE = "before";

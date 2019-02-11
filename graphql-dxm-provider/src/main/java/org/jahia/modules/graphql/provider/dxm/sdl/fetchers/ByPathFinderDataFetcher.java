@@ -13,7 +13,7 @@ import java.util.List;
 
 import static graphql.Scalars.GraphQLString;
 
-public class ByPathFinderDataFetcher extends FinderDataFetcher {
+public class ByPathFinderDataFetcher extends FinderBaseDataFetcher {
     public ByPathFinderDataFetcher(String type) {
         super(type);
     }

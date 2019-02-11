@@ -1,15 +1,12 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
-import graphql.schema.GraphQLDirective;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLList;
-import graphql.schema.GraphQLObjectType;
+import graphql.schema.*;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 
 public class FinderFetchersFactory {
 
-    public static FinderDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {
+    public static FinderBaseDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {
         String queryName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
 
         Finder finder = new Finder(queryName);
@@ -47,7 +44,7 @@ public class FinderFetchersFactory {
         }
     }
 
-    public static FinderDataFetcher getFetcherType(final Finder finder, final FetcherType type) {
+    public static FinderBaseDataFetcher getFetcherType(final Finder finder, final FetcherType type) {
         switch (type) {
             case ALL:
                 return new AllFinderDataFetcher(finder);

@@ -21,7 +21,7 @@ import java.util.stream.StreamSupport;
 
 import static graphql.Scalars.*;
 
-public class NumberFinderDataFetcher extends FinderDataFetcher {
+public class NumberFinderDataFetcher extends FinderListDataFetcher {
 
     private static final String GT = "gt";
     private static final String GTE = "gte";
