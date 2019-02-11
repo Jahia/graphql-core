@@ -22,7 +22,7 @@ import java.util.stream.StreamSupport;
 import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLString;
 
-public class StringFinderDataFetcher extends FinderDataFetcher {
+public class StringFinderDataFetcher extends FinderListDataFetcher {
 
     private static final String CONTAINS = "contains";
     private static final String EQUALS = "equals";

@@ -15,9 +15,9 @@ import java.util.List;
 
 public class SDLPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T> {
 
-    private FinderDataFetcher fetcher;
+    private FinderListDataFetcher fetcher;
 
-    public SDLPaginatedDataConnectionFetcher(FinderDataFetcher fetcher) {
+    public SDLPaginatedDataConnectionFetcher(FinderListDataFetcher fetcher) {
         this.fetcher = fetcher;
     }
 

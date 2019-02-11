@@ -18,7 +18,7 @@ import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class AllFinderDataFetcher extends FinderDataFetcher {
+public class AllFinderDataFetcher extends FinderListDataFetcher {
 
     public AllFinderDataFetcher(Finder finder) {
         super(finder.getType(), finder);

@@ -25,7 +25,7 @@ import static graphql.Scalars.GraphQLBoolean;
  *
  * @author chooliyip
  **/
-public class BooleanFinderDataFetcher extends FinderDataFetcher {
+public class BooleanFinderDataFetcher extends FinderListDataFetcher {
 
     private static final String VALUE = "value";
 
