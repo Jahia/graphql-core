@@ -18,19 +18,17 @@ public class FinderAdapter implements DataFetcher {
 
     @Override
     public Object get(DataFetchingEnvironment environment) throws Exception {
-        if (originalFinder!=null) {
-            Object originalFinderResult = originalFinder.get(environment);
+        if (originalFinder == null) { return null; }
 
-            if (mixinForFinder == null) return originalFinderResult;
+        Object originalFinderResult = originalFinder.get(environment);
 
-            if (originalFinderResult instanceof GqlJcrNode) {
-                return mixinForFinder.resolveNode((GqlJcrNode) originalFinderResult, environment);
-            }
+        if (mixinForFinder == null) return originalFinderResult;
 
-            throw new DataFetchingException(String.format("Unsupported type in adapter: %s", originalFinderResult.getClass().toString()));
-        } else {
-            return null;
+        if (originalFinderResult instanceof GqlJcrNode) {
+            return mixinForFinder.resolveNode((GqlJcrNode) originalFinderResult, environment);
         }
+
+        throw new DataFetchingException(String.format("Unsupported type in adapter: %s", originalFinderResult.getClass().toString()));
 
     }
 }
