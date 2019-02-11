@@ -72,7 +72,6 @@ public abstract class FinderBaseDataFetcher implements DataFetcher {
                 .defaultValue("en")
                 .build());
         return list;
-
     }
 
     public List<GraphQLArgument> getArguments() {

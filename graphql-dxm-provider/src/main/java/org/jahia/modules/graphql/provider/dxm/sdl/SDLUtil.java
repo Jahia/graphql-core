@@ -7,6 +7,7 @@ import graphql.schema.GraphQLInputObjectType;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class SDLUtil {
 
@@ -23,23 +24,38 @@ public class SDLUtil {
      */
     public static GraphQLArgument wrapArgumentsInType(String typeName, List<GraphQLArgument> args) {
         GraphQLInputObjectType.Builder newObject = GraphQLInputObjectType.newInputObject();
-        args.forEach(arg -> newObject
-                .name(String.format("%s%s", typeName, SDLConstants.CONNECTION_ARGUMENTS_INPUT_SUFFIX))
-                .field(GraphQLInputObjectField.newInputObjectField()
-                        .name(arg.getName())
-                        .description(arg.getDescription())
-                        .type(arg.getType())
-                        .defaultValue(arg.getDefaultValue())
-                        .build()
-                ));
+        GraphQLInputObjectType.Builder defaultObject = GraphQLInputObjectType.newInputObject();
+
+        args.forEach(arg -> {
+            newObject
+                    .name(String.format("%s%s", typeName, SDLConstants.CONNECTION_ARGUMENTS_INPUT_SUFFIX))
+                    .field(GraphQLInputObjectField.newInputObjectField()
+                            .name(arg.getName())
+                            .description(arg.getDescription())
+                            .type(arg.getType())
+                            .defaultValue(arg.getDefaultValue())
+                            .build()
+                    );
+
+            if (arg.getDefaultValue() != null) {
+                defaultObject
+                        .name(String.format("%s%s", typeName, SDLConstants.CONNECTION_ARGUMENTS_INPUT_SUFFIX))
+                        .field(GraphQLInputObjectField.newInputObjectField()
+                                .name(arg.getName())
+                                .description(arg.getDescription())
+                                .type(arg.getType())
+                                .defaultValue(arg.getDefaultValue())
+                                .build()
+                        );
+            }
+        });
 
         return GraphQLArgument.newArgument()
                 .name(typeName)
                 .description("Available arguments")
                 .type(newObject.build())
+                .defaultValue(defaultObject.build())
                 .build();
-
-
     }
 
     /**
@@ -55,6 +71,14 @@ public class SDLUtil {
 
         if (environment.getFieldDefinition().getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
             String name = environment.getFieldDefinition().getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX);
+            Object argObject = args.get(name);
+
+            //In this case we are handling default arguments
+            if (argObject instanceof GraphQLInputObjectType) {
+                GraphQLInputObjectField field = ((GraphQLInputObjectType) argObject).getField(argName);
+                return field != null ? field.getDefaultValue() : null;
+            }
+
             return ((Map<String, Object>) args.get(name)).get(argName);
         } else {
             return args.get(argName);
@@ -73,6 +97,16 @@ public class SDLUtil {
 
         if (environment.getFieldDefinition().getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
             String name = environment.getFieldDefinition().getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX);
+            Object argObject = args.get(name);
+
+            //In this case we are handling default arguments
+            if (argObject instanceof GraphQLInputObjectType) {
+                return ((GraphQLInputObjectType) argObject)
+                        .getFields()
+                        .stream()
+                        .collect(Collectors.toMap(GraphQLInputObjectField::getName, GraphQLInputObjectField::getDefaultValue));
+            }
+
             return (Map<String, Object>) args.get(name);
         } else {
             return args;
@@ -91,6 +125,14 @@ public class SDLUtil {
 
         if (environment.getFieldDefinition().getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
             String name = environment.getFieldDefinition().getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX);
+            Object argObject = args.get(name);
+
+            //In this case we are handling default arguments
+            if (argObject instanceof GraphQLInputObjectType) {
+                return ((GraphQLInputObjectType) argObject)
+                        .getFields().size();
+            }
+
             return ((Map<String, Object>) args.get(name)).size();
         } else {
             return args.size();
