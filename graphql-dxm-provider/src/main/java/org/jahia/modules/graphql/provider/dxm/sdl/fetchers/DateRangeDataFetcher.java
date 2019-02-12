@@ -8,6 +8,7 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
+import org.jahia.modules.graphql.provider.dxm.sdl.validation.ArgumentValidator;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -41,18 +42,6 @@ public class DateRangeDataFetcher extends FinderListDataFetcher {
         super(finder.getType(), finder);
     }
 
-    /**
-     * Either one of the argument of after or before is needed
-     *
-     * @param environment
-     * @return
-     */
-    private static boolean hasValidArguments(DataFetchingEnvironment environment) {
-        return !(SDLUtil.getArgumentsSize(environment) == 0
-                || (SDLUtil.getArgument(ARG_LASTDAYS, environment) != null
-                && (!StringUtils.isBlank((String) SDLUtil.getArgument(ARG_AFTER, environment)) || !StringUtils.isBlank((String) SDLUtil.getArgument(ARG_BEFORE, environment)))));
-    }
-
     @Override
     public List<GraphQLArgument> getArguments() {
         List<GraphQLArgument> args = getDefaultArguments();
@@ -78,20 +67,19 @@ public class DateRangeDataFetcher extends FinderListDataFetcher {
 
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
-        if (hasValidArguments(environment)) {
-            try {
-                String statement = this.buildSQL2Statement(environment);
-                JCRSessionWrapper currentUserSession = getCurrentUserSession(environment);
-                JCRNodeIteratorWrapper it = currentUserSession.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
-                Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
-                        .filter(node -> PermissionHelper.hasPermission(node, environment))
-                        .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
-                return resolveCollection(stream, environment);
-            } catch (RepositoryException e) {
-                throw new DataFetchingException(e);
-            }
-        } else {
-            throw new DataFetchingException("By date range data fetcher needs at least one argument of 'after', 'before' or 'lastDays'");
+        if (!ArgumentValidator.validate(ArgumentValidator.ArgumentNames.DATE_RANGE, environment)
+                || !ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) { return Collections.emptyList(); }
+
+        try {
+            String statement = this.buildSQL2Statement(environment);
+            JCRSessionWrapper currentUserSession = getCurrentUserSession(environment);
+            JCRNodeIteratorWrapper it = currentUserSession.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
+            Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
+                    .filter(node -> PermissionHelper.hasPermission(node, environment))
+                    .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
+            return resolveCollection(stream, environment);
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
         }
 
     }

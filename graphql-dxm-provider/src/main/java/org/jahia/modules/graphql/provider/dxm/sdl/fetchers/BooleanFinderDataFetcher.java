@@ -6,6 +6,8 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
+import org.jahia.modules.graphql.provider.dxm.sdl.validation.ArgumentValidator;
+import org.jahia.modules.graphql.provider.dxm.sdl.validation.ArgumentValidator.ArgumentNames;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -46,21 +48,20 @@ public class BooleanFinderDataFetcher extends FinderListDataFetcher {
 
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
-        if (hasValidArguments(environment)) {
-            try {
-                String statement = buildSQL2Statement(environment);
-                JCRSessionWrapper currentUserSession = getCurrentUserSession(environment);
-                JCRNodeIteratorWrapper it = currentUserSession
-                        .getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
-                Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
-                        .filter(node -> PermissionHelper.hasPermission(node, environment))
-                        .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
-                return resolveCollection(stream, environment);
-            } catch (RepositoryException e) {
-                throw new DataFetchingException(e);
-            }
-        } else {
-            throw new DataFetchingException("By boolean data fetcher needs 'value' argument");
+        if (!ArgumentValidator.validate(ArgumentNames.VALUE, environment)
+                || !ArgumentValidator.validate(ArgumentNames.SORT_BY, environment)) { return Collections.emptyList(); }
+
+        try {
+            String statement = buildSQL2Statement(environment);
+            JCRSessionWrapper currentUserSession = getCurrentUserSession(environment);
+            JCRNodeIteratorWrapper it = currentUserSession
+                    .getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
+            Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
+                    .filter(node -> PermissionHelper.hasPermission(node, environment))
+                    .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
+            return resolveCollection(stream, environment);
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
         }
     }
 
@@ -77,13 +78,4 @@ public class BooleanFinderDataFetcher extends FinderListDataFetcher {
 
     }
 
-    /**
-     * Argument of value is needed
-     *
-     * @param environment
-     * @return
-     */
-    private boolean hasValidArguments(DataFetchingEnvironment environment) {
-        return SDLUtil.getArgument(VALUE, environment) != null;
-    }
 }

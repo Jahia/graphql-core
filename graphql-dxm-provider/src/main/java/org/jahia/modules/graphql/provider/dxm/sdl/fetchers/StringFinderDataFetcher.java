@@ -7,6 +7,7 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
+import org.jahia.modules.graphql.provider.dxm.sdl.validation.ArgumentValidator;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -57,6 +58,8 @@ public class StringFinderDataFetcher extends FinderListDataFetcher {
 
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
+        if (!ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) { return Collections.emptyList(); }
+
         try {
             String statement = String.format("SELECT * FROM [%s] as n where n.[%s]=''", type, finder.getProperty());
             Map<String, Object> arguments = SDLUtil.getArguments(environment);

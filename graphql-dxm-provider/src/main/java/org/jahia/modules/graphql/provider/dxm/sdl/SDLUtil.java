@@ -1,9 +1,8 @@
 package org.jahia.modules.graphql.provider.dxm.sdl;
 
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLArgument;
-import graphql.schema.GraphQLInputObjectField;
-import graphql.schema.GraphQLInputObjectType;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.language.FieldDefinition;
+import graphql.schema.*;
 
 import java.util.List;
 import java.util.Map;
@@ -138,4 +137,18 @@ public class SDLUtil {
             return args.size();
         }
     }
+
+    /**
+     * Check the given file name is a valid field definition in wrapped type
+     *
+     * @param fieldName
+     * @param environment
+     * @return true is field definition is in wrapped type
+     */
+    public static Boolean isFieldInWrappedTypeFields(String fieldName, DataFetchingEnvironment environment){
+        GraphQLObjectType type = (GraphQLObjectType) ((GraphQLList) environment.getFieldDefinition().getType()).getWrappedType();
+        GraphQLFieldDefinition fieldDefinition = type.getFieldDefinition(fieldName);
+        return fieldDefinition!=null;
+    }
+
 }
