@@ -160,7 +160,7 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
                 unregisterSourceMonitorService();
                 serviceRegistration = bundleContext.registerService(ModulesSourceMonitor.class, new SDLFileSourceMonitor(bundleContext, componentContext), null);
             }
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException | NoClassDefFoundError e) {
             if (logger.isDebugEnabled()) {
                 logger.error(e.getMessage(), e);
             }
