@@ -1,7 +1,6 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.*;
-import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 
@@ -31,8 +30,6 @@ public class PropertiesDataFetcherFactory {
                 GqlJcrNode node = environment.getSource();
                 return node.getNode().getUrl();
             };
-        } else if (propertyValue != null && propertyValue.startsWith(Constants.JCR_CONTENT) && propertyValue.contains(".")) {
-            return new FileContentFetcher(field, propertyValue.split("\\.")[1]);
         } else if (graphQLFieldDefinition.getType() instanceof GraphQLObjectType) {
             return new ObjectDataFetcher(field);
         } else if (graphQLFieldDefinition.getType() instanceof GraphQLList) {

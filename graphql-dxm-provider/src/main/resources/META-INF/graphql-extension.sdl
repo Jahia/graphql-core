@@ -22,8 +22,8 @@ Asset type for files
 """
 type Asset @mapping(node: "jnt:file", ignoreDefaultQueries: true) {
     metadata: Metadata
-    type: String @mapping(property: "jcr:content.contentType")
-    size: Long @mapping(property: "jcr:content.contentLength")
+    type: String @mapping(property: "jcr:content.jcr:mimeType")
+    size: Long @mapping(property: "jcr:content.jcr:data")
 }
 
 """
@@ -32,8 +32,8 @@ Asset type for image
 type ImageAsset @mapping(node: "jmix:image,jnt:file", ignoreDefaultQueries: true) {
     metadata: Metadata
     "Mime type of image"
-    type: String @mapping(property: "jcr:content.contentType")
-    size: Long @mapping(property: "jcr:content.contentLength")
+    type: String @mapping(property: "jcr:content.jcr:mimeType")
+    size: Long @mapping(property: "jcr:content.jcr:data")
     height: Long @mapping(property: "j:height")
     width: Long @mapping(property: "j:width")
 }
