@@ -118,6 +118,8 @@ public class PropertiesDataFetcher implements DataFetcher<Object> {
                 return value.getLong();
             case PropertyType.DOUBLE:
                 return value.getDouble();
+            case PropertyType.BINARY:
+                return value.getBinary().getSize();
             default:
                 return value.getString();
         }
