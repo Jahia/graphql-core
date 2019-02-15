@@ -51,15 +51,11 @@ import graphql.annotations.processor.retrievers.GraphQLExtensionsHandler;
 import graphql.annotations.processor.retrievers.GraphQLObjectHandler;
 import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLType;
+import graphql.schema.*;
 import graphql.servlet.*;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
-import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderMixinInterface;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
 import org.osgi.service.component.annotations.*;
 import org.reactivestreams.Publisher;
@@ -196,6 +192,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         sdlSchemaService.refreshSpecialInputTypes(graphQLAnnotations, container);
         sdlSchemaService.generateSchema();
         specializedTypesHandler.initializeTypes();
+
+        PropertyDataFetcher.clearReflectionCache();
     }
 
     @Override
