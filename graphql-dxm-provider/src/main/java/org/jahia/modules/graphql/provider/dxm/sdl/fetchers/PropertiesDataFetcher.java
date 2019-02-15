@@ -45,6 +45,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
@@ -77,22 +78,11 @@ public class PropertiesDataFetcher implements DataFetcher<Object> {
                 jcrNodeWrapper = NodeHelper.getNodeInLanguage(jcrNodeWrapper, (String) SDLUtil.getArgument("language", dataFetchingEnvironment));
             }
 
-            String fieldProperty = field.getProperty();
-            if (fieldProperty.contains(".")) {
-                String[] propertyName = fieldProperty.split("\\.");
-                if (!jcrNodeWrapper.hasNode(propertyName[0])) {
-                    return null;
-                }
-                jcrNodeWrapper = jcrNodeWrapper.getNode(propertyName[0]);
-                fieldProperty = propertyName[1];
-            }
+            JCRPropertyWrapper property = getProperty(jcrNodeWrapper);
 
-            if (!jcrNodeWrapper.hasProperty(fieldProperty)) {
+            if (property == null) {
                 return null;
             }
-
-
-            JCRPropertyWrapper property = jcrNodeWrapper.getProperty(fieldProperty);
 
             if (!property.isMultiple()) {
                 return getString(property.getValue());
@@ -106,6 +96,29 @@ public class PropertiesDataFetcher implements DataFetcher<Object> {
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private JCRPropertyWrapper getProperty(JCRNodeWrapper jcrNodeWrapper) throws RepositoryException {
+        JCRPropertyWrapper property = null;
+        String[] propertyNames = StringUtils.split(field.getProperty(), '.');
+        for (String propertyName : propertyNames) {
+            property = null;
+            if (jcrNodeWrapper != null) {
+                if (jcrNodeWrapper.hasNode(propertyName)) {
+                    jcrNodeWrapper = jcrNodeWrapper.getNode(propertyName);
+                } else if (jcrNodeWrapper.hasProperty(propertyName)) {
+                    property = jcrNodeWrapper.getProperty(propertyName);
+                    if (property.getType() == PropertyType.REFERENCE || property.getType() == PropertyType.WEAKREFERENCE) {
+                        try {
+                            jcrNodeWrapper = property.getValue().getNode();
+                        } catch (RepositoryException e) {
+                            jcrNodeWrapper = null;
+                        }
+                    }
+                }
+            }
+        }
+        return property;
     }
 
     private Object getString(JCRValueWrapper value) throws RepositoryException {
