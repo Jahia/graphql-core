@@ -47,7 +47,7 @@ public class SDLSchemaService {
     private Map<String, List<SDLSchemaInfo>> bundlesSDLSchemaStatus = new TreeMap<>();
     private Map<String, SDLDefinitionStatus> sdlDefinitionStatusMap = new TreeMap<>();
     private Map<Object, GraphQLInputType> sdlSpecialInputTypes = new HashMap<>();
-    private Map<String, FinderMixinInterface> finderMixins = new HashMap<>();
+    private List<FinderMixinInterface> finderMixins = new ArrayList<>();
 
     public enum SpecialInputTypes {
 
@@ -284,24 +284,24 @@ public class SDLSchemaService {
             if (argument != null) {
                 final String finderName = defaultFinder.getName(baseType.getName());
 
-                Finder finder = new Finder();
+                Finder finder = new Finder(finderName);
                 finder.setType(argument.getValue().toString());
                 List<GraphQLArgument> args = new ArrayList<>();
                 FinderBaseDataFetcher dataFetcher = FinderFetchersFactory.getFetcherType(finder, defaultFinder);
                 args.addAll(dataFetcher.getArguments());
-                FinderMixinInterface finderMixinFetcher = null;
+                List<FinderMixinInterface> applicableMixins = new ArrayList<>();
 
-                if (finderMixins.containsKey(FinderMixinInterface.FinderMixin.MF_PERSONALIZATION.getMixinName())
-                        && (finderName.endsWith(FinderFetchersFactory.FetcherType.ID.getSuffix()) || finderName.endsWith(FinderFetchersFactory.FetcherType.PATH.getSuffix()))) {
-                    FinderMixinInterface finderMixin = finderMixins.get(FinderMixinInterface.FinderMixin.MF_PERSONALIZATION.getMixinName());
-                    finderMixinFetcher = finderMixin.getInstance();
-                    args.addAll(finderMixinFetcher.getArguments());
+                for (FinderMixinInterface finderMixin : finderMixins) {
+                    if (finderMixin.applyOnFinder(finder)) {
+                        applicableMixins.add(finderMixin);
+                        args.addAll(finderMixin.getArguments());
+                    }
                 }
 
                 defs.add(GraphQLFieldDefinition.newFieldDefinition()
                         .name(finderName)
                         .description("default finder for " + finderName)
-                        .dataFetcher(new FinderAdapter(dataFetcher, finderMixinFetcher))
+                        .dataFetcher(new FinderAdapter(dataFetcher, applicableMixins))
                         .argument(args)
                         .type(type)
                         .build());
@@ -342,8 +342,8 @@ public class SDLSchemaService {
         return this.sdlSpecialInputTypes.get(name);
     }
 
-    public void addFinderMixins(Map<String, FinderMixinInterface> mixins) {
-        finderMixins.putAll(mixins);
+    public void addFinderMixins(List<FinderMixinInterface> mixins) {
+        finderMixins.addAll(mixins);
     }
 
     public void clearFinderMixins() {

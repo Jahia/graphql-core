@@ -137,6 +137,7 @@
                             org.jahia.modules.graphql.provider.dxm.nodetype,
                             org.jahia.modules.graphql.provider.dxm,
                             org.jahia.modules.graphql.provider.dxm.sdl.extension,
+                            org.jahia.modules.graphql.provider.dxm.sdl.fetchers,
                             org.jahia.modules.graphql.provider.dxm.sdl
                         </Export-Package>
                     </instructions>
