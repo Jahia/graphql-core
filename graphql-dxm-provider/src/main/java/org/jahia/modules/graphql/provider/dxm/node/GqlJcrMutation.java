@@ -75,7 +75,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     private String workspace;
 
     @GraphQLDescription("XML or ZIP file")
-    public enum fileType {
+    public enum FileType {
 
         @GraphQLDescription("ZIP file")
         ZIP,
@@ -125,7 +125,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
             @GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
             @GraphQLName("file") @GraphQLNonNull @GraphQLDescription("file to import") String file,
             @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
-            @GraphQLName("type") @GraphQLNonNull @GraphQLDescription("XML or ZIP") fileType type,
+            @GraphQLName("type") @GraphQLNonNull @GraphQLDescription("XML or ZIP") GqlJcrMutation.FileType type,
             DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
         importXmlOrZipFile(name, type, file, parentPathOrId, environment);
@@ -418,16 +418,16 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         }
     }
 
-    private void importXmlOrZipFile(String name, fileType type, String file, String parentPathOrId, DataFetchingEnvironment environment){
+    private void importXmlOrZipFile(String name, FileType type, String file, String parentPathOrId, DataFetchingEnvironment environment){
         try {
             FileItem fileItem = UploadHelper.getFileUpload(file, environment);
             ImportExportBaseService importExportBaseService = ImportExportBaseService.getInstance();
-            if(type.equals(fileType.ZIP)){
+            if(type.equals(FileType.ZIP)){
                 File fileToImport = new File(name);
                 fileItem.write(fileToImport);
                 importExportBaseService
                         .importZip(parentPathOrId, new FileSystemResource(fileToImport), DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME);
-            } else if (type.equals(fileType.XML)){
+            } else if (type.equals(FileType.XML)){
                 importExportBaseService
                         .importXML(parentPathOrId, fileItem.getInputStream(), DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME);
             } else {
