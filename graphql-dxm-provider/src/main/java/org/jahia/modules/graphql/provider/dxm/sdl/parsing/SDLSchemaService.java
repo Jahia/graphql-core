@@ -83,7 +83,6 @@ public class SDLSchemaService {
             sdlDefinitionStatusMap.clear();
 
             TypeDefinitionRegistry typeDefinitionRegistry = prepareTypeRegistryDefinition();
-            ConnectionHelper.addPageInfoTypeToRegistry(typeDefinitionRegistry);
             Map<TypeDefinition, String> sources = new HashMap<>();
 
             parseResources(typeDefinitionRegistry, sources);
@@ -175,19 +174,30 @@ public class SDLSchemaService {
                 GraphQLObjectType objectType = fieldDefinition.getType() instanceof GraphQLList ?
                         (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType() : (GraphQLObjectType) fieldDefinition.getType();
 
-                if (objectType.getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
-                    String queryName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
-                    String typeName = objectType.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
-                    GraphQLObjectType type = (GraphQLObjectType) graphQLSchema.getType(typeName);
-                    GraphQLObjectType connectionType = (GraphQLObjectType) graphQLSchema.getType(typeName + SDLConstants.CONNECTION_QUERY_SUFFIX);
+                GraphQLDirective directive = objectType.getDirective(SDLConstants.MAPPING_DIRECTIVE);
 
-                    GraphQLDirective directive = type.getDirective(SDLConstants.MAPPING_DIRECTIVE);
+                if (directive != null) {
+                    String nodeType = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
 
-                    if (directive != null) {
-                        String nodeType = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
+                    //Handle connections
+                    if (fieldDefinition.getName().contains(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
+                        String typeName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
+                        GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
+                        GraphQLObjectType edge = edges.get(node.getName());
+
+                        if (edge == null) {
+                            edge = relay.edgeType(node.getName(), node, null, Collections.emptyList());
+                            edges.put(node.getName(), edge);
+                        }
+
+                        GraphQLObjectType connectionType = relay.connectionType(
+                                typeName,
+                                edge,
+                                Collections.emptyList());
+
                         FinderBaseDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                         List<GraphQLArgument> args = relay.getConnectionFieldArguments();
-                        args.add(SDLUtil.wrapArgumentsInType(String.format("%s%s", queryName, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX), typeFetcher.getArguments()));
+                        args.add(SDLUtil.wrapArgumentsInType(String.format("%s%s", typeName, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX), typeFetcher.getArguments()));
                         SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher((FinderListDataFetcher) typeFetcher);
                         GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
                                 .dataFetcher(fetcher)
@@ -195,12 +205,7 @@ public class SDLSchemaService {
                                 .argument(args)
                                 .build();
                         defs.add(sdlDef);
-                    }
-                }
-                else {
-                    GraphQLDirective directive = objectType.getDirective(SDLConstants.MAPPING_DIRECTIVE);
-                    if (directive != null) {
-                        String nodeType = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
+                    } else {
                         FinderBaseDataFetcher fetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                         GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
                                 .dataFetcher(fetcher)
@@ -209,47 +214,6 @@ public class SDLSchemaService {
                         defs.add(sdlDef);
                     }
                 }
-
-//                GraphQLDirective directive = objectType.getDirective(SDLConstants.MAPPING_DIRECTIVE);
-//
-//                if (directive != null) {
-//                    String nodeType = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
-//
-//                    //Handle connections
-//                    if (fieldDefinition.getName().contains(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
-//                        String typeName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
-//                        GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
-//                        GraphQLObjectType edge = edges.get(node.getName());
-//
-//                        if (edge == null) {
-//                            edge = relay.edgeType(node.getName(), node, null, Collections.emptyList());
-//                            edges.put(node.getName(), edge);
-//                        }
-//
-//                        GraphQLObjectType connectionType = relay.connectionType(
-//                                typeName,
-//                                edge,
-//                                Collections.emptyList());
-//
-//                        FinderBaseDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
-//                        List<GraphQLArgument> args = relay.getConnectionFieldArguments();
-//                        args.add(SDLUtil.wrapArgumentsInType(String.format("%s%s", typeName, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX), typeFetcher.getArguments()));
-//                        SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher((FinderListDataFetcher) typeFetcher);
-//                        GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
-//                                .dataFetcher(fetcher)
-//                                .type(connectionType)
-//                                .argument(args)
-//                                .build();
-//                        defs.add(sdlDef);
-//                    } else {
-//                        FinderBaseDataFetcher fetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
-//                        GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
-//                                .dataFetcher(fetcher)
-//                                .argument(fetcher.getArguments())
-//                                .build();
-//                        defs.add(sdlDef);
-//                    }
-//                }
             }
 
         }
@@ -365,22 +329,23 @@ public class SDLSchemaService {
     }
 
     private void addCustomConnectionTypesToRegistry(TypeDefinitionRegistry typeDefinitionRegistry) {
-        //TODO handle not just Query
+        //TODO 1 handle not just Query but also type fields 2 copy entire query properly
         if (typeDefinitionRegistry.objectTypeExtensions().containsKey("Query")) {
             ObjectTypeExtensionDefinition query = typeDefinitionRegistry.objectTypeExtensions().get("Query").get(0);
             List<FieldDefinition> fields = query.getFieldDefinitions();
 
             Map<String, String> connectionFieldNameToSDLType = new HashMap<>();
 
+            //Collect connection fields i. e. ones that map to <TypeName>Connection
             for (FieldDefinition f : fields) {
                 if (f.getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
-                    String type = ((TypeName)f.getType()).getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
-                    ConnectionHelper.addEdgeTypeToRegistry(typeDefinitionRegistry, type);
-                    typeDefinitionRegistry.add(ConnectionHelper.connectionType(type));
+                    String type = ((TypeName) f.getType()).getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
                     connectionFieldNameToSDLType.put(f.getName(), type);
                 }
             }
 
+            //Transform query to handle connections. The transformation replaces "someConnection" : <TypeName>Connection
+            //with "someConnection": [<TypeName>] as it needs to return a list in order for graphql to handle it
             if (!connectionFieldNameToSDLType.isEmpty()) {
                 ObjectTypeExtensionDefinition newQuery = ConnectionHelper.newQuery();
                 newQuery = newQuery.transformExtension(new ConnectionHelper.TransformQueryExtension(connectionFieldNameToSDLType));
