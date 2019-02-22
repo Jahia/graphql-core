@@ -67,7 +67,7 @@ public class DXRelay extends Relay {
         return connectionTypes;
     }
 
-    private final GraphQLObjectType pageInfoType = newObject()
+    public final GraphQLObjectType pageInfoType = newObject()
             .name("PageInfo")
             .description("Information about pagination in a connection.")
             .field(newFieldDefinition()

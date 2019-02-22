@@ -29,6 +29,9 @@ public class SDLTypeChecker {
 
     public static SDLDefinitionStatus checkType(TypeDefinition type, TypeDefinitionRegistry typeDefinitionRegistry) {
         if (type instanceof ObjectTypeDefinition) {
+            if (type.getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
+                return new SDLDefinitionStatus(type.getName(), SDLDefinitionStatusType.OK);
+            }
             ObjectTypeDefinition objectTypeDefinition = (ObjectTypeDefinition) type;
             SDLDefinitionStatus l = checkForFieldsConsistency(objectTypeDefinition, typeDefinitionRegistry);
             if (l.getStatus() != SDLDefinitionStatusType.OK) {

@@ -69,6 +69,7 @@ public class SDLUtil {
         Map<String, Object> args = environment.getArguments();
 
         if (environment.getFieldDefinition().getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
+
             String name = environment.getFieldDefinition().getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX);
             Object argObject = args.get(name);
 
