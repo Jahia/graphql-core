@@ -80,8 +80,13 @@ public class ListDataFetcher implements DataFetcher<List> {
         GraphQLObjectType type;
         if (environment.getFieldDefinition().getType() instanceof GraphQLObjectType) {
             type = (GraphQLObjectType) environment.getFieldDefinition().getType();
-        }
-        else {
+            GraphQLObjectType obj = (GraphQLObjectType) ((GraphQLList) ((GraphQLObjectType) environment.getFieldDefinition().getType()).getFieldDefinition("nodes").getType()).getWrappedType();
+            GraphQLDirective mappingDirective = obj.getDirective(SDLConstants.MAPPING_DIRECTIVE);
+            if (mappingDirective != null) {
+                String nodeType = mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
+                return resolveChildren(jcrNode, nodeType);
+            }
+        } else {
             type = (GraphQLObjectType) ((GraphQLList) environment.getFieldDefinition().getType()).getWrappedType();
         }
         GraphQLDirective mappingDirective = type.getDirective(SDLConstants.MAPPING_DIRECTIVE);
