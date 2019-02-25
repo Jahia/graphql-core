@@ -137,6 +137,8 @@ public class ListDataFetcher implements DataFetcher<List> {
     }
 
     private List resolveProperty(JCRNodeWrapper jcrNode) throws RepositoryException {
+        if (!jcrNode.hasProperty(field.getProperty()))
+            return Collections.emptyList();
         int propertyType = NodeTypeRegistry.getInstance().getNodeType(jcrNode.getPrimaryNodeTypeName()).getPropertyDefinition(field.getProperty()).getRequiredType();
         return Arrays.stream(jcrNode.getProperty(field.getProperty()).getRealValues())
                 .map(value -> getProperty(propertyType, value))
