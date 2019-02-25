@@ -45,20 +45,14 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
-import org.apache.commons.fileupload.FileItem;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLFieldCompleter;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.upload.UploadHelper;
 import org.jahia.services.content.*;
-import org.jahia.services.importexport.DocumentViewImportHandler;
-import org.jahia.services.importexport.ImportExportBaseService;
 import org.jahia.services.query.QueryWrapper;
-import org.springframework.core.io.FileSystemResource;
 
 import javax.jcr.RepositoryException;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -119,16 +113,23 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         return new GqlJcrNodeMutation(addNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
     }
 
+    /**
+     * Import a file under the specified parent
+     *
+     * @param parentPathOrId the path or UUID of the parent node
+     * @param file file to import
+     * @param environment environment
+     * @return
+     * @throws BaseGqlClientException
+     */
     @GraphQLField
-    @GraphQLDescription("Creates a new JCR node under the specified parent")
+    @GraphQLDescription("Import a file under the specified parent")
     public boolean importNode(
             @GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
             @GraphQLName("file") @GraphQLNonNull @GraphQLDescription("file to import") String file,
-            @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
-            @GraphQLName("type") @GraphQLNonNull @GraphQLDescription("XML or ZIP") GqlJcrMutation.FileType type,
             DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
-        importXmlOrZipFile(name, type, file, parentPathOrId, environment);
+        importXmlOrZipFile(file, getNodeFromPathOrId(getSession(), parentPathOrId), environment);
         return true;
     }
 
@@ -415,26 +416,6 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     private static void verifyNodeReproductionTarget(JCRNodeWrapper node, JCRNodeWrapper destParentNode) {
         if (destParentNode.equals(node) || destParentNode.getPath().startsWith(node.getPath() + "/")) {
             throw new GqlJcrWrongInputException("Cannot copy or move node '" + node.getPath() + "' to itself or its descendant node");
-        }
-    }
-
-    private void importXmlOrZipFile(String name, FileType type, String file, String parentPathOrId, DataFetchingEnvironment environment){
-        try {
-            FileItem fileItem = UploadHelper.getFileUpload(file, environment);
-            ImportExportBaseService importExportBaseService = ImportExportBaseService.getInstance();
-            if(type.equals(FileType.ZIP)){
-                File fileToImport = new File(name);
-                fileItem.write(fileToImport);
-                importExportBaseService
-                        .importZip(parentPathOrId, new FileSystemResource(fileToImport), DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME);
-            } else if (type.equals(FileType.XML)){
-                importExportBaseService
-                        .importXML(parentPathOrId, fileItem.getInputStream(), DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME);
-            } else {
-                throw new GqlJcrWrongInputException("Wrong file type");
-            }
-        } catch (Exception e) {
-            throw new DataFetchingException(e);
         }
     }
 

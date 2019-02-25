@@ -45,6 +45,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import com.google.common.collect.Lists;
 import graphql.annotations.annotationTypes.*;
+import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
@@ -163,6 +164,24 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             result.add(new GqlJcrNodeMutation(addNode(this.jcrNode, node)));
         }
         return result;
+    }
+
+    /**
+     * Import a file under the current node
+     *
+     * @param file file to import
+     * @param environment Environment
+     * @return
+     * @throws BaseGqlClientException
+     */
+    @GraphQLField
+    @GraphQLDescription("Import a file under the current node")
+    public boolean importNode(
+            @GraphQLName("file") @GraphQLNonNull @GraphQLDescription("file to import") String file,
+            DataFetchingEnvironment environment
+    ) throws BaseGqlClientException {
+        importXmlOrZipFile(file, this.jcrNode, environment);
+        return true;
     }
 
     /**

@@ -43,14 +43,23 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.io.FileUtils;
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.upload.UploadHelper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.importexport.DocumentViewImportHandler;
+import org.jahia.services.importexport.ImportExportBaseService;
+import org.springframework.core.io.FileSystemResource;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -64,7 +73,7 @@ public class GqlJcrMutationSupport {
      * Add a child node to the specified one.
      *
      * @param parent The JCR node to add a child to
-     * @param node GraphQL representation of the child node to be added
+     * @param node   GraphQL representation of the child node to be added
      * @return The child JCR node that was added
      */
     public static JCRNodeWrapper addNode(JCRNodeWrapper parent, GqlJcrNodeInput node) {
@@ -93,7 +102,7 @@ public class GqlJcrMutationSupport {
     /**
      * Set the provided properties to the specified node.
      *
-     * @param node The JCR node to set properties to
+     * @param node       The JCR node to set properties to
      * @param properties the collection of properties to be set
      * @return The result of the operation, containing list of modified JCR properties
      */
@@ -124,7 +133,7 @@ public class GqlJcrMutationSupport {
     /**
      * Retrieve the specified JCR node by its path or UUID.
      *
-     * @param session JCR session to be used for node retrieval
+     * @param session  JCR session to be used for node retrieval
      * @param pathOrId The string with either node UUID or its path
      * @return The requested JCR node
      */
@@ -135,4 +144,39 @@ public class GqlJcrMutationSupport {
             throw new DataFetchingException(e);
         }
     }
+
+    /**
+     * Import file content under node
+     *
+     * @param file        File to import
+     * @param node        Parent
+     * @param environment Environment
+     */
+    public static void importXmlOrZipFile(String file, JCRNodeWrapper node, DataFetchingEnvironment environment) throws BaseGqlClientException {
+        try {
+            FileItem fileItem = UploadHelper.getFileUpload(file, environment);
+
+            ImportExportBaseService importExportBaseService = ImportExportBaseService.getInstance();
+            switch (fileItem.getContentType()) {
+                case "application/zip":
+                    File fileToImport = File.createTempFile("import", ".zip");
+                    try {
+                        fileItem.write(fileToImport);
+                        importExportBaseService.importZip(node.getPath(), new FileSystemResource(fileToImport), DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME);
+                    } finally {
+                        FileUtils.deleteQuietly(fileToImport);
+                    }
+                    break;
+                case "text/xml":
+                    importExportBaseService.importXML(node.getPath(), fileItem.getInputStream(), DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME);
+                    break;
+                default:
+                    throw new GqlJcrWrongInputException("Wrong file type");
+            }
+        } catch (Exception e) {
+            throw new DataFetchingException(e);
+        }
+    }
+
+
 }
