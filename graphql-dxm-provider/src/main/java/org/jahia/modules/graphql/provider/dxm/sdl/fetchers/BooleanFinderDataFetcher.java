@@ -37,13 +37,15 @@ public class BooleanFinderDataFetcher extends FinderListDataFetcher {
 
     @Override
     public List<GraphQLArgument> getArguments() {
-        return Collections.singletonList(GraphQLArgument
+        List<GraphQLArgument> list = getDefaultArguments();
+        list.add(GraphQLArgument
                 .newArgument()
                 .name(VALUE)
                 .description("select content if boolean value true or false")
                 .type(GraphQLBoolean)
                 .defaultValue(true)
                 .build());
+        return list;
     }
 
     @Override
