@@ -2,6 +2,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.annotations.connection.ConnectionFetcher;
 import graphql.relay.*;
+import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
@@ -15,9 +16,9 @@ import java.util.List;
 
 public class SDLPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T> {
 
-    private FinderListDataFetcher fetcher;
+    private DataFetcher fetcher;
 
-    public SDLPaginatedDataConnectionFetcher(FinderListDataFetcher fetcher) {
+    public SDLPaginatedDataConnectionFetcher(DataFetcher fetcher) {
         this.fetcher = fetcher;
     }
 

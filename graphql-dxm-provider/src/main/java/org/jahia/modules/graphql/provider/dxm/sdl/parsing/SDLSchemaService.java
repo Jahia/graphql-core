@@ -8,6 +8,7 @@ import graphql.schema.*;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
+import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
@@ -48,7 +49,9 @@ public class SDLSchemaService {
     private Map<String, SDLDefinitionStatus> sdlDefinitionStatusMap = new TreeMap<>();
     private Map<Object, GraphQLInputType> sdlSpecialInputTypes = new HashMap<>();
     private List<FinderMixinInterface> finderMixins = new ArrayList<>();
-    Map<String, ConnectionHelper.ConnectionTypeInfo> connectionFieldNameToSDLType = new HashMap<>();
+    private Map<String, ConnectionHelper.ConnectionTypeInfo> connectionFieldNameToSDLType = new HashMap<>();
+    private Map<String, GraphQLObjectType> edges = new HashMap<>();
+    private Map<String, GraphQLObjectType> connections = new HashMap<>();
 
     public enum SpecialInputTypes {
 
@@ -142,6 +145,9 @@ public class SDLSchemaService {
 
     private void parseResources(TypeDefinitionRegistry typeDefinitionRegistry, Map<TypeDefinition, String> sources) {
         SchemaParser schemaParser = new SchemaParser();
+        connections.clear();
+        edges.clear();
+        connectionFieldNameToSDLType.clear();
         for (Map.Entry<String, URL> entry : sdlRegistrationService.getSDLResources().entrySet()) {
             if (entry.getKey().equals("graphql-core")) continue;
 
@@ -170,7 +176,6 @@ public class SDLSchemaService {
             applyDefaultFetchers(defs);
 
             List<GraphQLFieldDefinition> fieldDefinitions = graphQLSchema.getQueryType().getFieldDefinitions();
-            Map<String, GraphQLObjectType> edges = new HashMap<>();
             for (GraphQLFieldDefinition fieldDefinition : fieldDefinitions) {
                 GraphQLObjectType objectType = fieldDefinition.getType() instanceof GraphQLList ?
                         (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType() : (GraphQLObjectType) fieldDefinition.getType();
@@ -200,15 +205,19 @@ public class SDLSchemaService {
                         edges.put(node.getName(), edge);
                     }
 
-                    GraphQLObjectType connectionType = relay.connectionType(
-                            typeName,
-                            edge,
-                            Collections.emptyList());
+                    GraphQLObjectType connectionType = connections.get(typeName);
+
+                    if (connectionType == null) {
+                        connectionType = relay.connectionType(
+                                typeName,
+                                edge,
+                                Collections.emptyList());
+                    }
 
                     FinderBaseDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                     List<GraphQLArgument> args = relay.getConnectionFieldArguments();
                     args.add(SDLUtil.wrapArgumentsInType(String.format("%s%s", queryFieldName, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX), typeFetcher.getArguments()));
-                    SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher((FinderListDataFetcher) typeFetcher);
+                    SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(typeFetcher);
                     GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
                             .dataFetcher(fetcher)
                             .type(connectionType)
@@ -339,7 +348,6 @@ public class SDLSchemaService {
 
     private void handleCustomConnectionTypes(TypeDefinitionRegistry typeDefinitionRegistry) {
         int queryIndex = 0;
-        //TODO 1 handle not just Query but also type fields
         //Handle Query extension - clone/replace extension with new fields
         if (typeDefinitionRegistry.objectTypeExtensions().containsKey("Query")) {
             ObjectTypeExtensionDefinition query = typeDefinitionRegistry.objectTypeExtensions().get("Query").get(queryIndex);
@@ -347,7 +355,7 @@ public class SDLSchemaService {
 
             //Collect connection fields i. e. ones that map to <TypeName>Connection
             for (FieldDefinition f : fields) {
-                if (f.getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
+                if (f.getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX) && f.getType() instanceof TypeName) {
                     String connectionName = ((TypeName) f.getType()).getName();
                     String type = connectionName.replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
                     connectionFieldNameToSDLType.put(f.getName(), new ConnectionHelper.ConnectionTypeInfo(type, connectionName));
@@ -361,6 +369,41 @@ public class SDLSchemaService {
                 newQuery = newQuery.transformExtension(new ConnectionHelper.TransformQueryExtension(connectionFieldNameToSDLType));
                 typeDefinitionRegistry.objectTypeExtensions().get("Query").remove(queryIndex);
                 typeDefinitionRegistry.add(newQuery);
+            }
+        }
+
+        //Handle individual types with connections. Any type with 'fieldName : <Type name>Connection' signature
+        //will be transformed to 'fieldName' : [<Type name>]
+        for (ObjectTypeDefinition objectType : typeDefinitionRegistry.getTypes(ObjectTypeDefinition.class)) {
+            Iterator<FieldDefinition> fields = objectType.getFieldDefinitions().iterator();
+
+            while (fields.hasNext()) {
+                FieldDefinition field = fields.next();
+                if (field.getType() instanceof TypeName && ((TypeName)field.getType()).getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
+                    fields.remove();
+                    String connectionName = ((TypeName) field.getType()).getName();
+                    String type = connectionName.replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
+                    connectionFieldNameToSDLType.put(objectType.getName() + "." + field.getName(), new ConnectionHelper.ConnectionTypeInfo(type, connectionName));
+                }
+            }
+
+            for (Map.Entry<String, ConnectionHelper.ConnectionTypeInfo> entry : connectionFieldNameToSDLType.entrySet()) {
+                if (!entry.getKey().startsWith(objectType.getName() + ".")) {
+                    continue;
+                }
+
+                String name = StringUtils.substringAfter(entry.getKey(), ".");
+                objectType.getFieldDefinitions().add(FieldDefinition.newFieldDefinition()
+                        .directive(Directive.newDirective()
+                                .name(SDLConstants.MAPPING_DIRECTIVE)
+                                .arguments(Arrays.asList(Argument.newArgument()
+                                        .name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY)
+                                        .value(new StringValue("photos"))
+                                        .build()))
+                                .build())
+                        .name(name)
+                        .type(new ListType(TypeName.newTypeName(entry.getValue().getMappedToType()).build()))
+                        .build());
             }
         }
     }
@@ -386,5 +429,21 @@ public class SDLSchemaService {
 
     public void clearFinderMixins() {
         finderMixins.clear();
+    }
+
+    public Map<String, ConnectionHelper.ConnectionTypeInfo> getConnectionFieldNameToSDLType() {
+        return connectionFieldNameToSDLType;
+    }
+
+    public Map<String, GraphQLObjectType> getEdges() {
+        return edges;
+    }
+
+    public Map<String, GraphQLObjectType> getConnections() {
+        return connections;
+    }
+
+    public DXRelay getRelay() {
+        return relay;
     }
 }

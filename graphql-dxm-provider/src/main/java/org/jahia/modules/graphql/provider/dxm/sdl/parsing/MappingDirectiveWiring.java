@@ -1,15 +1,18 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.parsing;
 
-import graphql.schema.GraphQLDirective;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLObjectType;
+import graphql.schema.*;
 import graphql.schema.idl.SchemaDirectiveWiring;
 import graphql.schema.idl.SchemaDirectiveWiringEnvironment;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Field;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.PropertiesDataFetcherFactory;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.*;
+import org.jahia.osgi.BundleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class MappingDirectiveWiring implements SchemaDirectiveWiring {
 
@@ -26,9 +29,6 @@ public class MappingDirectiveWiring implements SchemaDirectiveWiring {
         // Mapping on field
 
         GraphQLFieldDefinition def = environment.getElement();
-
-        //TODO add arguments from factory as well based on type
-
         GraphQLDirective directive = environment.getDirective();
 
         Field field = new Field(def.getName());
@@ -37,6 +37,48 @@ public class MappingDirectiveWiring implements SchemaDirectiveWiring {
 
         logger.debug("field name {} ", field.getName());
         logger.debug("field type {} ", field.getType());
+
+        SDLSchemaService service = BundleUtils.getOsgiService(SDLSchemaService.class, null);
+
+        if (service != null) {
+            String parentType = environment.getNodeParentTree().getParentInfo().get().getNode().getName();
+            String key = parentType + "." + def.getName();
+            if (service.getConnectionFieldNameToSDLType().containsKey(key)) {
+                ConnectionHelper.ConnectionTypeInfo conInfo = service.getConnectionFieldNameToSDLType().get(key);
+                Map<String, GraphQLObjectType> edges = service.getEdges();
+                Map<String, GraphQLObjectType> connections = service.getConnections();
+
+                GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList) def.getType()).getWrappedType();
+                GraphQLObjectType edge = edges.get(node.getName());
+
+                if (edge == null) {
+                    edge = service.getRelay().edgeType(node.getName(), node, null, Collections.emptyList());
+                    edges.put(node.getName(), edge);
+                }
+
+                GraphQLObjectType connectionType = connections.get(conInfo.getMappedToType());
+
+                if (connectionType == null) {
+                    connectionType = service.getRelay().connectionType(
+                            conInfo.getMappedToType(),
+                            edge,
+                            Collections.emptyList());
+                }
+
+                DataFetcher typeFetcher = PropertiesDataFetcherFactory.getFetcher(def, field);
+                List<GraphQLArgument> args = service.getRelay().getConnectionFieldArguments();
+                args.add(SDLUtil.wrapArgumentsInType(String.format("%s%s", conInfo.getConnectionName(), SDLConstants.CONNECTION_ARGUMENTS_SUFFIX), Collections.emptyList()));
+                SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(typeFetcher);
+
+                def.getDirectives().remove(0);
+
+                return GraphQLFieldDefinition.newFieldDefinition(def)
+                        .type(connectionType)
+                        .dataFetcher(fetcher)
+                        .argument(args)
+                        .build();
+            }
+        }
 
         return GraphQLFieldDefinition.newFieldDefinition(def)
                 .dataFetcher(PropertiesDataFetcherFactory.getFetcher(def, field))
