@@ -77,7 +77,13 @@ public class ListDataFetcher implements DataFetcher<List> {
     public List get(DataFetchingEnvironment environment) throws Exception {
         GqlJcrNode node = environment.getSource();
         JCRNodeWrapper jcrNode = node.getNode();
-        GraphQLObjectType type = (GraphQLObjectType) ((GraphQLList) environment.getFieldDefinition().getType()).getWrappedType();
+        GraphQLObjectType type;
+        if (environment.getFieldDefinition().getType() instanceof GraphQLObjectType) {
+            type = (GraphQLObjectType) environment.getFieldDefinition().getType();
+        }
+        else {
+            type = (GraphQLObjectType) ((GraphQLList) environment.getFieldDefinition().getType()).getWrappedType();
+        }
         GraphQLDirective mappingDirective = type.getDirective(SDLConstants.MAPPING_DIRECTIVE);
         if (mappingDirective != null) {
             GraphQLArgument nodeProperty = mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE);

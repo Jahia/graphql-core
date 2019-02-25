@@ -67,9 +67,8 @@ public class MappingDirectiveWiring implements SchemaDirectiveWiring {
 
                 DataFetcher typeFetcher = PropertiesDataFetcherFactory.getFetcher(def, field);
                 List<GraphQLArgument> args = service.getRelay().getConnectionFieldArguments();
-                args.add(SDLUtil.wrapArgumentsInType(String.format("%s%s", conInfo.getConnectionName(), SDLConstants.CONNECTION_ARGUMENTS_SUFFIX), Collections.emptyList()));
                 SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(typeFetcher);
-
+                //TODO may want to add fetcher arguments
                 def.getDirectives().remove(0);
 
                 return GraphQLFieldDefinition.newFieldDefinition(def)
