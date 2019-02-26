@@ -167,20 +167,20 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     }
 
     /**
-     * Import a file under the current node
+     * Import a file under the current node.
      *
-     * @param file file to import
-     * @param environment Environment
-     * @return
-     * @throws BaseGqlClientException
+     * @param file name of the request part that contains desired import file body
+     * @param environment data fetching environment
+     * @return always true
+     * @throws BaseGqlClientException in case of errors during import operation
      */
     @GraphQLField
     @GraphQLDescription("Import a file under the current node")
-    public boolean importNode(
-            @GraphQLName("file") @GraphQLNonNull @GraphQLDescription("file to import") String file,
-            DataFetchingEnvironment environment
+    public boolean importContent(
+        @GraphQLName("file") @GraphQLNonNull @GraphQLDescription("Name of the request part that contains desired import file body") String file,
+        DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
-        importXmlOrZipFile(file, this.jcrNode, environment);
+        importFileUpload(file, this.jcrNode, environment);
         return true;
     }
 

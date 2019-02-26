@@ -146,16 +146,15 @@ public class GqlJcrMutationSupport {
     }
 
     /**
-     * Import file content under node
+     * Import file upload content under a node.
      *
-     * @param file        File to import
-     * @param node        Parent
-     * @param environment Environment
+     * @param partName    Name of the request part that contains desired file upload
+     * @param node        Parent node to import content under
+     * @param environment Data fetching environment
      */
-    public static void importXmlOrZipFile(String file, JCRNodeWrapper node, DataFetchingEnvironment environment) throws BaseGqlClientException {
+    public static void importFileUpload(String partName, JCRNodeWrapper node, DataFetchingEnvironment environment) throws BaseGqlClientException {
         try {
-            FileItem fileItem = UploadHelper.getFileUpload(file, environment);
-
+            FileItem fileItem = UploadHelper.getFileUpload(partName, environment);
             ImportExportBaseService importExportBaseService = ImportExportBaseService.getInstance();
             switch (fileItem.getContentType()) {
                 case "application/zip":
@@ -177,6 +176,4 @@ public class GqlJcrMutationSupport {
             throw new DataFetchingException(e);
         }
     }
-
-
 }

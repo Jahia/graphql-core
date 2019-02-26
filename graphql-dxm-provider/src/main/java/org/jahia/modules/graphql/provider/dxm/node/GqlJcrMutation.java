@@ -68,16 +68,6 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
 
     private String workspace;
 
-    @GraphQLDescription("XML or ZIP file")
-    public enum FileType {
-
-        @GraphQLDescription("ZIP file")
-        ZIP,
-
-        @GraphQLDescription("XML file")
-        XML
-    }
-
     /**
      * Initializes an instance of this class with the specified JCR workspace name.
      *
@@ -111,26 +101,6 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     ) throws BaseGqlClientException {
         GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, mixins, properties, children);
         return new GqlJcrNodeMutation(addNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
-    }
-
-    /**
-     * Import a file under the specified parent
-     *
-     * @param parentPathOrId the path or UUID of the parent node
-     * @param file file to import
-     * @param environment environment
-     * @return
-     * @throws BaseGqlClientException
-     */
-    @GraphQLField
-    @GraphQLDescription("Import a file under the specified parent")
-    public boolean importNode(
-            @GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
-            @GraphQLName("file") @GraphQLNonNull @GraphQLDescription("file to import") String file,
-            DataFetchingEnvironment environment
-    ) throws BaseGqlClientException {
-        importXmlOrZipFile(file, getNodeFromPathOrId(getSession(), parentPathOrId), environment);
-        return true;
     }
 
     /**
@@ -285,6 +255,26 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
+        return true;
+    }
+
+    /**
+     * Import a file under the specified parent
+     *
+     * @param parentPathOrId the path or UUID of the parent node
+     * @param file name of the request part that contains desired import file body
+     * @param environment data fetching environment
+     * @return always true
+     * @throws BaseGqlClientException in case of errors during import operation
+     */
+    @GraphQLField
+    @GraphQLDescription("Import a file under the specified parent")
+    public boolean importContent(
+        @GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
+        @GraphQLName("file") @GraphQLNonNull @GraphQLDescription("Name of the request part that contains desired import file body") String file,
+        DataFetchingEnvironment environment
+    ) throws BaseGqlClientException {
+        importFileUpload(file, getNodeFromPathOrId(getSession(), parentPathOrId), environment);
         return true;
     }
 
