@@ -364,7 +364,7 @@ public class SDLSchemaService {
 
             while (fields.hasNext()) {
                 FieldDefinition field = fields.next();
-                if (field.getType() instanceof TypeName && ((TypeName)field.getType()).getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
+                if (field.getType() instanceof TypeName && ((TypeName) field.getType()).getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
                     fields.remove();
                     String connectionName = ((TypeName) field.getType()).getName();
                     String type = connectionName.replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");

@@ -4,15 +4,12 @@ import graphql.schema.*;
 import graphql.schema.idl.SchemaDirectiveWiring;
 import graphql.schema.idl.SchemaDirectiveWiringEnvironment;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
-import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.*;
 import org.jahia.osgi.BundleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 public class MappingDirectiveWiring implements SchemaDirectiveWiring {
 
