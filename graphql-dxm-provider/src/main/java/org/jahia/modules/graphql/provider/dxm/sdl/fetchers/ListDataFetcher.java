@@ -139,7 +139,7 @@ public class ListDataFetcher implements DataFetcher<List> {
                 default:
                     return null;
             }
-        } catch(RepositoryException ex) {
+        } catch (RepositoryException ex) {
             logger.error("Failed to retrieve node property {}", ex);
             return null;
         }
