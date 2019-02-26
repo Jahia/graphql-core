@@ -82,6 +82,7 @@ public class ListDataFetcher implements DataFetcher<List> {
         JCRNodeWrapper jcrNode = node.getNode();
         GraphQLObjectType type;
         if (environment.getFieldDefinition().getType() instanceof GraphQLObjectType) {
+            //In this case we are dealing with connection at field level of a type i. e. text : TextConnection etc.
             type = (GraphQLObjectType) environment.getFieldDefinition().getType();
             GraphQLObjectType obj = (GraphQLObjectType) ((GraphQLList) ((GraphQLObjectType) environment.getFieldDefinition().getType()).getFieldDefinition("nodes").getType()).getWrappedType();
             GraphQLDirective mappingDirective = obj.getDirective(SDLConstants.MAPPING_DIRECTIVE);
