@@ -49,9 +49,12 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRValueWrapper;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -113,21 +116,42 @@ public class ListDataFetcher implements DataFetcher<List> {
                     //Do nothing, return empty list below
                 }
             }
+        } else {
+            return resolveProperty(jcrNode);
         }
         return Collections.emptyList();
     }
 
-    private List<GqlJcrNodeImpl> resolveProperty(JCRNodeWrapper jcrNode) throws RepositoryException {
-        logger.debug("Fetch weak reference {}", field.getProperty());
-        return Arrays.stream(jcrNode.getProperty(field.getProperty()).getRealValues()).
-                map(value -> {
-                    try {
-                        return new GqlJcrNodeImpl(value.getNode());
-                    } catch (RepositoryException ex) {
-                        logger.error("Failed to retrieve node from value {}", value);
-                        return null;
-                    }
-                }).filter(Objects::nonNull).collect(Collectors.toList());
+    private Object getProperty(int propertyType, JCRValueWrapper value) {
+        try {
+            switch (propertyType) {
+                case PropertyType.STRING:
+                    return value.getString();
+                case PropertyType.BOOLEAN:
+                    return value.getBoolean();
+                case PropertyType.DOUBLE:
+                    return value.getDouble();
+                case PropertyType.LONG:
+                    return value.getLong();
+                case PropertyType.WEAKREFERENCE:
+                    logger.debug("Fetch weak reference {}", field.getProperty());
+                    return new GqlJcrNodeImpl(value.getNode());
+                default:
+                    return null;
+            }
+        } catch(RepositoryException ex) {
+            logger.error("Failed to retrieve node property {}", ex);
+            return null;
+        }
+    }
+
+    private List resolveProperty(JCRNodeWrapper jcrNode) throws RepositoryException {
+        if (!jcrNode.hasProperty(field.getProperty()))
+            return Collections.emptyList();
+        int propertyType = NodeTypeRegistry.getInstance().getNodeType(jcrNode.getPrimaryNodeTypeName()).getPropertyDefinition(field.getProperty()).getRequiredType();
+        return Arrays.stream(jcrNode.getProperty(field.getProperty()).getRealValues())
+                .map(value -> getProperty(propertyType, value))
+                .filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     private List<GqlJcrNode> resolveChildren(JCRNodeWrapper node, String nodeType) {
