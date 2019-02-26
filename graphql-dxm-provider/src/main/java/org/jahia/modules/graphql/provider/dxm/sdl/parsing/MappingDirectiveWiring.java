@@ -45,30 +45,12 @@ public class MappingDirectiveWiring implements SchemaDirectiveWiring {
             String key = parentType + "." + def.getName();
             if (service.getConnectionFieldNameToSDLType().containsKey(key)) {
                 ConnectionHelper.ConnectionTypeInfo conInfo = service.getConnectionFieldNameToSDLType().get(key);
-                Map<String, GraphQLObjectType> edges = service.getEdges();
-                Map<String, GraphQLObjectType> connections = service.getConnections();
-
                 GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList) def.getType()).getWrappedType();
-                GraphQLObjectType edge = edges.get(node.getName());
-
-                if (edge == null) {
-                    edge = service.getRelay().edgeType(node.getName(), node, null, Collections.emptyList());
-                    edges.put(node.getName(), edge);
-                }
-
-                GraphQLObjectType connectionType = connections.get(conInfo.getMappedToType());
-
-                if (connectionType == null) {
-                    connectionType = service.getRelay().connectionType(
-                            conInfo.getMappedToType(),
-                            edge,
-                            Collections.emptyList());
-                }
-
+                GraphQLObjectType connectionType = ConnectionHelper.getOrCreateConnection(service, node, conInfo.getMappedToType());
                 DataFetcher typeFetcher = PropertiesDataFetcherFactory.getFetcher(def, field);
                 List<GraphQLArgument> args = service.getRelay().getConnectionFieldArguments();
                 SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(typeFetcher);
-                //TODO may want to add fetcher arguments
+
                 def.getDirectives().remove(0);
 
                 return GraphQLFieldDefinition.newFieldDefinition(def)

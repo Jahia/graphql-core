@@ -2,7 +2,10 @@ package org.jahia.modules.graphql.provider.dxm.sdl.parsing;
 
 import graphql.language.*;
 import graphql.language.ObjectTypeExtensionDefinition.Builder;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -26,6 +29,27 @@ public class ConnectionHelper {
         );
 
         return query.build();
+    }
+
+    public static GraphQLObjectType getOrCreateConnection(SDLSchemaService service, GraphQLOutputType node, String typeName) {
+        Map<String, GraphQLObjectType> edges = service.getEdges();
+        Map<String, GraphQLObjectType> connections = service.getConnections();
+        GraphQLObjectType edge = edges.get(node.getName());
+
+        if (edge == null) {
+            edge = service.getRelay().edgeType(node.getName(), node, null, Collections.emptyList());
+            edges.put(node.getName(), edge);
+        }
+
+        GraphQLObjectType connectionType = connections.get(typeName);
+
+        if (connectionType == null) {
+            connectionType = service.getRelay().connectionType(
+                    typeName,
+                    edge,
+                    Collections.emptyList());
+        }
+        return connectionType;
     }
 
     public static class ConnectionTypeInfo {

@@ -198,22 +198,7 @@ public class SDLSchemaService {
                     }
 
                     GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
-                    GraphQLObjectType edge = edges.get(node.getName());
-
-                    if (edge == null) {
-                        edge = relay.edgeType(node.getName(), node, null, Collections.emptyList());
-                        edges.put(node.getName(), edge);
-                    }
-
-                    GraphQLObjectType connectionType = connections.get(typeName);
-
-                    if (connectionType == null) {
-                        connectionType = relay.connectionType(
-                                typeName,
-                                edge,
-                                Collections.emptyList());
-                    }
-
+                    GraphQLObjectType connectionType = ConnectionHelper.getOrCreateConnection(this, node, typeName);
                     FinderBaseDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                     List<GraphQLArgument> args = relay.getConnectionFieldArguments();
                     args.add(SDLUtil.wrapArgumentsInType(String.format("%s%s", queryFieldName, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX), typeFetcher.getArguments()));
@@ -392,13 +377,14 @@ public class SDLSchemaService {
                     continue;
                 }
 
+                //Add new field with directive to trigger custom fetcher loading in directive wiring
                 String name = StringUtils.substringAfter(entry.getKey(), ".");
                 objectType.getFieldDefinitions().add(FieldDefinition.newFieldDefinition()
                         .directive(Directive.newDirective()
                                 .name(SDLConstants.MAPPING_DIRECTIVE)
                                 .arguments(Arrays.asList(Argument.newArgument()
                                         .name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY)
-                                        .value(new StringValue("photos"))
+                                        .value(new StringValue(SDLConstants.MAPPING_DIRECTIVE_FAKE_PROPERTY))
                                         .build()))
                                 .build())
                         .name(name)

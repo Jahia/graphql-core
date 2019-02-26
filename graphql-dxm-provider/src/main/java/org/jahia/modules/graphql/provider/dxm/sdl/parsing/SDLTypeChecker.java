@@ -205,8 +205,11 @@ public class SDLTypeChecker {
         }).forEach(field -> {
             Directive fieldDirective = field.getDirective(SDLConstants.MAPPING_DIRECTIVE);
             String jcrPropertyName = ((StringValue) fieldDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue()).getValue();
-            if (!SDLConstants.PATH.equalsIgnoreCase(jcrPropertyName) && !SDLConstants.IDENTIFIER.equalsIgnoreCase(jcrPropertyName) && !SDLConstants.URL.equalsIgnoreCase(jcrPropertyName)) {
-                String propertyName = StringUtils.substringBefore(jcrPropertyName,".");;
+            if (!SDLConstants.PATH.equalsIgnoreCase(jcrPropertyName)
+                    && !SDLConstants.IDENTIFIER.equalsIgnoreCase(jcrPropertyName)
+                    && !SDLConstants.URL.equalsIgnoreCase(jcrPropertyName)
+                    && !SDLConstants.MAPPING_DIRECTIVE_FAKE_PROPERTY.equalsIgnoreCase(jcrPropertyName)) {
+                String propertyName = StringUtils.substringBefore(jcrPropertyName, ".");
                 if (!hasChildren(allTypes, propertyName) && !hasProperty(allTypes, propertyName)) {
                     missingChildren.add(jcrPropertyName);
                 }
