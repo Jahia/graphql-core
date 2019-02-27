@@ -47,8 +47,13 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.apache.jackrabbit.spi.commons.nodetype.constraint.ValueConstraint;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrPropertyType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * GraphQL representation of a JCR property definition
@@ -91,6 +96,12 @@ public class GqlJcrPropertyDefinition implements GqlJcrItemDefinition {
     @GraphQLNonNull
     public boolean isHidden() {
         return definition.isHidden();
+    }
+
+    @GraphQLNonNull
+    @GraphQLField
+    public List<String> getConstraints() {
+        return Arrays.stream(definition.getValueConstraintObjects()).map(ValueConstraint::getString).collect(Collectors.toList());
     }
 
     @Override
