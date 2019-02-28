@@ -48,6 +48,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.processor.GraphQLAnnotationsComponent;
 import graphql.annotations.processor.ProcessingElementsContainer;
 import graphql.annotations.processor.retrievers.GraphQLExtensionsHandler;
+import graphql.annotations.processor.retrievers.GraphQLObjectHandler;
 import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.schema.GraphQLFieldDefinition;
@@ -68,7 +69,7 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
 
-@Component(service = GraphQLProvider.class, enabled = false)
+@Component(service = GraphQLProvider.class, immediate = true)
 public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
@@ -77,6 +78,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private SpecializedTypesHandler specializedTypesHandler;
 
     private GraphQLAnnotationsComponent graphQLAnnotations;
+    private GraphQLObjectHandler graphQLObjectHandler;
 
     private ProcessingElementsContainer container;
 
@@ -103,6 +105,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         return graphQLAnnotations;
     }
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
+    public void setGraphQLObjectHandler(GraphQLObjectHandler graphQLObjectHandler) {
+        this.graphQLObjectHandler = graphQLObjectHandler;
+    }
+
     public ProcessingElementsContainer getContainer() {
         return container;
     }
@@ -119,6 +126,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     @Activate
     public void activate() {
         instance = this;
+        graphQLObjectHandler.getTypeRetriever().getGraphQLFieldRetriever().setAlwaysPrettify(true);
 
         container = graphQLAnnotations.createContainer();
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
