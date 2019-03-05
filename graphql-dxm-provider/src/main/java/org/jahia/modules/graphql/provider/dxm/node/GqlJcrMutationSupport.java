@@ -217,4 +217,40 @@ public class GqlJcrMutationSupport {
             f.delete();
         }
     }
+
+    /**
+     *
+     * @param jcrNode      the image node
+     * @param name         the new name of the image, if it's the same the method will replace the original image
+     * @param target       location of the rotated image
+     * @param height       new height
+     * @param width        new width
+     */
+    public static void resizeImage(JCRNodeWrapper jcrNode, String name, String target, int height, int width){
+        JahiaImageService imageService = BundleUtils.getOsgiService(JahiaImageService.class, null);
+        InputStream fis = null;
+        File f = null;
+        try {
+            Image image = imageService.getImage(jcrNode);
+            String fileExtension = FilenameUtils.getExtension(jcrNode.getName());
+            if ((fileExtension != null) && (!"".equals(fileExtension))) {
+                fileExtension = "." + fileExtension;
+            } else {
+                fileExtension = null;
+            }
+            f = File.createTempFile("image", fileExtension);
+            imageService.resizeImage(image, f, width, height, JahiaImageService.ResizeType.SCALE_TO_FILL);
+
+            fis = new BufferedInputStream(new FileInputStream(f));
+            String newPath = target + "/" + name + fileExtension;
+            jcrNode.getParent().uploadFile(newPath, fis, jcrNode.getFileContent().getContentType());
+            jcrNode.getSession().save();
+        } catch (Exception e) {
+            throw new DataFetchingException(e);
+        } finally {
+            IOUtils.closeQuietly(fis);
+            f.delete();
+        }
+
+    }
 }

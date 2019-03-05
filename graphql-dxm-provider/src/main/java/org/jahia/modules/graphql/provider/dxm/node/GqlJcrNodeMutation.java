@@ -203,10 +203,21 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     @GraphQLField
     @GraphQLDescription("Rotate an image under the current node")
     public boolean rotateImage(
-            @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("name") String name,
+            @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("name of the rotated image") String name,
             @GraphQLName("target") @GraphQLNonNull @GraphQLDescription("target path") String target,
             @GraphQLName("clockwise") @GraphQLNonNull @GraphQLDescription("clockwise") boolean clockwise) {
         rotateImage(jcrNode, name, target, clockwise);
+        return true;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Resize an image under the current node")
+    public boolean resizeImage(
+            @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("name of the resized image") String name,
+            @GraphQLName("target") @GraphQLNonNull @GraphQLDescription("target path") String target,
+            @GraphQLName("height") @GraphQLNonNull @GraphQLDescription("new height") int height,
+            @GraphQLName("width") @GraphQLNonNull @GraphQLDescription("new width") int width) {
+        resizeImage(jcrNode, name, target, height, width);
         return true;
     }
 
