@@ -80,47 +80,26 @@ public class ListDataFetcher implements DataFetcher<List> {
     public List get(DataFetchingEnvironment environment) throws Exception {
         GqlJcrNode node = environment.getSource();
         JCRNodeWrapper jcrNode = node.getNode();
-        GraphQLObjectType type;
         if (environment.getFieldDefinition().getType() instanceof GraphQLObjectType) {
             //In this case we are dealing with connection at field level of a type i. e. text : TextConnection etc.
-            type = (GraphQLObjectType) environment.getFieldDefinition().getType();
             GraphQLObjectType obj = (GraphQLObjectType) ((GraphQLList) ((GraphQLObjectType) environment.getFieldDefinition().getType()).getFieldDefinition("nodes").getType()).getWrappedType();
             GraphQLDirective mappingDirective = obj.getDirective(SDLConstants.MAPPING_DIRECTIVE);
             if (mappingDirective != null) {
                 String nodeType = mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
                 return resolveChildren(jcrNode, nodeType);
             }
-        } else {
-            type = (GraphQLObjectType) ((GraphQLList) environment.getFieldDefinition().getType()).getWrappedType();
         }
-        GraphQLDirective mappingDirective = type.getDirective(SDLConstants.MAPPING_DIRECTIVE);
-        if (mappingDirective != null) {
-            GraphQLArgument nodeProperty = mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE);
-            if (nodeProperty != null) {
-                try {
-                    String nodeType = nodeProperty.getValue().toString();
-                    if (field == null) {
-                        logger.debug("Fetch children of type {}", nodeType);
-                        //Case when child name is not specified, get children directly from jcrNode
-                        return resolveChildren(jcrNode, nodeType);
-                    } else {
-                        //Case when property is a weak reference
-                        if (jcrNode.hasProperty(field.getProperty())) {
-                            return resolveProperty(jcrNode);
-                        } else {
-                            //Case when child mapping is specified, get children from mapped node
-                            logger.debug("Fetch children of type {} from child {}", nodeType, field.getProperty());
-                            return resolveChildren(jcrNode.getNode(field.getProperty()), nodeType);
-                        }
-                    }
-                } catch (RepositoryException e) {
-                    //Do nothing, return empty list below
-                }
-            }
-        } else {
-            return resolveProperty(jcrNode);
+        GraphQLType type = resolveWrappedObject(environment.getFieldDefinition().getType());
+        if (type instanceof  GraphQLObjectType) {
+            GraphQLDirective mappingDirective = ((GraphQLObjectType)type).getDirective(SDLConstants.MAPPING_DIRECTIVE);
+            GraphQLArgument arg = mappingDirective != null ? mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE) : null;
+            return resolveFromArgument(jcrNode, arg);
         }
-        return Collections.emptyList();
+        return resolveProperty(jcrNode);
+    }
+
+    private GraphQLType resolveWrappedObject(GraphQLType type) {
+        return type instanceof GraphQLList ? ((GraphQLList) type).getWrappedType() : type;
     }
 
     private Object getProperty(int propertyType, JCRValueWrapper value) {
@@ -159,5 +138,30 @@ public class ListDataFetcher implements DataFetcher<List> {
         return JCRContentUtils.getChildrenOfType(node, nodeType).stream()
                 .map(GqlJcrNodeImpl::new)
                 .collect(Collectors.toList());
+    }
+
+    private List resolveFromArgument(JCRNodeWrapper node, GraphQLArgument arg) {
+        if (arg != null) {
+            try {
+                String nodeType = arg.getValue().toString();
+                if (field == null) {
+                    logger.debug("Fetch children of type {}", nodeType);
+                    //Case when child name is not specified, get children directly from jcrNode
+                    return resolveChildren(node, nodeType);
+                } else {
+                    //Case when property is a weak reference
+                    if (node.hasProperty(field.getProperty())) {
+                        return resolveProperty(node);
+                    } else {
+                        //Case when child mapping is specified, get children from mapped node
+                        logger.debug("Fetch children of type {} from child {}", nodeType, field.getProperty());
+                        return resolveChildren(node.getNode(field.getProperty()), nodeType);
+                    }
+                }
+            } catch (RepositoryException e) {
+                //Do nothing, return empty list below
+            }
+        }
+        return Collections.emptyList();
     }
 }
