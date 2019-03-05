@@ -210,6 +210,14 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         return true;
     }
 
+    /**
+     *
+     * @param name      the new name of the image, if it's the same the method will replace the original image
+     * @param target    location of the resized image
+     * @param height    height of the new image
+     * @param width     width of the new image
+     * @return          always true
+     */
     @GraphQLField
     @GraphQLDescription("Resize an image under the current node")
     public boolean resizeImage(
@@ -218,6 +226,29 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             @GraphQLName("height") @GraphQLNonNull @GraphQLDescription("new height") int height,
             @GraphQLName("width") @GraphQLNonNull @GraphQLDescription("new width") int width) {
         resizeImage(jcrNode, name, target, height, width);
+        return true;
+    }
+
+    /**
+     *
+     * @param name      the new name of the image, if it's the same the method will replace the original image
+     * @param target    location of the resized image
+     * @param height    height of the new image
+     * @param width     width of the new image
+     * @param top       top of the new image
+     * @param left      left of the new image
+     * @return          always true
+     */
+    @GraphQLField
+    @GraphQLDescription("Crop an image under the current node")
+    public boolean cropImage(
+            @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("name of the cropped image") String name,
+            @GraphQLName("target") @GraphQLNonNull @GraphQLDescription("target path") String target,
+            @GraphQLName("height") @GraphQLNonNull @GraphQLDescription("new height") int height,
+            @GraphQLName("width") @GraphQLNonNull @GraphQLDescription("new width") int width,
+            @GraphQLName("top") @GraphQLNonNull @GraphQLDescription("top") int top,
+            @GraphQLName("left") @GraphQLNonNull @GraphQLDescription("left") int left) {
+        cropImage(jcrNode, name, target, height, width, top, left);
         return true;
     }
 
