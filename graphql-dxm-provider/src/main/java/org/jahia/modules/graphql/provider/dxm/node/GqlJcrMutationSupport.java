@@ -46,12 +46,17 @@ package org.jahia.modules.graphql.provider.dxm.node;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.upload.UploadHelper;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.image.Image;
+import org.jahia.services.image.JahiaImageService;
 import org.jahia.services.importexport.DocumentViewImportHandler;
 import org.jahia.services.importexport.ImportExportBaseService;
 import org.springframework.core.io.FileSystemResource;
@@ -59,7 +64,7 @@ import org.springframework.core.io.FileSystemResource;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
-import java.io.File;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -174,6 +179,42 @@ public class GqlJcrMutationSupport {
             }
         } catch (Exception e) {
             throw new DataFetchingException(e);
+        }
+    }
+
+    /**
+     * rotate an image
+     * @param jcrNode     the image node
+     * @param name        the new name of the image, if it's the same the method will replace the original image
+     * @param target      location of the rotated image
+     * @param clockwise   clockwise rotation
+     */
+
+    public static void rotateImage(JCRNodeWrapper jcrNode, String name, String target, boolean clockwise){
+        JahiaImageService imageService = BundleUtils.getOsgiService(JahiaImageService.class, null);
+        InputStream fis = null;
+        File f = null;
+        try {
+            Image image = imageService.getImage(jcrNode);
+            String fileExtension = FilenameUtils.getExtension(jcrNode.getName());
+            if ((fileExtension != null) && (!fileExtension.equals(""))) {
+                fileExtension = "." + fileExtension;
+            } else {
+                fileExtension = null;
+            }
+            f = File.createTempFile(name, fileExtension);
+            imageService.rotateImage(image, f, clockwise);
+
+            fis = new BufferedInputStream(new FileInputStream(f));
+            String newPath = target + "/" + name + fileExtension;
+            jcrNode.getParent().uploadFile(newPath, fis, jcrNode.getFileContent().getContentType());
+            jcrNode.getSession().save();
+
+        } catch (IOException | RepositoryException e) {
+            throw new DataFetchingException(e);
+        } finally {
+            IOUtils.closeQuietly(fis);
+            f.delete();
         }
     }
 }

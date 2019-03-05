@@ -46,14 +46,21 @@ package org.jahia.modules.graphql.provider.dxm.node;
 import com.google.common.collect.Lists;
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.PredicateHelper;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
+import org.jahia.services.image.Image;
+import org.jahia.services.image.JahiaImageService;
 
 import javax.jcr.RepositoryException;
+import java.io.*;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -183,6 +190,23 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
         importFileUpload(file, this.jcrNode, environment);
+        return true;
+    }
+
+    /**
+     *
+     * @param name          the new name of the image, if it's the same the method will replace the original image
+     * @param target        location of the rotated image
+     * @param clockwise     clockwise rotation
+     * @return              always true
+     */
+    @GraphQLField
+    @GraphQLDescription("Rotate an image under the current node")
+    public boolean rotateImage(
+            @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("name") String name,
+            @GraphQLName("target") @GraphQLNonNull @GraphQLDescription("target path") String target,
+            @GraphQLName("clockwise") @GraphQLNonNull @GraphQLDescription("clockwise") boolean clockwise) {
+        rotateImage(jcrNode, name, target, clockwise);
         return true;
     }
 
