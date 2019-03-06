@@ -3,7 +3,6 @@ package org.jahia.modules.graphql.provider.dxm.sdl.parsing;
 import graphql.language.ListType;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.TypeResolver;
 import graphql.schema.idl.*;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.ListDataFetcher;
@@ -29,8 +28,6 @@ public class SDLRuntimeWiring {
                         }
                         return DataFetchingEnvironment::getSource;
                     }
-                })
-                .wiringFactory(new WiringFactory() {
                 })
                 .scalar(new GraphQLDate())
                 .build();
