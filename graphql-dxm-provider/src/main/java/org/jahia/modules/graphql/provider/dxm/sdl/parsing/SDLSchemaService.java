@@ -261,7 +261,6 @@ public class SDLSchemaService {
             if (type instanceof GraphQLObjectType) {
                 GraphQLDirective directive = ((GraphQLObjectType) type).getDirective(SDLConstants.MAPPING_DIRECTIVE);
                 if (directive != null) {
-                    applyDefaultFetcher(defs, directive, new GraphQLList(type), FinderFetchersFactory.FetcherType.ALL);
                     applyDefaultFetcher(defs, directive, (GraphQLOutputType) type, FinderFetchersFactory.FetcherType.ID);
                     applyDefaultFetcher(defs, directive, (GraphQLOutputType) type, FinderFetchersFactory.FetcherType.PATH);
                 }
