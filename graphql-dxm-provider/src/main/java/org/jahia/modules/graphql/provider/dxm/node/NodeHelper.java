@@ -220,15 +220,17 @@ public class NodeHelper {
 
     public static DXPaginatedData<GqlJcrNode> getPaginatedNodesList(NodeIterator it, Collection<String> names, GqlJcrNode.NodeTypesInput typesFilter, GqlJcrNode.NodePropertiesInput propertiesFilter, FieldFiltersInput fieldFilter,
             DataFetchingEnvironment environment, FieldSorterInput fieldSorterInput, FieldGroupingInput fieldGroupingInput) {
-        Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
-                .filter(node-> PermissionHelper.hasPermission(node, environment))
-                .filter(getNodesPredicate(names, typesFilter, propertiesFilter, environment))
-                .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode))
-                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
-        if(fieldSorterInput != null){
-            List items = stream.sorted(SorterHelper.getFieldComparator(fieldSorterInput, FieldEvaluator.forConnection(environment))).collect(Collectors.toList());
+
+        @SuppressWarnings("unchecked") Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
+            .filter(node-> PermissionHelper.hasPermission(node, environment))
+            .filter(getNodesPredicate(names, typesFilter, propertiesFilter, environment))
+            .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode))
+            .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
+
+        if (fieldSorterInput != null) {
+            List<GqlJcrNode> items = stream.sorted(SorterHelper.getFieldComparator(fieldSorterInput, FieldEvaluator.forConnection(environment))).collect(Collectors.toList());
             if (fieldGroupingInput != null) {
-                items = (List) GroupingHelper.group(items.stream(), fieldGroupingInput, FieldEvaluator.forConnection(environment)).collect(Collectors.toList());
+                items = (List<GqlJcrNode>) GroupingHelper.group(items.stream(), fieldGroupingInput, FieldEvaluator.forConnection(environment)).collect(Collectors.toList());
             }
             return PaginationHelper.paginate(items, environment);
         }
@@ -238,7 +240,9 @@ public class NodeHelper {
         }
 
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
-        return PaginationHelper.paginate(stream, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
+        return PaginationHelper.paginate(stream, n -> {
+            return PaginationHelper.encodeCursor(n.getUuid());
+        }, arguments);
     }
 
     private interface PropertyEvaluationAlgorithm {

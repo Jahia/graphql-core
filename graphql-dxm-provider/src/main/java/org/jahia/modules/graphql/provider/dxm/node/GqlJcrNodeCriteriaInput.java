@@ -49,6 +49,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 
 import java.util.Collection;
+import java.util.List;
 
 // TODO: When implementing specific criteria fields, review JavaDoc and GraphQL descriptions, as well as specific constructor parameter and getter annotations to see if any of them need @GraphQLNonNull.
 
@@ -98,7 +99,7 @@ public class GqlJcrNodeCriteriaInput {
      * @param paths Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter; null or empty collection means no path restrictions
      * @param nodeConstraint Additional constraint to filter nodes by their arbitrary properties
      * @param language Language to access node properties in; must be a valid language code in case any internationalized properties are used for filtering, does not matter for non-internationalized ones
-     * @param ordering ordering strategies
+     * @param ordering Ordering strategies
      */
     public GqlJcrNodeCriteriaInput(
         @GraphQLName("nodeType") @GraphQLNonNull @GraphQLDescription("The type of nodes to fetch") String nodeType,
@@ -106,7 +107,7 @@ public class GqlJcrNodeCriteriaInput {
         @GraphQLName("paths") @GraphQLDescription("Paths that restrict areas to fetch nodes from; the exact meaning is defined by the pathType parameter; null or empty array means no path restrictions") Collection<String> paths,
         @GraphQLName("nodeConstraint") @GraphQLDescription("Additional constraint to filter nodes by their arbitrary properties") GqlJcrNodeConstraintInput nodeConstraint,
         @GraphQLName("language") @GraphQLDescription("Language to access node properties in; must be a valid language code in case any internationalized properties are used for filtering, does not matter for non-internationalized ones") String language,
-        @GraphQLName("ordering") @GraphQLDescription("ordering strategies") GqlOrdering ordering
+        @GraphQLName("ordering") @GraphQLDescription("Ordering strategies") GqlOrdering ordering
     ) {
         this.nodeType = nodeType;
         this.paths = paths;
@@ -169,7 +170,7 @@ public class GqlJcrNodeCriteriaInput {
 
     @GraphQLField
     @GraphQLName("ordering")
-    @GraphQLDescription("ordering strategies")
+    @GraphQLDescription("Ordering strategies")
     public GqlOrdering getOrdering() {
         return ordering;
     }
