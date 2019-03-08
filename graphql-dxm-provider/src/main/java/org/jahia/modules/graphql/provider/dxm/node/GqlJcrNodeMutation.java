@@ -5,7 +5,7 @@
  *
  *                                 http://www.jahia.com
  *
- *     Copyright (C) 2002-2018 Jahia Solutions Group SA. All rights reserved.
+ *     Copyright (C) 2002-2019 Jahia Solutions Group SA. All rights reserved.
  *
  *     THIS FILE IS AVAILABLE UNDER TWO DIFFERENT LICENSES:
  *     1/GPL OR 2/JSEL
@@ -45,9 +45,11 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import com.google.common.collect.Lists;
 import graphql.annotations.annotationTypes.*;
+import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.image.GqlJcrImageTransformMutation;
 import org.jahia.modules.graphql.provider.dxm.predicate.PredicateHelper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
@@ -165,6 +167,24 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             result.add(new GqlJcrNodeMutation(addNode(this.jcrNode, node)));
         }
         return result;
+    }
+
+    /**
+     * Import a file under the current node.
+     *
+     * @param file name of the request part that contains desired import file body
+     * @param environment data fetching environment
+     * @return always true
+     * @throws BaseGqlClientException in case of errors during import operation
+     */
+    @GraphQLField
+    @GraphQLDescription("Import a file under the current node")
+    public boolean importContent(
+        @GraphQLName("file") @GraphQLNonNull @GraphQLDescription("Name of the request part that contains desired import file body") String file,
+        DataFetchingEnvironment environment
+    ) throws BaseGqlClientException {
+        importFileUpload(file, this.jcrNode, environment);
+        return true;
     }
 
     /**
@@ -410,6 +430,26 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             throw new DataFetchingException(e);
         }
         return true;
+    }
+
+    /**
+     * Return image transformation mutation
+     *
+     * @return image transformation mutation
+     * @throws BaseGqlClientException in case of an error during this operation
+     */
+    @GraphQLField
+    @GraphQLDescription("Return image transformation mutation")
+    public GqlJcrImageTransformMutation transformImage(@GraphQLName("name") @GraphQLDescription("name of target file, if different") String name,
+                                                       @GraphQLName("targetPath") @GraphQLDescription("target path, if different") String targetPath) throws BaseGqlClientException {
+        try {
+            if (jcrNode.isNodeType("jmix:image")) {
+                return new GqlJcrImageTransformMutation(jcrNode, name, targetPath);
+            }
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+        return null;
     }
 
     /**

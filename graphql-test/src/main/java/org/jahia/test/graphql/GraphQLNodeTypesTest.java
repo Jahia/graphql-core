@@ -1,11 +1,11 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
  *
  *                                 http://www.jahia.com
  *
- *     Copyright (C) 2002-2018 Jahia Solutions Group SA. All rights reserved.
+ *     Copyright (C) 2002-2019 Jahia Solutions Group SA. All rights reserved.
  *
  *     THIS FILE IS AVAILABLE UNDER TWO DIFFERENT LICENSES:
  *     1/GPL OR 2/JSEL
@@ -190,6 +190,61 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
 
         Assert.assertEquals("mix:created", definition.getJSONObject("declaringNodeType").getString("name"));
         Assert.assertEquals("jcr:created", definition.getString("name"));
+    }
+
+    @Test
+    public void shouldGetPropertyDefinitionWithConstraints() throws Exception {
+        JSONObject result = executeQuery("{\n" + 
+                "  jcr {\n" + 
+                "    nodeByPath(path: \"/j:acl/GRANT_g_users\") {\n" + 
+                "      uuid\n" + 
+                "      path\n" + 
+                "      name\n" + 
+                "      aceType: property(name: \"j:aceType\") {\n" + 
+                "        definition {\n" + 
+                "          declaringNodeType {\n" + 
+                "            name\n" + 
+                "          }\n" + 
+                "          name\n" + 
+                "          constraints\n" + 
+                "        }\n" + 
+                "        name\n" + 
+                "      }\n" + 
+                "      principal: property(name: \"j:principal\") {\n" + 
+                "        definition {\n" + 
+                "          declaringNodeType {\n" + 
+                "            name\n" + 
+                "          }\n" + 
+                "          name\n" + 
+                "          constraints\n" + 
+                "        }\n" + 
+                "        name\n" + 
+                "      }\n" + 
+                "    }\n" + 
+                "  }\n" + 
+                "}\n");
+
+        // property with constraints
+        JSONObject definition = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("aceType").getJSONObject("definition");
+
+        Assert.assertEquals("jnt:ace", definition.getJSONObject("declaringNodeType").getString("name"));
+        Assert.assertEquals("j:aceType", definition.getString("name"));
+
+        JSONArray constraints = definition.getJSONArray("constraints");
+        Assert.assertNotNull(constraints);
+        Assert.assertEquals(2, constraints.length());
+        Assert.assertEquals("GRANT", constraints.getString(0));
+        Assert.assertEquals("DENY", constraints.getString(1));
+
+        // property without constraints
+        definition = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("principal").getJSONObject("definition");
+
+        Assert.assertEquals("jnt:ace", definition.getJSONObject("declaringNodeType").getString("name"));
+        Assert.assertEquals("j:principal", definition.getString("name"));
+
+        constraints = definition.getJSONArray("constraints");
+        Assert.assertNotNull(constraints);
+        Assert.assertEquals(0, constraints.length());
     }
 
     @Test

@@ -1,11 +1,11 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
  *
  *                                 http://www.jahia.com
  *
- *     Copyright (C) 2002-2018 Jahia Solutions Group SA. All rights reserved.
+ *     Copyright (C) 2002-2019 Jahia Solutions Group SA. All rights reserved.
  *
  *     THIS FILE IS AVAILABLE UNDER TWO DIFFERENT LICENSES:
  *     1/GPL OR 2/JSEL
@@ -44,6 +44,7 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.*;
+import graphql.schema.DataFetchingEnvironment;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLFieldCompleter;
@@ -254,6 +255,26 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
+        return true;
+    }
+
+    /**
+     * Import a file under the specified parent
+     *
+     * @param parentPathOrId the path or UUID of the parent node
+     * @param file name of the request part that contains desired import file body
+     * @param environment data fetching environment
+     * @return always true
+     * @throws BaseGqlClientException in case of errors during import operation
+     */
+    @GraphQLField
+    @GraphQLDescription("Import a file under the specified parent")
+    public boolean importContent(
+        @GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
+        @GraphQLName("file") @GraphQLNonNull @GraphQLDescription("Name of the request part that contains desired import file body") String file,
+        DataFetchingEnvironment environment
+    ) throws BaseGqlClientException {
+        importFileUpload(file, getNodeFromPathOrId(getSession(), parentPathOrId), environment);
         return true;
     }
 

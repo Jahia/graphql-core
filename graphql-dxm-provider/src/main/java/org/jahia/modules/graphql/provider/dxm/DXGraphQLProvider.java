@@ -1,11 +1,11 @@
-/**
+/*
  * ==========================================================================================
  * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
  * ==========================================================================================
  *
  *                                 http://www.jahia.com
  *
- *     Copyright (C) 2002-2018 Jahia Solutions Group SA. All rights reserved.
+ *     Copyright (C) 2002-2019 Jahia Solutions Group SA. All rights reserved.
  *
  *     THIS FILE IS AVAILABLE UNDER TWO DIFFERENT LICENSES:
  *     1/GPL OR 2/JSEL
@@ -69,10 +69,8 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Component(service = GraphQLProvider.class, enabled = false)
-public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider,
-        DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
-
+@Component(service = GraphQLProvider.class, immediate = true)
+public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
@@ -111,6 +109,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         return graphQLAnnotations;
     }
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
+    public void setGraphQLObjectHandler(GraphQLObjectHandler graphQLObjectHandler) {
+        this.graphQLObjectHandler = graphQLObjectHandler;
+    }
+
     public ProcessingElementsContainer getContainer() {
         return container;
     }
@@ -138,6 +141,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     public void activate() {
         instance = this;
         graphQLObjectHandler.getTypeRetriever().getGraphQLFieldRetriever().setAlwaysPrettify(true);
+
         container = graphQLAnnotations.createContainer();
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
         ((DefaultTypeFunction) defaultTypeFunction).register(this);
