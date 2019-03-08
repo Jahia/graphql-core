@@ -132,11 +132,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         this.extensionsProviders.remove(provider);
     }
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
-    public void bindGraphQLObjectHandler(GraphQLObjectHandler graphQLObjectHandler) {
-        this.graphQLObjectHandler = graphQLObjectHandler;
-    }
-
     @Activate
     public void activate() {
         instance = this;
