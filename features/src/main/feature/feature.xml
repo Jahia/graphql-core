@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<features xmlns="http://karaf.apache.org/xmlns/features/v1.4.0" name="graphql-core">
-    <feature name="graphql-core" install="auto">
-        <configfile finalname="/etc/org.jahia.modules.graphql.provider.cfg">mvn:org.jahia.modules/graphql-dxm-provider/${project.version}/cfg/graphql-cfg</configfile>
-    </feature>
-</features>
