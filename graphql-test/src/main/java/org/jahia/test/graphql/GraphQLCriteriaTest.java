@@ -66,7 +66,7 @@ import org.junit.Test;
  */
 public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
-    private static final String NONE_OR_MULTIPLE_NODE_COMPARISONS_ERROR = "Exactly one contraint field expected, either 'like', 'contains', 'equals', 'notEquals', 'gt', 'gte', 'lt', 'lte', 'exists' or 'lastDays'";
+    private static final String NONE_OR_MULTIPLE_NODE_COMPARISONS_ERROR = "At least one of the following constraint field is expected: 'like', 'contains', 'equals', 'notEquals', 'gt', 'gte', 'lt', 'lte', 'exists' or 'lastDays'";
 
     private static String nodeUuid = null;
     private static String subNodeUuid1 = null;
