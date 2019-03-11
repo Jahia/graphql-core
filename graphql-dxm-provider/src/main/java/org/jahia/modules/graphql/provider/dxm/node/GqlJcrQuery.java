@@ -499,7 +499,7 @@ public class GqlJcrQuery {
                 constraintNames.append(" or ");
             }
         }
-        throw new GqlJcrWrongInputException("Exactly one contraint field expected, either " + constraintNames);
+        throw new GqlJcrWrongInputException("At least one of the following constraint field is expected: " + constraintNames);
     }
 
     /**
