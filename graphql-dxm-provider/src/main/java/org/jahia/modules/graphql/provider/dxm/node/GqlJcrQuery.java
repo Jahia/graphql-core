@@ -56,6 +56,9 @@ import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFet
 import org.jahia.services.content.*;
 import org.jahia.services.content.nodetypes.ValueImpl;
 import org.jahia.services.query.QueryWrapper;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,8 +68,6 @@ import javax.jcr.Session;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.qom.*;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -754,11 +755,12 @@ public class GqlJcrQuery {
 
             validateNodeConstraintProperty(nodeConstraint);
             Date targetDate = DateUtils.addDays(new Date(), - value);
-            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSXXX");
+            DateTime dt = new DateTime(targetDate);
+            DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd'T'hh:mm:ss.SSSXXX");
 
             return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
-                                        QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO,
-                                        factory.literal(new ValueImpl(dateFormat.format(targetDate))));
+                                    QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO,
+                                    factory.literal(new ValueImpl(dt.toString(fmt))));
         }
 
         @Override
