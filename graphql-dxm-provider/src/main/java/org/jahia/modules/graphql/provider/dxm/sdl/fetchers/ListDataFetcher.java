@@ -90,8 +90,8 @@ public class ListDataFetcher implements DataFetcher<List> {
             }
         }
         GraphQLType type = resolveWrappedObject(environment.getFieldDefinition().getType());
-        if (type instanceof  GraphQLObjectType) {
-            GraphQLDirective mappingDirective = ((GraphQLObjectType)type).getDirective(SDLConstants.MAPPING_DIRECTIVE);
+        if (type instanceof GraphQLObjectType) {
+            GraphQLDirective mappingDirective = ((GraphQLObjectType) type).getDirective(SDLConstants.MAPPING_DIRECTIVE);
             GraphQLArgument arg = mappingDirective != null ? mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE) : null;
             return resolveFromArgument(jcrNode, arg);
         }
@@ -126,9 +126,11 @@ public class ListDataFetcher implements DataFetcher<List> {
     }
 
     private List resolveProperty(JCRNodeWrapper jcrNode) throws RepositoryException {
-        if (!jcrNode.hasProperty(field.getProperty()))
+        if (!jcrNode.hasProperty(field.getProperty())) {
             return Collections.emptyList();
-        int propertyType = NodeTypeRegistry.getInstance().getNodeType(jcrNode.getPrimaryNodeTypeName()).getPropertyDefinition(field.getProperty()).getRequiredType();
+        }
+
+        int propertyType = jcrNode.getProperty(field.getProperty()).getType();
         return Arrays.stream(jcrNode.getProperty(field.getProperty()).getRealValues())
                 .map(value -> getProperty(propertyType, value))
                 .filter(Objects::nonNull).collect(Collectors.toList());
