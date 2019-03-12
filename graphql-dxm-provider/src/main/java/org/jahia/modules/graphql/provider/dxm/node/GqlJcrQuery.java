@@ -53,7 +53,6 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
-import org.jahia.modules.graphql.provider.dxm.util.DefaultConstraintHelper;
 import org.jahia.services.content.*;
 import org.jahia.services.content.nodetypes.ValueImpl;
 import org.jahia.services.query.QueryWrapper;
@@ -588,8 +587,7 @@ public class GqlJcrQuery {
                 return null;
             }
 
-            DefaultConstraintHelper defaultConstraintHelper = new DefaultConstraintHelper(factory, selector);
-            return defaultConstraintHelper.buildDefaultPropertiesConstraint(value);
+            return factory.fullTextSearch(selector, nodeConstraint.getProperty(), factory.literal(new ValueImpl(value)));
         }
 
         @Override
