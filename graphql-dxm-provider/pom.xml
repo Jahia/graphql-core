@@ -69,7 +69,7 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.graphql-java-kickstart</groupId>
+            <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java-servlet</artifactId>
             <version>${graphql-java-servlet.version}</version>
             <scope>provided</scope>
