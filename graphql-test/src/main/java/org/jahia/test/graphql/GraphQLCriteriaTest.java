@@ -82,6 +82,10 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     private static String subnodeTitleFr1 = "text FR - subList1";
     private static String subnodeTitleFr2 = "text FR - subList2";
 
+    private static Integer subnodeHeight1 = 100;
+    private static Integer subnodeHeight2 = 200;
+    private static Integer subnodeHeight3 = 300;
+
     private static Date subnode1Published = new Date();
     private static Date subnode2Published = DateUtils.addDays(new Date(), -1);
     private static Date subnode3Published = DateUtils.addDays(new Date(), -2);
@@ -100,9 +104,11 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
             JCRNodeWrapper subNode1 = node.addNode("testSubList1", "jnt:contentList");
             subNode1.addMixin("jmix:liveProperties");
             subNode1.addMixin("jmix:keywords");
+            subNode1.addMixin("jmix:size");
             subNode1.setProperty("jcr:title", subnodeTitleEn1);
             subNode1.setProperty("j:liveProperties", new String[] {"liveProperty1", "liveProperty2"});
             subNode1.setProperty("j:keywords", new String[] {"keyword 1", "keyword 2", "keyword"});
+            subNode1.setProperty("j:height", subnodeHeight1);
             Calendar calendar1 = Calendar.getInstance();
             calendar1.setTime(subnode1Published);
             subNode1.setProperty("j:lastPublished", calendar1);
@@ -110,17 +116,21 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
             JCRNodeWrapper subNode2 = node.addNode("testSubList2", "jnt:contentList");
             subNode2.addMixin("jmix:tagged");
+            subNode2.addMixin("jmix:size");
             subNode2.setProperty("j:tagList", new String[] {"sometag", "keyword"});
             subNode2.setProperty("jcr:title", subnodeTitleEn2);
             Calendar calendar2 = Calendar.getInstance();
             calendar2.setTime(subnode2Published);
             subNode2.setProperty("j:lastPublished", calendar2);
+            subNode2.setProperty("j:height", subnodeHeight2);
             subNodeUuid2 = subNode2.getIdentifier();
 
             JCRNodeWrapper subNode3 = node.addNode("testSubList3", "jnt:contentList");
+            subNode3.addMixin("jmix:size");
             Calendar calendar3 = Calendar.getInstance();
             calendar3.setTime(subnode3Published);
             subNode3.setProperty("j:lastPublished", calendar3);
+            subNode3.setProperty("j:height", subnodeHeight3);
             subNodeUuid3 = subNode3.getIdentifier();
 
             JCRNodeWrapper subNode4 = node.addNode("testSubList4", "jnt:contentList");
@@ -157,7 +167,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {language: \"en\", paths: [\"/testList\"], nodeType: \"jnt:contentList\"}) {"
+                + "        nodesByCriteria(criteria: {paths: [\"/testList\"], nodeType: \"jnt:contentList\"}) {"
                 + "            nodes {"
                 + "                uuid"
                 + "                name"
@@ -244,8 +254,8 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
-                + "               nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST1\"}}) {"
+                + "              paths: \"/testList\", "
+                + "              nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST1\"}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"
@@ -298,7 +308,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", "
                 + "               nodeConstraint: {property: \"jcr:title\", like: \"%subList%\"}}) {"
                 + "            nodes {"
                 + "                 name"
@@ -315,30 +325,6 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         validateNode(nodeByName.get("testSubList2"), "testSubList2");
     }
 
-    /**
-     *
-     * @throws Exception
-     */
-    @Test
-    public void shouldRetrieveNodeByDefaultConstraint() throws Exception {
-        JSONObject result = executeQuery("{"
-                + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
-                + "           nodeConstraint: {property: \"jcr:title\", like: \"%subList2%\"}}) {"
-                + "            nodes {"
-                + "                 name"
-                + "		       }"
-                + "        }"
-                + "    }"
-                + "}");
-
-        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
-        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
-
-        Assert.assertEquals(1, nodeByName.size());
-        validateNode(nodeByName.get("testSubList2"), "testSubList2");
-    }
     /**
      * test case for 'equals to' constraints comparison
      *
@@ -403,8 +389,8 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
-                + "           nodeConstraint: {property: \"j:lastPublished\", lt: \"" + datetimeToString(subnode2Published) + "\"}}) {"
+                + "              paths: \"/testList\", "
+                + "           nodeConstraint: {property: \"j:height\", lt: \"" + subnodeHeight2 + "\"}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"
@@ -415,10 +401,8 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
         Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
 
-        Assert.assertEquals(2, nodeByName.size());
-        validateNode(nodeByName.get("testSubList3"), "testSubList3");
-        validateNode(nodeByName.get("testSubList4"), "testSubList4");
-
+        Assert.assertEquals(1, nodeByName.size());
+        validateNode(nodeByName.get("testSubList1"), "testSubList1");
     }
 
     /**
@@ -431,68 +415,10 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
-                + "             nodeConstraint: {property: \"j:lastPublished\", lte: \"" + datetimeToString(subnode2Published) + "\"}}) {"
+                + "              paths: \"/testList\", "
+                + "             nodeConstraint: {property: \"j:height\", lte: " + subnodeHeight2 + "}}) {"
                 + "            nodes {"
                 + "                name"
-                + "		       }"
-                + "        }"
-                + "    }"
-                + "}");
-
-        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
-        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
-
-        Assert.assertTrue(nodeByName.size()>=2);
-        validateNode(nodeByName.get("testSubList3"), "testSubList3");
-        validateNode(nodeByName.get("testSubList4"), "testSubList4");
-
-    }
-
-    /**
-     * test case for 'greater than' constraints comparison
-     *
-     * @throws Exception
-     */
-    @Test
-    public void shouldRetrieveNodeByGreaterThanExpression() throws Exception {
-        JSONObject result = executeQuery("{"
-                + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
-                + "              nodeConstraint: {property: \"j:lastPublished\", gt: \"" + datetimeToString(subnode2Published) + "\"}}) {"
-                + "            nodes {"
-                + "                name"
-                + "		       }"
-                + "        }"
-                + "    }"
-                + "}");
-
-        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
-        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
-
-        Assert.assertTrue(nodeByName.size()>=1);
-        validateNode(nodeByName.get("testSubList1"), "testSubList1");
-
-    }
-
-    /**
-     * test case for 'greater than or equals to' constraints comparison
-     *
-     * @throws Exception
-     */
-    @Test
-    public void shouldRetrieveNodeByGreaterThanOrEqualsToExpression() throws Exception {
-        JSONObject result = executeQuery("{"
-                + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
-                + "               nodeConstraint: {property: \"j:lastPublished\", gte: \"" + datetimeToString(subnode2Published) + "\"}}) {"
-                + "            nodes {"
-                + "                name"
-                + "                lastPublished: property(name: \"j:lastPublished\") {"
-                + "                  value"
-                + "                }"
                 + "		       }"
                 + "        }"
                 + "    }"
@@ -508,6 +434,64 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     }
 
     /**
+     * test case for 'greater than' constraints comparison
+     *
+     * @throws Exception
+     */
+    @Test
+    public void shouldRetrieveNodeByGreaterThanExpression() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "              paths: \"/testList\", "
+                + "              nodeConstraint: {property: \"j:height\", gt: \"" + subnodeHeight2 + "\"}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertTrue(nodeByName.size()>=1);
+        validateNode(nodeByName.get("testSubList3"), "testSubList3");
+
+    }
+
+    /**
+     * test case for 'greater than or equals to' constraints comparison
+     *
+     * @throws Exception
+     */
+    @Test
+    public void shouldRetrieveNodeByGreaterThanOrEqualsToExpression() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "              paths: \"/testList\", "
+                + "               nodeConstraint: {property: \"j:height\", gte: " + subnodeHeight2 + "}}) {"
+                + "            nodes {"
+                + "                name"
+                + "                lastPublished: property(name: \"j:lastPublished\") {"
+                + "                  value"
+                + "                }"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
+
+        Assert.assertEquals(2, nodeByName.size());
+        validateNode(nodeByName.get("testSubList2"), "testSubList2");
+        validateNode(nodeByName.get("testSubList3"), "testSubList3");
+
+    }
+
+    /**
      * test case for 'exists' constraints comparison
      *
      * @throws Exception
@@ -517,7 +501,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", "
                 + "                 nodeConstraint: {property: \"j:liveProperties\", exists: true}}) {"
                 + "            nodes {"
                 + "                name"
@@ -545,7 +529,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", "
                 + "                 nodeConstraint: {property: \"j:lastPublished\", lastDays: 2}}) {"
                 + "            nodes {"
                 + "                name"
@@ -595,7 +579,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", "
                 + "               nodeConstraint: { all:["
                 + "               {property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}"
                 + "            ]}}) {"
@@ -619,7 +603,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", "
                 + "               nodeConstraint: { all:["
                 + "                  { property: \"j:liveProperties\", exists: true},"
                 + "                  { like: \"%subList1%\"}"
@@ -641,7 +625,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", "
                 + "               nodeConstraint: {any:[ "
                 + "               {property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}"
                 + "            ]}}) {"
@@ -666,7 +650,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", "
                 + "               nodeConstraint: { any:["
                 + "                  { property: \"j:liveProperties\", exists: true},"
                 + "                  { like: \"%subList1%\"}"
@@ -688,7 +672,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", "
                 + "               nodeConstraint: { none:[ "
                 + "               {property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}"
                 + "            ]}}) {"
@@ -703,9 +687,12 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONArray nodes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
         Map<String, JSONObject> nodeByName = toItemByKeyMap("name", nodes);
 
-        Assert.assertEquals(2, nodeByName.size());
+        Assert.assertEquals(5, nodeByName.size());
         validateNode(nodeByName.get("testSubList2"), "testSubList2");
         validateNode(nodeByName.get("testSubList3"), "testSubList3");
+        validateNode(nodeByName.get("testSubList4_1"), "testSubList4_1");
+        validateNode(nodeByName.get("testSubList4_2"), "testSubList4_2");
+        validateNode(nodeByName.get("testSubList4_3"), "testSubList4_3");
     }
 
     @Test
@@ -713,7 +700,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", "
                 + "               nodeConstraint: { none: [ "
                 + "               {property: \"j:liveProperties\", exists: true}, {like: \"%subList2%\"}"
                 + "            ]}}) {"
@@ -732,12 +719,12 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                         + "    jcr {"
                         + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                        + "              paths: \"/testList\", pathType: PARENT, "
+                        + "              paths: \"/testList\", "
                         + "               nodeConstraint: { all:["
                         + "                  { any:[{ property: \"j:keywords\", exists: true}, { property: \"j:tagList\", exists: true}]},"
                         + "                  { none:["
                         + "                          {property: \"name\", function: NODE_NAME, equals: \"landing\"},"
-                        + "                          {property: \"jcr:lastPublished\", , lte: \"" + datetimeToString(subnode3Published)+"\"}"
+                        + "                          {property: \"j:height\", gte: " + subnodeHeight3 +"}"
                         + "                          ]"
                         + "                       }]"
                         + "                    }"
@@ -763,12 +750,12 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", "
                 + "               nodeConstraint: { all:["
                 + "                  { any:[{ property: \"j:keywords\", exists: true}, { like: \"%subList1%\"}]},"
                 + "                  { none:["
                 + "                          {property: \"name\", function: NODE_NAME, equals: \"landing\"},"
-                + "                          {property: \"jcr:lastPublished\", , lte: \"" + datetimeToString(subnode3Published)+"\"}"
+                + "                          {property: \"j:height\", lte: " + subnodeHeight2 + "}"
                 + "                          ]"
                 + "                       }]"
                 + "                    }"
@@ -838,7 +825,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"fr_FR\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", "
                 + "             nodeConstraint: {property: \"jcr:title\", like: \"%subList2%\"}}) {"
                 + "            nodes {"
                 + "                name"
@@ -860,7 +847,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"fr_FR\", "
-                + "              paths: \"/testList\", pathType: PARENT, "
+                + "              paths: \"/testList\", "
                 + "           nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST3\"}}) {"
                 + "            nodes {"
                 + "                name"
@@ -874,8 +861,4 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         Assert.assertEquals(0, nodes.length());
     }
 
-    private static String datetimeToString(Date date) {
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSXXX");
-        return dateFormat.format(date);
-    }
 }

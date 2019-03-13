@@ -649,7 +649,7 @@ public class GqlJcrQuery {
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            String value = nodeConstraint.getLt();
+            Long value = nodeConstraint.getLt();
             if (value == null) {
                 return null;
             }
@@ -670,7 +670,7 @@ public class GqlJcrQuery {
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            String value = nodeConstraint.getGt();
+            Long value = nodeConstraint.getGt();
             if (value == null) {
                 return null;
             }
@@ -691,7 +691,7 @@ public class GqlJcrQuery {
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            String value = nodeConstraint.getLte();
+            Long value = nodeConstraint.getLte();
             if (value == null) {
                 return null;
             }
@@ -712,7 +712,7 @@ public class GqlJcrQuery {
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            String value = nodeConstraint.getGte();
+            Long value = nodeConstraint.getGte();
             if (value == null) {
                 return null;
             }
