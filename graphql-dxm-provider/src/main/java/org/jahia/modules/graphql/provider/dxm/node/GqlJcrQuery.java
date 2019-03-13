@@ -47,7 +47,6 @@ import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.LocaleUtils;
-import org.apache.commons.lang.time.DateUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
@@ -515,6 +514,12 @@ public class GqlJcrQuery {
         }
     }
 
+    private static void validateNodeContraintValue(GqlJcrNodeConstraintInput nodeConstraint) {
+        if (nodeConstraint.getLastDays() != null && nodeConstraint.getLastDays() < 0) {
+            throw new GqlJcrWrongInputException("lastDays value should not be negative");
+        }
+    }
+
     /**
      * Validate if composite constraint all/any/none is missed with other constraints in the same level
      *
@@ -753,10 +758,14 @@ public class GqlJcrQuery {
                 return null;
             }
 
+            //Constraint validation
             validateNodeConstraintProperty(nodeConstraint);
-            Date targetDate = DateUtils.addDays(new Date(), - value);
-            DateTime dt = new DateTime(targetDate);
-            DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd'T'hh:mm:ss.SSSXXX");
+            validateNodeContraintValue(nodeConstraint);
+
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.DATE, -value);
+            DateTime dt = new DateTime(cal);
+            DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd'T'hh:mm:ss.SSS");
 
             return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
                                     QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO,
