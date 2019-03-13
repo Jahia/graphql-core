@@ -130,8 +130,6 @@
                         <Jahia-Depends>default</Jahia-Depends>
                         <_dsannotations>*</_dsannotations>
                         <Export-Package>
-                            graphql.schema,
-                            graphql.servlet,
                             org.jahia.modules.graphql.provider.dxm.relay,
                             org.jahia.modules.graphql.provider.dxm.node,
                             org.jahia.modules.graphql.provider.dxm.nodetype,
