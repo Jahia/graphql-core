@@ -50,7 +50,6 @@ import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRValueWrapper;
-import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +69,7 @@ import java.util.stream.Collectors;
 public class ListDataFetcher implements DataFetcher<List> {
 
     private static Logger logger = LoggerFactory.getLogger(ListDataFetcher.class);
-    Field field;
+    private Field field;
 
     public ListDataFetcher(Field field) {
         this.field = field;
@@ -150,16 +149,17 @@ public class ListDataFetcher implements DataFetcher<List> {
                     logger.debug("Fetch children of type {}", nodeType);
                     //Case when child name is not specified, get children directly from jcrNode
                     return resolveChildren(node, nodeType);
-                } else {
-                    //Case when property is a weak reference
-                    if (node.hasProperty(field.getProperty())) {
-                        return resolveProperty(node);
-                    } else {
-                        //Case when child mapping is specified, get children from mapped node
-                        logger.debug("Fetch children of type {} from child {}", nodeType, field.getProperty());
-                        return resolveChildren(node.getNode(field.getProperty()), nodeType);
-                    }
                 }
+
+                //Case when property is a weak reference
+                if (node.hasProperty(field.getProperty())) {
+                    return resolveProperty(node);
+                }
+
+                //Case when child mapping is specified, get children from mapped node
+                logger.debug("Fetch children of type {} from child {}", nodeType, field.getProperty());
+                return resolveChildren(node.getNode(field.getProperty()), nodeType);
+
             } catch (RepositoryException e) {
                 //Do nothing, return empty list below
             }
