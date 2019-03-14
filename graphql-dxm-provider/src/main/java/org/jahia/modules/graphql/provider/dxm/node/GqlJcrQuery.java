@@ -502,25 +502,6 @@ public class GqlJcrQuery {
     }
 
     /**
-     * Validate if property field is missing when node constraint perform contains/like/equals/notEquals/lt/lte/gt/gte/exists ... etc
-     * other than the composite constraint all/any/none
-     *
-     * @param nodeConstraint
-     */
-    private static void validateNodeConstraintProperty(GqlJcrNodeConstraintInput nodeConstraint) {
-        if (nodeConstraint.getProperty() == null && nodeConstraint.getContains() == null
-            && (nodeConstraint.getFunction() == null || (!nodeConstraint.getFunction().equals(NODE_NAME) && !nodeConstraint.getFunction().equals(NODE_LOCAL_NAME)))) {
-            throw new GqlJcrWrongInputException("'property' field is required");
-        }
-    }
-
-    private static void validateNodeContraintValue(GqlJcrNodeConstraintInput nodeConstraint) {
-        if (nodeConstraint.getLastDays() != null && nodeConstraint.getLastDays() < 0) {
-            throw new GqlJcrWrongInputException("lastDays value should not be negative");
-        }
-    }
-
-    /**
      * Validate if composite constraint all/any/none is missed with other constraints in the same level
      *
      * @param nodeConstraint
@@ -532,11 +513,6 @@ public class GqlJcrQuery {
                 || nodeConstraint.getGte()!=null || nodeConstraint.getLt()!=null || nodeConstraint.getLte()!=null
                 || nodeConstraint.getLastDays()!=null || nodeConstraint.getProperty()!=null || nodeConstraint.getNotEquals()!=null))
             throw new GqlJcrWrongInputException("Composite constraints all/any/none cannot be mixed with other constraints in the same level");
-    }
-
-    private interface NodeConstraintConvertor {
-        Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException;
-        String getFieldName();
     }
 
     private static DynamicOperand applyConstraintFunctions(GqlJcrNodeConstraintInput nodeConstraint, String selector, QueryObjectModelFactory factory)
@@ -562,7 +538,25 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorLike implements NodeConstraintConvertor {
+    private abstract static class NodeConstraintConvertor {
+        abstract Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException;
+        abstract String getFieldName();
+
+        protected void validateNodeConstraintProperty(GqlJcrNodeConstraintInput nodeConstraint) {
+            if (nodeConstraint.getProperty() == null && nodeConstraint.getContains() == null
+                    && (nodeConstraint.getFunction() == null || (!nodeConstraint.getFunction().equals(NODE_NAME) && !nodeConstraint.getFunction().equals(NODE_LOCAL_NAME)))) {
+                throw new GqlJcrWrongInputException("'property' field is required");
+            }
+        }
+
+        protected void validateNodeContraintValue(GqlJcrNodeConstraintInput nodeConstraint) {
+            if (nodeConstraint.getLastDays() != null && nodeConstraint.getLastDays() < 0) {
+                throw new GqlJcrWrongInputException("lastDays value should not be negative");
+            }
+        }
+    }
+
+    private static class NodeConstraintConvertorLike extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -583,7 +577,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorContains implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorContains extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -602,7 +596,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorEquals implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorEquals extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -623,7 +617,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorNotEquals implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorNotEquals extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -644,7 +638,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorLessThan implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorLessThan extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -665,7 +659,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorGreaterThan implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorGreaterThan extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -686,7 +680,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorLessThanOrEqualsTo implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorLessThanOrEqualsTo extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -707,7 +701,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorGreaterThanOrEqualsTo implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorGreaterThanOrEqualsTo extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -728,7 +722,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorExists implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorExists extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -748,7 +742,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorLastDays implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorLastDays extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
