@@ -97,6 +97,8 @@ public class GqlJcrQuery {
 
     private NodeQueryExtensions.Workspace workspace;
 
+    private static final String ISO_DATETIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
+
     public GqlJcrQuery(NodeQueryExtensions.Workspace workspace) {
         this.workspace = workspace;
     }
@@ -643,14 +645,14 @@ public class GqlJcrQuery {
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            Long value = nodeConstraint.getLt();
+            String value = nodeConstraint.getLt();
             if (value == null) {
                 return null;
             }
 
             validateNodeConstraintProperty(nodeConstraint);
             return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
-                    QueryObjectModelConstants.JCR_OPERATOR_LESS_THAN, factory.literal(new ValueImpl(value)));
+                    QueryObjectModelConstants.JCR_OPERATOR_LESS_THAN, factory.literal(convertValueByParsingSuccess(value)));
         }
 
         @Override
@@ -664,14 +666,14 @@ public class GqlJcrQuery {
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            Long value = nodeConstraint.getGt();
+            String value = nodeConstraint.getGt();
             if (value == null) {
                 return null;
             }
 
             validateNodeConstraintProperty(nodeConstraint);
             return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
-                    QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN, factory.literal(new ValueImpl(value)));
+                    QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN, factory.literal(convertValueByParsingSuccess(value)));
         }
 
         @Override
@@ -685,14 +687,14 @@ public class GqlJcrQuery {
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            Long value = nodeConstraint.getLte();
+            String value = nodeConstraint.getLte();
             if (value == null) {
                 return null;
             }
 
             validateNodeConstraintProperty(nodeConstraint);
             return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
-                    QueryObjectModelConstants.JCR_OPERATOR_LESS_THAN_OR_EQUAL_TO, factory.literal(new ValueImpl(value)));
+                    QueryObjectModelConstants.JCR_OPERATOR_LESS_THAN_OR_EQUAL_TO, factory.literal(convertValueByParsingSuccess(value)));
         }
 
         @Override
@@ -706,14 +708,14 @@ public class GqlJcrQuery {
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            Long value = nodeConstraint.getGte();
+            String value = nodeConstraint.getGte();
             if (value == null) {
                 return null;
             }
 
             validateNodeConstraintProperty(nodeConstraint);
             return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
-                    QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO, factory.literal(new ValueImpl(value)));
+                    QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO, factory.literal(convertValueByParsingSuccess(value)));
         }
 
         @Override
@@ -758,12 +760,10 @@ public class GqlJcrQuery {
 
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.DATE, -value);
-            DateTime dt = new DateTime(cal);
-            DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd'T'hh:mm:ss.SSS");
 
             return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
                                     QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO,
-                                    factory.literal(new ValueImpl(dt.toString(fmt))));
+                                    factory.literal(new ValueImpl(cal)));
         }
 
         @Override
@@ -779,4 +779,38 @@ public class GqlJcrQuery {
             return SQL2;
         }
     }
+
+    private static ValueImpl convertValueByParsingSuccess(String value) {
+        try {
+            Long longValue = Long.parseLong(value);
+            if (longValue!=null){
+                return new ValueImpl(longValue);
+            }
+        } catch (Exception e) {
+            //check next data type
+        }
+
+        try {
+            Double doubleValue = Double.parseDouble(value);
+            if (doubleValue!=null){
+                return new ValueImpl(doubleValue);
+            }
+        } catch (Exception e) {
+            //check next data type
+        }
+
+        try {
+            DateTimeFormatter fmt = DateTimeFormat.forPattern(ISO_DATETIME_PATTERN);
+            DateTime dt = fmt.parseDateTime(value);
+            if (dt!=null){
+                return new ValueImpl(dt.toGregorianCalendar());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            //check next data type
+        }
+
+        return new ValueImpl(value);
+    }
+
 }
