@@ -253,7 +253,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", "
                 + "              nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST1\"}}) {"
                 + "            nodes {"
@@ -277,7 +277,6 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {"
                 + "             nodeType: \"jnt:contentList\","
-                + "             language: \"en\","
                 + "             paths: \"/testList\","
                 + "             pathType: ANCESTOR,"
                 + "             nodeConstraint: {"
@@ -307,7 +306,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", "
                 + "               nodeConstraint: {property: \"jcr:title\", like: \"%subList%\"}}) {"
                 + "            nodes {"
@@ -334,7 +333,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodeByEqualsExpression() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", pathType: ANCESTOR, "
                 + "             nodeConstraint: {property: \"jcr:title\", equals: \"" + subnodeTitleEn1 + "\"}}) {"
                 + "            nodes {"
@@ -388,7 +387,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodeByLessThanExpression() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", "
                 + "           nodeConstraint: {property: \"j:height\", lt: \"" + subnodeHeight2 + "\"}}) {"
                 + "            nodes {"
@@ -414,7 +413,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodeByLessThanOrEqualsToExpression() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\","
                 + "              paths: \"/testList\", "
                 + "             nodeConstraint: {property: \"j:height\", lte: " + subnodeHeight2 + "}}) {"
                 + "            nodes {"
@@ -442,7 +441,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodeByGreaterThanExpression() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", "
                 + "              nodeConstraint: {property: \"j:height\", gt: \"" + subnodeHeight2 + "\"}}) {"
                 + "            nodes {"
@@ -469,7 +468,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodeByGreaterThanOrEqualsToExpression() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\","
                 + "              paths: \"/testList\", "
                 + "               nodeConstraint: {property: \"j:height\", gte: " + subnodeHeight2 + "}}) {"
                 + "            nodes {"
@@ -500,7 +499,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodesByExistsExpression() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\","
                 + "              paths: \"/testList\", "
                 + "                 nodeConstraint: {property: \"j:liveProperties\", exists: true}}) {"
                 + "            nodes {"
@@ -528,7 +527,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodesByLastDaysExpression() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\" "
                 + "              paths: \"/testList\", "
                 + "                 nodeConstraint: {property: \"j:lastPublished\", lastDays: 2}}) {"
                 + "            nodes {"
@@ -546,6 +545,28 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         validateNode(nodeByName.get("testSubList2"), "testSubList2");
     }
 
+    /**
+     * test case for 'last days' constraints comparison
+     *
+     * @throws Exception
+     */
+    @Test
+    public void shouldGetErrorRetrieveNodesByLastDaysExpression() throws Exception {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
+                + "              paths: \"/testList\", "
+                + "                 nodeConstraint: {property: \"j:lastPublished\", lastDays: -1}}) {"
+                + "            nodes {"
+                + "                name"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        validateError(result, "lastDays value should not be negative");
+
+    }
 
     /**
      * test case for 'exists' constraints comparison
@@ -556,7 +577,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodesByExistsExpressionWhenPropertyDoesNotExist() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", pathType: PARENT, "
                 + "               nodeConstraint: {property: \"j:liveProperties\", exists: false}}) {"
                 + "            nodes {"
@@ -578,7 +599,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodeByAllConstraints() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", "
                 + "               nodeConstraint: { all:["
                 + "               {property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}"
@@ -602,7 +623,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldGetErrorNotRetrieveNodesByAllConstraintsWhenPropertyIsEmpty() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", "
                 + "               nodeConstraint: { all:["
                 + "                  { property: \"j:liveProperties\", exists: true},"
@@ -624,7 +645,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodeByAnyConstraints() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", "
                 + "               nodeConstraint: {any:[ "
                 + "               {property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}"
@@ -649,7 +670,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldGetErrorNotRetrieveNodesByAnyConstraintsWhenPropertyIsEmpty() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", "
                 + "               nodeConstraint: { any:["
                 + "                  { property: \"j:liveProperties\", exists: true},"
@@ -671,7 +692,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodeByNoneConstraints() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", "
                 + "               nodeConstraint: { none:[ "
                 + "               {property: \"j:liveProperties\", exists: true}, {property:\"j:keywords\", exists: true}"
@@ -699,7 +720,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldGetErrorNotRetrieveNodesByNoneConstraintsWhenPropertyIsEmpty() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", "
                 + "               nodeConstraint: { none: [ "
                 + "               {property: \"j:liveProperties\", exists: true}, {like: \"%subList2%\"}"
@@ -718,7 +739,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldRetrieveNodeByAllAnyNoneConstraints() throws Exception {
         JSONObject result = executeQuery("{"
                         + "    jcr {"
-                        + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                        + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                         + "              paths: \"/testList\", "
                         + "               nodeConstraint: { all:["
                         + "                  { any:[{ property: \"j:keywords\", exists: true}, { property: \"j:tagList\", exists: true}]},"
@@ -749,7 +770,7 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     public void shouldGetErrorNotRetrieveNodeByAllAnyNoneConstraints() throws Exception {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", language: \"en\", "
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
                 + "              paths: \"/testList\", "
                 + "               nodeConstraint: { all:["
                 + "                  { any:[{ property: \"j:keywords\", exists: true}, { like: \"%subList1%\"}]},"
