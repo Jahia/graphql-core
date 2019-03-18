@@ -43,23 +43,18 @@
  */
 package org.jahia.modules.graphql.provider.dxm.publication;
 
-import graphql.annotations.annotationTypes.GraphQLDefaultValue;
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
-import graphql.annotations.annotationTypes.GraphQLTypeExtension;
-
-import javax.jcr.RepositoryException;
-
+import graphql.annotations.annotationTypes.*;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.ComplexPublicationService;
+import org.jahia.services.content.JCRPublicationService;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+
+import javax.jcr.RepositoryException;
 
 /**
  * Publication extensions for the JCR node.
@@ -91,7 +86,6 @@ public class PublicationJCRNodeExtension extends PublicationJCRExtensionSupport 
      * @return Aggregated publication info about the node
      */
     @GraphQLField
-    @GraphQLName("aggregatedPublicationInfo")
     @GraphQLNonNull
     @GraphQLDescription("Aggregated publication info about the JCR node")
     public GqlPublicationInfo getAggregatedPublicationInfo(
@@ -111,27 +105,22 @@ public class PublicationJCRNodeExtension extends PublicationJCRExtensionSupport 
 
         final ComplexPublicationService.AggregatedPublicationInfo aggregatedInfo = publicationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, subNodes, references, session);
 
-        return new GqlPublicationInfo() {
+        return new GqlPublicationInfo(aggregatedInfo);
+    }
 
-            @Override
-            public GqlPublicationStatus getPublicationStatus() {
-                return GqlPublicationStatus.fromStatusValue(aggregatedInfo.getPublicationStatus());
-            }
-
-            @Override
-            public boolean isLocked() {
-                return aggregatedInfo.isLocked();
-            }
-
-            @Override
-            public boolean isWorkInProgress() {
-                return aggregatedInfo.isWorkInProgress();
-            }
-
-            @Override
-            public boolean isAllowedToPublishWithoutWorkflow() {
-                return aggregatedInfo.isAllowedToPublishWithoutWorkflow();
-            }
-        };
+    /**
+     * Returns if the node supports publication
+     *
+     * @return  does the node supports publication
+     */
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("does the node supports publication")
+    public boolean supportsPublication() {
+        try {
+            return JCRPublicationService.supportsPublication(gqlJcrNode.getNode().getSession(), gqlJcrNode.getNode());
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
     }
 }

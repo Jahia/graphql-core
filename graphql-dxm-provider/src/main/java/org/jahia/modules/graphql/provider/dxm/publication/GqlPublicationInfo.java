@@ -47,11 +47,18 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.jahia.services.content.ComplexPublicationService;
 
 /**
  * Aggregated publication info about a JCR node.
  */
-public interface GqlPublicationInfo {
+public class GqlPublicationInfo {
+
+    private ComplexPublicationService.AggregatedPublicationInfo aggregatedInfo;
+
+    public GqlPublicationInfo(ComplexPublicationService.AggregatedPublicationInfo aggregatedInfo) {
+        this.aggregatedInfo = aggregatedInfo;
+    }
 
     /**
      * @return Aggregated publication status of the node
@@ -60,7 +67,9 @@ public interface GqlPublicationInfo {
     @GraphQLName("publicationStatus")
     @GraphQLNonNull
     @GraphQLDescription("Aggregated publication status of the node")
-    GqlPublicationStatus getPublicationStatus();
+    public GqlPublicationStatus getPublicationStatus() {
+        return GqlPublicationStatus.fromStatusValue(aggregatedInfo.getPublicationStatus());
+    }
 
     /**
      * @return Aggregated locked status of the node
@@ -68,7 +77,9 @@ public interface GqlPublicationInfo {
     @GraphQLField
     @GraphQLName("locked")
     @GraphQLDescription("Aggregated locked status of the node")
-    public boolean isLocked();
+    public boolean isLocked() {
+        return aggregatedInfo.isLocked();
+    }
 
     /**
      * @return Aggregated work-in-progress status of the node
@@ -76,7 +87,9 @@ public interface GqlPublicationInfo {
     @GraphQLField
     @GraphQLName("workInProgress")
     @GraphQLDescription("Aggregated work-in-progress status of the node")
-    public boolean isWorkInProgress();
+    public boolean isWorkInProgress() {
+        return aggregatedInfo.isWorkInProgress();
+    }
 
     /**
      * @return Whether current user is allowed to publish the node omitting any workflows
@@ -84,5 +97,7 @@ public interface GqlPublicationInfo {
     @GraphQLField
     @GraphQLName("allowedToPublishWithoutWorkflow")
     @GraphQLDescription("Whether current user is allowed to publish the node omitting any workflows")
-    public boolean isAllowedToPublishWithoutWorkflow();
+    public boolean isAllowedToPublishWithoutWorkflow() {
+        return aggregatedInfo.isAllowedToPublishWithoutWorkflow();
+    }
 }
