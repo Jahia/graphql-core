@@ -422,6 +422,11 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         return toBeTranslated;
     }
 
+    @Override
+    public GqlOperationsSupport getOperationsSupport() {
+        return new GqlOperationsSupport(this);
+    }
+
     private static String normalizePath(String path) {
         return (path.endsWith("/") ? path : path + "/");
     }
