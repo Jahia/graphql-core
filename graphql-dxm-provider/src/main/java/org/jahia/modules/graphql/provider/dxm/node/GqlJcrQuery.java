@@ -319,7 +319,7 @@ public class GqlJcrQuery {
         // Add path constraint if any.
         Collection<String> paths = criteria.getPaths();
         if (paths != null && !paths.isEmpty()) {
-            Constraint principleConstraint;
+            Constraint pathConstraints;
             GqlJcrNodeCriteriaInput.PathType pathType = criteria.getPathType();
             if (pathType == null) {
                 pathType = GqlJcrNodeCriteriaInput.PathType.ANCESTOR;
@@ -327,45 +327,43 @@ public class GqlJcrQuery {
             Iterator<String> pathsIt = paths.iterator();
             switch (pathType) {
                 case ANCESTOR:
-                    principleConstraint = factory.descendantNode(selector, pathsIt.next());
+                    pathConstraints = factory.descendantNode(selector, pathsIt.next());
                     while (pathsIt.hasNext()) {
-                        principleConstraint = factory.or(principleConstraint, factory.descendantNode(selector, pathsIt.next()));
+                        pathConstraints = factory.or(pathConstraints, factory.descendantNode(selector, pathsIt.next()));
                     }
                     break;
                 case PARENT:
-                    principleConstraint = factory.childNode(selector, pathsIt.next());
+                    pathConstraints = factory.childNode(selector, pathsIt.next());
                     while (pathsIt.hasNext()) {
-                        principleConstraint = factory.or(principleConstraint, factory.childNode(selector, pathsIt.next()));
+                        pathConstraints = factory.or(pathConstraints, factory.childNode(selector, pathsIt.next()));
                     }
                     break;
                 case OWN:
-                    principleConstraint = factory.sameNode(selector, pathsIt.next());
+                    pathConstraints = factory.sameNode(selector, pathsIt.next());
                     while (pathsIt.hasNext()) {
-                        principleConstraint = factory.or(principleConstraint, factory.sameNode(selector, pathsIt.next()));
+                        pathConstraints = factory.or(pathConstraints, factory.sameNode(selector, pathsIt.next()));
                     }
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown path type: " + pathType);
             }
-            constraints.add(principleConstraint);
+            constraints.add(pathConstraints);
         }
+
+        if (constraints.isEmpty() && criteria.getNodeConstraint() == null) {
+            return null;
+        }
+
+        constraints.add(compositeChildConstraints(selector, criteria.getNodeConstraint(), factory));
 
         // Build the result.
         Constraint result = null;
-        if (constraints.isEmpty()) {
-            return null;
-        } else {
-            if (criteria.getNodeConstraint()!=null) {
-                constraints.add(compositeChildConstraints(selector, criteria.getNodeConstraint(), factory));
-            }
-
-            for(Constraint constraint : constraints){
-                result = result != null ? factory.and(result, constraint) : constraint;
-            }
-
-            logger.debug("Generate composite constraints {} ", result);
-            return result;
+        for (Constraint constraint : constraints) {
+            result = result != null ? factory.and(result, constraint) : constraint;
         }
+
+        logger.debug("Generate composite constraints {} ", result);
+        return result;
     }
 
     /**
