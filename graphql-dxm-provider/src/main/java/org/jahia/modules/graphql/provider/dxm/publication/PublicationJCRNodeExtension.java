@@ -50,7 +50,6 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.ComplexPublicationService;
-import org.jahia.services.content.JCRPublicationService;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 
@@ -108,19 +107,4 @@ public class PublicationJCRNodeExtension extends PublicationJCRExtensionSupport 
         return new GqlPublicationInfo(aggregatedInfo);
     }
 
-    /**
-     * Returns if the node supports publication
-     *
-     * @return  does the node supports publication
-     */
-    @GraphQLField
-    @GraphQLNonNull
-    @GraphQLDescription("does the node supports publication")
-    public boolean supportsPublication() {
-        try {
-            return JCRPublicationService.supportsPublication(gqlJcrNode.getNode().getSession(), gqlJcrNode.getNode());
-        } catch (RepositoryException e) {
-            throw new JahiaRuntimeException(e);
-        }
-    }
 }
