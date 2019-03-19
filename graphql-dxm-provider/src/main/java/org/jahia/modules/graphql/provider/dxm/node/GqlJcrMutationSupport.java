@@ -49,6 +49,7 @@ import org.apache.commons.io.FileUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.upload.UploadHelper;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -79,7 +80,7 @@ public class GqlJcrMutationSupport {
     public static JCRNodeWrapper addNode(JCRNodeWrapper parent, GqlJcrNodeInput node) {
         JCRNodeWrapper jcrNode;
         try {
-            jcrNode = parent.addNode(node.getName(), node.getPrimaryNodeType());
+            jcrNode = parent.addNode(JCRContentUtils.escapeLocalNodeName(node.getName()), node.getPrimaryNodeType());
             if (node.getMixins() != null) {
                 for (String mixin : node.getMixins()) {
                     jcrNode.addMixin(mixin);
