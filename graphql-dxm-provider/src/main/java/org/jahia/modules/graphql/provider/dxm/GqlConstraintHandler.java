@@ -130,7 +130,7 @@ public class GqlConstraintHandler {
     }
 
     /**
-     * Validate if composite constraint all/any/none is missed with other constraints in the same level
+     * Validate if composite constraint all/any/none is mixed with other constraints in the same level
      *
      * @param nodeConstraint
      */
