@@ -194,6 +194,32 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
     }
 
     @Test
+    public void shouldRetrieveDescendantNodesWithoutPath() throws Exception {
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", "
+                + "            nodeConstraint: {property: \"jcr:title\", contains: \"SUBLIST1\"}}) {"
+                + "            nodes {"
+                + "                uuid"
+                + "                name"
+                + "                path"
+                + "                parent {"
+                + "                    path"
+                + "                }"
+                + "		       }"
+                + "        }"
+                + "    }"
+                + "}");
+
+        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodesByCriteria").getJSONArray("nodes");
+        Map<String, JSONObject> childByName = toItemByKeyMap("name", children);
+
+        Assert.assertTrue(childByName.size() >= 1);
+        validateNode(childByName.get("testSubList1"), subNodeUuid1, "testSubList1", "/testList/testSubList1", "/testList");
+    }
+
+    @Test
     public void shouldRetrieveChildNodesByParentPath() throws Exception {
 
         JSONObject result = executeQuery("{"
