@@ -43,13 +43,6 @@
  */
 package org.jahia.test.graphql;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Map;
-
 import org.apache.commons.lang.time.DateUtils;
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -61,12 +54,19 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Map;
+
 /**
  * @author yousria
  */
 public class GraphQLCriteriaTest extends GraphQLTestSupport {
 
-    private static final String NONE_OR_MULTIPLE_NODE_COMPARISONS_ERROR = "At least one of the following constraint field is expected: 'like', 'contains', 'equals', 'notEquals', 'gt', 'gte', 'lt', 'lte', 'exists' or 'lastDays'";
+    private static final String NONE_OR_MULTIPLE_NODE_COMPARISONS_ERROR = "At least one of the following constraint field is expected";
 
     private static String nodeUuid = null;
     private static String subNodeUuid1 = null;
@@ -926,22 +926,6 @@ public class GraphQLCriteriaTest extends GraphQLTestSupport {
         JSONObject result = executeQuery("{"
                 + "    jcr {"
                 + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", paths: \"/testList\", nodeConstraint: {property: \"property\"}}) {"
-                + "            nodes {"
-                + "                name"
-                + "		       }"
-                + "        }"
-                + "    }"
-                + "}");
-
-        validateError(result, NONE_OR_MULTIPLE_NODE_COMPARISONS_ERROR);
-    }
-
-    @Test
-    public void shouldGetErrorNotRetrieveNodesByNodeConstraintWhenMultipleComparisonsSpecified() throws Exception {
-
-        JSONObject result = executeQuery("{"
-                + "    jcr {"
-                + "        nodesByCriteria(criteria: {nodeType: \"jnt:contentList\", paths: \"/testList\", nodeConstraint: {property: \"property\", contains: \"contains\", like: \"like\"}}) {"
                 + "            nodes {"
                 + "                name"
                 + "		       }"

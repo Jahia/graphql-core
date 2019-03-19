@@ -60,6 +60,7 @@ import org.jahia.services.content.QueryManagerWrapper;
 import org.jahia.services.query.QueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.touk.throwing.exception.WrappedException;
 
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
@@ -281,6 +282,15 @@ public class GqlJcrQuery {
             QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, ordering == null ? null : new Ordering[]{ordering}, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
             return NodeHelper.getPaginatedNodesList(it, null, null, null, fieldFilter, environment, fieldSorter, fieldGrouping);
+        } catch (WrappedException e) {
+            Throwable cause = e.getCause();
+            while (cause instanceof WrappedException) {
+                cause = cause.getCause();
+            }
+            if (cause instanceof BaseGqlClientException) {
+                throw (BaseGqlClientException) cause;
+            }
+            throw new DataFetchingException(cause);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }

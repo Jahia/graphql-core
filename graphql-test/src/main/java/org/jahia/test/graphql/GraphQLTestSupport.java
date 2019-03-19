@@ -141,6 +141,6 @@ public class GraphQLTestSupport extends JahiaTestCase {
     protected static void validateError(JSONObject result, String errorMessage) throws JSONException {
         JSONArray errors = result.getJSONArray("errors");
         Assert.assertEquals(1, errors.length());
-        Assert.assertEquals(errorMessage, errors.getJSONObject(0).getString("message"));
+        Assert.assertTrue(errors.getJSONObject(0).getString("message").contains(errorMessage));
     }
 }
