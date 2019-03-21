@@ -2,7 +2,16 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.*;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
+import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
+import org.jahia.services.content.nodetypes.ExtendedPropertyType;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class FinderFetchersFactory {
 
@@ -22,7 +31,7 @@ public class FinderFetchersFactory {
         //Handle specialized types
         String definitionPropertyName = getDefinitionProperty(queryName);
         String propertyNameInJcr = getMappedProperty(definitionPropertyName, fieldDefinition);
-        String propertyType = getMappedType(definitionPropertyName, fieldDefinition);
+        String propertyType = getMappedType(definitionPropertyName, propertyNameInJcr, fieldDefinition);
         finder.setProperty(propertyNameInJcr != null ? propertyNameInJcr : definitionPropertyName);
 
         switch (propertyType) {
@@ -39,6 +48,9 @@ public class FinderFetchersFactory {
                 NumberFinder f = NumberFinder.fromFinder(finder);
                 f.setNumberType(propertyType);
                 return getFetcherType(f, FetcherType.NUMBER);
+            case "Weakreference":
+                WeakreferenceFinder weakreferenceFinder = getWeakreferenceFinder(finder, fieldDefinition, definitionPropertyName);
+                return getFetcherType(weakreferenceFinder, FetcherType.WEAKREFERENCE);
             default:
                 return getFetcherType(finder, FetcherType.STRING);
         }
@@ -52,24 +64,25 @@ public class FinderFetchersFactory {
                 return new ByIdFinderDataFetcher(finder);
             case PATH:
                 return new ByPathFinderDataFetcher(finder);
-            case STRING:
-                return new StringFinderDataFetcher(finder);
             case DATE:
                 return new DateRangeDataFetcher(finder);
             case BOOLEAN:
                 return new BooleanFinderDataFetcher(finder);
             case NUMBER:
                 return new NumberFinderDataFetcher((NumberFinder) finder);
+            case WEAKREFERENCE:
+                return new WeakreferenceFinderDataFetcher((WeakreferenceFinder) finder);
+            case STRING:
             default:
-                return null;
+                return new StringFinderDataFetcher(finder);
         }
     }
 
-    public static String getDefinitionProperty(String queryName) {
+    private static String getDefinitionProperty(String queryName) {
         return StringUtils.uncapitalize(StringUtils.substringAfterLast(queryName, "By"));
     }
 
-    public static String getMappedProperty(String definitionPropertyName, GraphQLFieldDefinition fieldDefinition) {
+    private static String getMappedProperty(String definitionPropertyName, GraphQLFieldDefinition fieldDefinition) {
         GraphQLObjectType type = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
         GraphQLFieldDefinition fd = type.getFieldDefinition(definitionPropertyName);
         if (fd == null) return null;
@@ -78,9 +91,42 @@ public class FinderFetchersFactory {
         return fd.getDirective(SDLConstants.MAPPING_DIRECTIVE).getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue().toString();
     }
 
-    public static String getMappedType(String definitionPropertyName, GraphQLFieldDefinition fieldDefinition) {
+    private static String getMappedType(String definitionPropertyName, String propertyNameInJcr, GraphQLFieldDefinition fieldDefinition) {
         GraphQLObjectType graphQLType = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
+        GraphQLDirective mappingDirective = graphQLType.getDirective(SDLConstants.MAPPING_DIRECTIVE);
+        if (mappingDirective != null) {
+            String nodeType = mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
+            ExtendedNodeType type = null;
+            try {
+                type = NodeTypeRegistry.getInstance().getNodeType(nodeType);
+                ExtendedPropertyDefinition propDef = type.getPropertyDefinition(propertyNameInJcr);
+                if (propDef != null && ExtendedPropertyType.WEAKREFERENCE == propDef.getRequiredType()) {
+                    return "Weakreference";
+                }
+            } catch (NoSuchNodeTypeException e) {
+                e.printStackTrace();
+            }
+        }
         return graphQLType.getFieldDefinition(definitionPropertyName).getType().getName();
+    }
+
+    private static WeakreferenceFinder getWeakreferenceFinder(Finder finder, GraphQLFieldDefinition fieldDefinition, String definitionPropertyName) {
+        WeakreferenceFinder f = WeakreferenceFinder.fromFinder(finder);
+        GraphQLObjectType graphQLType = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
+        GraphQLFieldDefinition field = graphQLType.getFieldDefinition(definitionPropertyName);
+        GraphQLOutputType fieldType = field.getType();
+        GraphQLDirective directive = (GraphQLDirective) fieldType.getChildren()
+                .stream()
+                .filter(type -> type instanceof GraphQLDirective && type.getName().equals(SDLConstants.MAPPING_DIRECTIVE) && ((GraphQLDirective) type).getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE) != null)
+                .findFirst()
+                .orElse(null);
+
+        if (directive != null) {
+            String nodeTypeOfWeakreference = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
+            f.setReferencedType(nodeTypeOfWeakreference);
+        }
+
+        return f;
     }
 
     public enum FetcherType {
@@ -90,7 +136,8 @@ public class FinderFetchersFactory {
         DATE(),
         NUMBER(),
         BOOLEAN(),
-        STRING();
+        STRING(),
+        WEAKREFERENCE();
 
         String prefix;
         String suffix;
