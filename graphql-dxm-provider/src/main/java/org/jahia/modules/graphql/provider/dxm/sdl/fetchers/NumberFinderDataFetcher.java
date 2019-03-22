@@ -115,12 +115,11 @@ public class NumberFinderDataFetcher extends FinderListDataFetcher {
 
     private String firstValidParameter(Map<String, Object> arguments) {
         Set<Map.Entry<String, Object>> args = arguments.entrySet();
-        for (Map.Entry<String, Object> arg : args) {
-            String argName = arg.getKey();
-            if (argName.equals(PREVIEW) || argName.equals(LANGUAGE)) continue;
-            return argName;
-        }
-        return null;
+        Optional<Map.Entry<String, Object>> argEntry = args.stream()
+                .filter(arg -> (arg.getKey().equals(GT) || arg.getKey().equals(GTE) || arg.getKey().equals(LT)
+                        || arg.getKey().equals(LTE) || arg.getKey().equals(EQ) || arg.getKey().equals(NOTEQ)))
+                .findFirst();
+        return argEntry.isPresent() ? argEntry.get().getKey() : null ;
     }
 
     private GraphQLScalarType getGraphQLScalarType(String name) {
