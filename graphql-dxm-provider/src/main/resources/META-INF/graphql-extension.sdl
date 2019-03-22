@@ -38,6 +38,9 @@ type ImageAsset @mapping(node: "jmix:image,jnt:file", ignoreDefaultQueries: true
     width: Long @mapping(property: "j:width")
 }
 
+"""
+Category type
+"""
 type Category @mapping(node: "jnt:category") {
 	metadata: Metadata
 	description: String @mapping(property: "jcr:description")
