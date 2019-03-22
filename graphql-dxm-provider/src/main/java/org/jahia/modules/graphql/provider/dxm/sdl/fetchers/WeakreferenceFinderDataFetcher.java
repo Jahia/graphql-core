@@ -1,0 +1,113 @@
+package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
+
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLArgument;
+import org.apache.jackrabbit.util.Text;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
+import org.jahia.modules.graphql.provider.dxm.sdl.validation.ArgumentValidator;
+import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
+import org.jahia.services.content.JCRNodeIteratorWrapper;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionWrapper;
+import pl.touk.throwing.ThrowingFunction;
+
+import javax.jcr.RepositoryException;
+import javax.jcr.query.Query;
+import java.util.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static graphql.Scalars.GraphQLBoolean;
+import static graphql.Scalars.GraphQLString;
+
+public class WeakreferenceFinderDataFetcher extends FinderListDataFetcher {
+
+    private static final String PROPERTY = "property";
+    private static final String CONTAINS = "contains";
+    private static final String EQUALS = "equals";
+    private static final String INVERT = "invert";
+
+
+    public WeakreferenceFinderDataFetcher(WeakreferenceFinder finder) {
+        super(finder.getType(), finder);
+    }
+
+    @Override
+    public List<GraphQLArgument> getArguments() {
+        List<GraphQLArgument> list = getDefaultArguments();
+        list.add(GraphQLArgument.newArgument()
+                .name(PROPERTY)
+                .type(GraphQLString)
+                .description("Property whose value is checked")
+                .build());
+        list.add(GraphQLArgument.newArgument()
+                .name(CONTAINS)
+                .type(GraphQLString)
+                .description("Property contains passed parameter")
+                .build());
+        list.add(GraphQLArgument.newArgument()
+                .name(EQUALS)
+                .type(GraphQLString)
+                .description("Property is equal to passed parameter")
+                .build());
+        list.add(GraphQLArgument.newArgument()
+                .name(INVERT)
+                .type(GraphQLBoolean)
+                .description("Inverts 'contains' or 'equals' argument to get either 'not contains' or 'not equals'. Default value is 'false'")
+                .defaultValue(false)
+                .build());
+        return list;
+    }
+
+    @Override
+    public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
+        if (!ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) {
+            return Collections.emptyList();
+        }
+
+        try {
+            Map<String, Object> arguments = SDLUtil.getArguments(environment);
+
+            if (!arguments.containsKey(PROPERTY) && (!arguments.containsKey(EQUALS) && !arguments.containsKey(CONTAINS)))
+                throw new DataFetchingException(String.format("Entry point %s must have 'property' and either 'contains' or 'equals' parameters", environment.getFieldDefinition().getName()));
+
+            JCRSessionWrapper currentUserSession = getCurrentUserSession(environment);
+            String weakreferenceProp = Text.escapeIllegalXpathSearchChars((String) arguments.get(PROPERTY));
+            String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(EQUALS));
+            String weakreferenceQuery = String.format("SELECT * FROM [%s] as n where n.[%s]='%s'", ((WeakreferenceFinder) finder).getReferencedType(), weakreferenceProp, argument);
+            JCRNodeIteratorWrapper weakrefIt = currentUserSession.getWorkspace().getQueryManager().createQuery(weakreferenceQuery, Query.JCR_SQL2).execute().getNodes();
+            GqlJcrNode weakref = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) weakrefIt, Spliterator.ORDERED), false)
+                    .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode))
+                    .findFirst()
+                    .orElse(null);
+
+            if (weakref == null)
+                throw new DataFetchingException(String.format("Could not find weakreference %s on node type %s", ((WeakreferenceFinder) finder).getReferencedType(), type));
+
+
+            String statement = String.format("SELECT * FROM [%s] as n where n.[%s]='%s'", type, finder.getProperty(), weakref.getUuid());
+            boolean invert = (Boolean) arguments.get(INVERT);
+
+//            if (arguments.containsKey(CONTAINS)) {
+//                String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(CONTAINS));
+//                String addOn = invert ? "not" : "";
+//                statement = String.format("SELECT * FROM [%s] as n where %s contains(n.[%s], '%s')", type, addOn, finder.getProperty(), argument);
+//            } else if (arguments.containsKey(EQUALS)) {
+//                String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(EQUALS));
+//                String addOn = invert ? "<>" : "=";
+//                statement = String.format("SELECT * FROM [%s] as n where n.[%s]%s'%s'", type, finder.getProperty(), addOn, argument);
+//            }
+
+            JCRNodeIteratorWrapper it = currentUserSession.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
+            Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
+                    .filter(node -> PermissionHelper.hasPermission(node, environment))
+                    .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode));
+            return resolveCollection(stream, environment);
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+    }
+}
