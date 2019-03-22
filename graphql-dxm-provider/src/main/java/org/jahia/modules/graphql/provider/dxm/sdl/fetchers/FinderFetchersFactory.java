@@ -11,6 +11,7 @@ import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class FinderFetchersFactory {
@@ -111,6 +112,7 @@ public class FinderFetchersFactory {
     }
 
     private static WeakreferenceFinder getWeakreferenceFinder(Finder finder, GraphQLFieldDefinition fieldDefinition, String definitionPropertyName) {
+        //Here I grab jcr type from directive of the weakreference type and set a few properties on finer
         WeakreferenceFinder f = WeakreferenceFinder.fromFinder(finder);
         GraphQLObjectType graphQLType = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
         GraphQLFieldDefinition field = graphQLType.getFieldDefinition(definitionPropertyName);
@@ -124,6 +126,14 @@ public class FinderFetchersFactory {
         if (directive != null) {
             String nodeTypeOfWeakreference = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
             f.setReferencedType(nodeTypeOfWeakreference);
+            Map<String, String> referenceProps = fieldType.getChildren()
+                    .stream()
+                    .filter(type -> type instanceof GraphQLFieldDefinition
+                            && ((GraphQLFieldDefinition) type).getType() instanceof GraphQLScalarType
+                            && ((GraphQLFieldDefinition) type).getDirective(SDLConstants.MAPPING_DIRECTIVE) != null)
+                    .collect(Collectors.toMap(type -> type.getName(), type -> ((GraphQLFieldDefinition) type).getDirective(SDLConstants.MAPPING_DIRECTIVE).getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue().toString()));
+            f.setReferenceTypeProps(referenceProps);
+            f.setReferencedTypeSDLName(fieldType.getName());
         }
 
         return f;

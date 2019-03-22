@@ -1,7 +1,6 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLArgument;
+import graphql.schema.*;
 import org.apache.jackrabbit.util.Text;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
@@ -40,7 +39,7 @@ public class WeakreferenceFinderDataFetcher extends FinderListDataFetcher {
         List<GraphQLArgument> list = getDefaultArguments();
         list.add(GraphQLArgument.newArgument()
                 .name(PROPERTY)
-                .type(GraphQLString)
+                .type(makeArguments())
                 .description("Property whose value is checked")
                 .build());
         list.add(GraphQLArgument.newArgument()
@@ -74,33 +73,21 @@ public class WeakreferenceFinderDataFetcher extends FinderListDataFetcher {
             if (!arguments.containsKey(PROPERTY) && (!arguments.containsKey(EQUALS) && !arguments.containsKey(CONTAINS)))
                 throw new DataFetchingException(String.format("Entry point %s must have 'property' and either 'contains' or 'equals' parameters", environment.getFieldDefinition().getName()));
 
-            JCRSessionWrapper currentUserSession = getCurrentUserSession(environment);
+            String statement = "";
             String weakreferenceProp = Text.escapeIllegalXpathSearchChars((String) arguments.get(PROPERTY));
-            String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(EQUALS));
-            String weakreferenceQuery = String.format("SELECT * FROM [%s] as n where n.[%s]='%s'", ((WeakreferenceFinder) finder).getReferencedType(), weakreferenceProp, argument);
-            JCRNodeIteratorWrapper weakrefIt = currentUserSession.getWorkspace().getQueryManager().createQuery(weakreferenceQuery, Query.JCR_SQL2).execute().getNodes();
-            GqlJcrNode weakref = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) weakrefIt, Spliterator.ORDERED), false)
-                    .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode))
-                    .findFirst()
-                    .orElse(null);
-
-            if (weakref == null)
-                throw new DataFetchingException(String.format("Could not find weakreference %s on node type %s", ((WeakreferenceFinder) finder).getReferencedType(), type));
-
-
-            String statement = String.format("SELECT * FROM [%s] as n where n.[%s]='%s'", type, finder.getProperty(), weakref.getUuid());
             boolean invert = (Boolean) arguments.get(INVERT);
 
-//            if (arguments.containsKey(CONTAINS)) {
-//                String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(CONTAINS));
-//                String addOn = invert ? "not" : "";
-//                statement = String.format("SELECT * FROM [%s] as n where %s contains(n.[%s], '%s')", type, addOn, finder.getProperty(), argument);
-//            } else if (arguments.containsKey(EQUALS)) {
-//                String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(EQUALS));
-//                String addOn = invert ? "<>" : "=";
-//                statement = String.format("SELECT * FROM [%s] as n where n.[%s]%s'%s'", type, finder.getProperty(), addOn, argument);
-//            }
+            if (arguments.containsKey(CONTAINS)) {
+                String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(CONTAINS));
+                String addOn = invert ? "not" : "";
+                statement = String.format("SELECT a.* FROM [%s] as a inner join [%s] as b on a.[%s] = b.['jcr:uuid'] where %s contains(b.['%s'], '%s')", type, ((WeakreferenceFinder) finder).getReferencedType(), finder.getProperty(), addOn, weakreferenceProp, argument);
+            } else if (arguments.containsKey(EQUALS)) {
+                String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(EQUALS));
+                String addOn = invert ? "<>" : "=";
+                statement = String.format("SELECT a.* FROM [%s] as a inner join [%s] as b on a.[%s] = b.['jcr:uuid'] where b.['%s']%s'%s'", type, ((WeakreferenceFinder) finder).getReferencedType(), finder.getProperty(), weakreferenceProp, addOn, argument);
+            }
 
+            JCRSessionWrapper currentUserSession = getCurrentUserSession(environment);
             JCRNodeIteratorWrapper it = currentUserSession.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
             Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false)
                     .filter(node -> PermissionHelper.hasPermission(node, environment))
@@ -109,5 +96,24 @@ public class WeakreferenceFinderDataFetcher extends FinderListDataFetcher {
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
+    }
+
+    private GraphQLInputType makeArguments() {
+        GraphQLEnumType.Builder builder = GraphQLEnumType.newEnum()
+                .name("PropertyEnum")
+                .description("Available properties");
+
+        for (Map.Entry<String, String> entry : ((WeakreferenceFinder) finder).getReferenceTypeProps().entrySet()) {
+            if (entry.getValue().equals("identifier")) {
+                builder.value(entry.getKey(), "jcr:uuid", String.format("%s property of type %s", entry.getKey(), ((WeakreferenceFinder) finder).getReferencedTypeSDLName()));
+            } else if (entry.getValue().equals("path")) {
+                builder.value(entry.getKey(), "j:fullpath", String.format("%s property of type %s", entry.getKey(), ((WeakreferenceFinder) finder).getReferencedTypeSDLName()));
+            } else {
+                builder.value(entry.getKey(), entry.getValue(), String.format("%s property of type %s", entry.getKey(), ((WeakreferenceFinder) finder).getReferencedTypeSDLName()));
+            }
+        }
+
+        return builder.build();
+
     }
 }

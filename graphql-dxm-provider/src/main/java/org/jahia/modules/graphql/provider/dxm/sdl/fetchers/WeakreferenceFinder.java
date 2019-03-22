@@ -1,8 +1,12 @@
 package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
+import java.util.Map;
+
 public class WeakreferenceFinder extends Finder {
 
     private String referencedType;
+    private Map<String, String> referenceTypeProps;
+    private String referencedTypeSDLName;
 
     private WeakreferenceFinder() {
     }
@@ -21,5 +25,21 @@ public class WeakreferenceFinder extends Finder {
 
     public void setReferencedType(String referencedType) {
         this.referencedType = referencedType;
+    }
+
+    public Map<String, String> getReferenceTypeProps() {
+        return referenceTypeProps;
+    }
+
+    public void setReferenceTypeProps(Map<String, String> referenceTypeProps) {
+        this.referenceTypeProps = referenceTypeProps;
+    }
+
+    public String getReferencedTypeSDLName() {
+        return referencedTypeSDLName;
+    }
+
+    public void setReferencedTypeSDLName(String referencedTypeSDLName) {
+        this.referencedTypeSDLName = referencedTypeSDLName;
     }
 }
