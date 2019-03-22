@@ -136,7 +136,7 @@ public class GqlVanityUrlMappingMutation {
     @GraphQLDescription("Move the vanity URL to another node")
     public boolean move(@GraphQLName("target") @GraphQLNonNull @GraphQLDescription("The path of the target node") String target) {
         try {
-            JCRNodeWrapper targetNode = vanityUrlNode.getSession().getNode(target);
+            JCRNodeWrapper targetNode = vanityUrlNode.getSession().getNode(JCRContentUtils.escapeNodePath(target));
 
             // add mixin if necessary
             if (!targetNode.isNodeType(VanityUrlManager.JAHIAMIX_VANITYURLMAPPED)) {

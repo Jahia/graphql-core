@@ -140,7 +140,7 @@ public class GqlJcrMutationSupport {
      */
     public static JCRNodeWrapper getNodeFromPathOrId(JCRSessionWrapper session, String pathOrId) {
         try {
-            return ('/' == pathOrId.charAt(0) ? session.getNode(pathOrId) : session.getNodeByIdentifier(pathOrId));
+            return ('/' == pathOrId.charAt(0) ? session.getNode(JCRContentUtils.escapeNodePath(pathOrId)) : session.getNodeByIdentifier(pathOrId));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }

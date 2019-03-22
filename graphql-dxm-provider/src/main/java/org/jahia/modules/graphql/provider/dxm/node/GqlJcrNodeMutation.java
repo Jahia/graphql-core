@@ -51,6 +51,7 @@ import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.image.GqlJcrImageTransformMutation;
 import org.jahia.modules.graphql.provider.dxm.predicate.PredicateHelper;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 
@@ -444,7 +445,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
                                                        @GraphQLName("targetPath") @GraphQLDescription("target path, if different") String targetPath) throws BaseGqlClientException {
         try {
             if (jcrNode.isNodeType("jmix:image")) {
-                return new GqlJcrImageTransformMutation(jcrNode, name, targetPath);
+                return new GqlJcrImageTransformMutation(jcrNode, name != null ? JCRContentUtils.escapeLocalNodeName(name) : null, targetPath != null ? JCRContentUtils.escapeNodePath(targetPath) : null);
             }
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);

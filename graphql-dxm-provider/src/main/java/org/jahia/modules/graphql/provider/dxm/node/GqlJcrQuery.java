@@ -53,10 +53,7 @@ import org.jahia.modules.graphql.provider.dxm.GqlConstraintHandler;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
-import org.jahia.services.content.JCRNodeIteratorWrapper;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.QueryManagerWrapper;
+import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -298,7 +295,7 @@ public class GqlJcrQuery {
 
 
     private GqlJcrNode getGqlNodeByPath(String path) throws RepositoryException {
-        return SpecializedTypesHandler.getNode(getSession().getNode(path));
+        return SpecializedTypesHandler.getNode(getSession().getNode(JCRContentUtils.escapeNodePath(path)));
     }
 
     private GqlJcrNode getGqlNodeById(String uuid) throws RepositoryException {
