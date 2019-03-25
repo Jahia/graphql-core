@@ -52,9 +52,8 @@ import graphql.servlet.GraphQLContext;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
 
-import java.util.Optional;
-
 import javax.servlet.http.HttpServletRequest;
+import java.util.Optional;
 
 /**
  * JCR instrumentation implementation
@@ -70,10 +69,10 @@ public class JCRInstrumentation extends SimpleInstrumentation {
         this.dxGraphQLConfig = dxGraphQLConfig;
     }
 
-//    @Override
-//    public DataFetcher<?> instrumentDataFetcher(DataFetcher<?> dataFetcher, InstrumentationFieldFetchParameters parameters) {
-//        return super.instrumentDataFetcher(new GqlJcrPermissionDataFetcher<>(dataFetcher, dxGraphQLConfig.getPermissions()), parameters);
-//    }
+    @Override
+    public DataFetcher<?> instrumentDataFetcher(DataFetcher<?> dataFetcher, InstrumentationFieldFetchParameters parameters) {
+        return super.instrumentDataFetcher(new GqlJcrPermissionDataFetcher<>(dataFetcher, dxGraphQLConfig.getPermissions()), parameters);
+    }
 
     @Override
     public ExecutionContext instrumentExecutionContext(ExecutionContext executionContext, InstrumentationExecutionParameters parameters) {
