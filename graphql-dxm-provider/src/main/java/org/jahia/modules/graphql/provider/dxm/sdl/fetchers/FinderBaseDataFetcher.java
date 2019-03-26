@@ -54,8 +54,7 @@ public abstract class FinderBaseDataFetcher implements DataFetcher {
         if (preview == null) {
             preview = Boolean.FALSE;
         }
-//        return JCRSessionFactory.getInstance().getCurrentUserSession(preview ? Constants.EDIT_WORKSPACE : Constants.LIVE_WORKSPACE, locale);
-        return JCRSessionFactory.getInstance().getCurrentSystemSession(preview ? Constants.EDIT_WORKSPACE : Constants.LIVE_WORKSPACE, locale, Locale.ENGLISH);
+        return JCRSessionFactory.getInstance().getCurrentUserSession(preview ? Constants.EDIT_WORKSPACE : Constants.LIVE_WORKSPACE, locale);
     }
 
     protected List<GraphQLArgument> getDefaultArguments() {
