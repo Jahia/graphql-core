@@ -29,6 +29,8 @@ public class WeakreferenceFinderDataFetcher extends FinderListDataFetcher {
     private static final String EQUALS = "equals";
     private static final String INVERT = "invert";
 
+    private static Map<String, GraphQLInputType> enumTypes =  new HashMap<>();
+
 
     public WeakreferenceFinderDataFetcher(WeakreferenceFinder finder) {
         super(finder.getType(), finder);
@@ -99,8 +101,14 @@ public class WeakreferenceFinderDataFetcher extends FinderListDataFetcher {
     }
 
     private GraphQLInputType makeArguments() {
+        String enumName = String.format("%sEnum", ((WeakreferenceFinder) finder).getReferencedTypeSDLName());
+
+        if (enumTypes.containsKey(enumName)) {
+            return enumTypes.get(enumName);
+        }
+
         GraphQLEnumType.Builder builder = GraphQLEnumType.newEnum()
-                .name("PropertyEnum")
+                .name(enumName)
                 .description("Available properties");
 
         for (Map.Entry<String, String> entry : ((WeakreferenceFinder) finder).getReferenceTypeProps().entrySet()) {
@@ -113,7 +121,7 @@ public class WeakreferenceFinderDataFetcher extends FinderListDataFetcher {
             }
         }
 
-        return builder.build();
-
+        enumTypes.put(enumName, builder.build());
+        return enumTypes.get(enumName);
     }
 }
