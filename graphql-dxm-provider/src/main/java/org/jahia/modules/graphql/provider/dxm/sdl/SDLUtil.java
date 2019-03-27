@@ -1,7 +1,5 @@
 package org.jahia.modules.graphql.provider.dxm.sdl;
 
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.language.FieldDefinition;
 import graphql.schema.*;
 
 import java.util.List;

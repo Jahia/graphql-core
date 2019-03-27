@@ -60,23 +60,30 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created at 23 Jan$
  *
  * @author chooliyip
  **/
-public class ListDataFetcher implements DataFetcher<List> {
+public class ListDataFetcher extends FinderListDataFetcher {
 
     private static Logger logger = LoggerFactory.getLogger(ListDataFetcher.class);
     private Field field;
 
     public ListDataFetcher(Field field) {
+        super("", null);
         this.field = field;
     }
 
     @Override
-    public List get(DataFetchingEnvironment environment) throws Exception {
+    public List get(DataFetchingEnvironment environment) {
+        return getStream(environment).collect(Collectors.toList());
+    }
+
+    @Override
+    public Stream<GqlJcrNode> getStream(DataFetchingEnvironment environment) {
         GqlJcrNode node = environment.getSource();
         JCRNodeWrapper jcrNode = node.getNode();
         if (environment.getFieldDefinition().getType() instanceof GraphQLObjectType) {
@@ -94,7 +101,11 @@ public class ListDataFetcher implements DataFetcher<List> {
             GraphQLArgument arg = mappingDirective != null ? mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE) : null;
             return resolveFromArgument(jcrNode, arg);
         }
-        return resolveProperty(jcrNode);
+        try {
+            return resolveProperty(jcrNode);
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private GraphQLType resolveWrappedObject(GraphQLType type) {
@@ -124,24 +135,23 @@ public class ListDataFetcher implements DataFetcher<List> {
         }
     }
 
-    private List resolveProperty(JCRNodeWrapper jcrNode) throws RepositoryException {
+    private Stream resolveProperty(JCRNodeWrapper jcrNode) throws RepositoryException {
         if (!jcrNode.hasProperty(field.getProperty())) {
-            return Collections.emptyList();
+            return Stream.empty();
         }
 
         int propertyType = jcrNode.getProperty(field.getProperty()).getType();
         return Arrays.stream(jcrNode.getProperty(field.getProperty()).getRealValues())
                 .map(value -> getProperty(propertyType, value))
-                .filter(Objects::nonNull).collect(Collectors.toList());
+                .filter(Objects::nonNull);
     }
 
-    private List<GqlJcrNode> resolveChildren(JCRNodeWrapper node, String nodeType) {
+    private Stream<GqlJcrNode> resolveChildren(JCRNodeWrapper node, String nodeType) {
         return JCRContentUtils.getChildrenOfType(node, nodeType).stream()
-                .map(GqlJcrNodeImpl::new)
-                .collect(Collectors.toList());
+                .map(GqlJcrNodeImpl::new);
     }
 
-    private List resolveFromArgument(JCRNodeWrapper node, GraphQLArgument arg) {
+    private Stream resolveFromArgument(JCRNodeWrapper node, GraphQLArgument arg) {
         if (arg != null) {
             try {
                 String nodeType = arg.getValue().toString();
@@ -164,6 +174,6 @@ public class ListDataFetcher implements DataFetcher<List> {
                 //Do nothing, return empty list below
             }
         }
-        return Collections.emptyList();
+        return Stream.empty();
     }
 }

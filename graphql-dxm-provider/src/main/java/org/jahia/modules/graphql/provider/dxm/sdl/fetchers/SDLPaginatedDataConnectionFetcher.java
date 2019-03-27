@@ -13,24 +13,27 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class SDLPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T> {
 
-    private DataFetcher fetcher;
+    private FinderListDataFetcher fetcher;
 
-    public SDLPaginatedDataConnectionFetcher(DataFetcher fetcher) {
+    public SDLPaginatedDataConnectionFetcher(FinderListDataFetcher fetcher) {
         this.fetcher = fetcher;
     }
 
     @Override
     public Connection<T> get(DataFetchingEnvironment environment) throws Exception {
-        List<GqlJcrNode> l = (List<GqlJcrNode>) fetcher.get(environment);
-        DXPaginatedData<T> paginatedData = (DXPaginatedData<T>) PaginationHelper.paginate(l, environment);
+        Stream<GqlJcrNode> l = fetcher.getStream(environment);
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
+        DXPaginatedData<GqlJcrNode> paginatedData = PaginationHelper.paginate(l, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
+
         if (paginatedData == null) {
             return new DefaultConnection<>(Collections.emptyList(), new DefaultPageInfo(null, null, false, false));
         }
-        List<Edge<T>> edges = buildEdges(paginatedData);
-        PageInfo pageInfo = getPageInfo(edges, paginatedData);
+        List<Edge<T>> edges = buildEdges((DXPaginatedData<T>) paginatedData);
+        PageInfo pageInfo = getPageInfo(edges, (DXPaginatedData<T>) paginatedData);
         Class<? extends DXConnection<T>> connectionType = (Class<? extends DXConnection<T>>) DXGraphQLProvider.getInstance().getConnectionType(environment.getExecutionStepInfo().getFieldDefinition().getType().getName());
         if (connectionType != null) {
             try {

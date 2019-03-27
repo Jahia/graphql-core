@@ -71,12 +71,12 @@ public abstract class FinderListDataFetcher extends FinderBaseDataFetcher {
         return list;
     }
 
-    protected List<GqlJcrNode> resolveCollection(Stream<GqlJcrNode> stream, DataFetchingEnvironment environment) {
+    protected Stream<GqlJcrNode> resolveCollection(Stream<GqlJcrNode> stream, DataFetchingEnvironment environment) {
         FieldSorterInput sorterInput = getFieldSorterInput(environment);
         if (sorterInput != null) {
-            return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment))).collect(Collectors.toList());
+            return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment)));
         } else {
-            return stream.collect(Collectors.toList());
+            return stream;
         }
     }
 
@@ -86,5 +86,7 @@ public abstract class FinderListDataFetcher extends FinderBaseDataFetcher {
     }
 
     public abstract Object get(DataFetchingEnvironment environment);
+
+    public abstract Stream<GqlJcrNode> getStream(DataFetchingEnvironment environment);
 }
 

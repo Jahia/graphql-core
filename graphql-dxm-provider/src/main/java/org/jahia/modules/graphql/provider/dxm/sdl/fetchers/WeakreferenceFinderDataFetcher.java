@@ -8,14 +8,13 @@ import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.sdl.validation.ArgumentValidator;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
-import org.jahia.services.content.JCRNodeIteratorWrapper;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.*;
 import pl.touk.throwing.ThrowingFunction;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -29,7 +28,7 @@ public class WeakreferenceFinderDataFetcher extends FinderListDataFetcher {
     private static final String EQUALS = "equals";
     private static final String INVERT = "invert";
 
-    private static Map<String, GraphQLInputType> enumTypes =  new HashMap<>();
+    private static Map<String, GraphQLInputType> enumTypes = new HashMap<>();
 
 
     public WeakreferenceFinderDataFetcher(WeakreferenceFinder finder) {
@@ -67,6 +66,15 @@ public class WeakreferenceFinderDataFetcher extends FinderListDataFetcher {
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
         if (!ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) {
             return Collections.emptyList();
+        }
+
+        return getStream(environment).collect(Collectors.toList());
+    }
+
+    @Override
+    public Stream<GqlJcrNode> getStream(DataFetchingEnvironment environment) {
+        if (!ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) {
+            return Stream.empty();
         }
 
         try {

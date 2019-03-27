@@ -10,6 +10,7 @@ import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
@@ -202,7 +203,7 @@ public class SDLSchemaService {
                     FinderBaseDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                     List<GraphQLArgument> args = relay.getConnectionFieldArguments();
                     args.add(SDLUtil.wrapArgumentsInType(String.format("%s%s", queryFieldName, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX), typeFetcher.getArguments()));
-                    SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(typeFetcher);
+                    SDLPaginatedDataConnectionFetcher<GqlJcrNode> fetcher = new SDLPaginatedDataConnectionFetcher<>((FinderListDataFetcher) typeFetcher);
                     GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
                             .dataFetcher(fetcher)
                             .type(connectionType)

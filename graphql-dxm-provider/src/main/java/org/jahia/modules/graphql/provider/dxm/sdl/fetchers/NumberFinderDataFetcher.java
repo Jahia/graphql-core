@@ -16,6 +16,7 @@ import pl.touk.throwing.ThrowingFunction;
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -73,6 +74,11 @@ public class NumberFinderDataFetcher extends FinderListDataFetcher {
 
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
+        return getStream(environment).collect(Collectors.toList());
+    }
+
+    @Override
+    public Stream<GqlJcrNode> getStream(DataFetchingEnvironment environment) {
         try {
             String statement = "SELECT * FROM [%s] as n where n.[%s]%s%s";
             Map<String, Object> arguments = SDLUtil.getArguments(environment);
@@ -119,7 +125,7 @@ public class NumberFinderDataFetcher extends FinderListDataFetcher {
                 .filter(arg -> (arg.getKey().equals(GT) || arg.getKey().equals(GTE) || arg.getKey().equals(LT)
                         || arg.getKey().equals(LTE) || arg.getKey().equals(EQ) || arg.getKey().equals(NOTEQ)))
                 .findFirst();
-        return argEntry.isPresent() ? argEntry.get().getKey() : null ;
+        return argEntry.isPresent() ? argEntry.get().getKey() : null;
     }
 
     private GraphQLScalarType getGraphQLScalarType(String name) {

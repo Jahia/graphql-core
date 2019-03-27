@@ -3,6 +3,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.parsing;
 import graphql.schema.*;
 import graphql.schema.idl.SchemaDirectiveWiring;
 import graphql.schema.idl.SchemaDirectiveWiringEnvironment;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.*;
 import org.jahia.osgi.BundleUtils;
@@ -46,7 +47,7 @@ public class MappingDirectiveWiring implements SchemaDirectiveWiring {
                 GraphQLObjectType connectionType = ConnectionHelper.getOrCreateConnection(service, node, conInfo.getMappedToType());
                 DataFetcher typeFetcher = PropertiesDataFetcherFactory.getFetcher(def, field);
                 List<GraphQLArgument> args = service.getRelay().getConnectionFieldArguments();
-                SDLPaginatedDataConnectionFetcher fetcher = new SDLPaginatedDataConnectionFetcher(typeFetcher);
+                SDLPaginatedDataConnectionFetcher<GqlJcrNode> fetcher = new SDLPaginatedDataConnectionFetcher<>((FinderListDataFetcher) typeFetcher);
 
                 def.getDirectives().remove(0);
 
