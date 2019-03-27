@@ -51,16 +51,17 @@ import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import pl.touk.throwing.ThrowingPredicate;
 
 import javax.jcr.RepositoryException;
-import java.util.Collections;
-import java.util.Locale;
-import java.util.Properties;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class GraphQLPermissionsTest extends GraphQLTestSupport {
 
@@ -75,7 +76,7 @@ public class GraphQLPermissionsTest extends GraphQLTestSupport {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
 
             user = JahiaUserManagerService.getInstance().createUser("testUser", null, "testPassword", new Properties(), session).getJahiaUser();
-            JahiaGroupManagerService.getInstance().lookupGroup(null,"privileged", session).addMember(user);
+            JahiaGroupManagerService.getInstance().lookupGroup(null, "privileged", session).addMember(user);
 
 
             JCRNodeWrapper node = addTestNodeWithUserRoles(session.getNode("/"), "jnt:contentList", "testList", user, true);
@@ -118,9 +119,6 @@ public class GraphQLPermissionsTest extends GraphQLTestSupport {
             node.grantRoles(principalKey, Collections.singleton("owner"));
         }
 
-        // Don't want to be able to read the ACL node.
-        node.getNode(Constants.ACL).setAclInheritanceBreak(true);
-
         return node;
     }
 
@@ -158,10 +156,20 @@ public class GraphQLPermissionsTest extends GraphQLTestSupport {
                 + "}"
         );
 
-        JSONArray children = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
-        Assert.assertEquals(2, children.length());
-        validateNode(children.getJSONObject(0), "testSubList2");
-        validateNode(children.getJSONObject(1), "reference2");
+        List<JSONObject> children = getList(result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes"));
+        Assert.assertEquals(2, children.size());
+        validateNode(children.get(0), "testSubList2");
+        validateNode(children.get(1), "reference2");
+    }
+
+    private List<JSONObject> getList(JSONArray children) throws JSONException {
+        List<JSONObject> listdata = new ArrayList<>();
+        if (children != null) {
+            for (int i = 0; i < children.length(); i++) {
+                listdata.add(children.getJSONObject(i));
+            }
+        }
+        return listdata.stream().filter(ThrowingPredicate.unchecked(o -> !o.getString("name").equals("j:acl") && !o.getString("name").startsWith("GRANT"))).collect(Collectors.toList());
     }
 
     @Test
@@ -181,10 +189,10 @@ public class GraphQLPermissionsTest extends GraphQLTestSupport {
                 + "}"
         );
 
-        JSONArray descendants = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("descendants").getJSONArray("nodes");
-        Assert.assertEquals(2, descendants.length());
-        validateNode(descendants.getJSONObject(0), "testSubList2");
-        validateNode(descendants.getJSONObject(1), "reference2");
+        List<JSONObject> descendants = getList(result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("descendants").getJSONArray("nodes"));
+        Assert.assertEquals(2, descendants.size());
+        validateNode(descendants.get(0), "testSubList2");
+        validateNode(descendants.get(1), "reference2");
     }
 
     @Test
