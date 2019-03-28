@@ -50,21 +50,10 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         this.bundleContext = bundleContext;
         this.componentContext = componentContext;
         this.bundleContext.addBundleListener(this);
-        boolean sdlResourcesDiscovered = false;
 
         //Detect if external-modules-provider provides ModulesSourceMonitor Interface
         Bundle modulesProvider = BundleUtils.getBundleBySymbolicName("external-provider-modules", null);
         registerSourceMonitorService(modulesProvider);
-
-        for (Bundle bundle : bundleContext.getBundles()) {
-            if (checkForSDLResourceInBundle(bundle, null)) {
-                sdlResourcesDiscovered = true;
-            }
-        }
-        if (sdlResourcesDiscovered) {
-            componentContext.disableComponent(DXGraphQLProvider.class.getName());
-            componentContext.enableComponent(DXGraphQLProvider.class.getName());
-        }
     }
 
     @Deactivate
