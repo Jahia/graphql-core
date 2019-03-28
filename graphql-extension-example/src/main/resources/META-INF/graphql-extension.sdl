@@ -1,0 +1,24 @@
+"""This is news"""
+type NewsSDL @mapping(node:"jnt:news", ignoreDefaultQueries: true) {
+    """This is title"""
+    title("The language" language:String): String @mapping(property:"jcr:title")
+
+    """This is description"""
+    description("The language" language:String): String @mapping(property:"desc")
+
+    """This is something"""
+    checked: Boolean @mapping(property: "j:published")
+
+    """This is date"""
+    date: Date @mapping(property: "date")
+}
+
+type Images @mapping(node: "jmix:image", ignoreDefaultQueries: true) {
+    height: Int @mapping(property: "j:height")
+}
+
+extend type Query {
+    newsByChecked: [NewsSDL]
+    myNewsByDate: [NewsSDL]
+    myImagesByHeight: [Images]
+}

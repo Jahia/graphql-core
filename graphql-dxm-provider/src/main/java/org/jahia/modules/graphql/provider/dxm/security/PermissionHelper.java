@@ -58,6 +58,9 @@ public class PermissionHelper {
 
     public static boolean hasPermission(JCRNodeWrapper node, DataFetchingEnvironment environment) {
         PermissionService permissionService = BundleUtils.getOsgiService(PermissionService.class, null);
+        if (permissionService == null) {
+            throw new DataFetchingException("Could not find permission service to validate security access. Blocking access to data.");
+        }
         try {
             return permissionService.hasPermission("graphql." + environment.getParentType().getName() + "." + environment.getFieldDefinition().getName(), node);
         } catch (RepositoryException e) {

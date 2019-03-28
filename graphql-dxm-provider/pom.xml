@@ -104,6 +104,13 @@
             <version>2.1.5</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>external-provider-modules</artifactId>
+            <version>3.1.6</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>
@@ -117,6 +124,15 @@
                     <instructions>
                         <Jahia-Depends>default</Jahia-Depends>
                         <_dsannotations>*</_dsannotations>
+                        <Export-Package>
+                            org.jahia.modules.graphql.provider.dxm.relay,
+                            org.jahia.modules.graphql.provider.dxm.node,
+                            org.jahia.modules.graphql.provider.dxm.nodetype,
+                            org.jahia.modules.graphql.provider.dxm,
+                            org.jahia.modules.graphql.provider.dxm.sdl.extension,
+                            org.jahia.modules.graphql.provider.dxm.sdl.fetchers,
+                            org.jahia.modules.graphql.provider.dxm.sdl
+                        </Export-Package>
                     </instructions>
                 </configuration>
             </plugin>

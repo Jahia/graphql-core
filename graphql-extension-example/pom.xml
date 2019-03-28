@@ -95,8 +95,18 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Jahia-Depends>default</Jahia-Depends>
+                        <Jahia-Depends>default,graphql-dxm-provider</Jahia-Depends>
                         <_dsannotations>*</_dsannotations>
+                        <Import-Package>
+                            org.jahia.modules.graphql.provider.dxm.relay,
+                            org.jahia.modules.graphql.provider.dxm.node,
+                            org.jahia.modules.graphql.provider.dxm,
+                            org.jahia.modules.graphql.provider.dxm.sdl.extension,
+                            ${jahia.plugin.projectPackageImport},
+                            org.glassfish.jersey.message.internal,
+                            org.glassfish.jersey.server,
+                            *
+                        </Import-Package>
                     </instructions>
                 </configuration>
             </plugin>

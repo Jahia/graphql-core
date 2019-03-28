@@ -5,7 +5,7 @@
  *
  *                                 http://www.jahia.com
  *
- *     Copyright (C) 2002-2019 Jahia Solutions Group SA. All rights reserved.
+ *     Copyright (C) 2002-2018 Jahia Solutions Group SA. All rights reserved.
  *
  *     THIS FILE IS AVAILABLE UNDER TWO DIFFERENT LICENSES:
  *     1/GPL OR 2/JSEL
@@ -41,28 +41,54 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.graphql.provider.dxm.node;
+package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
-import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRPropertyWrapper;
+import org.jahia.services.content.JCRPropertyWrapperImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 
-public  class NamedChildDataFetcher implements DataFetcher<Object> {
-    @Override
-    public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
-        String name = dataFetchingEnvironment.getFields().get(0).getName();
-        name = SpecializedTypesHandler.unescape(StringUtils.substringAfter(name, SpecializedTypesHandler.CHILD_PREFIX));
+/**
+ * Created at 23 Jan$
+ *
+ * @author chooliyip
+ **/
+public class ObjectDataFetcher implements DataFetcher<Object> {
 
+    private static Logger logger = LoggerFactory.getLogger(ObjectDataFetcher.class);
+
+    private Field field;
+
+    public ObjectDataFetcher(Field field) {
+        this.field = field;
+    }
+
+    @Override
+    public Object get(DataFetchingEnvironment environment) throws Exception {
+        GqlJcrNode node = environment.getSource();
+        JCRNodeWrapper jcrNode = node.getNode();
         try {
-            GqlJcrNode node = dataFetchingEnvironment.getSource();
-            JCRNodeWrapper jcrNodeWrapper = node.getNode();
-            JCRNodeWrapper child = jcrNodeWrapper.getNode(name);
-            return SpecializedTypesHandler.getNode(child);
+            if (jcrNode.hasNode(field.getProperty())) {
+                logger.debug("Fetch child {}", field.getType());
+                //Treat property as child
+                JCRNodeWrapper subNode = jcrNode.getNode(field.getProperty());
+                return new GqlJcrNodeImpl(subNode);
+            } else {
+                logger.debug("Fetch reference {}", field.getType());
+                //Treat property as weak reference
+                JCRPropertyWrapper propertyNode = jcrNode.getProperty(field.getProperty());
+                return new GqlJcrNodeImpl(((JCRPropertyWrapperImpl) propertyNode).getReferencedNode());
+            }
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            return null;
         }
     }
+
 }

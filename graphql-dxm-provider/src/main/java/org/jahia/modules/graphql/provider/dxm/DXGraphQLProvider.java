@@ -56,6 +56,7 @@ import graphql.servlet.*;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
+import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
 import org.osgi.service.component.annotations.*;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -64,7 +65,9 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.ParameterizedType;
+import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component(service = GraphQLProvider.class, immediate = true)
 public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
@@ -79,7 +82,10 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     private ProcessingElementsContainer container;
 
+    private static Map<String, URL> sdlResources = new ConcurrentHashMap<>();
+
     private Collection<DXGraphQLExtensionsProvider> extensionsProviders = new HashSet<>();
+
 
     private GraphQLObjectType queryType;
     private GraphQLObjectType mutationType;
@@ -88,6 +94,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private DXRelay relay;
 
     private Map<String, Class<? extends DXConnection<?>>> connectionTypes = new HashMap<>();
+    private SDLSchemaService sdlSchemaService;
 
     public static DXGraphQLProvider getInstance() {
         return instance;
@@ -111,6 +118,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         return container;
     }
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
+    public void setSDLRegistrationService(SDLSchemaService sdlSchemaService) {
+        this.sdlSchemaService = sdlSchemaService;
+    }
+
     @Reference(cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY)
     public void addExtensionProvider(DXGraphQLExtensionsProvider provider) {
         this.extensionsProviders.add(provider);
@@ -127,11 +139,12 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         container = graphQLAnnotations.createContainer();
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
-        ((DefaultTypeFunction)defaultTypeFunction).register(this);
+        ((DefaultTypeFunction) defaultTypeFunction).register(this);
 
         GraphQLExtensionsHandler extensionsHandler = graphQLAnnotations.getExtensionsHandler();
 
         relay = new DXRelay();
+        sdlSchemaService.setRelay(relay);
         container.setRelay(relay);
 
         connectionTypes.put("JCRNodeConnection", GqlJcrNodeConnection.class);
@@ -140,16 +153,17 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
             relay.addConnectionType(entry.getKey(), (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(entry.getValue(), container));
         }
 
-
         extensionsProviders.add(this);
 
+        sdlSchemaService.clearFinderMixins();
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
+            sdlSchemaService.addFinderMixins(extensionsProvider.getFinderMixins());
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
                 extensionsHandler.registerTypeExtension(aClass, container);
                 if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
-                    logger.info("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
+                    logger.debug("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
                 } else {
-                    logger.info("Registered type extension {}", aClass);
+                    logger.debug("Registered type extension {}", aClass);
                 }
             }
             for (Class<? extends GqlJcrNode> aClass : extensionsProvider.getSpecializedTypes()) {
@@ -169,10 +183,13 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
                 extensionsHandler.registerTypeExtension(aClass, container);
-                logger.info("Registered type extension {}", aClass);
+                logger.debug("Registered type extension {}", aClass);
             }
         }
 
+        //Generate schema from user defined SDL
+        sdlSchemaService.refreshSpecialInputTypes(graphQLAnnotations, container);
+        sdlSchemaService.generateSchema();
         specializedTypesHandler.initializeTypes();
 
         PropertyDataFetcher.clearReflectionCache();
@@ -184,12 +201,15 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         types.add(graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNodeImpl.class, container));
         types.addAll(specializedTypesHandler.getKnownTypes().values());
+        types.addAll(sdlSchemaService.getSDLTypes());
         return types;
     }
 
     @Override
     public Collection<GraphQLFieldDefinition> getQueries() {
-        return queryType.getFieldDefinitions();
+        List<GraphQLFieldDefinition> defs = new ArrayList<>(queryType.getFieldDefinitions());
+        defs.addAll(sdlSchemaService.getSDLQueries());
+        return defs;
     }
 
     @Override
@@ -224,7 +244,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     private TypeFunction defaultTypeFunction;
 
-    @Reference(target = "(type=default)", policy=ReferencePolicy.DYNAMIC, policyOption= ReferencePolicyOption.GREEDY)
+    @Reference(target = "(type=default)", policy = ReferencePolicy.DYNAMIC, policyOption = ReferencePolicyOption.GREEDY)
     public void setDefaultTypeFunction(TypeFunction defaultTypeFunction) {
         this.defaultTypeFunction = defaultTypeFunction;
     }
@@ -251,8 +271,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         } else {
             klass = (Class<?>) arg.getType();
         }
-        return defaultTypeFunction.buildType(input, klass, arg,container);
+        return defaultTypeFunction.buildType(input, klass, arg, container);
     }
-
-
 }

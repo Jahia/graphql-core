@@ -5,7 +5,7 @@
  *
  *                                 http://www.jahia.com
  *
- *     Copyright (C) 2002-2019 Jahia Solutions Group SA. All rights reserved.
+ *     Copyright (C) 2002-2018 Jahia Solutions Group SA. All rights reserved.
  *
  *     THIS FILE IS AVAILABLE UNDER TWO DIFFERENT LICENSES:
  *     1/GPL OR 2/JSEL
@@ -41,11 +41,14 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.graphql.provider.dxm.node;
+package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRValueWrapper;
@@ -55,19 +58,31 @@ import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NamedPropertiesDataFetcher implements DataFetcher<Object> {
+public class PropertiesDataFetcher implements DataFetcher<Object> {
+
+    private Field field;
+
+    public PropertiesDataFetcher(Field field) {
+        this.field = field;
+    }
+
     @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) {
-        String name = dataFetchingEnvironment.getFields().get(0).getName();
-        name = SpecializedTypesHandler.unescape(StringUtils.substringAfter(name, SpecializedTypesHandler.PROPERTY_PREFIX));
-
         try {
-            GqlJcrNode node = (GqlJcrNode) dataFetchingEnvironment.getSource();
+            GqlJcrNode node = dataFetchingEnvironment.getSource();
+
+
             JCRNodeWrapper jcrNodeWrapper = node.getNode();
-            if (!jcrNodeWrapper.hasProperty(name)) {
+
+            if (SDLUtil.getArgument("language", dataFetchingEnvironment) != null) {
+                jcrNodeWrapper = NodeHelper.getNodeInLanguage(jcrNodeWrapper, (String) SDLUtil.getArgument("language", dataFetchingEnvironment));
+            }
+
+            JCRPropertyWrapper property = getProperty(jcrNodeWrapper);
+
+            if (property == null) {
                 return null;
             }
-            JCRPropertyWrapper property = jcrNodeWrapper.getProperty(name);
 
             if (!property.isMultiple()) {
                 return getString(property.getValue());
@@ -83,6 +98,29 @@ public class NamedPropertiesDataFetcher implements DataFetcher<Object> {
         }
     }
 
+    private JCRPropertyWrapper getProperty(JCRNodeWrapper jcrNodeWrapper) throws RepositoryException {
+        JCRPropertyWrapper property = null;
+        String[] propertyNames = StringUtils.split(field.getProperty(), '.');
+        for (String propertyName : propertyNames) {
+            property = null;
+            if (jcrNodeWrapper != null) {
+                if (jcrNodeWrapper.hasNode(propertyName)) {
+                    jcrNodeWrapper = jcrNodeWrapper.getNode(propertyName);
+                } else if (jcrNodeWrapper.hasProperty(propertyName)) {
+                    property = jcrNodeWrapper.getProperty(propertyName);
+                    if (property.getType() == PropertyType.REFERENCE || property.getType() == PropertyType.WEAKREFERENCE) {
+                        try {
+                            jcrNodeWrapper = property.getValue().getNode();
+                        } catch (RepositoryException e) {
+                            jcrNodeWrapper = null;
+                        }
+                    }
+                }
+            }
+        }
+        return property;
+    }
+
     private Object getString(JCRValueWrapper value) throws RepositoryException {
         switch (value.getType()) {
             case PropertyType.BOOLEAN:
@@ -93,9 +131,8 @@ public class NamedPropertiesDataFetcher implements DataFetcher<Object> {
                 return value.getLong();
             case PropertyType.DOUBLE:
                 return value.getDouble();
-            case PropertyType.REFERENCE:
-            case PropertyType.WEAKREFERENCE:
-                return SpecializedTypesHandler.getNode(value.getNode());
+            case PropertyType.BINARY:
+                return value.getBinary().getSize();
             default:
                 return value.getString();
         }

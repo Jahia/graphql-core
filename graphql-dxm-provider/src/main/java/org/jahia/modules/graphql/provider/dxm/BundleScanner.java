@@ -82,7 +82,7 @@ public class BundleScanner {
                                 if (c.isAnnotationPresent(annotation)) {
                                     classes.add((Class<? extends T>) c);
                                 }
-                            } catch (ClassNotFoundException e) {
+                            } catch (ClassNotFoundException | NoClassDefFoundError e) {
                                 logger.warn("Cannot load class " + subpath);
                             }
                         }
