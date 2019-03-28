@@ -16,6 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -28,6 +29,13 @@ public class AllFinderDataFetcher extends FinderListDataFetcher {
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
         if (!ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) { return null; }
+
+        return getStream(environment).collect(Collectors.toList());
+    }
+
+    @Override
+    public Stream<GqlJcrNode> getStream(DataFetchingEnvironment environment) {
+        if (!ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) { return Stream.empty(); }
 
         try {
             String statement = "select * from [\"" + type + "\"]";

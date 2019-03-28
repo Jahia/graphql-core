@@ -17,6 +17,7 @@ import pl.touk.throwing.ThrowingFunction;
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -58,7 +59,18 @@ public class StringFinderDataFetcher extends FinderListDataFetcher {
 
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
-        if (!ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) { return Collections.emptyList(); }
+        if (!ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) {
+            return Collections.emptyList();
+        }
+
+        return getStream(environment).collect(Collectors.toList());
+    }
+
+    @Override
+    public Stream<GqlJcrNode> getStream(DataFetchingEnvironment environment) {
+        if (!ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) {
+            return Stream.empty();
+        }
 
         try {
             String statement = String.format("SELECT * FROM [%s] as n where n.[%s]=''", type, finder.getProperty());

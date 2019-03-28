@@ -68,7 +68,19 @@ public class DateRangeDataFetcher extends FinderListDataFetcher {
     @Override
     public List<GqlJcrNode> get(DataFetchingEnvironment environment) {
         if (!ArgumentValidator.validate(ArgumentValidator.ArgumentNames.DATE_RANGE, environment)
-                || !ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) { return Collections.emptyList(); }
+                || !ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) {
+            return Collections.emptyList();
+        }
+
+        return getStream(environment).collect(Collectors.toList());
+    }
+
+    @Override
+    public Stream<GqlJcrNode> getStream(DataFetchingEnvironment environment) {
+        if (!ArgumentValidator.validate(ArgumentValidator.ArgumentNames.DATE_RANGE, environment)
+                || !ArgumentValidator.validate(ArgumentValidator.ArgumentNames.SORT_BY, environment)) {
+            return Stream.empty();
+        }
 
         try {
             String statement = this.buildSQL2Statement(environment);
@@ -81,7 +93,6 @@ public class DateRangeDataFetcher extends FinderListDataFetcher {
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
-
     }
 
     /**
