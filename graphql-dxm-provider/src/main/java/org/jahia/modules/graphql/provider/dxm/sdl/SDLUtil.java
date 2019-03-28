@@ -152,8 +152,22 @@ public class SDLUtil {
             list = (GraphQLList) environment.getFieldDefinition().getType();
         }
         GraphQLObjectType type = (GraphQLObjectType) list.getWrappedType();
-        GraphQLFieldDefinition fieldDefinition = type.getFieldDefinition(fieldName);
+        GraphQLFieldDefinition fieldDefinition = getFieldDefinition(fieldName, type);
         return fieldDefinition != null;
+    }
+
+    private static GraphQLFieldDefinition getFieldDefinition(String fieldName, GraphQLObjectType type) {
+        GraphQLFieldDefinition fieldDefinition = null;
+        String[] nameParts = fieldName.split("\\.");
+        for (String part : nameParts) {
+            Object f = type.getFieldDefinition(part).getType();
+            if (f instanceof GraphQLObjectType) {
+                type = (GraphQLObjectType) f;
+            } else {
+                fieldDefinition = type.getFieldDefinition(part);
+            }
+        }
+        return fieldDefinition;
     }
 
 }
