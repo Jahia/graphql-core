@@ -51,6 +51,10 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         this.componentContext = componentContext;
         this.bundleContext.addBundleListener(this);
 
+        for (Bundle bundle : bundleContext.getBundles()) {
+            checkForSDLResourceInBundle(bundle, null);
+        }
+
         //Detect if external-modules-provider provides ModulesSourceMonitor Interface
         Bundle modulesProvider = BundleUtils.getBundleBySymbolicName("external-provider-modules", null);
         registerSourceMonitorService(modulesProvider);
