@@ -49,7 +49,6 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 
 import java.util.Collection;
-import java.util.List;
 
 // TODO: When implementing specific criteria fields, review JavaDoc and GraphQL descriptions, as well as specific constructor parameter and getter annotations to see if any of them need @GraphQLNonNull.
 
@@ -168,6 +167,9 @@ public class GqlJcrNodeCriteriaInput {
         return language;
     }
 
+    /**
+     * @return ordering strategies
+     */
     @GraphQLField
     @GraphQLName("ordering")
     @GraphQLDescription("Ordering strategies")

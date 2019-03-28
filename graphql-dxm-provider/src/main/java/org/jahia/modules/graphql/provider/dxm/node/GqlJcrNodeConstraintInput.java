@@ -102,10 +102,10 @@ public class GqlJcrNodeConstraintInput {
     private QueryFunction function;
     private String equals;
     private String notEquals;
-    private String lt;
-    private String gt;
-    private String lte;
-    private String gte;
+    private Long lt;
+    private Long gt;
+    private Long lte;
+    private Long gte;
     private Boolean exists;
     private Integer lastDays;
     private List<GqlJcrNodeConstraintInput> all;
@@ -140,10 +140,10 @@ public class GqlJcrNodeConstraintInput {
         @GraphQLName("function") @GraphQLDescription("The query function name for the node for comparison") QueryFunction function,
         @GraphQLName("equals") @GraphQLDescription("A value to compare the node property value to, using the 'equals to' operator") String equals,
         @GraphQLName("notEquals") @GraphQLDescription("A value to compare the node property value to, using the 'not equals to' operator") String notEquals,
-        @GraphQLName("lt") @GraphQLDescription("A value to compare the node property value to, using the 'less than' operator") String lt,
-        @GraphQLName("gt") @GraphQLDescription("A value to compare the node property value to, using the 'greater than' operator") String gt,
-        @GraphQLName("lte") @GraphQLDescription("A value to compare the node property value to, using the 'less than or equals to' operator") String lte,
-        @GraphQLName("gte") @GraphQLDescription("A value to compare the node property value to, using the 'greater than or equals to' operator") String gte,
+        @GraphQLName("lt") @GraphQLDescription("A value to compare the node property value to, using the 'less than' operator") Long lt,
+        @GraphQLName("gt") @GraphQLDescription("A value to compare the node property value to, using the 'greater than' operator") Long gt,
+        @GraphQLName("lte") @GraphQLDescription("A value to compare the node property value to, using the 'less than or equals to' operator") Long lte,
+        @GraphQLName("gte") @GraphQLDescription("A value to compare the node property value to, using the 'greater than or equals to' operator") Long gte,
         @GraphQLName("exists") @GraphQLDescription("A value to compare the node property value to, using the 'exists' operator") Boolean exists,
         @GraphQLName("lastDays") @GraphQLDescription("A value to compare the node property value to, using the 'exists' operator") Integer lastDays,
         @GraphQLName("all") @GraphQLDescription("A list of child constraint input for all composition") List<GqlJcrNodeConstraintInput> all,
@@ -221,28 +221,28 @@ public class GqlJcrNodeConstraintInput {
     @GraphQLField
     @GraphQLName("lt")
     @GraphQLDescription("A value to compare the node property value to, using the 'less than' operator")
-    public String getLt() {
+    public Long getLt() {
         return lt;
     }
 
     @GraphQLField
     @GraphQLName("gt")
     @GraphQLDescription("A value to compare the node property value to, using the 'greater than' operator")
-    public String getGt() {
+    public Long getGt() {
         return gt;
     }
 
     @GraphQLField
     @GraphQLName("lte")
     @GraphQLDescription("A value to compare the node property value to, using the 'less than or equals to' operator")
-    public String getLte() {
+    public Long getLte() {
         return lte;
     }
 
     @GraphQLField
     @GraphQLName("gte")
     @GraphQLDescription("A value to compare the node property value to, using the 'greater than or equals to' operator")
-    public String getGte() {
+    public Long getGte() {
         return gte;
     }
 

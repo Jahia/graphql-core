@@ -47,16 +47,17 @@ import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.LocaleUtils;
-import org.apache.commons.lang.time.DateUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
-import org.jahia.modules.graphql.provider.dxm.util.DefaultConstraintHelper;
 import org.jahia.services.content.*;
 import org.jahia.services.content.nodetypes.ValueImpl;
 import org.jahia.services.query.QueryWrapper;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,8 +67,6 @@ import javax.jcr.Session;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.qom.*;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -499,20 +498,7 @@ public class GqlJcrQuery {
                 constraintNames.append(" or ");
             }
         }
-        throw new GqlJcrWrongInputException("Exactly one contraint field expected, either " + constraintNames);
-    }
-
-    /**
-     * Validate if property field is missing when node constraint perform contains/like/equals/notEquals/lt/lte/gt/gte/exists ... etc
-     * other than the composite constraint all/any/none
-     *
-     * @param nodeConstraint
-     */
-    private static void validateNodeConstraintProperty(GqlJcrNodeConstraintInput nodeConstraint) {
-        if (nodeConstraint.getProperty() == null && nodeConstraint.getContains() == null
-            && (nodeConstraint.getFunction() == null || (!nodeConstraint.getFunction().equals(NODE_NAME) && !nodeConstraint.getFunction().equals(NODE_LOCAL_NAME)))) {
-            throw new GqlJcrWrongInputException("'property' field is required");
-        }
+        throw new GqlJcrWrongInputException("At least one of the following constraint field is expected: " + constraintNames);
     }
 
     /**
@@ -527,11 +513,6 @@ public class GqlJcrQuery {
                 || nodeConstraint.getGte()!=null || nodeConstraint.getLt()!=null || nodeConstraint.getLte()!=null
                 || nodeConstraint.getLastDays()!=null || nodeConstraint.getProperty()!=null || nodeConstraint.getNotEquals()!=null))
             throw new GqlJcrWrongInputException("Composite constraints all/any/none cannot be mixed with other constraints in the same level");
-    }
-
-    private interface NodeConstraintConvertor {
-        Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException;
-        String getFieldName();
     }
 
     private static DynamicOperand applyConstraintFunctions(GqlJcrNodeConstraintInput nodeConstraint, String selector, QueryObjectModelFactory factory)
@@ -557,7 +538,25 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorLike implements NodeConstraintConvertor {
+    private abstract static class NodeConstraintConvertor {
+        abstract Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException;
+        abstract String getFieldName();
+
+        protected void validateNodeConstraintProperty(GqlJcrNodeConstraintInput nodeConstraint) {
+            if (nodeConstraint.getProperty() == null && nodeConstraint.getContains() == null
+                    && (nodeConstraint.getFunction() == null || (!nodeConstraint.getFunction().equals(NODE_NAME) && !nodeConstraint.getFunction().equals(NODE_LOCAL_NAME)))) {
+                throw new GqlJcrWrongInputException("'property' field is required");
+            }
+        }
+
+        protected void validateNodeContraintValue(GqlJcrNodeConstraintInput nodeConstraint) {
+            if (nodeConstraint.getLastDays() != null && nodeConstraint.getLastDays() < 0) {
+                throw new GqlJcrWrongInputException("lastDays value should not be negative");
+            }
+        }
+    }
+
+    private static class NodeConstraintConvertorLike extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -578,7 +577,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorContains implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorContains extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -588,8 +587,7 @@ public class GqlJcrQuery {
                 return null;
             }
 
-            DefaultConstraintHelper defaultConstraintHelper = new DefaultConstraintHelper(factory, selector);
-            return defaultConstraintHelper.buildDefaultPropertiesConstraint(value);
+            return factory.fullTextSearch(selector, nodeConstraint.getProperty(), factory.literal(new ValueImpl(value)));
         }
 
         @Override
@@ -598,7 +596,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorEquals implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorEquals extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -619,7 +617,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorNotEquals implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorNotEquals extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -640,12 +638,12 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorLessThan implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorLessThan extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            String value = nodeConstraint.getLt();
+            Long value = nodeConstraint.getLt();
             if (value == null) {
                 return null;
             }
@@ -661,12 +659,12 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorGreaterThan implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorGreaterThan extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            String value = nodeConstraint.getGt();
+            Long value = nodeConstraint.getGt();
             if (value == null) {
                 return null;
             }
@@ -682,12 +680,12 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorLessThanOrEqualsTo implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorLessThanOrEqualsTo extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            String value = nodeConstraint.getLte();
+            Long value = nodeConstraint.getLte();
             if (value == null) {
                 return null;
             }
@@ -703,12 +701,12 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorGreaterThanOrEqualsTo implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorGreaterThanOrEqualsTo extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
 
-            String value = nodeConstraint.getGte();
+            Long value = nodeConstraint.getGte();
             if (value == null) {
                 return null;
             }
@@ -724,7 +722,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorExists implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorExists extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -744,7 +742,7 @@ public class GqlJcrQuery {
         }
     }
 
-    private static class NodeConstraintConvertorLastDays implements NodeConstraintConvertor {
+    private static class NodeConstraintConvertorLastDays extends NodeConstraintConvertor {
 
         @Override
         public Constraint convert(GqlJcrNodeConstraintInput nodeConstraint, QueryObjectModelFactory factory, String selector) throws RepositoryException {
@@ -754,13 +752,18 @@ public class GqlJcrQuery {
                 return null;
             }
 
+            //Constraint validation
             validateNodeConstraintProperty(nodeConstraint);
-            Date targetDate = DateUtils.addDays(new Date(), - value);
-            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSXXX");
+            validateNodeContraintValue(nodeConstraint);
+
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.DATE, -value);
+            DateTime dt = new DateTime(cal);
+            DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd'T'hh:mm:ss.SSS");
 
             return factory.comparison(factory.propertyValue(selector, nodeConstraint.getProperty()),
-                                        QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO,
-                                        factory.literal(new ValueImpl(dateFormat.format(targetDate))));
+                                    QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO,
+                                    factory.literal(new ValueImpl(dt.toString(fmt))));
         }
 
         @Override
