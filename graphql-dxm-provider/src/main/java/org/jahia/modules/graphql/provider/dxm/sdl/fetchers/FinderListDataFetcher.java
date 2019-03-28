@@ -14,7 +14,6 @@ import org.jahia.osgi.BundleUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static graphql.Scalars.GraphQLBoolean;
@@ -75,7 +74,7 @@ public abstract class FinderListDataFetcher extends FinderBaseDataFetcher {
     protected Stream<GqlJcrNode> resolveCollection(Stream<GqlJcrNode> stream, DataFetchingEnvironment environment) {
         FieldSorterInput sorterInput = getFieldSorterInput(environment);
         if (sorterInput != null) {
-            if (environment.getFieldType().getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
+            if (environment.getFieldType().getName() != null && environment.getFieldType().getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
                 return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forConnection(environment)));
             }
             return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment)));
