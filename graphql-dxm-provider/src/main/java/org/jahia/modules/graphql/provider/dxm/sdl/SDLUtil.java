@@ -144,10 +144,16 @@ public class SDLUtil {
      * @param environment
      * @return true is field definition is in wrapped type
      */
-    public static Boolean isFieldInWrappedTypeFields(String fieldName, DataFetchingEnvironment environment){
-        GraphQLObjectType type = (GraphQLObjectType) ((GraphQLList) environment.getFieldDefinition().getType()).getWrappedType();
+    public static Boolean isFieldInWrappedTypeFields(String fieldName, DataFetchingEnvironment environment) {
+        GraphQLList list;
+        if (environment.getFieldDefinition().getType() instanceof GraphQLObjectType) {
+            list = (GraphQLList) ((GraphQLObjectType) environment.getFieldDefinition().getType()).getFieldDefinition("nodes").getType();
+        } else {
+            list = (GraphQLList) environment.getFieldDefinition().getType();
+        }
+        GraphQLObjectType type = (GraphQLObjectType) list.getWrappedType();
         GraphQLFieldDefinition fieldDefinition = type.getFieldDefinition(fieldName);
-        return fieldDefinition!=null;
+        return fieldDefinition != null;
     }
 
 }

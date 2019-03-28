@@ -6,6 +6,7 @@ import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
 import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
 import org.jahia.osgi.BundleUtils;
@@ -74,6 +75,9 @@ public abstract class FinderListDataFetcher extends FinderBaseDataFetcher {
     protected Stream<GqlJcrNode> resolveCollection(Stream<GqlJcrNode> stream, DataFetchingEnvironment environment) {
         FieldSorterInput sorterInput = getFieldSorterInput(environment);
         if (sorterInput != null) {
+            if (environment.getFieldType().getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
+                return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forConnection(environment)));
+            }
             return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment)));
         } else {
             return stream;

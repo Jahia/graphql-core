@@ -25,9 +25,9 @@ public class SDLPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T
 
     @Override
     public Connection<T> get(DataFetchingEnvironment environment) throws Exception {
-        Stream<GqlJcrNode> l = fetcher.getStream(environment);
+        Stream<T> l = (Stream<T>) fetcher.getStream(environment);
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
-        DXPaginatedData<GqlJcrNode> paginatedData = PaginationHelper.paginate(l, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
+        DXPaginatedData<T> paginatedData = PaginationHelper.paginate(l, n -> PaginationHelper.encodeCursor(((GqlJcrNode)n).getUuid()), arguments);
 
         if (paginatedData == null) {
             return new DefaultConnection<>(Collections.emptyList(), new DefaultPageInfo(null, null, false, false));
