@@ -2,19 +2,21 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.*;
 import org.apache.commons.lang.StringUtils;
-import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.ExtendedPropertyType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.nodetype.NoSuchNodeTypeException;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class FinderFetchersFactory {
+
+    private static Logger logger = LoggerFactory.getLogger(FinderFetchersFactory.class);
 
     public static FinderBaseDataFetcher getFetcher(GraphQLFieldDefinition fieldDefinition, String nodeType) {
         String queryName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
@@ -106,6 +108,7 @@ public class FinderFetchersFactory {
                 }
             } catch (NoSuchNodeTypeException e) {
                 e.printStackTrace();
+                logger.error("Node type is not found due to {}", e.getMessage());
             }
         }
         return graphQLType.getFieldDefinition(definitionPropertyName).getType().getName();
@@ -113,7 +116,7 @@ public class FinderFetchersFactory {
 
     private static WeakreferenceFinder getWeakreferenceFinder(Finder finder, GraphQLFieldDefinition fieldDefinition, String definitionPropertyName) {
         //Here I grab jcr type from directive of the weakreference type and set a few properties on finer
-        WeakreferenceFinder f = WeakreferenceFinder.fromFinder(finder);
+        WeakreferenceFinder weakrefFinder = WeakreferenceFinder.fromFinder(finder);
         GraphQLObjectType graphQLType = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
         GraphQLFieldDefinition field = graphQLType.getFieldDefinition(definitionPropertyName);
         GraphQLOutputType fieldType = field.getType();
@@ -125,18 +128,18 @@ public class FinderFetchersFactory {
 
         if (directive != null) {
             String nodeTypeOfWeakreference = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
-            f.setReferencedType(nodeTypeOfWeakreference);
+            weakrefFinder.setReferencedType(nodeTypeOfWeakreference);
             Map<String, String> referenceProps = fieldType.getChildren()
                     .stream()
                     .filter(type -> type instanceof GraphQLFieldDefinition
                             && ((GraphQLFieldDefinition) type).getType() instanceof GraphQLScalarType
                             && ((GraphQLFieldDefinition) type).getDirective(SDLConstants.MAPPING_DIRECTIVE) != null)
                     .collect(Collectors.toMap(type -> type.getName(), type -> ((GraphQLFieldDefinition) type).getDirective(SDLConstants.MAPPING_DIRECTIVE).getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue().toString()));
-            f.setReferenceTypeProps(referenceProps);
-            f.setReferencedTypeSDLName(fieldType.getName());
+            weakrefFinder.setReferenceTypeProps(referenceProps);
+            weakrefFinder.setReferencedTypeSDLName(fieldType.getName());
         }
 
-        return f;
+        return weakrefFinder;
     }
 
     public enum FetcherType {
