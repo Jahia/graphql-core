@@ -160,7 +160,10 @@ public class SDLUtil {
         GraphQLFieldDefinition fieldDefinition = null;
         String[] nameParts = fieldName.split("\\.");
         for (String part : nameParts) {
-            Object f = type.getFieldDefinition(part).getType();
+            GraphQLFieldDefinition fieldDef = type.getFieldDefinition(part);
+            if (fieldDef == null)
+                return null;
+            Object f = fieldDef.getType();
             if (f instanceof GraphQLObjectType) {
                 type = (GraphQLObjectType) f;
             } else {
@@ -169,5 +172,4 @@ public class SDLUtil {
         }
         return fieldDefinition;
     }
-
 }
