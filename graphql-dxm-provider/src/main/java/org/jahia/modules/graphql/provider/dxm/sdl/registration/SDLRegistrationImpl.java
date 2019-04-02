@@ -51,8 +51,9 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         this.componentContext = componentContext;
         this.bundleContext.addBundleListener(this);
 
+
         for (Bundle bundle : bundleContext.getBundles()) {
-            checkForSDLResourceInBundle(bundle, null);
+            checkForSDLResourceInBundle(bundle, bundle.getState() == Bundle.ACTIVE ? BundleEvent.STARTED : BundleEvent.STOPPED);
         }
 
         //Detect if external-modules-provider provides ModulesSourceMonitor Interface
@@ -72,51 +73,46 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
 
     @Override
     public void bundleChanged(BundleEvent event) {
-        Bundle bundle = event.getBundle();
-        //Handle specific case of external-provider-modules bundle
         int eventType = event.getType();
-        if (event.getBundle().getSymbolicName().equals("external-provider-modules")) {
-            if (eventType == BundleEvent.STARTED) {
-                registerSourceMonitorService(event.getBundle());
-            } else if (eventType == BundleEvent.STOPPED) {
-                unregisterSourceMonitorService();
+        if (eventType == BundleEvent.STARTED || eventType == BundleEvent.STOPPED) {
+            Bundle bundle = event.getBundle();
+            //Handle specific case of external-provider-modules bundle
+            if (event.getBundle().getSymbolicName().equals("external-provider-modules")) {
+                if (eventType == BundleEvent.STARTED) {
+                    registerSourceMonitorService(event.getBundle());
+                } else {
+                    unregisterSourceMonitorService();
+                }
             }
-        }
 
-        if (checkForSDLResourceInBundle(bundle, event)) {
-            logger.debug("received event {} for bundle {} ", new Object[]{status.get(eventType), event.getBundle().getSymbolicName()});
-            if (eventType == BundleEvent.STARTED || eventType == BundleEvent.STOPPED) {
+            if (checkForSDLResourceInBundle(bundle, event.getType())) {
+                logger.debug("received event {} for bundle {} ", status.get(eventType), event.getBundle().getSymbolicName());
                 componentContext.disableComponent(DXGraphQLProvider.class.getName());
                 componentContext.enableComponent(DXGraphQLProvider.class.getName());
             }
         }
     }
 
-    private boolean checkForSDLResourceInBundle(Bundle bundle, BundleEvent event) {
+    private boolean checkForSDLResourceInBundle(Bundle bundle, int eventType) {
         if (BundleUtils.isJahiaBundle(bundle)) {
-            if (event != null && event.getType() == BundleEvent.UNINSTALLED) {
-                //Remove resource from bundle that was uninstalled
-                registerSDLResource(event.getType(), bundle.getSymbolicName(), null);
-            } else {
-                URL url = bundle.getResource(GRAPHQL_EXTENSION_SDL);
-                if (url != null) {
-                    logger.debug("get bundle schema {}", new Object[]{url.getPath()});
-                    if (hasModulesMonitoringActivated) {
-                        String sourcesFolder = bundle.getHeaders().get(JAHIA_SOURCE_FOLDERS);
-                        if (sourcesFolder != null) {
-                            File file = new File(sourcesFolder + SRC_MAIN_RESOURCES + GRAPHQL_EXTENSION_SDL);
-                            if (file.exists()) {
-                                try {
-                                    url = file.toURI().toURL();
-                                } catch (MalformedURLException e) {
-                                    logger.error(e.getMessage(), e);
-                                }
+            URL url = bundle.getResource(GRAPHQL_EXTENSION_SDL);
+            if (url != null) {
+                logger.debug("get bundle schema {}", url.getPath());
+                if (hasModulesMonitoringActivated) {
+                    String sourcesFolder = bundle.getHeaders().get(JAHIA_SOURCE_FOLDERS);
+                    if (sourcesFolder != null) {
+                        File file = new File(sourcesFolder + SRC_MAIN_RESOURCES + GRAPHQL_EXTENSION_SDL);
+                        if (file.exists()) {
+                            try {
+                                url = file.toURI().toURL();
+                            } catch (MalformedURLException e) {
+                                logger.error(e.getMessage(), e);
                             }
                         }
                     }
-                    registerSDLResource(event != null ? event.getType() : bundle.getState() == Bundle.ACTIVE ? BundleEvent.STARTED : BundleEvent.UNINSTALLED, bundle.getSymbolicName(), url);
-                    return true;
                 }
+                registerSDLResource(eventType, bundle.getSymbolicName(), url);
+                return true;
             }
         }
         return false;
