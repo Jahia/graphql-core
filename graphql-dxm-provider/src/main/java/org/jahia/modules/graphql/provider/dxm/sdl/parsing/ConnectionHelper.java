@@ -49,6 +49,7 @@ public class ConnectionHelper {
                     edge,
                     Collections.emptyList());
         }
+        connections.put(typeName, connectionType);
         return connectionType;
     }
 
