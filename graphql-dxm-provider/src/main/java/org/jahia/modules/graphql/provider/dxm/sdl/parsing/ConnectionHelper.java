@@ -48,8 +48,8 @@ public class ConnectionHelper {
                     typeName,
                     edge,
                     Collections.emptyList());
+            connections.put(typeName, connectionType);
         }
-        connections.put(typeName, connectionType);
         return connectionType;
     }
 
