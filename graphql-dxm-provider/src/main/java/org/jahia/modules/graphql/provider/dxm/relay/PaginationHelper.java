@@ -52,6 +52,7 @@ import org.jahia.modules.graphql.provider.dxm.util.StreamUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static java.util.Base64.getEncoder;
@@ -112,14 +113,14 @@ public class PaginationHelper {
     }
 
     public static <T> DXPaginatedData<T> paginate(Stream<T> source, CursorSupport<T> cursorSupport, Arguments arguments) {
-        MutableInt count = new MutableInt(0);
-        MutableObject last = new MutableObject();
+        final AtomicInteger count = new AtomicInteger(0);
+        final MutableObject last = new MutableObject();
         if (arguments.isCursor() && arguments.after != null) {
             // Drop first elements until cursor match, then also skip matching element
             source = StreamUtils.dropUntil(source, t -> cursorSupport.getCursor(t).equals(arguments.after), count).skip(1);
         } else if (arguments.isOffsetLimit() && arguments.offset != null) {
             source = source.skip(arguments.offset);
-            count.add(arguments.offset);
+            count.addAndGet(arguments.offset);
         }
 
         // Elements collected in dedicated list, depending on last/before combination
@@ -131,14 +132,14 @@ public class PaginationHelper {
                 && (arguments.limit == null || items.size() < arguments.limit)
                 && (arguments.first == null || items.size() < arguments.first)) {
             last.setValue(it.next());
-            String cursor = cursorSupport.getCursor((T) last.getValue());
+            final String cursor = cursorSupport.getCursor((T) last.getValue());
 
-            if (arguments.before == null || cursor.equals(arguments.before)) {
+            if (arguments.before == null || !cursor.equals(arguments.before)) {
                 items.add((T) last.getValue());
-                count.increment();
+                count.incrementAndGet();
             } else if (cursor.equals(arguments.before)) {
                 //stop and skip the match
-                count.increment();
+                count.incrementAndGet();
                 break;
             }
 
@@ -147,7 +148,7 @@ public class PaginationHelper {
         List<T> filtered = new ArrayList<>(items);
 
         // Substract result size from count to get the offset of first item
-        count.subtract(filtered.size());
+        count.addAndGet( - filtered.size());
         boolean hasPrevious = count.intValue() > 0;
         boolean hasNext = false;
 
@@ -161,7 +162,7 @@ public class PaginationHelper {
             if (!hasNext && arguments.last != null) {
                 // Cursor was not found, drop first element
                 filtered = filtered.subList(1, filtered.size());
-                count.increment();
+                count.incrementAndGet();
             }
         }
         if (hasNext) {

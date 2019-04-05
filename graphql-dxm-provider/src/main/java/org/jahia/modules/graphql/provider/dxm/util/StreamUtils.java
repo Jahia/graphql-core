@@ -49,6 +49,7 @@ import java.util.Comparator;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -117,21 +118,21 @@ public class StreamUtils {
      * @param p the predicate
      * @return the stream
      */
-    public static <T> Stream<T> dropUntil(Stream<T> stream, Predicate<? super T> p, MutableInt counter) {
+    public static <T> Stream<T> dropUntil(Stream<T> stream, Predicate<? super T> p, AtomicInteger counter) {
         return stream.filter(FromPredicate.from(p, counter));
     }
 
     static class FromPredicate<T> implements Predicate<T> {
-        private MutableInt counter;
+        private AtomicInteger counter;
         private boolean started = false;
         private Predicate<T> test;
 
-        private FromPredicate(Predicate<T> test, MutableInt counter) {
+        private FromPredicate(Predicate<T> test, AtomicInteger counter) {
             this.test = test;
-            this.counter = counter != null ? counter : new MutableInt(0);
+            this.counter = counter != null ? counter : new AtomicInteger(0);
         }
 
-        public static <T> Predicate<T> from(Predicate<T> test, MutableInt counter) {
+        public static <T> Predicate<T> from(Predicate<T> test, AtomicInteger counter) {
             return new FromPredicate<>(test, counter);
         }
 
@@ -141,7 +142,7 @@ public class StreamUtils {
 
         public boolean test(T t) {
             if (!started) {
-                counter.increment();
+                counter.incrementAndGet();
                 started = test.test(t);
             }
             return started;
