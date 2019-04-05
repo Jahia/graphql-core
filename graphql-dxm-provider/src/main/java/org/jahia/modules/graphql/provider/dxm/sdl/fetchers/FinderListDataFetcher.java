@@ -76,13 +76,9 @@ public abstract class FinderListDataFetcher extends FinderBaseDataFetcher {
         FieldSorterInput sorterInput = getFieldSorterInput(environment);
         if (sorterInput != null) {
             if (environment.getFieldType().getName() != null && environment.getFieldType().getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
-                return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forConnection(environment)))
-                        .collect(Collectors.toList())
-                        .stream();
+                return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forConnection(environment)));
             }
-            return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment)))
-                    .collect(Collectors.toList())
-                    .stream();
+            return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment)));
         } else {
             return stream;
         }

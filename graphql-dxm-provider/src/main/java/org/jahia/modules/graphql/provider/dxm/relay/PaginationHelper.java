@@ -130,14 +130,14 @@ public class PaginationHelper {
         while (it.hasNext()
                 && (arguments.limit == null || items.size() < arguments.limit)
                 && (arguments.first == null || items.size() < arguments.first)) {
-
             last.setValue(it.next());
+            String cursor = cursorSupport.getCursor((T) last.getValue());
 
-            if (arguments.before == null || !cursorSupport.getCursor((T) last.getValue()).equals(arguments.before)) {
-                items.add((T)last.getValue());
+            if (arguments.before == null || cursor.equals(arguments.before)) {
+                items.add((T) last.getValue());
                 count.increment();
-            } else if (cursorSupport.getCursor((T) last.getValue()).equals(arguments.before)) {
-                //skip the match
+            } else if (cursor.equals(arguments.before)) {
+                //stop and skip the match
                 count.increment();
                 break;
             }
