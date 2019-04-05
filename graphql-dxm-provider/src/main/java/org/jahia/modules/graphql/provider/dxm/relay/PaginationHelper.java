@@ -114,30 +114,34 @@ public class PaginationHelper {
     public static <T> DXPaginatedData<T> paginate(Stream<T> source, CursorSupport<T> cursorSupport, Arguments arguments) {
         MutableInt count = new MutableInt(0);
         MutableObject last = new MutableObject();
-        source = source.peek(c -> count.increment());
-        source = source.peek(last::setValue);
-        if (arguments.isCursor()) {
-            if (arguments.after != null) {
-                // Drop first elements until cursor match, then also skip matching element
-                source = StreamUtils.dropUntil(source, t -> cursorSupport.getCursor(t).equals(arguments.after)).skip(1);
-            }
-        } else if (arguments.isOffsetLimit()) {
-            if (arguments.offset != null) {
-                source = source.skip(arguments.offset);
-            }
+        if (arguments.isCursor() && arguments.after != null) {
+            // Drop first elements until cursor match, then also skip matching element
+            source = StreamUtils.dropUntil(source, t -> cursorSupport.getCursor(t).equals(arguments.after), count).skip(1);
+        } else if (arguments.isOffsetLimit() && arguments.offset != null) {
+            source = source.skip(arguments.offset);
+            count.add(arguments.offset);
         }
 
         // Elements collected in dedicated list, depending on last/before combination
         Collection<T> items = arguments.last == null ? new ArrayList<>() : (arguments.before == null ? new CircularFifoQueue<>(arguments.last) : new CircularFifoQueue<>(arguments.last + 1));
-        source = source.peek(items::add);
 
         // Execute, collect items until condition is met
         Iterator<T> it = source.iterator();
         while (it.hasNext()
-                && (arguments.limit == null || items.size() <= arguments.limit)
-                && (arguments.first == null || items.size() <= arguments.first)
-                && (arguments.before == null || !cursorSupport.getCursor((T) last.getValue()).equals(arguments.before))) {
-            it.next();
+                && (arguments.limit == null || items.size() < arguments.limit)
+                && (arguments.first == null || items.size() < arguments.first)) {
+
+            last.setValue(it.next());
+
+            if (arguments.before == null || !cursorSupport.getCursor((T) last.getValue()).equals(arguments.before)) {
+                items.add((T)last.getValue());
+                count.increment();
+            } else if (cursorSupport.getCursor((T) last.getValue()).equals(arguments.before)) {
+                //skip the match
+                count.increment();
+                break;
+            }
+
         }
 
         List<T> filtered = new ArrayList<>(items);
@@ -261,12 +265,13 @@ public class PaginationHelper {
             return startOffset + filtered.indexOf(entity);
         }
 
+        @Override
         public int getTotalCount() {
             if (totalCount == -1) {
                 totalCount = startOffset + filtered.size();
                 while (remaining.hasNext()) {
-                    remaining.next();
                     totalCount++;
+                    remaining.next();
                 }
             }
             return totalCount;
