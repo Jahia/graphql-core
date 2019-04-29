@@ -47,12 +47,14 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.spi.commons.nodetype.constraint.ValueConstraint;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrPropertyType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 /**
@@ -135,4 +137,12 @@ public class GqlJcrPropertyDefinition implements GqlJcrItemDefinition {
         return GqlJcrPropertyType.fromValue(definition.getRequiredType());
     }
 
+    @GraphQLField
+    @GraphQLName("displayName")
+    @GraphQLNonNull
+    public String getDisplayName(@GraphQLName("language") @GraphQLNonNull String language) {
+        return StringUtils.isNotEmpty(definition.getLabel(new Locale(language)))
+                ? definition.getLabel(new Locale(language))
+                : getName();
+    }
 }
