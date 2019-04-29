@@ -139,10 +139,10 @@ public class GqlJcrPropertyDefinition implements GqlJcrItemDefinition {
 
     @GraphQLField
     @GraphQLName("displayName")
+    @GraphQLDescription("Gets the displayable name of the property for the given language code. Return the system name in case the label doesn't exists")
     @GraphQLNonNull
     public String getDisplayName(@GraphQLName("language") @GraphQLNonNull String language) {
-        return StringUtils.isNotEmpty(definition.getLabel(new Locale(language)))
-                ? definition.getLabel(new Locale(language))
-                : getName();
+        String displayName = definition.getLabel(new Locale(language));
+        return StringUtils.isNotEmpty(displayName) ? displayName : getName();
     }
 }
