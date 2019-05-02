@@ -59,8 +59,10 @@ import org.quartz.JobDetail;
 import org.quartz.SchedulerException;
 
 import javax.jcr.RepositoryException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Publication mutation extensions for JCR node.
@@ -127,4 +129,50 @@ public class PublicationJCRNodeMutationExtension extends PublicationJCRExtension
 
         return true;
     }
+
+    /**
+     * Unpublish the node in certain languages.
+     *
+     * @param languages Languages to unpublish the node in
+     * @return Always true
+     */
+    @GraphQLField
+    @GraphQLDescription("Unpublish the node in certain languages")
+    public boolean unpublish(@GraphQLName("languages") @GraphQLDescription("Languages to publish the node in") Collection<String> languages) {
+
+        ComplexPublicationService publicationService = BundleUtils.getOsgiService(ComplexPublicationService.class, null);
+        JCRPublicationService jcrPublicationService = BundleUtils.getOsgiService(JCRPublicationService.class, null);
+
+        try {
+            JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession();
+            Collection<ComplexPublicationService.FullPublicationInfo> fullPublicationInfo = publicationService.
+                    getFullUnpublicationInfos(Collections.singletonList(nodeMutation.getNode().getNode().getIdentifier()), languages, false, session);
+            List<String> uuidsToUnpublish = getAllUuids(fullPublicationInfo, true);
+            jcrPublicationService.unpublish(uuidsToUnpublish, true);
+        } catch (RepositoryException e) {
+            throw new JahiaRuntimeException(e);
+        }
+
+        return true;
+    }
+
+    // logic copy/pastes from GWT PublicationWorkflow.getAllUuids()
+    private static List<String> getAllUuids(Collection<ComplexPublicationService.FullPublicationInfo> fullPublicationInfo, boolean onlyAllowedToPublishWithoutWorkflow) {
+        List<String> l = new ArrayList<String>();
+        for (ComplexPublicationService.FullPublicationInfo info : fullPublicationInfo) {
+            if (info.getPublicationStatus() != PublicationInfo.DELETED && (!onlyAllowedToPublishWithoutWorkflow || info.isAllowedToPublishWithoutWorkflow())) {
+                if (info.getNodeIdentifier() != null) {
+                    l.add(info.getNodeIdentifier());
+                }
+                if (info.getTranslationNodeIdentifier() != null) {
+                    l.add(info.getTranslationNodeIdentifier());
+                }
+                if (info.getDeletedTranslationNodeIdentifiers() != null) {
+                    l.addAll(info.getDeletedTranslationNodeIdentifiers());
+                }
+            }
+        }
+        return l;
+    }
+
 }
