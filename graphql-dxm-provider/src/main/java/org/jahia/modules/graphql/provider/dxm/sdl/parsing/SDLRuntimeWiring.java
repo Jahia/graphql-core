@@ -19,6 +19,7 @@ public class SDLRuntimeWiring {
         return RuntimeWiring.newRuntimeWiring()
                 .type(newTypeWiring("Query").build())
                 .directive(SDLConstants.MAPPING_DIRECTIVE, new MappingDirectiveWiring())
+                .directive(SDLConstants.FETCHER_DIRECTIVE, new FetcherDirectiveWiring())
                 .wiringFactory(new NoopWiringFactory() {
                     @Override
                     public DataFetcher getDefaultDataFetcher(FieldWiringEnvironment environment) {
