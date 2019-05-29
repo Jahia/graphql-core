@@ -155,9 +155,9 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         extensionsProviders.add(this);
 
-        sdlSchemaService.clearFinderMixins();
+        sdlSchemaService.clearExtensions();
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
-            sdlSchemaService.addFinderMixins(extensionsProvider.getFinderMixins());
+            sdlSchemaService.addExtensions(extensionsProvider);
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
                 extensionsHandler.registerTypeExtension(aClass, container);
                 if (aClass.isAnnotationPresent(GraphQLDescription.class)) {

@@ -13,6 +13,9 @@ public class SDLConstants {
     public static final String CONNECTION_ARGUMENTS_SUFFIX = "Args";
     public static final String CONNECTION_ARGUMENTS_INPUT_SUFFIX = "Input";
 
+    public static final String FETCHER_DIRECTIVE = "fetcher";
+    public static final String FETCHER_DIRECTIVE_NAME = "name";
+
     private SDLConstants() {
     }
 }

@@ -9,6 +9,7 @@ import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.graphql.provider.dxm.DXGraphQLExtensionsProvider;
 import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
@@ -16,6 +17,7 @@ import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderMixinInterface;
 import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderAdapter;
+import org.jahia.modules.graphql.provider.dxm.sdl.extension.PropertyFetcherExtensionInterface;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.*;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatusType;
@@ -50,6 +52,7 @@ public class SDLSchemaService {
     private Map<String, SDLDefinitionStatus> sdlDefinitionStatusMap = new TreeMap<>();
     private Map<Object, GraphQLInputType> sdlSpecialInputTypes = new HashMap<>();
     private List<FinderMixinInterface> finderMixins = new ArrayList<>();
+    private Map<String, PropertyFetcherExtensionInterface> propertyFetcherExtensions = new HashMap<>();
     private Map<String, ConnectionHelper.ConnectionTypeInfo> connectionFieldNameToSDLType = new HashMap<>();
     private Map<String, GraphQLObjectType> edges = new HashMap<>();
     private Map<String, GraphQLObjectType> connections = new HashMap<>();
@@ -328,6 +331,14 @@ public class SDLSchemaService {
                         InputValueDefinition.newInputValueDefinition().name(SDLConstants.MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).type(TypeName.newTypeName(GraphQLBoolean.getName()).build()).build()))
                 .build());
 
+        typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
+                .name(SDLConstants.FETCHER_DIRECTIVE)
+                .directiveLocations(Arrays.asList(
+                        DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
+                .inputValueDefinitions(Arrays.asList(
+                        InputValueDefinition.newInputValueDefinition().name(SDLConstants.FETCHER_DIRECTIVE_NAME).type(TypeName.newTypeName(GraphQLString.getName()).build()).build()))
+                .build());
+
         return typeDefinitionRegistry;
     }
 
@@ -409,12 +420,18 @@ public class SDLSchemaService {
         return this.sdlSpecialInputTypes.get(name);
     }
 
-    public void addFinderMixins(List<FinderMixinInterface> mixins) {
-        finderMixins.addAll(mixins);
+    public void addExtensions(DXGraphQLExtensionsProvider extensionsProvider) {
+        addFinderMixins(extensionsProvider.getFinderMixins());
+        addPropertyFetcherExtensions(extensionsProvider.getPropertyFetchers());
     }
 
-    public void clearFinderMixins() {
-        finderMixins.clear();
+    public void clearExtensions() {
+        clearFinderMixins();
+        clearPropertyFetcherExtensions();
+    }
+
+    public Map<String, PropertyFetcherExtensionInterface> getPropertyFetcherExtensions() {
+        return propertyFetcherExtensions;
     }
 
     public Map<String, ConnectionHelper.ConnectionTypeInfo> getConnectionFieldNameToSDLType() {
@@ -431,5 +448,21 @@ public class SDLSchemaService {
 
     public DXRelay getRelay() {
         return relay;
+    }
+
+    private void addFinderMixins(List<FinderMixinInterface> mixins) {
+        finderMixins.addAll(mixins);
+    }
+
+    private void clearFinderMixins() {
+        finderMixins.clear();
+    }
+
+    private void addPropertyFetcherExtensions(Map<String, PropertyFetcherExtensionInterface> propertyFetcherExtensions) {
+        this.propertyFetcherExtensions.putAll(propertyFetcherExtensions);
+    }
+
+    private void clearPropertyFetcherExtensions() {
+        this.propertyFetcherExtensions.clear();
     }
 }
