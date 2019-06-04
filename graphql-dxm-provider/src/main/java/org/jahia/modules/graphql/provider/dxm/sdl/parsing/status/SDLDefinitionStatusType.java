@@ -7,7 +7,7 @@ public enum SDLDefinitionStatusType {
     MISSING_JCR_NODE_TYPE("%s node type was not found"),
     MISSING_JCR_PROPERTY("%s property is missing from node type"),
     MISSING_JCR_CHILD("%s child is missing from node type"),
-    MISSING_FETCHER("%s fetcher does not exists or is not registered"),
+    MISSING_FETCHER("fetcher %s does not exist or is not registered"),
     MISSING_FETCHER_ARGUMENT("fetcher %s argument is missing for field %s");
     private String message;
 
