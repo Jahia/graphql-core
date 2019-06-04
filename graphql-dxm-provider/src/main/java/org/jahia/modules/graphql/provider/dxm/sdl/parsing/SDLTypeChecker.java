@@ -9,6 +9,7 @@ import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatusType;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
@@ -40,6 +41,7 @@ public class SDLTypeChecker {
         return checkForConsistencyWithJCR(type);
     }
 
+    // @TODO revisit this functionality in the future and extract out of type checker, as it does not fit with the named implication of this class.
     private static void addDefaultFields(ObjectTypeDefinition objectTypeDefinition) {
         // append id, path and url fields
         List<FieldDefinition> fieldDefinitions = objectTypeDefinition.getFieldDefinitions();
@@ -153,8 +155,26 @@ public class SDLTypeChecker {
                     l.add(fieldDefinition.getType().toString());
                 }
             });
+            //Verify that type exists in definition registry
             if (!l.isEmpty()) {
                 return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_TYPE, StringUtils.join(l, ','));
+            }
+            //Validate that if custom fetchers are declared (through fetcher directive) they exist in the map of registered fetchers.
+            SDLSchemaService service = BundleUtils.getOsgiService(SDLSchemaService.class, null);
+            if (service != null) {
+                return objectTypeDefinition.getFieldDefinitions()
+                        .stream()
+                        //Validate each fetcher we cant return null, so valid fetchers will return a status of SDLDefinitionStatusType.OK(which will be filtered out after)
+                        .map(fieldDefinition -> checkForInvalidFetcherDirective(service, objectTypeDefinition, fieldDefinition))
+                        //Remove valid fetchers from stream in order to identify if there are any invalid fetchers present.
+                        .filter(sdlDefinitionStatus -> sdlDefinitionStatus.getStatus() != SDLDefinitionStatusType.OK)
+                        //If invalid fetcher is found we will return the first one we encountered
+                        // SDLDefinitionStatusType.MISSING_FETCHER_ARGUMENT or SDLDefinitionStatusType.MISSING_FETCHER
+                        .findFirst()
+                        //If everything is good return SDLDefinitionStatusType.OK status for this type
+                        .orElse(new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.OK));
+            } else {
+                logger.warn("SDLSchemaService is unavailable! Cannot perform fetcher validation for schema!");
             }
         }
         return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.OK);
@@ -215,5 +235,20 @@ public class SDLTypeChecker {
                 }
             }
         });
+    }
+
+    private static SDLDefinitionStatus checkForInvalidFetcherDirective(SDLSchemaService sdlSchemaService, ObjectTypeDefinition objectTypeDefinition, FieldDefinition fieldDefinition) {
+        Directive fetcherDirective = fieldDefinition.getDirective(SDLConstants.FETCHER_DIRECTIVE);
+        if (fetcherDirective != null) {
+            Argument fetcherName = fetcherDirective.getArgument(SDLConstants.FETCHER_DIRECTIVE_NAME);
+            if (fetcherName == null) {
+                //Fetcher name argument does not exist, add to report status
+                return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_FETCHER_ARGUMENT, SDLConstants.FETCHER_DIRECTIVE_NAME, fieldDefinition.getName());
+
+            } else if (fetcherName.getValue() != null && !sdlSchemaService.getPropertyFetcherExtensions().containsKey(((StringValue)fetcherName.getValue()).getValue())) {
+                return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_FETCHER, ((StringValue)fetcherName.getValue()).getValue());
+            }
+        }
+        return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.OK);
     }
 }

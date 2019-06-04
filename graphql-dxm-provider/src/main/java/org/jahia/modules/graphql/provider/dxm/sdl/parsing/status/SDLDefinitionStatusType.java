@@ -6,15 +6,16 @@ public enum SDLDefinitionStatusType {
     MISSING_TYPE("%s gql type is unavailable"),
     MISSING_JCR_NODE_TYPE("%s node type was not found"),
     MISSING_JCR_PROPERTY("%s property is missing from node type"),
-    MISSING_JCR_CHILD("%s child is missing from node type");
-
+    MISSING_JCR_CHILD("%s child is missing from node type"),
+    MISSING_FETCHER("%s fetcher does not exists or is not registered"),
+    MISSING_FETCHER_ARGUMENT("fetcher %s argument is missing for field %s");
     private String message;
 
     SDLDefinitionStatusType(String message) {
         this.message = message;
     }
 
-    public String getMessage(String param) {
+    public String getMessage(String ...param) {
         return String.format(message, param);
     }
 }

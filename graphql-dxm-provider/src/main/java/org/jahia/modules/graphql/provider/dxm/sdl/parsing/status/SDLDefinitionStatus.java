@@ -5,7 +5,7 @@ public class SDLDefinitionStatus {
     private String mapsToType;
     private String mappedTypeModuleName;
     private String mappedTypeModuleId;
-    private String statusParam;
+    private String[] statusParam;
     private SDLDefinitionStatusType statusType;
 
     public SDLDefinitionStatus(String name, SDLDefinitionStatusType status) {
@@ -13,7 +13,7 @@ public class SDLDefinitionStatus {
         this.statusType = status;
     }
 
-    public SDLDefinitionStatus(String name, SDLDefinitionStatusType status, String statusParam) {
+    public SDLDefinitionStatus(String name, SDLDefinitionStatusType status, String ...statusParam) {
         this.name = name;
         this.statusType = status;
         this.statusParam = statusParam;
@@ -31,7 +31,7 @@ public class SDLDefinitionStatus {
         this.mappedTypeModuleId = mappedTypeModuleId;
     }
 
-    public void setStatusType(SDLDefinitionStatusType statusType, String statusParam) {
+    public void setStatusType(SDLDefinitionStatusType statusType, String ...statusParam) {
         this.statusType = statusType;
         this.statusParam = statusParam;
     }
