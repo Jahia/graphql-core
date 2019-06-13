@@ -47,12 +47,14 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.spi.commons.nodetype.constraint.ValueConstraint;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrPropertyType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 /**
@@ -135,4 +137,12 @@ public class GqlJcrPropertyDefinition implements GqlJcrItemDefinition {
         return GqlJcrPropertyType.fromValue(definition.getRequiredType());
     }
 
+    @GraphQLField
+    @GraphQLName("displayName")
+    @GraphQLDescription("Gets the displayable name of the property for the given language code. Return the system name in case the label doesn't exists")
+    @GraphQLNonNull
+    public String getDisplayName(@GraphQLName("language") @GraphQLNonNull String language) {
+        String displayName = definition.getLabel(new Locale(language));
+        return StringUtils.isNotEmpty(displayName) ? displayName : getName();
+    }
 }

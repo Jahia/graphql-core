@@ -44,55 +44,85 @@
 package org.jahia.test.graphql;
 
 import org.jahia.api.Constants;
+import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaRuntimeException;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRPublicationService;
-import org.jahia.services.content.JCRTemplate;
+import org.jahia.registries.ServicesRegistry;
+import org.jahia.services.content.*;
+import org.jahia.services.content.decorator.JCRSiteNode;
+import org.jahia.services.scheduler.SchedulerService;
+import org.jahia.services.usermanager.JahiaGroupManagerService;
+import org.jahia.services.usermanager.JahiaUser;
+import org.jahia.services.usermanager.JahiaUserManagerService;
+import org.jahia.test.TestHelper;
+import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TestName;
+import org.quartz.Job;
+import org.quartz.JobDetail;
+import org.quartz.SchedulerException;
+import org.springframework.util.CollectionUtils;
 
 import javax.jcr.PathNotFoundException;
+import javax.jcr.RepositoryException;
+import java.io.IOException;
+import java.util.*;
 
 public class GraphQLPublicationTest extends GraphQLTestSupport {
 
+    @Rule public TestName name = new TestName();
+
+
     private static final long TIMEOUT_WAITING_FOR_PUBLICATION = 5000;
+    private static final String TESTSITE_NAME = "graphqlPublicationTestSite";
+
+    private JCRSessionWrapper defaultSession;
+    private JCRSessionWrapper liveSession;
+    private String testListIdentifier;
+    private JahiaUser user;
+    private String siteName;
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
-
         GraphQLTestSupport.init();
-
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
-            session.getNode("/").addNode("testList", "jnt:contentList");
-            session.save();
-
-            JCRNodeWrapper testlist1 = session.getNode("/").addNode("testList1", "jnt:contentList");
-            JCRNodeWrapper content1 = testlist1.addNode("text1", "jnt:text");
-            JCRNodeWrapper content2 = testlist1.addNode("text2", "jnt:text");
-            session.save();
-            JCRPublicationService.getInstance().publishByMainId(testlist1.getIdentifier());
-            content1.addMixin("jmix:cache");
-            content2.remove();
-            session.save();
-            return null;
-        });
     }
 
-    @AfterClass
-    public static void oneTimeTearDown() throws Exception {
-        GraphQLTestSupport.removeTestNodes();
+    @Before
+    public void setUp() throws Exception {
+        defaultSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE, Locale.ENGLISH);
+        liveSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.LIVE_WORKSPACE, Locale.ENGLISH);
+        siteName = TESTSITE_NAME + name.getMethodName();
+        createTestSite(siteName, TestHelper.DX_BASE_DEMO_TEMPLATES, new HashSet<>(Arrays.asList("en", "fr")),
+                Collections.singleton("en"), false);
+        JCRPublicationService.getInstance().publishByMainId(defaultSession.getNode("/sites/" + siteName).getIdentifier());
+        user = JahiaUserManagerService.getInstance().createUser("testUser", null, "testPassword", new Properties(), defaultSession).getJahiaUser();
+        JahiaGroupManagerService.getInstance().lookupGroup(null, "privileged", defaultSession).addMember(user);
+
+        createData();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        JCRSessionFactory.getInstance().closeAllSessions();
+        removeData();
     }
 
     @Test
     public void shouldRetrieveAggregatedPublicationInfoFromDefault() throws Exception {
+        testAggregatedPublicationInfo("EDIT", "/sites/" + siteName + "/testList/publicationTestList", null);
+    }
+
+    @Test
+    public void shouldGetErrorNotRetrieveAggregatedPublicationInfoFromLive() throws Exception {
+        testAggregatedPublicationInfo("LIVE", "/", "Publication fields can only be used with nodes from EDIT workspace");
+    }
+
+    private void testAggregatedPublicationInfo(String workspace, String path, String expectedErrorMessage) throws RepositoryException, JSONException {
 
         JSONObject result = executeQuery(""
                 + "{"
-                + "    jcr {"
-                + "        nodeByPath(path: \"/testList\") {"
+                + "    jcr(workspace: " + workspace + ")  {"
+                + "        nodeByPath(path: \"" + path + "\") {"
                 + "            aggregatedPublicationInfo(language: \"en\") {"
                 + "                publicationStatus"
                 + "                locked"
@@ -104,79 +134,35 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
                 + "}"
         );
 
-        JSONObject info = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("aggregatedPublicationInfo");
+        if (expectedErrorMessage != null) {
+            validateError(result, "Publication fields can only be used with nodes from EDIT workspace");
+        } else {
+            JSONObject info = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("aggregatedPublicationInfo");
 
-        Assert.assertEquals("NOT_PUBLISHED", info.getString("publicationStatus"));
-        Assert.assertFalse(info.getBoolean("locked"));
-        Assert.assertFalse(info.getBoolean("workInProgress"));
-        Assert.assertTrue(info.getBoolean("allowedToPublishWithoutWorkflow"));
-    }
-
-    @Test
-    public void shouldGetErrorNotRetrieveAggregatedPublicationInfoFromLive() throws Exception {
-
-        JSONObject result = executeQuery(""
-                + "{"
-                + "    jcr(workspace: LIVE) {"
-                + "        nodeByPath(path: \"/\") {"
-                + "            aggregatedPublicationInfo(language: \"en\") {"
-                + "                publicationStatus"
-                + "		       }"
-                + "        }"
-                + "    }"
-                + "}"
-        );
-
-        validateError(result, "Publication fields can only be used with nodes from EDIT workspace");
+            Assert.assertEquals("NOT_PUBLISHED", info.getString("publicationStatus"));
+            Assert.assertFalse(info.getBoolean("locked"));
+            Assert.assertFalse(info.getBoolean("workInProgress"));
+            Assert.assertTrue(info.getBoolean("allowedToPublishWithoutWorkflow"));
+        }
     }
 
     @Test
     public void shouldPublish() throws Exception {
-
-        JSONObject result = executeQuery(""
-                + "mutation {"
-                + "    jcr {"
-                + "        mutateNode(pathOrId: \"/testList\") {"
-                + "            publish(languages: [\"en\"])"
-                + "        }"
-                + "    }"
-                + "}"
-        );
-
-        JSONObject mutationResult = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode");
-        Assert.assertTrue(mutationResult.getBoolean("publish"));
-
-        // Wait until the node is published via a background job.
-        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.LIVE_WORKSPACE, null, session -> {
-            long startedWaitingAt = System.currentTimeMillis();
-            do {
-                if (System.currentTimeMillis() - startedWaitingAt > TIMEOUT_WAITING_FOR_PUBLICATION) {
-                    Assert.fail("Timeout waiting for node to be published");
-                }
-                try {
-                    session.getNode("/testList");
-                    break;
-                } catch (PathNotFoundException e) {
-                    // Continue waiting: the node hasn't been published yet.
-                }
-                try {
-                    Thread.sleep(200);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new JahiaRuntimeException(e);
-                }
-            } while (true);
-            return null;
-        });
+        testPublication(true);
     }
 
     @Test
-    public void shouldPublishOneNde() throws Exception {
+    public void shouldPublishNoSubtree() throws Exception {
+        testPublication(false);
+    }
+
+    private void testPublication(boolean publishSubNodes) throws RepositoryException, JSONException, SchedulerException {
+
         JSONObject result = executeQuery(""
                 + "mutation {"
                 + "    jcr {"
-                + "        mutateNode(pathOrId: \"/testList1\") {"
-                + "            publish(publishSubNodes: false)"
+                + "        mutateNode(pathOrId: \"/sites/" + siteName + "/testList\") {"
+                + "            publish(publishSubNodes: " + publishSubNodes + ")"
                 + "        }"
                 + "    }"
                 + "}"
@@ -191,25 +177,125 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
             if (System.currentTimeMillis() - startedWaitingAt > TIMEOUT_WAITING_FOR_PUBLICATION) {
                 Assert.fail("Timeout waiting for node to be published");
             }
-            if (JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.LIVE_WORKSPACE, null, session -> {
-                try {
-                    session.getNode("/testList1/text2");
-                    try {
-                        Thread.sleep(200);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new JahiaRuntimeException(e);
-                    }
-                    return false;
-                } catch (PathNotFoundException e) {
-                    JCRNodeWrapper text1 = session.getNode("/testList1/text1");
-                    Assert.assertTrue(text1 != null && !text1.isNodeType("jmix:cache"));
-                    Assert.assertTrue(!session.nodeExists("/testList1/text2"));
-                    return true;
-                }
-            })) {
+            try {
+                liveSession.getNode("/sites/" + siteName + "/testList");
+                Assert.assertEquals(publishSubNodes, liveSession.nodeExists("/sites/" + siteName + "/testList/publicationTestList"));
+                Assert.assertEquals(publishSubNodes, liveSession.nodeExists("/sites/" + siteName + "/testList/publicationTestList"));
                 break;
+            } catch (PathNotFoundException e) {
+                // Continue waiting: the node hasn't been published yet.
+            }
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new JahiaRuntimeException(e);
             }
         } while (true);
+    }
+
+    @Test
+    public void shouldUnpublishInAllLanguage() throws Exception {
+        testUnpublish("[\"en\", \"fr\"]", true, true, false);
+    }
+
+    @Test
+    public void shouldUnpublishInOneLanguage() throws Exception {
+        testUnpublish("[\"en\"]", false, true, false);
+    }
+
+    private void testUnpublish(String languages, boolean expectFrUnpublished, boolean expectEnUnpublished, boolean expectedNodeUnpublished) throws RepositoryException, JSONException {
+        JCRPublicationService.getInstance().publishByMainId(testListIdentifier);
+
+        JSONObject result = executeQuery(""
+                + "mutation {"
+                + "    jcr {"
+                + "        mutateNode(pathOrId: \"/sites/" + siteName + "/testList/publicationTestListI18n\") {"
+                + "            unpublish(languages: " + languages + ")"
+                + "        }"
+                + "    }"
+                + "}"
+        );
+
+        JSONObject mutationResult = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode");
+        Assert.assertTrue(mutationResult.getBoolean("unpublish"));
+
+        JCRTemplate.getInstance().doExecute(user, Constants.LIVE_WORKSPACE, null, session -> {
+            Assert.assertEquals(expectedNodeUnpublished, !session.nodeExists("/sites/" + siteName + "/testList/publicationTestListI18n"));
+            return null;
+        });
+        JCRTemplate.getInstance().doExecute(user, Constants.LIVE_WORKSPACE, Locale.ENGLISH, session -> {
+            Assert.assertEquals(expectEnUnpublished, !session.nodeExists("/sites/" + siteName + "/testList/publicationTestListI18n"));
+            return null;
+        });
+        JCRTemplate.getInstance().doExecute(user, Constants.LIVE_WORKSPACE, Locale.FRENCH, session -> {
+            Assert.assertEquals(expectFrUnpublished, !session.nodeExists("/sites/" + siteName + "/testList/publicationTestListI18n"));
+            return null;
+        });
+    }
+
+    private void resetData() throws RepositoryException {
+
+    }
+
+    private void createData() throws RepositoryException {
+        JCRNodeWrapper testList = defaultSession.getNode("/sites/" + siteName).addNode("testList", "jnt:contentList");
+        testListIdentifier = testList.getIdentifier();
+        JCRNodeWrapper publicationTestList = testList.addNode("publicationTestList", "jnt:contentList");
+        publicationTestList.addNode("subList", "jnt:contentList");
+        publicationTestList.addNode("subList2", "jnt:contentList");
+        JCRNodeWrapper publicationTestListI18n = defaultSession.getNode("/sites/" + siteName + "/testList").addNode("publicationTestListI18n", "jnt:contentList");
+        publicationTestListI18n.setProperty("jcr:title", "en_title");
+        JCRNodeWrapper subList = publicationTestListI18n.addNode("subList", "jnt:contentList");
+        subList.setProperty("jcr:title", "en_sub_title");
+        JCRNodeWrapper subList2 = publicationTestListI18n.addNode("subList2", "jnt:contentList");
+        subList2.setProperty("jcr:title", "en_sub2_title");
+        defaultSession.save();
+
+        JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRENCH, session -> {
+            session.getNode("/sites/" + siteName + "/testList/publicationTestListI18n").setProperty("jcr:title", "fr_title");
+            session.getNode("/sites/" + siteName + "/testList/publicationTestListI18n/subList").setProperty("jcr:title", "fr_sub_title");
+            session.getNode("/sites/" + siteName + "/testList/publicationTestListI18n/subList").setProperty("jcr:title", "fr_sub2_title");
+            session.save();
+            return null;
+        });
+    }
+
+    private void removeData() throws Exception {
+        // Use dedicated session to clean up everything.
+        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE, Locale.ENGLISH);
+        removeData(session);
+        removeData(JCRSessionFactory.getInstance().getCurrentUserSession(Constants.LIVE_WORKSPACE, Locale.ENGLISH));
+        TestHelper.deleteSite(siteName);
+        JahiaUserManagerService.getInstance().deleteUser(user.getLocalPath(), session);
+        session.save();
+        JCRSessionFactory.getInstance().closeAllSessions();
+    }
+
+    private void removeData(JCRSessionWrapper session) throws RepositoryException {
+        if (session.itemExists("/sites/" + siteName + "/testList")) {
+            session.getNode("/sites/" + siteName + "/testList").remove();
+            session.save();
+        }
+    }
+
+    private JCRSiteNode createTestSite(String name, String template, Set<String> languages, Set<String> mandatoryLanguages, boolean mixLanguagesActive) throws JahiaException, IOException, RepositoryException {
+        TestHelper.createSite(name, template);
+
+        JCRSiteNode site = (JCRSiteNode) defaultSession.getNode("/sites/" + name);
+        if (!CollectionUtils.isEmpty(languages) && !languages.equals(site.getLanguages())) {
+            site.setLanguages(languages);
+        }
+
+        if (!CollectionUtils.isEmpty(mandatoryLanguages) && !mandatoryLanguages.equals(site.getMandatoryLanguages())) {
+            site.setMandatoryLanguages(mandatoryLanguages);
+        }
+
+        if (mixLanguagesActive != site.isMixLanguagesActive()) {
+            site.setMixLanguagesActive(mixLanguagesActive);
+        }
+
+        defaultSession.save();
+        return site;
     }
 }

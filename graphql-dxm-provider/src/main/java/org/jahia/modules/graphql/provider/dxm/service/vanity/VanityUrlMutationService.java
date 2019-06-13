@@ -43,6 +43,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.service.vanity;
 
+import org.apache.commons.beanutils.PropertyUtils;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.GqlConstraintViolationException;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -51,6 +52,7 @@ import org.jahia.services.seo.jcr.NonUniqueUrlMappingException;
 import org.jahia.services.seo.jcr.VanityUrlService;
 
 import javax.jcr.RepositoryException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,6 +128,7 @@ class VanityUrlMutationService {
             if (url != null) {
                 vanityUrl.setUrl(url);
             }
+            vanityUrl.setFile(targetNode.isFile());
             vanityUrlService.saveVanityUrlMapping(targetNode, vanityUrl, false);
         } catch (NonUniqueUrlMappingException e) {
             Map<String, Object> extensions = new HashMap<>();
