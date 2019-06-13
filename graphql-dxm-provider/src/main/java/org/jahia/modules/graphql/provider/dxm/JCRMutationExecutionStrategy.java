@@ -43,16 +43,22 @@
  */
 package org.jahia.modules.graphql.provider.dxm;
 
-import graphql.ExecutionResult;
 import graphql.execution.*;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutation;
+import graphql.language.Field;
+import graphql.language.SourceLocation;
+import org.jahia.settings.readonlymode.ReadOnlyModeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Extends some aspects of the standard strategy.
  */
 public class JCRMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
+
+    private static final Logger logger = LoggerFactory.getLogger(JCRMutationExecutionStrategy.class);
 
     public JCRMutationExecutionStrategy(DataFetcherExceptionHandler exceptionHandler) {
         super(exceptionHandler);
@@ -67,7 +73,14 @@ public class JCRMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
 
         if (fetchedValue instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
             // we only complete field if there were no errors on execution
-            ((DXGraphQLFieldCompleter) fetchedValue).completeField();
+            try {
+                ((DXGraphQLFieldCompleter) fetchedValue).completeField();
+            } catch (ReadOnlyModeException e) {
+                logger.warn(e.getMessage());
+                List<SourceLocation> locations = parameters.getField().stream().map(Field::getSourceLocation).collect(Collectors.toList());
+                executionContext.addError(new DXGraphQLError(new GqlReadOnlyModeException(e.getMessage()), parameters.getPath().toList(), locations));
+                result = super.completeField(executionContext, parameters, null);
+            }
         }
 
         return result;
