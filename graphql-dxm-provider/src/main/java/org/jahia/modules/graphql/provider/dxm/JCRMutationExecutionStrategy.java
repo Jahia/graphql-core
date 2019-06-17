@@ -46,6 +46,7 @@ package org.jahia.modules.graphql.provider.dxm;
 import graphql.execution.*;
 import graphql.language.Field;
 import graphql.language.SourceLocation;
+import org.jahia.settings.SettingsBean;
 import org.jahia.settings.readonlymode.ReadOnlyModeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,17 +70,18 @@ public class JCRMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
      */
     @Override
     protected FieldValueInfo completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, Object fetchedValue) {
-        FieldValueInfo result = super.completeField(executionContext, parameters, fetchedValue);
-
-        if (fetchedValue instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
-            // we only complete field if there were no errors on execution
-            try {
+        FieldValueInfo result = null;
+        if(SettingsBean.getInstance().isFullReadOnlyMode()) {
+            String message = "operation is not permitted for the current session as it is in read-only mode";
+            logger.warn(message);
+            List<SourceLocation> locations = parameters.getField().stream().map(Field::getSourceLocation).collect(Collectors.toList());
+            executionContext.addError(new DXGraphQLError(new GqlReadOnlyModeException(message), parameters.getPath().toList(), locations));
+            result = super.completeField(executionContext, parameters, null);
+        } else {
+            result = super.completeField(executionContext, parameters, fetchedValue);
+            if (fetchedValue instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
+                // we only complete field if there were no errors on execution
                 ((DXGraphQLFieldCompleter) fetchedValue).completeField();
-            } catch (ReadOnlyModeException e) {
-                logger.warn(e.getMessage());
-                List<SourceLocation> locations = parameters.getField().stream().map(Field::getSourceLocation).collect(Collectors.toList());
-                executionContext.addError(new DXGraphQLError(new GqlReadOnlyModeException(e.getMessage()), parameters.getPath().toList(), locations));
-                result = super.completeField(executionContext, parameters, null);
             }
         }
 
