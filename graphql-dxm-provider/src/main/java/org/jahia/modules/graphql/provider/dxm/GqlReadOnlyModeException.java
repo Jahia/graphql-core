@@ -33,6 +33,6 @@ import graphql.ErrorType;
 public class GqlReadOnlyModeException extends BaseGqlClientException {
 
     public GqlReadOnlyModeException(String message) {
-        super(message, ErrorType.OperationNotSupported);
+        super(message, ErrorType.ExecutionAborted);
     }
 }
