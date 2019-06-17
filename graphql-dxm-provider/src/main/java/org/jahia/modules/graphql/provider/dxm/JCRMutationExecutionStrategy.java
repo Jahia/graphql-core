@@ -44,9 +44,13 @@
 package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.ExecutionResult;
+import graphql.ExecutionResultImpl;
 import graphql.execution.*;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutation;
+import org.jahia.settings.SettingsBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -54,8 +58,21 @@ import java.util.concurrent.CompletableFuture;
  */
 public class JCRMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
 
+    private static final Logger logger = LoggerFactory.getLogger(JCRMutationExecutionStrategy.class);
+
     public JCRMutationExecutionStrategy(DataFetcherExceptionHandler exceptionHandler) {
         super(exceptionHandler);
+    }
+
+    @Override
+    public CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, ExecutionStrategyParameters parameters) {
+        if(SettingsBean.getInstance().isFullReadOnlyMode()) {
+            String message = "Operation is not permitted as DX is in read-only mode";
+            logger.warn(message);
+            DXGraphQLError error = new DXGraphQLError(new GqlReadOnlyModeException(message), parameters.getPath().toList(), new ArrayList<>());
+            return CompletableFuture.completedFuture(new ExecutionResultImpl(error));
+        }
+        return super.execute(executionContext, parameters);
     }
 
     /**
