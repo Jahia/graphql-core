@@ -9,7 +9,6 @@ import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatusType;
-import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
@@ -28,10 +27,10 @@ public class SDLTypeChecker {
     private SDLTypeChecker() {
     }
 
-    public static SDLDefinitionStatus checkType(TypeDefinition type, TypeDefinitionRegistry typeDefinitionRegistry) {
+    public static SDLDefinitionStatus checkType(SDLSchemaService sdlSchemaService, TypeDefinition type, TypeDefinitionRegistry typeDefinitionRegistry) {
         if (type instanceof ObjectTypeDefinition) {
             ObjectTypeDefinition objectTypeDefinition = (ObjectTypeDefinition) type;
-            SDLDefinitionStatus l = checkForFieldsConsistency(objectTypeDefinition, typeDefinitionRegistry);
+            SDLDefinitionStatus l = checkForFieldsConsistency(sdlSchemaService, objectTypeDefinition, typeDefinitionRegistry);
             if (l.getStatus() != SDLDefinitionStatusType.OK) {
                 return l;
             } else if (!objectTypeDefinition.getName().equals("Query")) {
@@ -145,7 +144,7 @@ public class SDLTypeChecker {
         statusMap.values().forEach(e -> logger.info(e.toString()));
     }
 
-    private static SDLDefinitionStatus checkForFieldsConsistency(ObjectTypeDefinition objectTypeDefinition, TypeDefinitionRegistry typeDefinitionRegistry) {
+    private static SDLDefinitionStatus checkForFieldsConsistency(SDLSchemaService sdlSchemaService, ObjectTypeDefinition objectTypeDefinition, TypeDefinitionRegistry typeDefinitionRegistry) {
         if (objectTypeDefinition.getFieldDefinitions().isEmpty()) {
             return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_FIELDS);
         } else {
@@ -160,12 +159,11 @@ public class SDLTypeChecker {
                 return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_TYPE, StringUtils.join(l, ','));
             }
             //Validate that if custom fetchers are declared (through fetcher directive) they exist in the map of registered fetchers.
-            SDLSchemaService service = BundleUtils.getOsgiService(SDLSchemaService.class, null);
-            if (service != null) {
+            if (sdlSchemaService != null) {
                 return objectTypeDefinition.getFieldDefinitions()
                         .stream()
                         //Validate each fetcher we cant return null, so valid fetchers will return a status of SDLDefinitionStatusType.OK(which will be filtered out after)
-                        .map(fieldDefinition -> checkForInvalidFetcherDirective(service, objectTypeDefinition, fieldDefinition))
+                        .map(fieldDefinition -> checkForInvalidFetcherDirective(sdlSchemaService, objectTypeDefinition, fieldDefinition))
                         //Remove valid fetchers from stream in order to identify if there are any invalid fetchers present.
                         .filter(sdlDefinitionStatus -> sdlDefinitionStatus.getStatus() != SDLDefinitionStatusType.OK)
                         //If invalid fetcher is found we will return the first one we encountered

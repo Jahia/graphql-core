@@ -99,7 +99,7 @@ public class SDLSchemaService {
             do {
                 invalidTypes.clear();
                 sources.forEach((type, bundle) -> {
-                    SDLDefinitionStatus status = SDLTypeChecker.checkType(type, typeDefinitionRegistry);
+                    SDLDefinitionStatus status = SDLTypeChecker.checkType(this, type, typeDefinitionRegistry);
                     sdlDefinitionStatusMap.put(type.getName(), status);
                     if (status.getStatus() != SDLDefinitionStatusType.OK) {
                         invalidTypes.add(type);
