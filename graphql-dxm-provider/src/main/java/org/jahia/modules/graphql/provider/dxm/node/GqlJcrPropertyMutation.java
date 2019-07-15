@@ -50,7 +50,6 @@ import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.upload.UploadHelper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -73,6 +72,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
 
     /**
      * Initializes an instance of this class.
+     *
      * @param node the corresponding JCR node
      * @param name the name of the node property
      */
@@ -83,6 +83,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
 
     /**
      * Initializes an instance of this class.
+     *
      * @param property the corresponding JCR node property
      */
     public GqlJcrPropertyMutation(JCRPropertyWrapper property) {
@@ -117,13 +118,14 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     @GraphQLName("setValue")
     @GraphQLDescription("Set property value")
     public boolean setValue(@GraphQLName("language") String language,
-            @GraphQLName("type") GqlJcrPropertyType type,
-            @GraphQLName("value") String value,
-            DataFetchingEnvironment environment)
-    throws BaseGqlClientException {
+                            @GraphQLName("type") GqlJcrPropertyType type,
+                            @GraphQLName("value") String value,
+                            @GraphQLName("notZonedDateValue") String notZonedDateValue,
+                            DataFetchingEnvironment environment)
+            throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            localizedNode.setProperty(name, getValue(type, value, localizedNode.getSession(), environment));
+            localizedNode.setProperty(name, getValue(type, value, notZonedDateValue, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw new DataFetchingException(e);
         }
@@ -134,12 +136,14 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     @GraphQLName("setValues")
     @GraphQLDescription("Set property values")
     public boolean setValues(@GraphQLName("language") String language,
-            @GraphQLName("type") GqlJcrPropertyType type,
-            @GraphQLName("values") List<String> values, DataFetchingEnvironment environment)
-    throws BaseGqlClientException {
+                             @GraphQLName("type") GqlJcrPropertyType type,
+                             @GraphQLName("values") List<String> values,
+                             @GraphQLName("notZonedDateValues") List<String> notZonedDateValues,
+                             DataFetchingEnvironment environment)
+            throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            localizedNode.setProperty(name, getValues(type, values, localizedNode.getSession(), environment));
+            localizedNode.setProperty(name, getValues(type, values, notZonedDateValues, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw new DataFetchingException(e);
         }
@@ -149,12 +153,14 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     @GraphQLField
     @GraphQLDescription("Add a new value to this property")
     public boolean addValue(@GraphQLName("language") String language,
-            @GraphQLName("type") GqlJcrPropertyType type,
-            @GraphQLName("value") String value, DataFetchingEnvironment environment)
-    throws BaseGqlClientException {
+                            @GraphQLName("type") GqlJcrPropertyType type,
+                            @GraphQLName("value") String value,
+                            @GraphQLName("notZonedDateValue") String notZonedDateValue,
+                            DataFetchingEnvironment environment)
+            throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            localizedNode.getProperty(name).addValue(getValue(type, value, localizedNode.getSession(), environment));
+            localizedNode.getProperty(name).addValue(getValue(type, value, notZonedDateValue, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw new DataFetchingException(e);
         }
@@ -164,12 +170,14 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     @GraphQLField
     @GraphQLDescription("Remove a new value from this property")
     public boolean removeValue(@GraphQLName("language") String language,
-            @GraphQLName("type") GqlJcrPropertyType type,
-            @GraphQLName("value") String value, DataFetchingEnvironment environment)
-    throws BaseGqlClientException {
+                               @GraphQLName("type") GqlJcrPropertyType type,
+                               @GraphQLName("value") String value,
+                               @GraphQLName("notZonedDateValue") String notZonedDateValue,
+                               DataFetchingEnvironment environment)
+            throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            localizedNode.getProperty(name).removeValue(getValue(type, value, localizedNode.getSession(), environment));
+            localizedNode.getProperty(name).removeValue(getValue(type, value, notZonedDateValue, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw new DataFetchingException(e);
         }
@@ -179,12 +187,14 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     @GraphQLField
     @GraphQLDescription("Add new values to this property")
     public boolean addValues(@GraphQLName("language") String language,
-            @GraphQLName("type") GqlJcrPropertyType type,
-            @GraphQLName("values") List<String> values, DataFetchingEnvironment environment)
-    throws BaseGqlClientException {
+                             @GraphQLName("type") GqlJcrPropertyType type,
+                             @GraphQLName("values") List<String> values,
+                             @GraphQLName("notZonedDateValues") List<String> notZonedDateValues,
+                             DataFetchingEnvironment environment)
+            throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            localizedNode.getProperty(name).addValues(getValues(type, values, localizedNode.getSession(), environment));
+            localizedNode.getProperty(name).addValues(getValues(type, values, notZonedDateValues, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw new DataFetchingException(e);
         }
@@ -194,12 +204,14 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     @GraphQLField
     @GraphQLDescription("Remove values from this property")
     public boolean removeValues(@GraphQLName("language") String language,
-            @GraphQLName("type") GqlJcrPropertyType type,
-            @GraphQLName("values") List<String> values, DataFetchingEnvironment environment)
-    throws BaseGqlClientException {
+                                @GraphQLName("type") GqlJcrPropertyType type,
+                                @GraphQLName("values") List<String> values,
+                                @GraphQLName("notZonedDateValues") List<String> notZonedDateValues,
+                                DataFetchingEnvironment environment)
+            throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            localizedNode.getProperty(name).removeValues(getValues(type, values, localizedNode.getSession(), environment));
+            localizedNode.getProperty(name).removeValues(getValues(type, values, notZonedDateValues, localizedNode.getSession(), environment));
         } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw new DataFetchingException(e);
         }
@@ -227,34 +239,21 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
                 : PropertyType.STRING;
     }
 
-    private Value getValue(GqlJcrPropertyType type, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException, FileSizeLimitExceededException {
-        return getValue(getPropertyType(type), value, session, environment);
+    private Value getValue(GqlJcrPropertyType type, String value, String notZonedDateValue, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException, FileSizeLimitExceededException {
+        return getValue(getPropertyType(type), value, notZonedDateValue, session, environment);
     }
 
-    private Value[] getValues(GqlJcrPropertyType type, List<String> values, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException, FileSizeLimitExceededException {
+    private Value[] getValues(GqlJcrPropertyType type, List<String> values, List<String> notZonedDateValues, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException, FileSizeLimitExceededException {
         List<Value> jcrValues = new ArrayList<>();
         int jcrType = getPropertyType(type);
         for (String value : values) {
-            jcrValues.add(getValue(jcrType, value, session, environment));
+            jcrValues.add(getValue(jcrType, value, null, session, environment));
         }
-        return jcrValues.toArray(new Value[jcrValues.size()]);
-    }
 
-    private Value getValue(int jcrType, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException, FileSizeLimitExceededException {
-        ValueFactory valueFactory = session.getValueFactory();
-        switch (jcrType) {
-            case PropertyType.REFERENCE:
-                return valueFactory.createValue(getNodeFromPathOrId(session, value));
-            case PropertyType.WEAKREFERENCE:
-                return valueFactory.createValue(getNodeFromPathOrId(session, value), true);
-            case PropertyType.BINARY:
-                if (UploadHelper.isValidFileUpload(value, environment)) {
-                    return valueFactory.createValue(valueFactory.createBinary(UploadHelper.getFileUpload(value, environment).getInputStream()));
-                } else {
-                    return valueFactory.createValue(value, jcrType);
-                }
-            default:
-                return valueFactory.createValue(value, jcrType);
+        for (String notZonedDateValue : notZonedDateValues) {
+            jcrValues.add(getValue(jcrType, null, notZonedDateValue, session, environment));
         }
+
+        return jcrValues.toArray(new Value[jcrValues.size()]);
     }
 }

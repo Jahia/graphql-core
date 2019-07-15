@@ -360,6 +360,52 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     }
 
     @Test
+    public void mutatePropertyWithNotZonedDateValue() throws Exception {
+        String dateValue = "2019-07-14T21:07:25.000";
+
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId: \"/\", name: \"testNodeNotZonedDate\", primaryNodeType: \"nt:unstructured\") {\n" +
+                "      mutateProperty(name: \"date\") {\n" +
+                "        setValue(language: \"en\", type: DATE, value: \"" + dateValue + "\", notZonedDateValue: \"" + dateValue + "\")\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        JSONObject result = executeQuery("query {\n" +
+                "  jcr {\n" +
+                "    nodeByPath(path: \"/testNodeNotZonedDate\") {\n" +
+                "      property(name: \"date\") {\n" +
+                "        value\n" +
+                "        notZonedDateValue\n" +
+                "        notZonedDateValues\n" +
+                "        values\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}");
+
+        JSONObject property = result
+                .getJSONObject("data")
+                .getJSONObject("jcr")
+                .getJSONObject("nodeByPath")
+                .getJSONObject("property");
+
+        String propertyNotZonedDateValue = property.getString("notZonedDateValue");
+        String propertyDateValue = property.getString("value");
+
+        assertEquals(dateValue, propertyNotZonedDateValue);
+        assertNotEquals(dateValue, propertyDateValue);
+
+        inJcr(session -> {
+            session.getNode("/testNodeNotZonedDate").remove();
+            session.save();
+            return null;
+        });
+    }
+
+    @Test
     public void mutatePropertyMultipleNodes() throws Exception {
         executeQuery("mutation {\n" +
                 "  jcr {\n" +

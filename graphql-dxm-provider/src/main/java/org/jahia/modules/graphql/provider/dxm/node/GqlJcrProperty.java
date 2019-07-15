@@ -54,8 +54,11 @@ import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.ValueFormatException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport.DEFAULT_DATE_FORMAT;
 
 /**
  * GraphQL representation of a JCR property.
@@ -180,6 +183,27 @@ public class GqlJcrProperty {
     }
 
     /**
+     * @return The notZonedDateValue of the JCR property as a String in this format: [yyyy-MM-dd'T'HH:mm:ss.SSS]
+     * in case the property is single-valued, null otherwise
+     */
+    @GraphQLField
+    @GraphQLName("notZonedDateValue")
+    @GraphQLDescription("The notZonedDateValue of the JCR property as a String in this format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is single-valued, null otherwise")
+    public String getNotZonedDateValue() {
+        try {
+            if (property.isMultiple()) {
+                return null;
+            }
+
+            SimpleDateFormat defaultDataFormat = new SimpleDateFormat(DEFAULT_DATE_FORMAT);
+
+            return defaultDataFormat.format(property.getValue().getDate().getTime());
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * @return The values of the JCR property as a Strings in case the property is multiple-valued, null otherwise
      */
     @GraphQLField
@@ -194,6 +218,32 @@ public class GqlJcrProperty {
             List<String> result = new ArrayList<>(values.length);
             for (JCRValueWrapper value : values) {
                 result.add(value.getString());
+            }
+            return result;
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return The notZonedDateValues of the JCR property as a Strings in this format: [yyyy-MM-dd'T'HH:mm:ss.SSS]
+     * in case the property is multiple-valued, null otherwise
+     */
+    @GraphQLField
+    @GraphQLName("notZonedDateValues")
+    @GraphQLDescription("The notZonedDateValues of the JCR property as a Strings in this format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is multiple-valued, null otherwise")
+    public List<String> getNotZonedDateValues() {
+        try {
+            if (!property.isMultiple()) {
+                return null;
+            }
+            JCRValueWrapper[] notZonedDateValues = property.getValues();
+            List<String> result = new ArrayList<>(notZonedDateValues.length);
+
+            SimpleDateFormat defaultDateFormat = new SimpleDateFormat(DEFAULT_DATE_FORMAT);
+
+            for (JCRValueWrapper value : notZonedDateValues) {
+                result.add(defaultDateFormat.format(value.getDate().getTime()));
             }
             return result;
         } catch (RepositoryException e) {
