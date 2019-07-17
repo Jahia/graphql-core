@@ -390,15 +390,16 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     public void queryPropertyWithNotZonedDateValue() throws Exception {
         String dateValue = "2019-07-14T21:07:25.000";
 
-        executeQuery("mutation {\n" +
-                "  jcr {\n" +
-                "    addNode(parentPathOrId: \"/\", name: \"testNodeNotZonedDate\", primaryNodeType: \"nt:unstructured\") {\n" +
-                "      mutateProperty(name: \"date\") {\n" +
-                "        setValue(language: \"en\", type: DATE, value: \"" + dateValue + "\", notZonedDateValue: \"" + dateValue + "\")\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n");
+        SimpleDateFormat defaultDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+        Date date = defaultDateFormat.parse(dateValue);
+
+        inJcr(session -> {
+            JCRNodeWrapper node = session.getRootNode().addNode("testNodeNotZonedDate");
+            node.setProperty("date", simpleDateFormat.format(date));
+            session.save();
+            return null;
+        });
 
         JSONObject result = executeQuery("query {\n" +
                 "  jcr {\n" +

@@ -70,7 +70,7 @@ public class GqlJcrPropertyInput {
                                @GraphQLName("value") @GraphQLDescription("The value to set (for single valued properties)") String value,
                                @GraphQLName("notZonedDateValue") @GraphQLDescription("Defines a date with the expecting format: [yyyy-MM-dd'T'HH:mm:ss.SSS] (for single valued properties)") String notZonedDateValue,
                                @GraphQLName("values") @GraphQLDescription("The values to set (for multivalued properties)") List<String> values,
-                               @GraphQLName("notZonedDateValues") @GraphQLDescription("Defines a dates with the expecting format: [yyyy-MM-dd'T'HH:mm:ss.SSS] (for multivalued properties)") List<String> notZonedDateValues) {
+                               @GraphQLName("notZonedDateValues") @GraphQLDescription("Defines dates with the expecting format: [yyyy-MM-dd'T'HH:mm:ss.SSS] (for multivalued properties)") List<String> notZonedDateValues) {
         this.name = name;
         this.language = language;
         this.type = type;
@@ -125,7 +125,7 @@ public class GqlJcrPropertyInput {
 
     @GraphQLField
     @GraphQLName("notZonedDateValues")
-    @GraphQLDescription("Defines a dates with the expecting format: [yyyy-MM-dd'T'HH:mm:ss.SSS] (for multivalued properties)")
+    @GraphQLDescription("Defines dates with the expecting format: [yyyy-MM-dd'T'HH:mm:ss.SSS] (for multivalued properties)")
     public List<String> getNotZonedDateValues() {
         return notZonedDateValues;
     }
