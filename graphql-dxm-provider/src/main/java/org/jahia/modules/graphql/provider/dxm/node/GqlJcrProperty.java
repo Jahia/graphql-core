@@ -47,6 +47,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRValueWrapper;
@@ -54,8 +55,11 @@ import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.ValueFormatException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport.DEFAULT_DATE_FORMAT;
 
 /**
  * GraphQL representation of a JCR property.
@@ -71,7 +75,7 @@ public class GqlJcrProperty {
      * Create an instance that represents a JCR property to GraphQL.
      *
      * @param property The JCR property to represent
-     * @param node The GraphQL representation of the JCR node the property belongs to
+     * @param node     The GraphQL representation of the JCR node the property belongs to
      */
     public GqlJcrProperty(JCRPropertyWrapper property, GqlJcrNode node) {
         this.property = property;
@@ -80,6 +84,7 @@ public class GqlJcrProperty {
 
     /**
      * Get underlying JCR property.
+     *
      * @return underlying JCR property
      */
     public JCRPropertyWrapper getProperty() {
@@ -180,6 +185,29 @@ public class GqlJcrProperty {
     }
 
     /**
+     * @return The value of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS]
+     * in case the property is single-valued, null otherwise
+     */
+    @GraphQLField
+    @GraphQLName("notZonedDateValue")
+    @GraphQLDescription("The value of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is single-valued, null otherwise")
+    public String getNotZonedDateValue() {
+        try {
+            if (property.isMultiple()) {
+                return null;
+            }
+
+            SimpleDateFormat defaultDataFormat = new SimpleDateFormat(DEFAULT_DATE_FORMAT);
+
+            return defaultDataFormat.format(property.getValue().getTime());
+        } catch (ValueFormatException e) {
+            throw new DataFetchingException(e);
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * @return The values of the JCR property as a Strings in case the property is multiple-valued, null otherwise
      */
     @GraphQLField
@@ -196,6 +224,34 @@ public class GqlJcrProperty {
                 result.add(value.getString());
             }
             return result;
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return The values of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS]
+     * in case the property is multiple-valued, null otherwise
+     */
+    @GraphQLField
+    @GraphQLName("notZonedDateValues")
+    @GraphQLDescription("The values of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is multiple-valued, null otherwise")
+    public List<String> getNotZonedDateValues() {
+        try {
+            if (!property.isMultiple()) {
+                return null;
+            }
+            JCRValueWrapper[] notZonedDateValues = property.getValues();
+            List<String> result = new ArrayList<>(notZonedDateValues.length);
+
+            SimpleDateFormat defaultDateFormat = new SimpleDateFormat(DEFAULT_DATE_FORMAT);
+
+            for (JCRValueWrapper value : notZonedDateValues) {
+                result.add(defaultDateFormat.format(value.getDate().getTime()));
+            }
+            return result;
+        } catch (ValueFormatException e) {
+            throw new DataFetchingException(e);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
