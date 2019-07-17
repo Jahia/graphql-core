@@ -140,13 +140,9 @@ public class GqlJcrMutationSupport {
                 }
             }
             return result;
-        } catch (RepositoryException e) {
+        } catch (RepositoryException | FileUploadBase.FileSizeLimitExceededException | IOException e) {
             throw new DataFetchingException(e);
-        } catch (FileUploadBase.FileSizeLimitExceededException | IOException e) {
-            e.printStackTrace();
         }
-
-        return null;
     }
 
     /**

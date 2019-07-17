@@ -57,17 +57,14 @@ import org.jahia.services.content.JCRTemplate;
 import org.jahia.settings.readonlymode.ReadOnlyModeController;
 import org.jahia.settings.readonlymode.ReadOnlyModeController.ReadOnlyModeStatus;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.*;
-import org.springframework.mock.web.MockMultipartFile;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
-import javax.servlet.http.Part;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -373,6 +370,36 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
 
+        SimpleDateFormat defaultDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+        Date date = defaultDateFormat.parse(dateValue);
+
+        inJcr(session -> {
+            assertEquals(simpleDateFormat.format(date), session.getNode("/testNodeNotZonedDate").getProperty("date").getString());
+            return null;
+        });
+
+        inJcr(session -> {
+            session.getNode("/testNodeNotZonedDate").remove();
+            session.save();
+            return null;
+        });
+    }
+
+    @Test
+    public void queryPropertyWithNotZonedDateValue() throws Exception {
+        String dateValue = "2019-07-14T21:07:25.000";
+
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId: \"/\", name: \"testNodeNotZonedDate\", primaryNodeType: \"nt:unstructured\") {\n" +
+                "      mutateProperty(name: \"date\") {\n" +
+                "        setValue(language: \"en\", type: DATE, value: \"" + dateValue + "\", notZonedDateValue: \"" + dateValue + "\")\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
         JSONObject result = executeQuery("query {\n" +
                 "  jcr {\n" +
                 "    nodeByPath(path: \"/testNodeNotZonedDate\") {\n" +
@@ -386,17 +413,14 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}");
 
-        JSONObject property = result
+        String propertyNotZonedDateValue = result
                 .getJSONObject("data")
                 .getJSONObject("jcr")
                 .getJSONObject("nodeByPath")
-                .getJSONObject("property");
-
-        String propertyNotZonedDateValue = property.getString("notZonedDateValue");
-        String propertyDateValue = property.getString("value");
+                .getJSONObject("property")
+                .getString("notZonedDateValue");
 
         assertEquals(dateValue, propertyNotZonedDateValue);
-        assertNotEquals(dateValue, propertyDateValue);
 
         inJcr(session -> {
             session.getNode("/testNodeNotZonedDate").remove();

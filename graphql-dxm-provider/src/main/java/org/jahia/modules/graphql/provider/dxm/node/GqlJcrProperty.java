@@ -47,6 +47,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRValueWrapper;
@@ -74,7 +75,7 @@ public class GqlJcrProperty {
      * Create an instance that represents a JCR property to GraphQL.
      *
      * @param property The JCR property to represent
-     * @param node The GraphQL representation of the JCR node the property belongs to
+     * @param node     The GraphQL representation of the JCR node the property belongs to
      */
     public GqlJcrProperty(JCRPropertyWrapper property, GqlJcrNode node) {
         this.property = property;
@@ -83,6 +84,7 @@ public class GqlJcrProperty {
 
     /**
      * Get underlying JCR property.
+     *
      * @return underlying JCR property
      */
     public JCRPropertyWrapper getProperty() {
@@ -183,12 +185,12 @@ public class GqlJcrProperty {
     }
 
     /**
-     * @return The notZonedDateValue of the JCR property as a String in this format: [yyyy-MM-dd'T'HH:mm:ss.SSS]
+     * @return The value of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS]
      * in case the property is single-valued, null otherwise
      */
     @GraphQLField
     @GraphQLName("notZonedDateValue")
-    @GraphQLDescription("The notZonedDateValue of the JCR property as a String in this format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is single-valued, null otherwise")
+    @GraphQLDescription("The value of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is single-valued, null otherwise")
     public String getNotZonedDateValue() {
         try {
             if (property.isMultiple()) {
@@ -197,7 +199,9 @@ public class GqlJcrProperty {
 
             SimpleDateFormat defaultDataFormat = new SimpleDateFormat(DEFAULT_DATE_FORMAT);
 
-            return defaultDataFormat.format(property.getValue().getDate().getTime());
+            return defaultDataFormat.format(property.getValue().getTime());
+        } catch (ValueFormatException e) {
+            throw new DataFetchingException(e);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -226,12 +230,12 @@ public class GqlJcrProperty {
     }
 
     /**
-     * @return The notZonedDateValues of the JCR property as a Strings in this format: [yyyy-MM-dd'T'HH:mm:ss.SSS]
+     * @return The values of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS]
      * in case the property is multiple-valued, null otherwise
      */
     @GraphQLField
     @GraphQLName("notZonedDateValues")
-    @GraphQLDescription("The notZonedDateValues of the JCR property as a Strings in this format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is multiple-valued, null otherwise")
+    @GraphQLDescription("The values of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is multiple-valued, null otherwise")
     public List<String> getNotZonedDateValues() {
         try {
             if (!property.isMultiple()) {
@@ -246,6 +250,8 @@ public class GqlJcrProperty {
                 result.add(defaultDateFormat.format(value.getDate().getTime()));
             }
             return result;
+        } catch (ValueFormatException e) {
+            throw new DataFetchingException(e);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
