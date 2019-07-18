@@ -53,6 +53,7 @@ import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 
+import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.ValueFormatException;
 import java.text.SimpleDateFormat;
@@ -102,7 +103,7 @@ public class GqlJcrProperty {
         try {
             return property.getName();
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -117,7 +118,7 @@ public class GqlJcrProperty {
         try {
             return property.getPath();
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -132,7 +133,7 @@ public class GqlJcrProperty {
         try {
             return GqlJcrPropertyType.fromValue(property.getType());
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -148,7 +149,7 @@ public class GqlJcrProperty {
         try {
             propertyDefinition = node.getNode().getApplicablePropertyDefinition(getName(), property.getType(), property.isMultiple());
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
         return propertyDefinition.isInternationalized();
     }
@@ -163,7 +164,7 @@ public class GqlJcrProperty {
         try {
             return property.getLocale();
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -180,7 +181,7 @@ public class GqlJcrProperty {
             }
             return property.getValue().getString();
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -193,17 +194,15 @@ public class GqlJcrProperty {
     @GraphQLDescription("The value of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is single-valued, null otherwise")
     public String getNotZonedDateValue() {
         try {
-            if (property.isMultiple()) {
+            if (property.isMultiple() || property.getType() != PropertyType.DATE) {
                 return null;
             }
 
             SimpleDateFormat defaultDataFormat = new SimpleDateFormat(DEFAULT_DATE_FORMAT);
 
             return defaultDataFormat.format(property.getValue().getTime());
-        } catch (ValueFormatException e) {
-            throw new DataFetchingException(e);
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -225,7 +224,7 @@ public class GqlJcrProperty {
             }
             return result;
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -238,7 +237,7 @@ public class GqlJcrProperty {
     @GraphQLDescription("The values of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is multiple-valued, null otherwise")
     public List<String> getNotZonedDateValues() {
         try {
-            if (!property.isMultiple()) {
+            if (!property.isMultiple() || property.getType() != PropertyType.DATE) {
                 return null;
             }
             JCRValueWrapper[] notZonedDateValues = property.getValues();
@@ -250,10 +249,8 @@ public class GqlJcrProperty {
                 result.add(defaultDateFormat.format(value.getDate().getTime()));
             }
             return result;
-        } catch (ValueFormatException e) {
-            throw new DataFetchingException(e);
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -270,7 +267,7 @@ public class GqlJcrProperty {
             }
             return property.getValue().getLong();
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -292,7 +289,7 @@ public class GqlJcrProperty {
             }
             return result;
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -309,7 +306,7 @@ public class GqlJcrProperty {
             }
             return property.getValue().getDouble();
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -331,7 +328,7 @@ public class GqlJcrProperty {
             }
             return result;
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -349,7 +346,7 @@ public class GqlJcrProperty {
             }
             return getRefNode(property.getValue());
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -372,7 +369,7 @@ public class GqlJcrProperty {
             }
             return result;
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
