@@ -44,12 +44,16 @@
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
 import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.predicate.MulticriteriaEvaluation;
 import org.jahia.modules.graphql.provider.dxm.predicate.PredicateHelper;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.services.sites.JahiaSitesService;
+import pl.touk.throwing.ThrowingPredicate;
 
 import javax.jcr.RepositoryException;
 import java.util.*;
@@ -98,6 +102,20 @@ public final class NodeTypeHelper {
         }
 
         return predicates.isEmpty() ? PredicateHelper.truePredicate() : PredicateHelper.allPredicates(predicates);
+    }
+
+    public static Predicate<ExtendedNodeType> getTypesPredicate(GqlJcrNode.NodeTypesInput typesFilter) {
+        Predicate<ExtendedNodeType> typesPredicate;
+        if (typesFilter == null) {
+            typesPredicate = PredicateHelper.truePredicate();
+        } else {
+            LinkedList<Predicate<ExtendedNodeType>> typePredicates = new LinkedList<>();
+            for (String typeFilter : typesFilter.getTypes()) {
+                typePredicates.add(ThrowingPredicate.unchecked(extendedNodeType -> extendedNodeType.isNodeType(typeFilter)));
+            }
+            typesPredicate = PredicateHelper.getCombinedPredicate(typePredicates, typesFilter.getMulticriteriaEvaluation(), MulticriteriaEvaluation.ANY);
+        }
+        return typesPredicate;
     }
 
     private static Set<String> getModulesForSite(String siteKey) throws RepositoryException {

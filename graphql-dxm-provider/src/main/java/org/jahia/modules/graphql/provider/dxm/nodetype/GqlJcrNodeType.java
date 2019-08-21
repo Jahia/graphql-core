@@ -50,6 +50,7 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.annotations.connection.PaginatedData;
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
@@ -143,6 +144,14 @@ public class GqlJcrNodeType {
     @GraphQLDescription("Returns true if the node type is queryable.")
     public boolean isQueryable() {
         return nodeType.isQueryable();
+    }
+
+    @GraphQLField
+    @GraphQLName("isNodeType")
+    @GraphQLDescription("Reports if the current node type matches the nodetype(s) passed in parameter")
+    @GraphQLNonNull
+    public boolean isNodeType(@GraphQLName("type") @GraphQLNonNull GqlJcrNode.NodeTypesInput input) {
+        return NodeTypeHelper.getTypesPredicate(input).test(nodeType);
     }
 
     @GraphQLField
