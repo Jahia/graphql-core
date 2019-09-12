@@ -246,12 +246,17 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
     private Value[] getValues(GqlJcrPropertyType type, List<String> values, List<String> notZonedDateValues, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException, FileSizeLimitExceededException {
         List<Value> jcrValues = new ArrayList<>();
         int jcrType = getPropertyType(type);
-        for (String value : values) {
-            jcrValues.add(getValue(jcrType, value, null, session, environment));
+
+        if (values != null) {
+            for (String value : values) {
+                jcrValues.add(getValue(jcrType, value, null, session, environment));
+            }
         }
 
-        for (String notZonedDateValue : notZonedDateValues) {
-            jcrValues.add(getValue(jcrType, null, notZonedDateValue, session, environment));
+        if (notZonedDateValues != null) {
+            for (String notZonedDateValue : notZonedDateValues) {
+                jcrValues.add(getValue(jcrType, null, notZonedDateValue, session, environment));
+            }
         }
 
         return jcrValues.toArray(new Value[jcrValues.size()]);

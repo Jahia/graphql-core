@@ -128,8 +128,10 @@ public class GqlJcrMutationSupport {
                     result.add(localizedNode.setProperty(property.getName(), v));
                 } else if (property.getValues() != null || property.getNotZonedDateValues() != null) {
                     List<Value> values = new ArrayList<>();
-                    for (String value : property.getValues()) {
-                        values.add(getValue(type, value, null, session, null));
+                    if (property.getValues() != null) {
+                        for (String value : property.getValues()) {
+                            values.add(getValue(type, value, null, session, null));
+                        }
                     }
                     if (property.getNotZonedDateValues() != null) {
                         for (String notZonedDateValue : property.getNotZonedDateValues()) {
