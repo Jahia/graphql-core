@@ -49,16 +49,15 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation.ReorderedChildrenPosition;
-import org.jahia.services.content.JCRCallback;
-import org.jahia.services.content.JCRNodeIteratorWrapper;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.content.*;
 import org.jahia.settings.readonlymode.ReadOnlyModeController;
 import org.jahia.settings.readonlymode.ReadOnlyModeController.ReadOnlyModeStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
@@ -148,6 +147,21 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         inJcr(session -> {
             JCRNodeWrapper node = session.getNodeByIdentifier(uuid);
             assertEquals("/testList/testNew1", node.getPath());
+            assertTrue(node.isNodeType("jnt:contentList"));
+            return null;
+        });
+        // add node with same name
+        result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId:\"/testList\",name:\"testNew1\",primaryNodeType:\"jnt:contentList\",useAvailableNodeName:true) {\n" +
+                "      uuid\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        String sameNameUuid = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getString("uuid");
+        inJcr(session -> {
+            JCRNodeWrapper node = session.getNodeByIdentifier(sameNameUuid);
+            assertEquals("/testList/testNew1-1", node.getPath());
             assertTrue(node.isNodeType("jnt:contentList"));
             return null;
         });
@@ -396,23 +410,25 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
         inJcr(session -> {
             JCRNodeWrapper node = session.getRootNode().addNode("testNodeNotZonedDate");
-            node.setProperty("date", simpleDateFormat.format(date));
+            node.addMixin("jmix:markedForDeletionRoot");
+            node.setProperty("j:deletionUser", "user");
+            node.setProperty("j:deletionDate", simpleDateFormat.format(date));
             session.save();
             return null;
         });
 
-        JSONObject result = executeQuery("query {\n" +
-                "  jcr {\n" +
-                "    nodeByPath(path: \"/testNodeNotZonedDate\") {\n" +
-                "      property(name: \"date\") {\n" +
-                "        value\n" +
-                "        notZonedDateValue\n" +
-                "        notZonedDateValues\n" +
-                "        values\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}");
+            JSONObject result = executeQuery("query {\n" +
+                    "  jcr {\n" +
+                    "    nodeByPath(path: \"/testNodeNotZonedDate\") {\n" +
+                    "      property(name: \"j:deletionDate\") {\n" +
+                    "        value\n" +
+                    "        notZonedDateValue\n" +
+                    "        notZonedDateValues\n" +
+                    "        values\n" +
+                    "      }\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}");
 
         String propertyNotZonedDateValue = result
                 .getJSONObject("data")
