@@ -95,11 +95,12 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         @GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
         @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
         @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType,
+        @GraphQLName("useAvailableNodeName") @GraphQLDescription("If true, use the next available name for a node, appending if needed numbers. Default is false") Boolean useAvailableNodeName,
         @GraphQLName("mixins") @GraphQLDescription("The collection of mixin type names") Collection<String> mixins,
         @GraphQLName("properties") Collection<GqlJcrPropertyInput> properties,
         @GraphQLName("children") Collection<GqlJcrNodeInput> children
     ) throws BaseGqlClientException {
-        GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, mixins, properties, children);
+        GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, useAvailableNodeName, mixins, properties, children);
         return new GqlJcrNodeMutation(addNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
     }
 

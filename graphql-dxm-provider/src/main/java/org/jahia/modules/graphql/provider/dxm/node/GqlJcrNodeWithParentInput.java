@@ -61,10 +61,11 @@ public class GqlJcrNodeWithParentInput extends GqlJcrNodeInput {
     public GqlJcrNodeWithParentInput(@GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The parent path or id where the node will be created") String parentPathOrId,
                                      @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
                                      @GraphQLName("primaryNodeType") @GraphQLDescription("The primary node type of the node to create") @GraphQLNonNull String primaryNodeType,
+                                     @GraphQLName("useAvailableNodeName") @GraphQLDescription("If true, use the next available name for a node, appending if needed numbers. Default is false") Boolean useAvailableNodeName,
                                      @GraphQLName("mixins") @GraphQLDescription("The collection of mixins to add to the node") Collection<String> mixins,
                                      @GraphQLName("properties") @GraphQLDescription("The collection of properties to set to the node") Collection<GqlJcrPropertyInput> properties,
                                      @GraphQLName("children") @GraphQLDescription("The collection of sub nodes to create") Collection<GqlJcrNodeInput> children) {
-        super(name, primaryNodeType, mixins, properties, children);
+        super(name, primaryNodeType, useAvailableNodeName, mixins, properties, children);
         this.parentPathOrId = parentPathOrId;
     }
 

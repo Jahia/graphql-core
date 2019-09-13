@@ -145,11 +145,12 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     @GraphQLDescription("Creates a new JCR node under the current node")
     public GqlJcrNodeMutation addChild(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
                                        @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType,
+                                       @GraphQLName("useAvailableNodeName") @GraphQLDescription("If true, use the next available name for a node, appending if needed numbers. Default is false") Boolean useAvailableNodeName,
                                        @GraphQLName("mixins") @GraphQLDescription("The collection of mixin type names") Collection<String> mixins,
                                        @GraphQLName("properties") Collection<GqlJcrPropertyInput> properties,
                                        @GraphQLName("children") Collection<GqlJcrNodeInput> children)
     throws BaseGqlClientException {
-        GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, mixins, properties, children);
+        GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, useAvailableNodeName, mixins, properties, children);
         return new GqlJcrNodeMutation(addNode(jcrNode, node));
     }
 

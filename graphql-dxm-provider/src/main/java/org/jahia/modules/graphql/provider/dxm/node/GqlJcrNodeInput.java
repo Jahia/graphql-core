@@ -56,17 +56,20 @@ public class GqlJcrNodeInput {
 
     private String name;
     private String primaryNodeType;
+    private Boolean useAvailableNodeName;
     private Collection<String> mixins;
     private Collection<GqlJcrPropertyInput> properties;
     private Collection<GqlJcrNodeInput> children;
 
     public GqlJcrNodeInput(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
                            @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType,
+                           @GraphQLName("useAvailableNodeName") @GraphQLDescription("If true, use the next available name for a node, appending if needed numbers. Default is false") Boolean useAvailableNodeName,
                            @GraphQLName("mixins") @GraphQLDescription("The collection of mixins to add to the node") Collection<String> mixins,
                            @GraphQLName("properties") @GraphQLDescription("The collection of properties to set to the node") Collection<GqlJcrPropertyInput> properties,
                            @GraphQLName("children") @GraphQLDescription("The collection of sub nodes to create") Collection<GqlJcrNodeInput> children) {
         this.name = name;
         this.primaryNodeType = primaryNodeType;
+        this.useAvailableNodeName = useAvailableNodeName;
         this.mixins = mixins;
         this.properties = properties;
         this.children = children;
@@ -78,6 +81,13 @@ public class GqlJcrNodeInput {
     @GraphQLDescription("The name of the node to create")
     public String getName() {
         return name;
+    }
+
+    @GraphQLField
+    @GraphQLName("useAvailableNodeName")
+    @GraphQLDescription("If true, use the next available name for a node, appending if needed numbers. Default is false")
+    public Boolean useAvailableNodeName() {
+        return useAvailableNodeName;
     }
 
     @GraphQLField

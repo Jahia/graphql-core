@@ -88,7 +88,12 @@ public class GqlJcrMutationSupport {
     public static JCRNodeWrapper addNode(JCRNodeWrapper parent, GqlJcrNodeInput node) {
         JCRNodeWrapper jcrNode;
         try {
-            jcrNode = parent.addNode(JCRContentUtils.escapeLocalNodeName(node.getName()), node.getPrimaryNodeType());
+            String nodeName = JCRContentUtils.escapeLocalNodeName(node.getName());
+            Boolean useAvailableNodeName = node.useAvailableNodeName();
+            if (useAvailableNodeName != null && useAvailableNodeName) {
+                nodeName = JCRContentUtils.findAvailableNodeName(parent, nodeName);
+            }
+            jcrNode = parent.addNode(nodeName, node.getPrimaryNodeType());
             if (node.getMixins() != null) {
                 for (String mixin : node.getMixins()) {
                     jcrNode.addMixin(mixin);
