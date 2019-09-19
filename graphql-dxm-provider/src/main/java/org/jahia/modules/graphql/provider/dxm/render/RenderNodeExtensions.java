@@ -70,10 +70,7 @@ import javax.jcr.RepositoryException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @GraphQLTypeExtension(GqlJcrNode.class)
 public class RenderNodeExtensions {
@@ -112,8 +109,11 @@ public class RenderNodeExtensions {
     }
 
     @GraphQLField
-    public RenderedNode getRenderedContent(@GraphQLName("view") String view, @GraphQLName("templateType") String templateType, @GraphQLName("contextConfiguration") String contextConfiguration,
-                                        @GraphQLName("language") String language, DataFetchingEnvironment environment) {
+    public RenderedNode getRenderedContent(@GraphQLName("view") String view,
+                                           @GraphQLName("templateType") String templateType,
+                                           @GraphQLName("contextConfiguration") String contextConfiguration,
+                                           @GraphQLName("language") String language,
+                                           @GraphQLName("requestAttributes") Collection<RenderRequestAttributeInput> requestAttributes, DataFetchingEnvironment environment) {
         try {
             RenderService renderService = (RenderService) SpringContextSingleton.getBean("RenderService");
 
@@ -142,6 +142,12 @@ public class RenderNodeExtensions {
             }
 
             HttpServletResponse response = httpServletResponse.get();
+
+            if (requestAttributes != null && requestAttributes.size() > 0) {
+                for (RenderRequestAttributeInput requestAttribute : requestAttributes) {
+                    request.setAttribute(requestAttribute.getName(), requestAttribute.getValue());
+                }
+            }
 
             JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node.getNode(), language);
 
