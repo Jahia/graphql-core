@@ -180,6 +180,7 @@ public class GqlJcrMutationSupport {
             FileItem fileItem = UploadHelper.getFileUpload(partName, environment);
             ImportExportBaseService importExportBaseService = ImportExportBaseService.getInstance();
             switch (fileItem.getContentType()) {
+                case "application/x-zip-compressed":
                 case "application/zip":
                     File fileToImport = File.createTempFile("import", ".zip");
                     try {
