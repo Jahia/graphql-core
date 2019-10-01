@@ -53,7 +53,7 @@
     </parent>
     <artifactId>graphql-core-root</artifactId>
     <name>Jahia GraphQL Core Root</name>
-    <version>1.3.0-SNAPSHOT</version>
+    <version>1.3.0-backlog_11061-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>This is the root project for the DX GraphQL Core integration project</description>
 
