@@ -88,24 +88,29 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
             URL url = bundle.getResource(GRAPHQL_EXTENSION_SDL);
             if (url != null) {
                 logger.debug("get bundle schema {}", url.getPath());
-                if (hasModulesMonitoringActivated) {
-                    String sourcesFolder = bundle.getHeaders().get(JAHIA_SOURCE_FOLDERS);
-                    if (sourcesFolder != null) {
-                        File file = new File(sourcesFolder + SRC_MAIN_RESOURCES + GRAPHQL_EXTENSION_SDL);
-                        if (file.exists()) {
-                            try {
-                                url = file.toURI().toURL();
-                            } catch (MalformedURLException e) {
-                                logger.error(e.getMessage(), e);
-                            }
-                        }
-                    }
-                }
+                url = getSourcesUrl(bundle, url);
                 registerSDLResource(eventType, bundle.getSymbolicName(), url);
                 return true;
             }
         }
         return false;
+    }
+
+    private URL getSourcesUrl(Bundle bundle, URL url) {
+        if (hasModulesMonitoringActivated) {
+            String sourcesFolder = bundle.getHeaders().get(JAHIA_SOURCE_FOLDERS);
+            if (sourcesFolder != null) {
+                File file = new File(sourcesFolder + SRC_MAIN_RESOURCES + GRAPHQL_EXTENSION_SDL);
+                if (file.exists()) {
+                    try {
+                        url = file.toURI().toURL();
+                    } catch (MalformedURLException e) {
+                        logger.error(e.getMessage(), e);
+                    }
+                }
+            }
+        }
+        return url;
     }
 
     /**
@@ -119,13 +124,13 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         switch (bundleEventType) {
             case BundleEvent.STARTED:
                 if (!sdlResources.containsKey(bundleName)) {
-                    logger.debug("add new type registry for " + bundleName);
+                    logger.debug("add new type registry for {}", bundleName);
                     sdlResources.put(bundleName, sdlResource);
                 }
                 break;
             default:
                 if (sdlResources.containsKey(bundleName)) {
-                    logger.debug("remove type registry for " + bundleName);
+                    logger.debug("remove type registry for {}", bundleName);
                     sdlResources.remove(bundleName);
                 }
         }
