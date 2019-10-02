@@ -51,12 +51,12 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         this.componentContext = componentContext;
         this.bundleContext.addBundleListener(this);
 
+        registerSourceMonitorService();
 
         for (Bundle bundle : bundleContext.getBundles()) {
             checkForSDLResourceInBundle(bundle, bundle.getState() == Bundle.ACTIVE ? BundleEvent.STARTED : BundleEvent.STOPPED);
         }
 
-        registerSourceMonitorService();
     }
 
     @Deactivate
