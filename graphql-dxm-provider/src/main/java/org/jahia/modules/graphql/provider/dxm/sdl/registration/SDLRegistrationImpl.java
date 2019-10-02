@@ -56,9 +56,7 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
             checkForSDLResourceInBundle(bundle, bundle.getState() == Bundle.ACTIVE ? BundleEvent.STARTED : BundleEvent.STOPPED);
         }
 
-        //Detect if external-modules-provider provides ModulesSourceMonitor Interface
-        Bundle modulesProvider = BundleUtils.getBundleBySymbolicName("external-provider-modules", null);
-        registerSourceMonitorService(modulesProvider);
+        registerSourceMonitorService();
     }
 
     @Deactivate
@@ -74,17 +72,9 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
     @Override
     public void bundleChanged(BundleEvent event) {
         int eventType = event.getType();
+
         if (eventType == BundleEvent.STARTED || eventType == BundleEvent.STOPPED) {
             Bundle bundle = event.getBundle();
-            //Handle specific case of external-provider-modules bundle
-            if (event.getBundle().getSymbolicName().equals("external-provider-modules")) {
-                if (eventType == BundleEvent.STARTED) {
-                    registerSourceMonitorService(event.getBundle());
-                } else {
-                    unregisterSourceMonitorService();
-                }
-            }
-
             if (checkForSDLResourceInBundle(bundle, event.getType())) {
                 logger.debug("received event {} for bundle {} ", status.get(eventType), event.getBundle().getSymbolicName());
                 componentContext.disableComponent(DXGraphQLProvider.class.getName());
@@ -141,15 +131,11 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
         }
     }
 
-    private void registerSourceMonitorService(Bundle modulesProvider) {
+    private void registerSourceMonitorService() {
         try {
-            hasModulesMonitoringActivated = Boolean.FALSE;
-            if (modulesProvider != null && modulesProvider.loadClass("org.jahia.modules.external.modules.osgi.ModulesSourceMonitor") != null) {
-                hasModulesMonitoringActivated = Boolean.TRUE;
-                unregisterSourceMonitorService();
-                serviceRegistration = bundleContext.registerService(ModulesSourceMonitor.class, new SDLFileSourceMonitor(bundleContext, componentContext), null);
-            }
-        } catch (ClassNotFoundException | NoClassDefFoundError e) {
+            serviceRegistration = bundleContext.registerService(ModulesSourceMonitor.class, new SDLFileSourceMonitor(bundleContext, componentContext), null);
+            hasModulesMonitoringActivated = Boolean.TRUE;
+        } catch (NoClassDefFoundError e) {
             if (logger.isDebugEnabled()) {
                 logger.error(e.getMessage(), e);
             }
