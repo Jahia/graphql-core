@@ -47,8 +47,8 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.processor.GraphQLAnnotationsComponent;
 import graphql.annotations.processor.ProcessingElementsContainer;
-import graphql.annotations.processor.retrievers.GraphQLExtensionsHandler;
-import graphql.annotations.processor.retrievers.GraphQLObjectHandler;
+import graphql.annotations.processor.retrievers.*;
+import graphql.annotations.processor.searchAlgorithms.SearchAlgorithm;
 import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.schema.*;
@@ -78,7 +78,13 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private SpecializedTypesHandler specializedTypesHandler;
 
     private GraphQLAnnotationsComponent graphQLAnnotations;
-    private GraphQLObjectHandler graphQLObjectHandler;
+    private GraphQLTypeRetriever graphQLTypeRetriever;
+    private GraphQLObjectInfoRetriever graphQLObjectInfoRetriever;
+    private GraphQLInterfaceRetriever graphQLInterfaceRetriever;
+    private GraphQLFieldRetriever graphQLFieldRetriever;
+    private SearchAlgorithm fieldSearchAlgorithm;
+    private SearchAlgorithm methodSearchAlgorithm;
+    private GraphQLExtensionsHandler extensionsHandler;
 
     private ProcessingElementsContainer container;
 
@@ -110,17 +116,47 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     }
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
-    public void setGraphQLObjectHandler(GraphQLObjectHandler graphQLObjectHandler) {
-        this.graphQLObjectHandler = graphQLObjectHandler;
+    public void setGraphQLTypeRetriever(GraphQLTypeRetriever graphQLTypeRetriever) {
+        this.graphQLTypeRetriever = graphQLTypeRetriever;
     }
 
-    public ProcessingElementsContainer getContainer() {
-        return container;
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
+    public void setGraphQLObjectInfoRetriever(GraphQLObjectInfoRetriever graphQLObjectInfoRetriever) {
+        this.graphQLObjectInfoRetriever = graphQLObjectInfoRetriever;
+    }
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
+    public void setGraphQLInterfaceRetriever(GraphQLInterfaceRetriever graphQLInterfaceRetriever) {
+        this.graphQLInterfaceRetriever = graphQLInterfaceRetriever;
+    }
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
+    public void setGraphQLFieldRetriever(GraphQLFieldRetriever graphQLFieldRetriever) {
+        this.graphQLFieldRetriever = graphQLFieldRetriever;
+    }
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, target = "(type=field)", policyOption = ReferencePolicyOption.GREEDY)
+    public void setFieldSearchAlgorithm(SearchAlgorithm fieldSearchAlgorithm) {
+        this.fieldSearchAlgorithm = fieldSearchAlgorithm;
+    }
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, target = "(type=method)", policyOption = ReferencePolicyOption.GREEDY)
+    public void setMethodSearchAlgorithm(SearchAlgorithm methodSearchAlgorithm) {
+        this.methodSearchAlgorithm = methodSearchAlgorithm;
+    }
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
+    public void setExtensionsHandler(GraphQLExtensionsHandler extensionsHandler) {
+        this.extensionsHandler = extensionsHandler;
     }
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
     public void setSDLRegistrationService(SDLSchemaService sdlSchemaService) {
         this.sdlSchemaService = sdlSchemaService;
+    }
+
+    public ProcessingElementsContainer getContainer() {
+        return container;
     }
 
     @Reference(cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY)
@@ -135,9 +171,16 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     @Activate
     public void activate() {
         instance = this;
-        graphQLObjectHandler.getTypeRetriever().getGraphQLFieldRetriever().setAlwaysPrettify(true);
+        graphQLTypeRetriever.setGraphQLObjectInfoRetriever(graphQLObjectInfoRetriever);
+        graphQLTypeRetriever.setGraphQLInterfaceRetriever(graphQLInterfaceRetriever);
+        graphQLTypeRetriever.setGraphQLFieldRetriever(graphQLFieldRetriever);
+        graphQLTypeRetriever.setFieldSearchAlgorithm(fieldSearchAlgorithm);
+        graphQLTypeRetriever.setMethodSearchAlgorithm(methodSearchAlgorithm);
+        graphQLTypeRetriever.setExtensionsHandler(extensionsHandler);
 
+        graphQLFieldRetriever.setAlwaysPrettify(true);
         container = graphQLAnnotations.createContainer();
+
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
         ((DefaultTypeFunction) defaultTypeFunction).register(this);
 
