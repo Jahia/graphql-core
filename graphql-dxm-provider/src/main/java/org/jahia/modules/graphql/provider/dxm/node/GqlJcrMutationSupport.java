@@ -58,7 +58,6 @@ import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.importexport.DocumentViewImportHandler;
 import org.jahia.services.importexport.ImportExportBaseService;
-import org.jahia.utils.zip.ZipHelper;
 import org.springframework.core.io.FileSystemResource;
 
 import javax.jcr.*;
@@ -194,86 +193,6 @@ public class GqlJcrMutationSupport {
             }
         } catch (Exception e) {
             throw new DataFetchingException(e);
-        }
-    }
-
-    /**
-     *
-     * @param node file to zip
-     * @param environment data fetching environment
-     * @throws DataFetchingException
-     */
-    public static void zipFile(JCRNodeWrapper node, JCRSessionWrapper session, DataFetchingEnvironment environment) throws DataFetchingException {
-        String name = node.getName();
-        String zipName = name.lastIndexOf(".") != -1 ?
-                name.substring(0, name.lastIndexOf(".")).concat(".zip") : name.concat(".zip");
-        try {
-            ZipHelper.getInstance().zipFiles(node.getParent(), getNameWithCounter(node.getPath(), zipName, session), Collections.singletonList(node));
-        } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
-        }
-
-    }
-
-    /**
-     *
-     * @param node folder to zip
-     * @param environment data fetching environment
-     * @throws DataFetchingException
-     */
-    public static void zipFolder(JCRNodeWrapper node, JCRSessionWrapper session, DataFetchingEnvironment environment) throws DataFetchingException {
-        String name = node.getName();
-        String zipName = name.lastIndexOf(".") != -1 ?
-                name.substring(0, name.lastIndexOf(".")).concat(".zip") : name.concat(".zip");
-        try {
-            List<JCRNodeWrapper> files = IteratorUtils.toList(node.getNodes());
-            ZipHelper.getInstance().zipFiles(node.getParent(), getNameWithCounter(node.getPath(), zipName, session), files);
-        } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
-        }
-
-    }
-
-    /**
-     *
-     * @param files selected files to zip
-     * @param environment data fetching environment
-     * @throws DataFetchingException
-     */
-    public static void zipFiles(List<JCRNodeWrapper> files, JCRNodeWrapper parent, JCRSessionWrapper session, DataFetchingEnvironment environment) throws DataFetchingException {
-        try {
-            ZipHelper.getInstance().zipFiles(parent, getNameWithCounter(parent.getPath(), parent.getName().concat(".zip"), session), files);
-        } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
-        }
-
-    }
-
-    /**
-     *
-     * @param file file to unzip
-     * @param parent parent node
-     * @param session current user session
-     */
-    public static void unzipFile(JCRNodeWrapper file, JCRNodeWrapper parent, JCRSessionWrapper session) {
-        try {
-            ZipHelper.getInstance().unzipFile(file, parent, session);
-        } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
-        }
-    }
-
-    public static String getNameWithCounter(String path, String name, JCRSessionWrapper session) throws RepositoryException {
-        String originalName = name;
-        if(!session.nodeExists(path)) {
-            return name;
-        } else {
-            int count = 0;
-            while (session.nodeExists(path.substring(0, path.lastIndexOf("/") + 1).concat(name))) {
-                count++;
-                name = originalName.substring(0, originalName.lastIndexOf(".")).concat(count + ".zip");
-            }
-            return name;
         }
     }
 
