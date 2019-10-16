@@ -50,7 +50,7 @@ public class ZipUtils {
      * method to zip a file / several files / folder or add files to an existing zip file (without duplicates)
      *
      * @param nodes list of nodes to be included in the new zip file (only files or folders)
-     * @param file the zip file
+     * @param file  the zip file
      */
     public static void addToZip(List<JCRNodeWrapper> nodes, JCRNodeWrapper file) {
         InputStream is = null;
@@ -94,7 +94,7 @@ public class ZipUtils {
     /**
      * method to unzip a zip file with all its tree
      *
-     * @param dest destination node (folder)
+     * @param dest    destination node (folder)
      * @param zipFile zip file to unzip
      */
     public static void unzip(JCRNodeWrapper dest, JCRNodeWrapper zipFile) {
@@ -106,7 +106,7 @@ public class ZipUtils {
 
                 if (entry.isDirectory()) {
                     //if the entry is a directory, create it to build the whole tree
-                    JCRNodeWrapper subFolder = dest.addNode(entry.getName(), Constants.JAHIANT_FOLDER);
+                    dest.addNode(entry.getName(), Constants.JAHIANT_FOLDER);
 
                 } else {
 
@@ -143,9 +143,8 @@ public class ZipUtils {
     }
 
     /**
-     *
-     * @param node the node (file) to zip
-     * @param zout zipOutputStream of the zip file
+     * @param node   the node (file) to zip
+     * @param zout   zipOutputStream of the zip file
      * @param parent empty string when files are on root path, parent name instead
      * @throws RepositoryException
      */
