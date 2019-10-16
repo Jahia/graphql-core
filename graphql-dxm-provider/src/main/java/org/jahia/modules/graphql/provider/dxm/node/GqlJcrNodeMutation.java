@@ -461,7 +461,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
      */
     @GraphQLField
     @GraphQLDescription("Return zip mutation")
-    public GqlZipMutation zipMutation() throws DataFetchingException {
+    public GqlZipMutation zip() throws DataFetchingException {
         if (jcrNode.isFile()) {
             return new GqlZipMutation(jcrNode);
         } else {
