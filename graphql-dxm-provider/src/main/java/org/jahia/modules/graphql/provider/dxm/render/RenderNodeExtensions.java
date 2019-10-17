@@ -110,7 +110,7 @@ public class RenderNodeExtensions {
     /**
      * Check if the node has a renderable template associated with it (not a view a template).
      *
-     * @return true if the node as a renderable template associated with it
+     * @return true if the node has a renderable template associated with it
      */
     @GraphQLField
     @GraphQLName("isDisplayableNode")
