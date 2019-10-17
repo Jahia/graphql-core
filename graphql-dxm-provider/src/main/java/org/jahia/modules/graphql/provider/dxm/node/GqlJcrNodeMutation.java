@@ -465,7 +465,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         if (jcrNode.isFile()) {
             return new GqlZipMutation(jcrNode);
         } else {
-            throw new DataFetchingException("TypeError : the path is not a file");
+            throw new DataFetchingException(jcrNode.getPath() + " is not a file");
         }
     }
 

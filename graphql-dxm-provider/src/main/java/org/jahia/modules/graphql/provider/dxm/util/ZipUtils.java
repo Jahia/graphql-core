@@ -56,17 +56,19 @@ public class ZipUtils {
         InputStream is = null;
         String filename = file.getName();
         File tmp = null;
+        ZipInputStream zin = null;
+        ZipOutputStream zout = null;
         try {
             tmp = File.createTempFile(filename, "");
-            ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(tmp));
+            zout = new ZipOutputStream(new FileOutputStream(tmp));
 
             //if the zip file already exists we transfer all its subfiles into the new zip file
             if (file.hasNode(Constants.JCR_CONTENT) && file.getNode(Constants.JCR_CONTENT).hasProperty(Constants.JCR_DATA)) {
-                ZipInputStream zin = new ZipInputStream(file.getFileContent().downloadFile());
+                zin = new ZipInputStream(file.getFileContent().downloadFile());
                 ZipEntry entry = zin.getNextEntry();
                 while (entry != null) {
                     zout.putNextEntry(entry);
-                    copy(zin, zout);
+                    IOUtils.copy(zin, zout);
                     entry = zin.getNextEntry();
                 }
                 zin.close();
@@ -84,6 +86,8 @@ public class ZipUtils {
             file.getNode(Constants.JCR_CONTENT).setProperty(Constants.JCR_DATA, new BinaryImpl(is));
             file.getNode(Constants.JCR_CONTENT).setProperty(Constants.JCR_MIMETYPE, "application/zip");
         } catch (IOException | RepositoryException e) {
+            IOUtils.closeQuietly(zin);
+            IOUtils.closeQuietly(zout);
             throw new DataFetchingException(e);
         } finally {
             IOUtils.closeQuietly(is);
@@ -98,9 +102,11 @@ public class ZipUtils {
      * @param zipFile zip file to unzip
      */
     public static void unzip(JCRNodeWrapper dest, JCRNodeWrapper zipFile) {
+        File tmp = null;
+        ZipInputStream zis = null;
+        String mimeType;
         try {
-            File tmp;
-            ZipInputStream zis = new ZipInputStream(zipFile.getFileContent().downloadFile());
+            zis = new ZipInputStream(zipFile.getFileContent().downloadFile());
             ZipEntry entry = zis.getNextEntry();
             while (entry != null) {
 
@@ -110,26 +116,19 @@ public class ZipUtils {
 
                 } else {
 
-                    JCRNodeWrapper file = dest.addNode(entry.getName(), Constants.JAHIANT_FILE);
-                    file.addNode(Constants.JCR_CONTENT, Constants.JAHIANT_RESOURCE);
                     tmp = File.createTempFile(entry.getName(), "");
-                    FileOutputStream fos = new FileOutputStream(tmp);
-
-                    copy(zis, fos);
-
-                    fos.close();
-                    InputStream is1 = new FileInputStream(tmp);
-                    InputStream is2 = new FileInputStream(tmp);
-                    file.getNode(Constants.JCR_CONTENT).setProperty(Constants.JCR_DATA, new BinaryImpl(is1));
-
-                    String mimeType = URLConnection.guessContentTypeFromName(entry.getName());
-                    if (mimeType == null) {
-                        mimeType = URLConnection.guessContentTypeFromStream(is2);
+                    try (FileOutputStream fos = new FileOutputStream(tmp)) {
+                        IOUtils.copy(zis, fos);
                     }
-                    file.getNode(Constants.JCR_CONTENT).setProperty(Constants.JCR_MIMETYPE, mimeType);
 
-                    is1.close();
-                    is2.close();
+                    try (InputStream is1 = new FileInputStream(tmp)) {
+                        mimeType = getMimeType(entry.getName(), is1);
+                    }
+
+                    try(InputStream is2 = new FileInputStream(tmp)){
+                        dest.uploadFile(entry.getName(), is2, mimeType);
+                    }
+
                     FileUtils.deleteQuietly(tmp);
                 }
                 entry = zis.getNextEntry();
@@ -138,6 +137,8 @@ public class ZipUtils {
             zis.closeEntry();
             zis.close();
         } catch (IOException | RepositoryException e) {
+            IOUtils.closeQuietly(zis);
+            FileUtils.deleteQuietly(tmp);
             throw new DataFetchingException(e);
         }
     }
@@ -151,11 +152,11 @@ public class ZipUtils {
     private static void zip(JCRNodeWrapper node, ZipOutputStream zout, String parent) throws RepositoryException {
         try {
             if (node.isNodeType(Constants.JAHIANT_FILE)) {
-                InputStream inputStream = node.getFileContent().downloadFile();
-                zout.putNextEntry(new ZipEntry(parent + node.getName()));
-                copy(inputStream, zout);
-                zout.closeEntry();
-                inputStream.close();
+                try (InputStream inputStream = node.getFileContent().downloadFile()) {
+                    zout.putNextEntry(new ZipEntry(parent + node.getName()));
+                    IOUtils.copy(inputStream, zout);
+                    zout.closeEntry();
+                }
             } else if (node.isNodeType(Constants.JAHIANT_FOLDER)) {
                 parent = node.getName() + "/";
                 zout.putNextEntry(new ZipEntry(parent));
@@ -170,19 +171,11 @@ public class ZipUtils {
         }
     }
 
-    private static void copy(InputStream zin, ZipOutputStream zout) throws IOException {
-        byte[] bytes = new byte[1024];
-        int len;
-        while ((len = zin.read(bytes)) > 0) {
-            zout.write(bytes, 0, len);
+    private static String getMimeType(String name, InputStream inputStream) throws IOException {
+        String mimeType = URLConnection.guessContentTypeFromName(name);
+        if (mimeType == null) {
+            mimeType = URLConnection.guessContentTypeFromStream(inputStream);
         }
-    }
-
-    private static void copy(ZipInputStream zis, FileOutputStream fos) throws IOException {
-        int length;
-        byte[] buffer = new byte[1024];
-        while ((length = zis.read(buffer)) > 0) {
-            fos.write(buffer, 0, length);
-        }
+        return mimeType;
     }
 }

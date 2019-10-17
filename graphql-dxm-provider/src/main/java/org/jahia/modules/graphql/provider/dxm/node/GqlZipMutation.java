@@ -57,16 +57,16 @@ public class GqlZipMutation {
     /**
      * graphQL field to zip a file / several files / folder or add files to an existing zip file (without duplicates)
      *
-     * @param paths
+     * @param pathsOrIds list of paths or ids to zip
      * @param environment
      * @return
      * @throws DataFetchingException
      */
     @GraphQLField
     @GraphQLDescription("zip a file")
-    public boolean addToZip(@GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("list of paths or ids to zip") List<String> paths, DataFetchingEnvironment environment) throws DataFetchingException {
+    public boolean addToZip(@GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("list of paths or ids to zip") List<String> pathsOrIds, DataFetchingEnvironment environment) throws DataFetchingException {
         List<JCRNodeWrapper> nodes = new ArrayList<>();
-        for (String pathOrId : paths) {
+        for (String pathOrId : pathsOrIds) {
             try {
                 JCRNodeWrapper node = GqlJcrMutation.getNodeFromPathOrId(JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE), pathOrId);
                 if (!node.isNodeType(Constants.JAHIANT_FILE) && !node.isNodeType(Constants.JAHIANT_FOLDER)) {
