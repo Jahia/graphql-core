@@ -44,10 +44,7 @@
 package org.jahia.modules.graphql.provider.dxm.render;
 
 
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
-import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.servlet.GraphQLContext;
 import org.jahia.bin.Render;
@@ -81,7 +78,14 @@ public class RenderNodeExtensions {
         this.node = node;
     }
 
+    /**
+     * Returns the first parent of the current node that can be displayed in full page.
+     * If no matching node is found, null is returned.
+     *
+     * @return the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned.
+     */
     @GraphQLField
+    @GraphQLDescription("Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned.")
     public GqlJcrNode getDisplayableNode(DataFetchingEnvironment environment) {
         Optional<HttpServletRequest> httpServletRequest = ((GraphQLContext) environment.getContext()).getRequest();
         Optional<HttpServletResponse> httpServletResponse = ((GraphQLContext) environment.getContext()).getResponse();
@@ -100,6 +104,25 @@ public class RenderNodeExtensions {
             }
         } else {
             return null;
+        }
+    }
+
+    /**
+     * Check if the node has a renderable template associated with it (not a view a template).
+     *
+     * @return true if the node has a renderable template associated with it
+     */
+    @GraphQLField
+    @GraphQLName("isDisplayableNode")
+    @GraphQLDescription("Check if the node has a renderable template associated with it (not a view a template).")
+    public boolean isDisplayableNode() {
+        try {
+            final RenderContext context = new RenderContext(null, null, node.getNode().getSession().getUser());
+            context.setMainResource(new Resource(node.getNode(), "html", null, Resource.CONFIGURATION_PAGE));
+            context.setServletPath("/cms/render/live");
+            return JCRContentUtils.isADisplayableNode(node.getNode(), context);
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
         }
     }
 

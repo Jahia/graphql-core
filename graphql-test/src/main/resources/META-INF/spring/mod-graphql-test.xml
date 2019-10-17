@@ -27,6 +27,7 @@
                 <value>org.jahia.test.graphql.GraphQLFieldSorterTest</value>
                 <value>org.jahia.test.graphql.GraphQLOrderingTest</value>
                 <value>org.jahia.test.graphql.GraphQLFieldGroupingTest</value>
+                <value>org.jahia.test.graphql.GraphQLRenderTest</value>
             </list>
         </property>
     </bean>
