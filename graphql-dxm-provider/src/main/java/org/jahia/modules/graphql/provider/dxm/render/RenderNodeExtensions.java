@@ -114,7 +114,7 @@ public class RenderNodeExtensions {
      */
     @GraphQLField
     @GraphQLName("isDisplayableNode")
-    @GraphQLDescription("Check if the node as a renderable template associated with it (not a view a template).")
+    @GraphQLDescription("Check if the node has a renderable template associated with it (not a view a template).")
     public boolean isDisplayableNode() {
         try {
             final RenderContext context = new RenderContext(null, null, node.getNode().getSession().getUser());
