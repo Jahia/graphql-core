@@ -46,6 +46,9 @@ import java.util.zip.ZipOutputStream;
  */
 public class ZipUtils {
 
+    private ZipUtils() {
+    }
+
     /**
      * method to zip a file / several files / folder or add files to an existing zip file (without duplicates)
      *
@@ -53,44 +56,40 @@ public class ZipUtils {
      * @param file  the zip file
      */
     public static void addToZip(List<JCRNodeWrapper> nodes, JCRNodeWrapper file) {
-        InputStream is = null;
         String filename = file.getName();
         File tmp = null;
-        ZipInputStream zin = null;
-        ZipOutputStream zout = null;
         try {
             tmp = File.createTempFile(filename, "");
-            zout = new ZipOutputStream(new FileOutputStream(tmp));
 
-            //if the zip file already exists we transfer all its subfiles into the new zip file
-            if (file.hasNode(Constants.JCR_CONTENT) && file.getNode(Constants.JCR_CONTENT).hasProperty(Constants.JCR_DATA)) {
-                zin = new ZipInputStream(file.getFileContent().downloadFile());
-                ZipEntry entry = zin.getNextEntry();
-                while (entry != null) {
-                    zout.putNextEntry(entry);
-                    IOUtils.copy(zin, zout);
-                    entry = zin.getNextEntry();
+            try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(tmp))) {
+                //if the zip file already exists we transfer all its subfiles into the new zip file
+                if (file.hasNode(Constants.JCR_CONTENT) && file.getNode(Constants.JCR_CONTENT).hasProperty(Constants.JCR_DATA)) {
+                    try (ZipInputStream zin = new ZipInputStream(file.getFileContent().downloadFile())) {
+                        ZipEntry entry = zin.getNextEntry();
+                        while (entry != null) {
+                            zout.putNextEntry(entry);
+                            IOUtils.copy(zin, zout);
+                            entry = zin.getNextEntry();
+                        }
+                    }
+                } else {
+                    //else, we add mandatory child nodes
+                    file.addNode(Constants.JCR_CONTENT, Constants.JAHIANT_RESOURCE);
                 }
-                zin.close();
-                //else, we add mandatory child nodes
-            } else {
-                file.addNode(Constants.JCR_CONTENT, Constants.JAHIANT_RESOURCE);
+                //now we add the new files/directories
+                for (JCRNodeWrapper node : nodes) {
+                    zip(node, zout, "");
+                }
             }
-            //now we add the new files/directories
-            for (JCRNodeWrapper node : nodes) {
-                zip(node, zout, "");
-            }
-            zout.close();
-            is = new BufferedInputStream(new FileInputStream(tmp));
+
             //put the new zip file into jcr:data
-            file.getNode(Constants.JCR_CONTENT).setProperty(Constants.JCR_DATA, new BinaryImpl(is));
+            try (InputStream is = new BufferedInputStream(new FileInputStream(tmp))) {
+                file.getNode(Constants.JCR_CONTENT).setProperty(Constants.JCR_DATA, new BinaryImpl(is));
+            }
             file.getNode(Constants.JCR_CONTENT).setProperty(Constants.JCR_MIMETYPE, "application/zip");
         } catch (IOException | RepositoryException e) {
-            IOUtils.closeQuietly(zin);
-            IOUtils.closeQuietly(zout);
             throw new DataFetchingException(e);
         } finally {
-            IOUtils.closeQuietly(is);
             FileUtils.deleteQuietly(tmp);
         }
     }
@@ -103,43 +102,28 @@ public class ZipUtils {
      */
     public static void unzip(JCRNodeWrapper dest, JCRNodeWrapper zipFile) {
         File tmp = null;
-        ZipInputStream zis = null;
-        String mimeType;
-        try {
-            zis = new ZipInputStream(zipFile.getFileContent().downloadFile());
+        try (ZipInputStream zis = new ZipInputStream(zipFile.getFileContent().downloadFile())) {
+            tmp = File.createTempFile("temp", "");
             ZipEntry entry = zis.getNextEntry();
             while (entry != null) {
-
                 if (entry.isDirectory()) {
                     //if the entry is a directory, create it to build the whole tree
                     dest.addNode(entry.getName(), Constants.JAHIANT_FOLDER);
-
                 } else {
-
-                    tmp = File.createTempFile(entry.getName(), "");
                     try (FileOutputStream fos = new FileOutputStream(tmp)) {
                         IOUtils.copy(zis, fos);
                     }
-
-                    try (InputStream is1 = new FileInputStream(tmp)) {
-                        mimeType = getMimeType(entry.getName(), is1);
+                    try (InputStream is = new FileInputStream(tmp)) {
+                        dest.uploadFile(entry.getName(), is, getMimeType(entry.getName(), tmp));
                     }
-
-                    try(InputStream is2 = new FileInputStream(tmp)){
-                        dest.uploadFile(entry.getName(), is2, mimeType);
-                    }
-
-                    FileUtils.deleteQuietly(tmp);
                 }
                 entry = zis.getNextEntry();
-
             }
             zis.closeEntry();
-            zis.close();
         } catch (IOException | RepositoryException e) {
-            IOUtils.closeQuietly(zis);
-            FileUtils.deleteQuietly(tmp);
             throw new DataFetchingException(e);
+        } finally {
+            FileUtils.deleteQuietly(tmp);
         }
     }
 
@@ -171,10 +155,12 @@ public class ZipUtils {
         }
     }
 
-    private static String getMimeType(String name, InputStream inputStream) throws IOException {
+    private static String getMimeType(String name, File tmp) throws IOException {
         String mimeType = URLConnection.guessContentTypeFromName(name);
         if (mimeType == null) {
-            mimeType = URLConnection.guessContentTypeFromStream(inputStream);
+            try (InputStream inputStream = new FileInputStream(tmp)) {
+                mimeType = URLConnection.guessContentTypeFromStream(inputStream);
+            }
         }
         return mimeType;
     }
