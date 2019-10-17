@@ -114,7 +114,12 @@ public class ZipUtils {
                         IOUtils.copy(zis, fos);
                     }
                     try (InputStream is = new FileInputStream(tmp)) {
-                        dest.uploadFile(entry.getName(), is, getMimeType(entry.getName(), tmp));
+                        String name = entry.getName();
+                        if(name.lastIndexOf("/") > 0) {
+                            dest.getNode(name.substring(0, name.lastIndexOf("/"))).uploadFile(name, is, getMimeType(entry.getName(), tmp));
+                        } else {
+                            dest.uploadFile(name, is, getMimeType(entry.getName(), tmp));
+                        }
                     }
                 }
                 entry = zis.getNextEntry();
@@ -142,7 +147,11 @@ public class ZipUtils {
                     zout.closeEntry();
                 }
             } else if (node.isNodeType(Constants.JAHIANT_FOLDER)) {
-                parent = node.getName() + "/";
+                if ((node.getParent().getName() + "/").equals(parent)) {
+                    parent += node.getName() + "/";
+                } else {
+                    parent = node.getName() + "/";
+                }
                 zout.putNextEntry(new ZipEntry(parent));
                 JCRNodeIteratorWrapper it = node.getNodes();
                 while (it.hasNext()) {
