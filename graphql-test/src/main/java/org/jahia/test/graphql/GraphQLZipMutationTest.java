@@ -25,15 +25,19 @@ package org.jahia.test.graphql;
 
 import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.api.Constants;
-import org.jahia.services.content.JCRCallback;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRTemplate;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.services.content.*;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.*;
 
+import javax.jcr.PathNotFoundException;
+import javax.jcr.RepositoryException;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -43,6 +47,8 @@ import java.util.zip.ZipInputStream;
  * @author yousria
  */
 public class GraphQLZipMutationTest extends GraphQLTestSupport {
+
+    private static final String FOLDER_NAME = "testFolder" + UUID.randomUUID();
 
     private static <T> T inJcr(JCRCallback<T> callback) throws Exception {
         return inJcr(callback, null);
@@ -61,7 +67,7 @@ public class GraphQLZipMutationTest extends GraphQLTestSupport {
     @Before
     public void setUp() throws Exception {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
-            JCRNodeWrapper testFolder = session.getRootNode().addNode("testFolder", Constants.JAHIANT_FOLDER);
+            JCRNodeWrapper testFolder = session.getRootNode().addNode(FOLDER_NAME, Constants.JAHIANT_FOLDER);
             JCRNodeWrapper folderA = testFolder.addNode("folderA", Constants.JAHIANT_FOLDER);
             JCRNodeWrapper folderB = testFolder.addNode("folderB", Constants.JAHIANT_FOLDER);
             JCRNodeWrapper fileA = folderA.addNode("fileA.txt", Constants.JAHIANT_FILE);
@@ -80,8 +86,8 @@ public class GraphQLZipMutationTest extends GraphQLTestSupport {
     @After
     public void tearDown() throws Exception {
         inJcr(session -> {
-            if (session.nodeExists("/testFolder")) {
-                session.getNode("/testFolder").remove();
+            if (session.nodeExists("/"+ FOLDER_NAME)) {
+                session.getNode("/"+ FOLDER_NAME).remove();
                 session.save();
             }
             return null;
@@ -94,25 +100,20 @@ public class GraphQLZipMutationTest extends GraphQLTestSupport {
     public void shouldZipFile() throws Exception {
         JSONObject result = executeQuery("mutation {\n"
                 + "  jcr {\n"
-                + "    addNode(parentPathOrId:\"/testFolder\", name:\"zipFile.zip\", primaryNodeType:\"jnt:file\") {\n"
+                + "    addNode(parentPathOrId:\"/"+ FOLDER_NAME +"\", name:\"zipFile.zip\", primaryNodeType:\"jnt:file\") {\n"
                 + "      zip {\n"
-                + "        addToZip(pathsOrIds:[\"/testFolder/folderA/fileA.txt\"])\n"
+                + "        addToZip(pathsOrIds:[\"/"+ FOLDER_NAME +"/folderA/fileA.txt\"])\n"
                 + "      }\n"
                 + "    }\n"
                 + "  }\n"
                 + "}"
         );
-        Assert.assertTrue(result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getJSONObject("zip").getBoolean("addToZip"));
+        JSONObject zip = getJSONObjectByPath("data/jcr/addNode/zip", result);
+        Assert.assertNotNull("json returned by the mutation is null", zip);
+        Assert.assertEquals("the mutation ended with errors", true, zip.getBoolean("addToZip"));
         inJcr(session -> {
-            Assert.assertTrue(session.getNode("/testFolder").hasNode("zipFile.zip"));
-            try {
-                try (ZipInputStream zis = new ZipInputStream(session.getNode("/testFolder/zipFile.zip").getFileContent().downloadFile())) {
-                    ZipEntry entry = zis.getNextEntry();
-                    Assert.assertTrue(entry.getName().equals("fileA.txt"));
-                }
-            } catch (IOException e) {
-                e.getStackTrace();
-            }
+            Assert.assertEquals("Zip file was not created", true, session.getNode("/"+ FOLDER_NAME).hasNode("zipFile.zip"));
+            checkFilesIntoZip(Arrays.asList("fileA.txt"), session, "zipFile.zip");
             return null;
         });
     }
@@ -121,25 +122,20 @@ public class GraphQLZipMutationTest extends GraphQLTestSupport {
     public void shouldZipFolder() throws Exception {
         JSONObject result = executeQuery("mutation {\n"
                 + "  jcr {\n"
-                + "    addNode(parentPathOrId:\"/testFolder\", name:\"zipFolder.zip\", primaryNodeType:\"jnt:file\") {\n"
+                + "    addNode(parentPathOrId:\"/"+ FOLDER_NAME +"\", name:\"zipFolder.zip\", primaryNodeType:\"jnt:file\") {\n"
                 + "      zip {\n"
-                + "        addToZip(pathsOrIds:[\"/testFolder/folderA\"])\n"
+                + "        addToZip(pathsOrIds:[\"/"+ FOLDER_NAME +"/folderA\"])\n"
                 + "      }\n"
                 + "    }\n"
                 + "  }\n"
                 + "}"
         );
-        Assert.assertTrue(result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getJSONObject("zip").getBoolean("addToZip"));
+        JSONObject zip = getJSONObjectByPath("data/jcr/addNode/zip", result);
+        Assert.assertNotNull("json returned by the mutation is null", zip);
+        Assert.assertEquals("the mutation ended with errors", true, zip.getBoolean("addToZip"));
         inJcr(session -> {
-            Assert.assertTrue(session.getNode("/testFolder").hasNode("zipFolder.zip"));
-            try {
-                try (ZipInputStream zis = new ZipInputStream(session.getNode("/testFolder/zipFolder.zip").getFileContent().downloadFile())) {
-                    ZipEntry entry = zis.getNextEntry();
-                    Assert.assertTrue(entry.getName().equals("folderA/"));
-                }
-            } catch (IOException e) {
-                e.getStackTrace();
-            }
+            Assert.assertEquals("Zip file was not created", true, session.getNode("/"+ FOLDER_NAME).hasNode("zipFolder.zip"));
+            checkFilesIntoZip(Arrays.asList("folderA/"), session, "zipFolder.zip");
             return null;
         });
     }
@@ -148,9 +144,9 @@ public class GraphQLZipMutationTest extends GraphQLTestSupport {
     public void shouldAddFileToZip() throws Exception {
         executeQuery("mutation {\n"
                 + "  jcr {\n"
-                + "    addNode(parentPathOrId:\"/testFolder\", name:\"zipFile.zip\", primaryNodeType:\"jnt:file\") {\n"
+                + "    addNode(parentPathOrId:\"/"+ FOLDER_NAME +"\", name:\"zipFile.zip\", primaryNodeType:\"jnt:file\") {\n"
                 + "      zip {\n"
-                + "        addToZip(pathsOrIds:[\"/testFolder/folderA/fileA.txt\"])\n"
+                + "        addToZip(pathsOrIds:[\"/"+ FOLDER_NAME +"/folderA/fileA.txt\"])\n"
                 + "      }\n"
                 + "    }\n"
                 + "  }\n"
@@ -160,27 +156,20 @@ public class GraphQLZipMutationTest extends GraphQLTestSupport {
         JSONObject result = executeQuery(
                 "mutation {\n"
                 + "  jcr {\n"
-                + "    mutateNode(pathOrId:\"/testFolder/zipFile.zip\") {"
+                + "    mutateNode(pathOrId:\"/"+ FOLDER_NAME +"/zipFile.zip\") {"
                 + "      zip {\n"
-                + "        addToZip(pathsOrIds:[\"/testFolder/folderB/fileB.txt\"])\n"
+                + "        addToZip(pathsOrIds:[\"/"+ FOLDER_NAME +"/folderB/fileB.txt\"])\n"
                 + "      }\n"
                 + "    }\n"
                 + "  }\n"
                 + "}"
         );
-        Assert.assertTrue(result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONObject("zip").getBoolean("addToZip"));
+        JSONObject zip = getJSONObjectByPath("data/jcr/mutateNode/zip", result);
+        Assert.assertNotNull("json returned by the mutation is null", zip);
+        Assert.assertEquals("mutation ended with errors", true, zip.getBoolean("addToZip"));
         inJcr(session -> {
-            Assert.assertTrue(session.getNode("/testFolder").hasNode("zipFile.zip"));
-            try {
-                try (ZipInputStream zis = new ZipInputStream(session.getNode("/testFolder/zipFile.zip").getFileContent().downloadFile())) {
-                    ZipEntry entry = zis.getNextEntry();
-                    Assert.assertTrue(entry.getName().equals("fileA.txt"));
-                    entry = zis.getNextEntry();
-                    Assert.assertTrue(entry.getName().equals("fileB.txt"));
-                }
-            } catch (IOException e) {
-                e.getStackTrace();
-            }
+            Assert.assertEquals("Zip file was not created", true, session.getNode("/"+ FOLDER_NAME).hasNode("zipFile.zip"));
+            checkFilesIntoZip(Arrays.asList("fileA.txt", "fileB.txt"), session, "zipFile.zip");
             return null;
         });
     }
@@ -190,27 +179,20 @@ public class GraphQLZipMutationTest extends GraphQLTestSupport {
         JSONObject result = executeQuery(
                 "mutation {\n"
                         + "  jcr {\n"
-                        + "    addNode(parentPathOrId:\"/testFolder\", name:\"zipFiles.zip\", primaryNodeType:\"jnt:file\") {\n"
+                        + "    addNode(parentPathOrId:\"/"+ FOLDER_NAME +"\", name:\"zipFiles.zip\", primaryNodeType:\"jnt:file\") {\n"
                         + "      zip {\n"
-                        + "        addToZip(pathsOrIds:[\"/testFolder/folderB/fileB.txt\", \"/testFolder/folderA/fileA.txt\"])\n"
+                        + "        addToZip(pathsOrIds:[\"/"+ FOLDER_NAME +"/folderB/fileB.txt\", \"/"+ FOLDER_NAME +"/folderA/fileA.txt\"])\n"
                         + "      }\n"
                         + "    }\n"
                         + "  }\n"
                         + "}"
         );
-        Assert.assertTrue(result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getJSONObject("zip").getBoolean("addToZip"));
+        JSONObject zip = getJSONObjectByPath("data/jcr/addNode/zip", result);
+        Assert.assertNotNull("json returned by the mutation is null", zip);
+        Assert.assertEquals("mutation ended with errors", true, zip.getBoolean("addToZip"));
         inJcr(session -> {
-            Assert.assertTrue(session.getNode("/testFolder").hasNode("zipFiles.zip"));
-            try {
-                try (ZipInputStream zis = new ZipInputStream(session.getNode("/testFolder/zipFiles.zip").getFileContent().downloadFile())) {
-                    ZipEntry entry = zis.getNextEntry();
-                    Assert.assertTrue(entry.getName().equals("fileB.txt"));
-                    entry = zis.getNextEntry();
-                    Assert.assertTrue(entry.getName().equals("fileA.txt"));
-                }
-            } catch (IOException e) {
-                e.getStackTrace();
-            }
+            Assert.assertEquals("Zip file was not created", true, session.getNode("/"+ FOLDER_NAME).hasNode("zipFiles.zip"));
+            checkFilesIntoZip(Arrays.asList("fileB.txt", "fileA.txt"), session, "zipFiles.zip");
             return null;
         });
     }
@@ -219,9 +201,9 @@ public class GraphQLZipMutationTest extends GraphQLTestSupport {
     public void shouldUnzipFile() throws Exception {
         executeQuery("mutation {\n"
                         + "  jcr {\n"
-                        + "    addNode(parentPathOrId:\"/testFolder\", name:\"zipFiles.zip\", primaryNodeType:\"jnt:file\") {\n"
+                        + "    addNode(parentPathOrId:\"/"+ FOLDER_NAME +"\", name:\"zipFiles.zip\", primaryNodeType:\"jnt:file\") {\n"
                         + "      zip {\n"
-                        + "        addToZip(pathsOrIds:[\"/testFolder/folderB/fileB.txt\", \"/testFolder/folderA/fileA.txt\"])\n"
+                        + "        addToZip(pathsOrIds:[\"/"+ FOLDER_NAME +"/folderB/fileB.txt\", \"/"+ FOLDER_NAME +"/folderA/fileA.txt\"])\n"
                         + "      }\n"
                         + "    }\n"
                         + "  }\n"
@@ -229,25 +211,27 @@ public class GraphQLZipMutationTest extends GraphQLTestSupport {
         );
         JSONObject result = executeQuery("mutation {\n"
                 + "  jcr {\n"
-                + "    mutateNode(pathOrId:\"/testFolder/zipFiles.zip\") {\n"
+                + "    mutateNode(pathOrId:\"/"+ FOLDER_NAME +"/zipFiles.zip\") {\n"
                 + "      zip {\n"
-                + "        unzip(path:\"/testFolder\")\n"
+                + "        unzip(path:\"/"+ FOLDER_NAME +"\")\n"
                 + "      }\n"
                 + "    }\n"
                 + "  }\n"
                 + "}"
         );
-        Assert.assertTrue(result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONObject("zip").getBoolean("unzip"));
+        JSONObject unzip = getJSONObjectByPath("data/jcr/mutateNode/zip", result);
+        Assert.assertNotNull("json returned by the mutation is null", unzip);
+        Assert.assertEquals("mutation ended with errors", true, unzip.getBoolean("unzip"));
         inJcr(session -> {
-            Assert.assertTrue(session.nodeExists("/testFolder/fileA.txt"));
-            Assert.assertTrue(session.nodeExists("/testFolder/fileB.txt"));
+            Assert.assertEquals("file was not found at the expected location", true, session.nodeExists("/"+ FOLDER_NAME +"/fileA.txt"));
+            Assert.assertEquals("file was not found at the expected location", true, session.nodeExists("/"+ FOLDER_NAME +"/fileB.txt"));
             return null;
         });
         executeQuery("mutation {\n"
                 + "  jcr {\n"
-                + "    addNode(parentPathOrId:\"/testFolder\", name:\"test.zip\", primaryNodeType:\"jnt:file\") {\n"
+                + "    addNode(parentPathOrId:\"/"+ FOLDER_NAME +"\", name:\"test.zip\", primaryNodeType:\"jnt:file\") {\n"
                 + "      zip {\n"
-                + "        addToZip(pathsOrIds:[\"/testFolder/folderB\", \"/testFolder/folderA\"])\n"
+                + "        addToZip(pathsOrIds:[\"/"+ FOLDER_NAME +"/folderB\", \"/"+ FOLDER_NAME +"/folderA\"])\n"
                 + "      }\n"
                 + "    }\n"
                 + "  }\n"
@@ -256,23 +240,50 @@ public class GraphQLZipMutationTest extends GraphQLTestSupport {
 
         result = executeQuery("mutation {\n"
                 + "  jcr {\n"
-                + "    mutateNode(pathOrId:\"/testFolder/test.zip\") {\n"
+                + "    mutateNode(pathOrId:\"/"+ FOLDER_NAME +"/test.zip\") {\n"
                 + "      zip {\n"
-                + "        unzip(path:\"/testFolder/folderA\")\n"
+                + "        unzip(path:\"/"+ FOLDER_NAME +"/folderA\")\n"
                 + "      }\n"
                 + "    }\n"
                 + "  }\n"
                 + "}"
         );
-        Assert.assertTrue(result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONObject("zip").getBoolean("unzip"));
+
+        unzip = getJSONObjectByPath("data/jcr/mutateNode/zip", result);
+        Assert.assertNotNull("json returned by the mutation is null", unzip);
+        Assert.assertEquals("mutation ended with errors", true, unzip.getBoolean("unzip"));
         inJcr(session -> {
-            Assert.assertTrue(session.nodeExists("/testFolder/folderA/folderA"));
-            Assert.assertTrue(session.nodeExists("/testFolder/folderA/folderB"));
-            Assert.assertTrue(session.nodeExists("/testFolder/folderA/folderA/fileA.txt"));
-            Assert.assertTrue(session.nodeExists("/testFolder/folderA/folderB/fileB.txt"));
+            Assert.assertEquals("folder was not found at the expected location", true, session.nodeExists("/"+ FOLDER_NAME +"/folderA/folderA"));
+            Assert.assertEquals("folder was not found at the expected location", true, session.nodeExists("/"+ FOLDER_NAME +"/folderA/folderB"));
+            Assert.assertEquals("file was not found at the expected location", true, session.nodeExists("/"+ FOLDER_NAME +"/folderA/folderA/fileA.txt"));
+            Assert.assertEquals("file was not found at the expected location", true, session.nodeExists("/"+ FOLDER_NAME +"/folderA/folderB/fileB.txt"));
             return null;
         });
 
+    }
+
+    private JSONObject getJSONObjectByPath(String path, JSONObject jsonObject) throws JSONException {
+        String[] objects = path.split("/");
+        for (String object : objects) {
+            jsonObject = jsonObject.getJSONObject(object);
+            if (jsonObject == null) {
+                return null;
+            }
+        }
+        return jsonObject;
+    }
+
+    private void checkFilesIntoZip(List<String> files, JCRSessionWrapper session, String zipFile) {
+        try {
+            try (ZipInputStream zis = new ZipInputStream(session.getNode("/" + FOLDER_NAME + "/" + zipFile).getFileContent().downloadFile())) {
+                for (String file : files) {
+                    ZipEntry entry = zis.getNextEntry();
+                    Assert.assertEquals("file/folder is not found into zip", true, entry.getName().equals(file));
+                }
+            }
+        } catch (IOException | RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
     }
 
 }
