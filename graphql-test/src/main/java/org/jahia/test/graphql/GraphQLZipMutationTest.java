@@ -262,13 +262,14 @@ public class GraphQLZipMutationTest extends GraphQLTestSupport {
 
     }
 
-    private JSONObject getJSONObjectByPath(String path, JSONObject jsonObject) throws JSONException {
+    private JSONObject getJSONObjectByPath(String path, JSONObject jsonObject) {
         String[] objects = path.split("/");
-        for (String object : objects) {
-            jsonObject = jsonObject.getJSONObject(object);
-            if (jsonObject == null) {
-                return null;
+        try {
+            for (String object : objects) {
+                jsonObject = jsonObject.getJSONObject(object);
             }
+        } catch (JSONException e) {
+            return null;
         }
         return jsonObject;
     }
@@ -278,7 +279,7 @@ public class GraphQLZipMutationTest extends GraphQLTestSupport {
             try (ZipInputStream zis = new ZipInputStream(session.getNode("/" + FOLDER_NAME + "/" + zipFile).getFileContent().downloadFile())) {
                 for (String file : files) {
                     ZipEntry entry = zis.getNextEntry();
-                    Assert.assertEquals("file/folder is not found into zip", true, entry.getName().equals(file));
+                    Assert.assertEquals("file/folder is not found into zip", file, entry.getName());
                 }
             }
         } catch (IOException | RepositoryException e) {
