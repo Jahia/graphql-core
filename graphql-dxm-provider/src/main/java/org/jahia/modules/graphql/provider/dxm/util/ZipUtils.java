@@ -30,6 +30,7 @@ import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionFactory;
 
 import javax.jcr.RepositoryException;
 import java.io.*;
@@ -108,7 +109,9 @@ public class ZipUtils {
             while (entry != null) {
                 if (entry.isDirectory()) {
                     //if the entry is a directory, create it to build the whole tree
-                    dest.addNode(entry.getName(), Constants.JAHIANT_FOLDER);
+                    if (!JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE).nodeExists(dest.getPath() + "/" + entry.getName())) {
+                        dest.addNode(entry.getName(), Constants.JAHIANT_FOLDER);
+                    }
                 } else {
                     try (FileOutputStream fos = new FileOutputStream(tmp)) {
                         IOUtils.copy(zis, fos);
