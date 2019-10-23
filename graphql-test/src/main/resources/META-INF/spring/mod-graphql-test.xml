@@ -28,6 +28,8 @@
                 <value>org.jahia.test.graphql.GraphQLOrderingTest</value>
                 <value>org.jahia.test.graphql.GraphQLFieldGroupingTest</value>
                 <value>org.jahia.test.graphql.GraphQLRenderTest</value>
+                <value>org.jahia.test.graphql.GraphQLZipMutationTest</value>
+                <value>org.jahia.test.graphql.GraphQLRenderTest</value>
             </list>
         </property>
     </bean>

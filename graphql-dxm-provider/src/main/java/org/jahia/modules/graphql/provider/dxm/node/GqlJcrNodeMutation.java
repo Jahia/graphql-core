@@ -455,6 +455,21 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     }
 
     /**
+     * Return zip mutation
+     * @return GqlZipMutation or throws an exception in case the path specified by the user is not a file
+     * @throws BaseGqlClientException
+     */
+    @GraphQLField
+    @GraphQLDescription("Return zip mutation")
+    public GqlZipMutation zip() throws DataFetchingException {
+        if (jcrNode.isFile()) {
+            return new GqlZipMutation(jcrNode);
+        } else {
+            throw new DataFetchingException(jcrNode.getPath() + " is not a file");
+        }
+    }
+
+    /**
      * Reorder child nodes according to the list of names passed. The result of reordering will ensure that the ordering of specified child
      * nodes will be guaranteed. But the resulting position of specified set of ordered children will depend on the value of the
      * <code>position</code> parameter (see {@link ReorderedChildrenPosition}).
