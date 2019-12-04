@@ -119,6 +119,11 @@ public class ZipUtils {
                     try (InputStream is = new FileInputStream(tmp)) {
                         String name = entry.getName();
                         if(name.lastIndexOf("/") > 0) {
+                            String parentName = name.substring(0, name.lastIndexOf("/"));
+                            //if the entry has a parent directory and this one is not listed in zip entries we re-create it here to avoid a PathNotFound exception
+                            if (!JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE).nodeExists(dest.getPath() + "/" + parentName)) {
+                                dest.addNode(parentName, Constants.JAHIANT_FOLDER);
+                            }
                             dest.getNode(name.substring(0, name.lastIndexOf("/"))).uploadFile(name, is, getMimeType(entry.getName(), tmp));
                         } else {
                             dest.uploadFile(name, is, getMimeType(entry.getName(), tmp));
