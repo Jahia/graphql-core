@@ -53,6 +53,7 @@ import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.content.JCRSessionWrapper;
 
 import javax.jcr.RepositoryException;
+import javax.jcr.security.AccessControlException;
 import java.util.function.Supplier;
 
 /**
@@ -124,7 +125,20 @@ public class LockJCRNodeMutationExtension {
     public boolean clearAllLocks() {
         try {
             JCRNodeWrapper nodeToUnlock = nodeMutation.getNode().getNode();
-            if (nodeToUnlock.hasPermission("clearLock")) {
+
+            // custom check for permission added in DX 7.3.5.0:
+            boolean clearLockPermissionExist = false;
+            try {
+                // will crash in case the permission doesnt exist
+                nodeToUnlock.getAccessControlManager().privilegeFromName("clearLock");
+                // permission exist
+                clearLockPermissionExist = true;
+            } catch (RepositoryException e) {
+                // permission does not exist, DX version is < to 7.3.5.0. Check if user is root then
+                // do nothing
+            }
+
+            if (clearLockPermissionExist ? nodeToUnlock.hasPermission("clearLock") : nodeToUnlock.getSession().getUser().isRoot()) {
                 //Retrieve the system session in order to remove the locks.
                 JCRSessionWrapper systemSession = JCRTemplate.getInstance().getSessionFactory().getCurrentSystemSession(Constants.EDIT_WORKSPACE, nodeToUnlock.getSession().getLocale(), nodeToUnlock.getSession().getFallbackLocale());
                 systemSession.getNode(nodeToUnlock.getPath()).clearAllLocks();
