@@ -126,19 +126,7 @@ public class LockJCRNodeMutationExtension {
         try {
             JCRNodeWrapper nodeToUnlock = nodeMutation.getNode().getNode();
 
-            // custom check for permission added in DX 7.3.5.0:
-            boolean clearLockPermissionExist = false;
-            try {
-                // will crash in case the permission doesnt exist
-                nodeToUnlock.getAccessControlManager().privilegeFromName("clearLock");
-                // permission exist
-                clearLockPermissionExist = true;
-            } catch (AccessControlException e) {
-                // permission does not exist, DX version is < to 7.3.5.0. Check if user is root then
-                // do nothing
-            }
-
-            if (clearLockPermissionExist ? nodeToUnlock.hasPermission("clearLock") : nodeToUnlock.getSession().getUser().isRoot()) {
+            if (hasPermissionOrRootUser(nodeToUnlock, "clearLock")) {
                 //Retrieve the system session in order to remove the locks.
                 JCRSessionWrapper systemSession = JCRTemplate.getInstance().getSessionFactory().getCurrentSystemSession(Constants.EDIT_WORKSPACE, nodeToUnlock.getSession().getLocale(), nodeToUnlock.getSession().getFallbackLocale());
                 systemSession.getNode(nodeToUnlock.getPath()).clearAllLocks();
@@ -147,6 +135,27 @@ public class LockJCRNodeMutationExtension {
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
+    }
+
+    /**
+     * error log safe function added to handle cases where permission may not exist on the current DX version and we still want to check for it without having errors logged
+     * @param nodeToCheck the node to check the permission on
+     * @param permission the permission to check
+     * @return true: user have permission or the user is ROOT, false otherwise
+     * @throws RepositoryException
+     */
+    private boolean hasPermissionOrRootUser (JCRNodeWrapper nodeToCheck, String permission) throws RepositoryException {
+        boolean permissionExist = false;
+        try {
+            // will crash in case the permission doesnt exist
+            nodeToCheck.getAccessControlManager().privilegeFromName(permission);
+            // permission exist
+            permissionExist = true;
+        } catch (AccessControlException e) {
+            // permission does not exist: do nothing
+        }
+
+        return permissionExist ? nodeToCheck.hasPermission(permission) : nodeToCheck.getSession().getUser().isRoot()
     }
 
     public static class DefaultLockTypeProvider implements Supplier<Object> {
