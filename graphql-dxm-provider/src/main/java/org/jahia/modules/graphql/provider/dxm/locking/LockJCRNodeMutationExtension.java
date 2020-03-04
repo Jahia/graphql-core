@@ -124,7 +124,7 @@ public class LockJCRNodeMutationExtension {
     public boolean clearAllLocks() {
         try {
             JCRNodeWrapper nodeToUnlock = nodeMutation.getNode().getNode();
-            if (nodeToUnlock.getSession().getUser().isRoot()) {
+            if (nodeToUnlock.hasPermission("clearLock")) {
                 //Retrieve the system session in order to remove the locks.
                 JCRSessionWrapper systemSession = JCRTemplate.getInstance().getSessionFactory().getCurrentSystemSession(Constants.EDIT_WORKSPACE, nodeToUnlock.getSession().getLocale(), nodeToUnlock.getSession().getFallbackLocale());
                 systemSession.getNode(nodeToUnlock.getPath()).clearAllLocks();
