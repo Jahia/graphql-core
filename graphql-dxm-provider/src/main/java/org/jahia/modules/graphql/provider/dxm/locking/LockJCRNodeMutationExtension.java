@@ -133,7 +133,7 @@ public class LockJCRNodeMutationExtension {
                 nodeToUnlock.getAccessControlManager().privilegeFromName("clearLock");
                 // permission exist
                 clearLockPermissionExist = true;
-            } catch (RepositoryException e) {
+            } catch (AccessControlException e) {
                 // permission does not exist, DX version is < to 7.3.5.0. Check if user is root then
                 // do nothing
             }
