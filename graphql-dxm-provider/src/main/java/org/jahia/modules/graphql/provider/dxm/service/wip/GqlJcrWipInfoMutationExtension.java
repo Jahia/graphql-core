@@ -44,6 +44,7 @@
 package org.jahia.modules.graphql.provider.dxm.service.wip;
 
 import graphql.annotations.annotationTypes.*;
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
@@ -53,6 +54,7 @@ import org.jahia.services.wip.WIPInfo;
 import org.jahia.services.wip.WIPService;
 
 import javax.jcr.RepositoryException;
+import java.util.Collection;
 import java.util.HashSet;
 
 
@@ -78,6 +80,23 @@ public class GqlJcrWipInfoMutationExtension extends GqlJcrMutationSupport {
         try {
             final JCRNodeWrapper jcrNode = node.getNode().getNode();
             wipService.saveWipPropertiesIfNeeded(jcrNode, new WIPInfo(wipInfo.getStatus().name(), new HashSet<>(wipInfo.getLanguages())));
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+        return true;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Add wip information")
+    @GraphQLName("createWipInfo")
+    public boolean createWipInfo(@GraphQLName("wipInfo") @GraphQLNonNull @GraphQLDescription("Work in progress information to save") GqlJcrWipInfo wipInfo) {
+        try {
+            final JCRNodeWrapper jcrNode = node.getNode().getNode();
+            // TODO : move it to WIP service
+            // on create simply update JCR properties
+            jcrNode.setProperty(Constants.WORKINPROGRESS_STATUS, wipInfo.getStatus().toString());
+            final Collection<String> languages = wipInfo.getLanguages();
+            jcrNode.setProperty(Constants.WORKINPROGRESS_LANGUAGES, languages.toArray(new String[0]));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
