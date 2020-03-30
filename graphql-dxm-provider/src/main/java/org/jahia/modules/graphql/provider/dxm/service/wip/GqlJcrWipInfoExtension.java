@@ -63,6 +63,7 @@ import javax.jcr.RepositoryException;
 public class GqlJcrWipInfoExtension {
 
     private GqlJcrNode node;
+    private WIPService wipService;
 
     /**
      * Default constructor
@@ -70,19 +71,28 @@ public class GqlJcrWipInfoExtension {
      * @param node
      */
     public GqlJcrWipInfoExtension(GqlJcrNode node) {
+
         this.node = node;
+        this.wipService = BundleUtils.getOsgiService(WIPService.class, null);
     }
 
     @GraphQLField
     @GraphQLName("wipInfo")
     @GraphQLDescription("Read work in progress information for a given node")
     public GqlJcrWipInfo getWipInfo() {
-        WIPService wipService = BundleUtils.getOsgiService(WIPService.class, null);
         try {
             WIPInfo wipInfo = wipService.getWipInfo(node.getNode());
             return new GqlJcrWipInfo(GqlJcrWipInfo.WipStatus.valueOf(wipInfo.getStatus()), wipInfo.getLanguages());
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
+    }
+
+    @GraphQLField
+    @GraphQLName("defaultWipInfo")
+    @GraphQLDescription("Read default Work in progress information. Set by \"wip.checkbox.checked\" system proprety")
+    public GqlJcrWipInfo getDefaultWipInfo() {
+        WIPInfo wipInfo = wipService.getDefaultWipInfo();
+        return new GqlJcrWipInfo(GqlJcrWipInfo.WipStatus.valueOf(wipInfo.getStatus()), wipInfo.getLanguages());
     }
 }
