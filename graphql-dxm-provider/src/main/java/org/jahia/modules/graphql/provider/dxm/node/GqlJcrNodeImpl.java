@@ -50,6 +50,7 @@ import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.LocaleUtils;
+import org.apache.jackrabbit.core.security.JahiaPrivilegeRegistry;
 import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
@@ -358,7 +359,12 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     @Override
     public boolean hasPermission(@GraphQLName("permissionName") @GraphQLNonNull String permissionName) {
-        return node.hasPermission(permissionName);
+        // we check if the permission exists to avoid a backend exception.
+        if (JahiaPrivilegeRegistry.getRegisteredPrivilegeNames().contains(permissionName)) {
+            return node.hasPermission(permissionName);
+        } else {
+            return false;
+        }
     }
 
     @Override
