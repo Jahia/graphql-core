@@ -70,6 +70,7 @@ import javax.jcr.ItemNotFoundException;
 import javax.jcr.Node;
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
+import javax.jcr.security.AccessControlException;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
@@ -358,7 +359,18 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     @Override
     public boolean hasPermission(@GraphQLName("permissionName") @GraphQLNonNull String permissionName) {
-        return node.hasPermission(permissionName);
+        // first we check if the permission exists to avoid logging an exception just for this (this is done by the JCRNodeWrapperImpl and underlying classes).
+        try {
+            // we don't need the result as we just want to check if the name exists. If it doesn't an AccessControlException is raised.
+            node.getAccessControlManager().privilegeFromName(permissionName);
+            return node.hasPermission(permissionName);
+        } catch (AccessControlException ace) {
+            // in this case the permission name just doesn't exist, we just return false
+            return false;
+        } catch (RepositoryException re) {
+            // in the case of another exception we raised it further.
+            throw new RuntimeException(re);
+        }
     }
 
     @Override
