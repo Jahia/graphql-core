@@ -155,7 +155,7 @@ public class LockJCRNodeMutationExtension {
             // permission does not exist: do nothing
         }
 
-        return permissionExist ? nodeToCheck.hasPermission(permission) : nodeToCheck.getSession().getUser().isRoot()
+        return permissionExist ? nodeToCheck.hasPermission(permission) : nodeToCheck.getSession().getUser().isRoot();
     }
 
     public static class DefaultLockTypeProvider implements Supplier<Object> {
