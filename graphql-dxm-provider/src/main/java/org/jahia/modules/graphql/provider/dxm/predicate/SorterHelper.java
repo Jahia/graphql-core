@@ -93,6 +93,8 @@ public class SorterHelper {
                 return Long.compare((Long)value, (Long)fieldValue);
             } else if (fieldValue instanceof Double) {
                 return Double.compare((Double)value, (Double)fieldValue);
+            } else if (fieldValue instanceof Integer) {
+                return Integer.compare((Integer)value, (Integer)fieldValue);
             } else {
                 return ignoreCase ? value.toString().compareToIgnoreCase((String)fieldValue) : value.toString().compareTo((String)fieldValue);
             }
@@ -112,7 +114,9 @@ public class SorterHelper {
                 return Long.compare((Long)fieldValue, (Long)value);
             } else if (fieldValue instanceof Double) {
                 return Double.compare((Double)fieldValue, (Double)value);
-            } else {
+            } else if (fieldValue instanceof Integer) {
+                return Integer.compare((Integer)fieldValue, (Integer)value);
+            }else {
                 return ignoreCase ? -(value.toString().compareToIgnoreCase((String)fieldValue)) : -(value.toString().compareTo((String)fieldValue));
             }
         }));
