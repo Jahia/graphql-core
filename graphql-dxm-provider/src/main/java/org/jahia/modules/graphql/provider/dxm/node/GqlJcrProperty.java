@@ -341,7 +341,7 @@ public class GqlJcrProperty {
     @GraphQLDescription("GraphQL representation of the node this property references in case the property is single-valued, null otherwise")
     public GqlJcrNode getRefNode() throws GqlJcrUnresolvedNodeReferenceException {
         try {
-            if (property.isMultiple() || (property.getType() != PropertyType.REFERENCE && property.getType() != PropertyType.STRING)) {
+            if (property.isMultiple() || (property.getType() != PropertyType.REFERENCE && property.getType() != PropertyType.WEAKREFERENCE && property.getType() != PropertyType.STRING)) {
                 return null;
             }
             return getRefNode(property.getValue());
@@ -359,7 +359,7 @@ public class GqlJcrProperty {
     @GraphQLDescription("GraphQL representations of the nodes this property references in case the property is multiple-valued, null otherwise")
     public List<GqlJcrNode> getRefNodes() throws GqlJcrUnresolvedNodeReferenceException {
         try {
-            if (!property.isMultiple() || (property.getType() != PropertyType.REFERENCE && property.getType() != PropertyType.STRING)) {
+            if (!property.isMultiple() || (property.getType() != PropertyType.REFERENCE && property.getType() != PropertyType.WEAKREFERENCE && property.getType() != PropertyType.STRING)) {
                 return null;
             }
             JCRValueWrapper[] values = property.getValues();
