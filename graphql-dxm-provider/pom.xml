@@ -59,7 +59,7 @@
     <properties>
         <export-package>org.jahia.modules.graphql.provider.dxm,org.jahia.modules.graphql.provider.dxm.node,org.jahia.modules.graphql.provider.dxm.nodetype,org.jahia.modules.graphql.provider.dxm.relay</export-package>
         <jahia-module-type>system</jahia-module-type>
-        <jahia-module-signature>MC0CFQCDtFVgOCNrbPZLtESKezTZeeESPwIUTw1gym1HLKSbODKHYWxot8hVNcg=</jahia-module-signature>
+        <jahia-module-signature>MC0CFQCNHd7d1GJKo3hyspw4q98x4B/edwIUYAqjuDDxoHQw05g09ZwkoI6fWtk=</jahia-module-signature>
     </properties>
 
     <dependencies>
