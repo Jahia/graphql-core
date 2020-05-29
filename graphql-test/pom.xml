@@ -115,7 +115,7 @@
                 <configuration>
                     <instructions>
                         <Import-Package>${jahia.plugin.projectPackageImport},javax.jcr,*</Import-Package>
-                        <Jahia-Signature>MCwCFCYoVYGR/y3i9RvSe0FAvMtZLCLOAhR+7E1lrAu/i7Q1rtdtyxAd5M/HcA==</Jahia-Signature>
+                        <Jahia-Signature>MCwCFFefKNq3bRArdAMmYanrclKJiM1TAhR9E3I/4Vr6nlDuyXbbDz9Uf+EvPA==</Jahia-Signature>
                     </instructions>
                 </configuration>
             </plugin>
