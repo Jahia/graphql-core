@@ -100,4 +100,13 @@ public class GqlPublicationInfo {
     public boolean isAllowedToPublishWithoutWorkflow() {
         return aggregatedInfo.isAllowedToPublishWithoutWorkflow();
     }
+
+    /**
+     * @return Whether node exists in Live workspace even if partially published
+     */
+    @GraphQLField
+    @GraphQLName("existsInLive")
+    @GraphQLDescription("Whether node exists in Live workspace even if partially published")
+    public boolean existsInLive() { return aggregatedInfo.existsInLive();
+    }
 }
