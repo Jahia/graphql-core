@@ -49,6 +49,8 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.jahia.services.content.ComplexPublicationService;
 
+import java.lang.reflect.Method;
+
 /**
  * Aggregated publication info about a JCR node.
  */
@@ -107,6 +109,12 @@ public class GqlPublicationInfo {
     @GraphQLField
     @GraphQLName("existsInLive")
     @GraphQLDescription("Whether node exists in Live workspace even if partially published")
-    public boolean existsInLive() { return aggregatedInfo.existsInLive();
+    public boolean existsInLive() {
+        try {
+            GqlPublicationInfo.class.getDeclaredMethod("existsInLive");
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+        return aggregatedInfo.existsInLive();
     }
 }
