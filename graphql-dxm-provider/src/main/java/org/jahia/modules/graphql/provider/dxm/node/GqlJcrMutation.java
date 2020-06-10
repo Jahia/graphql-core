@@ -67,14 +67,16 @@ import java.util.stream.Collectors;
 public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFieldCompleter {
 
     private String workspace;
+    private boolean save = true;
 
     /**
      * Initializes an instance of this class with the specified JCR workspace name.
      *
      * @param workspace the name of the JCR workspace
      */
-    public GqlJcrMutation(String workspace) {
+    public GqlJcrMutation(String workspace, boolean save) {
         this.workspace = workspace;
+        this.save = save;
     }
 
     /**
@@ -475,7 +477,9 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     @Override
     public void completeField() {
         try {
-            getSession().save();
+            if (save) {
+                getSession().save();
+            }
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
