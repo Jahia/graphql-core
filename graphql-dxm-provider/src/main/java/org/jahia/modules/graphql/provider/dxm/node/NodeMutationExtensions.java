@@ -45,6 +45,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 
 import javax.jcr.RepositoryException;
 
@@ -65,8 +66,9 @@ public class NodeMutationExtensions {
     @GraphQLField
     @GraphQLName("jcr")
     @GraphQLDescription("JCR Mutation")
-    public static GqlJcrMutation getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") NodeQueryExtensions.Workspace workspace) throws RepositoryException {
-        return new GqlJcrMutation(workspace != null ? workspace.getValue() : null);
+    public static GqlJcrMutation getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") NodeQueryExtensions.Workspace workspace,
+                                        @GraphQLName("save") @GraphQLDescription("Should save") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean save) throws RepositoryException {
+        return new GqlJcrMutation(workspace != null ? workspace.getValue() : null, save);
     }
 
 }
