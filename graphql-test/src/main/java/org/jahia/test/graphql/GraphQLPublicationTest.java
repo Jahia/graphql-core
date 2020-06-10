@@ -128,6 +128,7 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
                 + "                locked"
                 + "                workInProgress"
                 + "                allowedToPublishWithoutWorkflow"
+                + "                existsInLive"
                 + "		       }"
                 + "        }"
                 + "    }"
@@ -143,6 +144,7 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
             Assert.assertFalse(info.getBoolean("locked"));
             Assert.assertFalse(info.getBoolean("workInProgress"));
             Assert.assertTrue(info.getBoolean("allowedToPublishWithoutWorkflow"));
+            Assert.assertFalse(info.getBoolean("existsInLive"));
         }
     }
 
