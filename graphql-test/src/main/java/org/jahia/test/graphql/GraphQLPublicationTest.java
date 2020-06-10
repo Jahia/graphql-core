@@ -46,6 +46,7 @@ package org.jahia.test.graphql;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.modules.graphql.provider.dxm.publication.GqlPublicationInfo;
 import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
