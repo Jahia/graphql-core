@@ -47,7 +47,14 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.services.content.ComplexPublicationService;
+import org.jahia.services.content.JCRTemplate;
+
+import javax.jcr.ItemNotFoundException;
+import javax.jcr.RepositoryException;
 
 /**
  * Aggregated publication info about a JCR node.
@@ -55,9 +62,11 @@ import org.jahia.services.content.ComplexPublicationService;
 public class GqlPublicationInfo {
 
     private ComplexPublicationService.AggregatedPublicationInfo aggregatedInfo;
+    private GqlJcrNode node;
 
-    public GqlPublicationInfo(ComplexPublicationService.AggregatedPublicationInfo aggregatedInfo) {
+    public GqlPublicationInfo(ComplexPublicationService.AggregatedPublicationInfo aggregatedInfo, GqlJcrNode node) {
         this.aggregatedInfo = aggregatedInfo;
+        this.node = node;
     }
 
     /**
@@ -99,5 +108,22 @@ public class GqlPublicationInfo {
     @GraphQLDescription("Whether current user is allowed to publish the node omitting any workflows")
     public boolean isAllowedToPublishWithoutWorkflow() {
         return aggregatedInfo.isAllowedToPublishWithoutWorkflow();
+    }
+
+    /**
+     * @return Whether node exists in live workspace
+     */
+    @GraphQLField
+    @GraphQLName("existsInLive")
+    @GraphQLDescription("Whether node exists in live workspace")
+    public boolean existsInLive() {
+        try {
+            JCRTemplate.getInstance().getSessionFactory().getCurrentUserSession(Constants.LIVE_WORKSPACE).getNodeByIdentifier(node.getUuid());
+            return true;
+        } catch (ItemNotFoundException e) {
+            return false;
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
     }
 }
