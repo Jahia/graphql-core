@@ -104,7 +104,7 @@ public class PublicationJCRNodeExtension extends PublicationJCRExtensionSupport 
 
         final ComplexPublicationService.AggregatedPublicationInfo aggregatedInfo = publicationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, subNodes, references, session);
 
-        return new GqlPublicationInfo(aggregatedInfo);
+        return new GqlPublicationInfo(aggregatedInfo, gqlJcrNode);
     }
 
 }

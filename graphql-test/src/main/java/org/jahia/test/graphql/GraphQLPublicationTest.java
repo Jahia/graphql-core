@@ -46,10 +46,8 @@ package org.jahia.test.graphql;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaRuntimeException;
-import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
-import org.jahia.services.scheduler.SchedulerService;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.usermanager.JahiaUserManagerService;
@@ -58,8 +56,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.*;
 import org.junit.rules.TestName;
-import org.quartz.Job;
-import org.quartz.JobDetail;
 import org.quartz.SchedulerException;
 import org.springframework.util.CollectionUtils;
 
@@ -128,6 +124,7 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
                 + "                locked"
                 + "                workInProgress"
                 + "                allowedToPublishWithoutWorkflow"
+                + "                existsInLive"
                 + "		       }"
                 + "        }"
                 + "    }"
@@ -143,6 +140,7 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
             Assert.assertFalse(info.getBoolean("locked"));
             Assert.assertFalse(info.getBoolean("workInProgress"));
             Assert.assertTrue(info.getBoolean("allowedToPublishWithoutWorkflow"));
+            Assert.assertFalse(info.getBoolean("existsInLive"));
         }
     }
 
