@@ -111,7 +111,7 @@ public class GqlPublicationInfo {
     @GraphQLDescription("Whether node exists in Live workspace even if partially published")
     public boolean existsInLive() {
         try {
-            GqlPublicationInfo.class.getDeclaredMethod("existsInLive");
+            ComplexPublicationService.AggregatedPublicationInfo.class.getDeclaredMethod("existsInLive");
         } catch (NoSuchMethodException e) {
             return false;
         }
