@@ -47,7 +47,6 @@ import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadBase;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.upload.UploadHelper;
@@ -123,26 +122,17 @@ public class GqlJcrMutationSupport {
                 JCRSessionWrapper session = localizedNode.getSession();
                 int type = (property.getType() != null ? property.getType().getValue() : PropertyType.STRING);
 
-                if (property.getValue() != null || property.getNotZonedDateValue() != null) {
-                    Value v = getValue(type, property.getValue(), property.getNotZonedDateValue(), null, session, null);
+                if (property.getValue() != null) {
+                    Value v = getValue(type, property.getOption(), property.getValue(), session, null);
                     result.add(localizedNode.setProperty(property.getName(), v));
-                } else if (property.getValues() != null || property.getNotZonedDateValues() != null) {
+                } else if (property.getValues() != null) {
                     List<Value> values = new ArrayList<>();
                     if (property.getValues() != null) {
                         for (String value : property.getValues()) {
-                            values.add(getValue(type, value, null, null, session, null));
+                            values.add(getValue(type, property.getOption(), value, session, null));
                         }
                     }
-                    if (property.getNotZonedDateValues() != null) {
-                        for (String notZonedDateValue : property.getNotZonedDateValues()) {
-                            values.add(getValue(type, null, notZonedDateValue, null, session, null));
-                        }
-                    }
-
-                    result.add(localizedNode.setProperty(property.getName(), values.toArray(new Value[values.size()])));
-                } else if (property.getEncryptedValue() != null) {
-                    Value v = getValue(type, null, null, property.getEncryptedValue(), session, null);
-                    result.add(localizedNode.setProperty(property.getName(), v));
+                    result.add(localizedNode.setProperty(property.getName(), values.toArray(new Value[0])));
                 }
             }
             return result;
@@ -202,33 +192,32 @@ public class GqlJcrMutationSupport {
     /**
      * The value according to the JCR node type
      *
-     * @param jcrType
-     * @param value
-     * @param notZonedDateValue
-     * @param session
-     * @param environment
+     * @param jcrType     the jcr node type
+     * @param option      the option of the property
+     * @param value       the value to create
+     * @param session     JCR session to be used for node retrieval
+     * @param environment the execution content instance
      * @return Value
-     * @throws RepositoryException
-     * @throws IOException
-     * @throws FileUploadBase.FileSizeLimitExceededException
+     * @throws RepositoryException                           in case of JCR-related errors
+     * @throws IOException                                   in case of input stream errors
+     * @throws FileUploadBase.FileSizeLimitExceededException in case of file upload errors
      */
-    public static Value getValue(int jcrType, String value, String notZonedDateValue, String encryptedValue, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException, FileUploadBase.FileSizeLimitExceededException {
+    public static Value getValue(int jcrType, GqlJcrPropertyOption option, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, FileUploadBase.FileSizeLimitExceededException, IOException {
         ValueFactory valueFactory = session.getValueFactory();
-        if (StringUtils.isNotEmpty(notZonedDateValue)) {
+
+        if (option == GqlJcrPropertyOption.ENCRYPTED && jcrType == PropertyType.STRING) {
+            return valueFactory.createValue(EncryptionUtils.passwordBaseEncrypt(value), jcrType);
+        } else if (option == GqlJcrPropertyOption.NOT_ZONED_DATE) {
             try {
                 SimpleDateFormat defaultDateFormat = new SimpleDateFormat(DEFAULT_DATE_FORMAT);
                 SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
-                Date date = defaultDateFormat.parse(notZonedDateValue);
+                Date date = defaultDateFormat.parse(value);
 
                 return valueFactory.createValue(simpleDateFormat.format(date), jcrType);
             } catch (ParseException e) {
                 throw new GqlJcrWrongInputException("Unable to parse the date value", e);
             }
-        }
-
-        if (StringUtils.isNotEmpty(encryptedValue)) {
-            return valueFactory.createValue(EncryptionUtils.passwordBaseEncrypt(encryptedValue), jcrType);
         }
 
         switch (jcrType) {

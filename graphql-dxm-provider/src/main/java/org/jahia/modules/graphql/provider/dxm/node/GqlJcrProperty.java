@@ -62,6 +62,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.ValueFormatException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport.DEFAULT_DATE_FORMAT;
@@ -215,9 +216,9 @@ public class GqlJcrProperty {
      * @return The decrypted value of the JCR encrypted property as a String in case the property is single-valued, null otherwise
      */
     @GraphQLField
-    @GraphQLName("encryptedValue")
+    @GraphQLName("decryptedValue")
     @GraphQLDescription("The decrypted value of the JCR encrypted property as a String in case the property is single-valued, null otherwise")
-    public String getEncryptedValue() throws RepositoryException {
+    public String getDecryptedValue() throws RepositoryException {
         try {
             if (property.isMultiple()) {
                 return null;
@@ -276,6 +277,28 @@ public class GqlJcrProperty {
             return result;
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
+        }
+    }
+
+    /**
+     * @return The decrypted value of the JCR encrypted property as a String in case the property is single-valued, null otherwise
+     */
+    @GraphQLField
+    @GraphQLName("decryptedValues")
+    @GraphQLDescription("The decrypted values of the JCR encrypted property as a Strings in case the property is multiple-valued, null otherwise")
+    public List<String> getDecryptedValues() throws RepositoryException {
+        try {
+            if (!property.isMultiple()) {
+                return Collections.emptyList();
+            }
+
+            List<String> result = new ArrayList<>();
+            for (JCRValueWrapper value : property.getValues()) {
+                result.add(EncryptionUtils.passwordBaseDecrypt(value.getString()));
+            }
+            return result;
+        } catch (EncryptionOperationNotPossibleException e) {
+            return Collections.emptyList();
         }
     }
 
