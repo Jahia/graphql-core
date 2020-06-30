@@ -52,12 +52,10 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation.ReorderedC
 import org.jahia.services.content.*;
 import org.jahia.settings.readonlymode.ReadOnlyModeController;
 import org.jahia.settings.readonlymode.ReadOnlyModeController.ReadOnlyModeStatus;
+import org.jahia.utils.EncryptionUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
@@ -378,7 +376,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  jcr {\n" +
                 "    addNode(parentPathOrId: \"/\", name: \"testNodeNotZonedDate\", primaryNodeType: \"nt:unstructured\") {\n" +
                 "      mutateProperty(name: \"date\") {\n" +
-                "        setValue(language: \"en\", type: DATE, value: \"" + dateValue + "\", notZonedDateValue: \"" + dateValue + "\")\n" +
+                "        setValue(language: \"en\", type: DATE, option: NOT_ZONED_DATE, value: \"" + dateValue + "\")\n" +
                 "      }\n" +
                 "    }\n" +
                 "  }\n" +
@@ -441,6 +439,70 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
         inJcr(session -> {
             session.getNode("/testNodeNotZonedDate").remove();
+            session.save();
+            return null;
+        });
+    }
+
+    @Test
+    public void mutatePropertyWithEncryptedValue() throws Exception {
+        String value = "thisIs@My>Password";
+
+        executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId: \"/\", name: \"testEncryptedValue\", primaryNodeType: \"nt:unstructured\") {\n" +
+                "      mutateProperty(name: \"password\") {\n" +
+                "        setValue(language: \"en\", type: STRING, option: ENCRYPTED, value: \"" + value + "\")\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+
+        inJcr(session -> {
+            assertNotEquals(value, session.getNode("/testEncryptedValue").getProperty("password").getString());
+            return null;
+        });
+
+        inJcr(session -> {
+            session.getNode("/testEncryptedValue").remove();
+            session.save();
+            return null;
+        });
+    }
+
+    @Test
+    public void queryPropertyWithEncryptedValue() throws Exception {
+        String value = "thisIs@My>Password";
+
+        inJcr(session -> {
+            JCRNodeWrapper node = session.getRootNode().addNode("testEncryptedValue");
+            node.setProperty("password", EncryptionUtils.passwordBaseEncrypt(value));
+
+            session.save();
+            return null;
+        });
+
+        JSONObject result = executeQuery("query {\n" +
+                "  jcr {\n" +
+                "    nodeByPath(path: \"/testEncryptedValue\") {\n" +
+                "      property(name: \"password\") {\n" +
+                "        decryptedValue\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}");
+
+        String propertyDecryptedValue = result
+                .getJSONObject("data")
+                .getJSONObject("jcr")
+                .getJSONObject("nodeByPath")
+                .getJSONObject("property")
+                .getString("decryptedValue");
+
+        assertEquals(value, propertyDecryptedValue);
+
+        inJcr(session -> {
+            session.getNode("/testEncryptedValue").remove();
             session.save();
             return null;
         });
