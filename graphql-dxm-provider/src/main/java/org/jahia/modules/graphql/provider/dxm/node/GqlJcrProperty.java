@@ -54,8 +54,6 @@ import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.utils.EncryptionUtils;
 import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
@@ -73,8 +71,6 @@ import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport.
 @GraphQLName("JCRProperty")
 @GraphQLDescription("GraphQL representation of a JCR property.")
 public class GqlJcrProperty {
-    private static Logger logger = LoggerFactory.getLogger(GqlJcrProperty.class);
-
     private JCRPropertyWrapper property;
     private GqlJcrNode node;
 
@@ -226,8 +222,6 @@ public class GqlJcrProperty {
 
             return EncryptionUtils.passwordBaseDecrypt(property.getValue().getString());
         } catch (EncryptionOperationNotPossibleException e) {
-            logger.warn(String.format("Cannot decrypt the property: %1$s", property.getName()));
-
             return null;
         }
     }
