@@ -176,7 +176,7 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void shouldGetErrorNotRetrieveReferencedNodeFromPropertyOfWrongType() throws Exception {
+    public void shouldNotRetrieveReferencedNodeFromPropertyOfWrongType() throws Exception {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
@@ -190,11 +190,13 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
                 + "    }"
                 + "}");
 
-        validateError(result, "The 'jcr:lastModified' property is not of a reference type");
+        Object refNode = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property").get("refNode");
+
+        Assert.assertEquals(JSONObject.NULL, refNode);
     }
 
     @Test
-    public void shouldGetErrorNotRetrieveReferencedNodeByWrongPathString() throws Exception {
+    public void shouldNotRetrieveReferencedNodeByWrongPathString() throws Exception {
 
         JSONObject result = executeQuery("{"
                 + "    jcr {"
@@ -208,7 +210,9 @@ public class GraphQLReferencesTest extends GraphQLTestSupport {
                 + "    }"
                 + "}");
 
-        validateError(result, "The value of the 'jcr:title' property does not reference an existing node");
+        Object refNode = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("property").get("refNode");
+
+        Assert.assertEquals(JSONObject.NULL, refNode);
     }
 
     @Test
