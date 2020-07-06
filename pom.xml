@@ -61,7 +61,7 @@
         <connection>scm:git:git@github.com:Jahia/graphql-core.git</connection>
         <developerConnection>scm:git:git@github.com:Jahia/graphql-core.git</developerConnection>
         <url>scm:git:git@github.com:Jahia/graphql-core.git</url>
-        <tag>1_4_x</tag>
+        <tag>1_5_x</tag>
     </scm>
 
     <repositories>
