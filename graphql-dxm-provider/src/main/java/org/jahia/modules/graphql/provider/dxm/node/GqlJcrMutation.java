@@ -481,7 +481,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
                 getSession().save();
             }
         } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
+            throw NodeMutationConstraintViolationHandler.transformException(e);
         }
     }
 }

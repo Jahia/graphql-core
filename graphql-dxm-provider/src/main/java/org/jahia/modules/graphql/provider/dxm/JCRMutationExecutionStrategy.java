@@ -45,7 +45,9 @@ package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.ExecutionResult;
 import graphql.ExecutionResultImpl;
+import graphql.GraphQLError;
 import graphql.execution.*;
+import graphql.language.SourceLocation;
 import org.jahia.settings.SettingsBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +86,13 @@ public class JCRMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
 
         if (fetchedValue instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
             // we only complete field if there were no errors on execution
-            ((DXGraphQLFieldCompleter) fetchedValue).completeField();
+            try {
+                ((DXGraphQLFieldCompleter) fetchedValue).completeField();
+            } catch (Exception e) {
+                SourceLocation sourceLocation = (parameters.getField() != null && !parameters.getField().isEmpty()) ? parameters.getField().get(0).getSourceLocation() : null;
+                GraphQLError error = JCRDataFetchingExceptionHandler.transformException(e, parameters.getPath(), sourceLocation);
+                executionContext.addError(error, parameters.getPath());
+            }
         }
 
         return result;
