@@ -127,6 +127,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.setProperty(name, getValue(getPropertyType(type), option, value, localizedNode.getSession(), environment));
+            localizedNode.getSession().validate();
         } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
@@ -145,6 +146,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.setProperty(name, getValues(type, option, values, localizedNode.getSession(), environment));
+            localizedNode.getSession().validate();
         } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
@@ -162,6 +164,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).addValue(getValue(getPropertyType(type), option, value, localizedNode.getSession(), environment));
+            localizedNode.getSession().validate();
         } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
@@ -179,6 +182,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).removeValue(getValue(getPropertyType(type), option, value, localizedNode.getSession(), environment));
+            localizedNode.getSession().validate();
         } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
@@ -196,6 +200,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).addValues(getValues(type, option, values, localizedNode.getSession(), environment));
+            localizedNode.getSession().validate();
         } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
@@ -213,6 +218,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).removeValues(getValues(type, option, values, localizedNode.getSession(), environment));
+            localizedNode.getSession().validate();
         } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
@@ -225,6 +231,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).remove();
+            localizedNode.getSession().validate();
         } catch (RepositoryException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
