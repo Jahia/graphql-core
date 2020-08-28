@@ -107,7 +107,7 @@
                             org.glassfish.jersey.server,
                             *
                         </Import-Package>
-                        <Jahia-Signature>MCwCFCdoBjEADJeav4HpJfa6ocnMEXEfAhQgpN8zlwqj1PtdMAHBQowRyacb5Q==</Jahia-Signature>
+                        <Jahia-Signature>MC0CFDRrm4Qzf0TGsQkb7A3rmmj8vuHoAhUAgr15X++VMMoXKWjMFz7CRmm2PZA=</Jahia-Signature>
                     </instructions>
                 </configuration>
             </plugin>
