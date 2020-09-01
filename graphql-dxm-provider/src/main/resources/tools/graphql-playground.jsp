@@ -17,39 +17,13 @@
         </div>
         <script src="${modulePath}/javascript/graphql-playground-1.7.23.js"></script>
         <script>
-            const customTheme = {
-                // property: '',
-                // comment: '',
-                // punctuation: '',
-                //keyword: '',
-                // def: '',
-                // qualifier: '',
-                // attribute: '',
-                // number: '',
-                // string: '',
-                // builtin: '',
-                // string2: '',
-                // variable: '',
-                // meta: '',
-                // atom: '',
-                // ws: '',
-                // selection: '',
-                // cursorColor: '',
-                // editorBackground: '',
-                // resultBackground: '',
-                // leftDrawerBackground: '',
-                // rightDrawerBackground: ''
-            };
-
             window.addEventListener('load', function() {
                 GraphQLPlayground.init(document.getElementById('graphql-playground'), {
                     endpoint: '${graphQlEndpoint}',
                     settings: {
                         'request.credentials': 'same-origin'
                     },
-                    shareEnabled: true,
-                    //workspaceName: 'Jahia',
-                    //codeTheme: customTheme
+                    shareEnabled: false
                 })
             })
         </script>
