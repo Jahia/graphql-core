@@ -1,0 +1,35 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: rgb(20, 24, 35);
+    font-family: Open Sans, sans-serif;
+}
+
+button {
+    border: none;
+}
+
+#graphql-playground {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#graphql-playground > * {
+    width: 90%;
+}
+
+.loading {
+    font-size: 32px;
+    font-weight: 200;
+    color: rgba(255, 255, 255, .6);
+    text-align: center;
+}
+
+.title {
+    font-weight: 400;
+}
