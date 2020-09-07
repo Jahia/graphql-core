@@ -1,7 +1,7 @@
 {
   "jahia": {
     "apps": {
-      "jahia": "javascript/apps/graphql-playground-route.js"
+      "jahia": "javascript/apps/graphql.js"
     }
   }
 }
