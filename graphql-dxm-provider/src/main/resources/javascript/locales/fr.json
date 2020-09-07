@@ -1,3 +1,4 @@
 {
-  "graphql": "GraphQL"
+  "graphql": "GraphQL",
+  "sdlReport": "Outil de rapport SDL"
 }
