@@ -102,4 +102,15 @@ public class NodeQueryExtensions {
         return new GqlJcrQuery(workspace != null ? workspace : Workspace.EDIT);
     }
 
+    /**
+     * Root for all admin queries.
+     * @return admin query object.
+     */
+    @GraphQLField
+    @GraphQLName("admin")
+    @GraphQLDescription("Admin Queries")
+    public static GqlAdminQuery getAdmin()  {
+        return new GqlAdminQuery();
+    }
+
 }
