@@ -45,6 +45,7 @@ package org.jahia.modules.graphql.provider.dxm.site;
 
 import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.services.content.decorator.JCRSiteNode;
 
 import javax.jcr.RepositoryException;
 
@@ -67,7 +68,11 @@ public class SiteJCRNodeExtensions {
     @GraphQLNonNull
     public GqlJcrSite getSite() {
         try {
-            return new GqlJcrSite(node.getNode().getResolveSite());
+            JCRSiteNode resolveSite = node.getNode().getResolveSite();
+            if (resolveSite == null) {
+                return null;
+            }
+            return new GqlJcrSite(resolveSite);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
