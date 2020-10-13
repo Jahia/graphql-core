@@ -43,7 +43,10 @@
  */
 package org.jahia.modules.graphql.provider.dxm.site;
 
-import graphql.annotations.annotationTypes.*;
+import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.services.content.decorator.JCRSiteNode;
 
@@ -65,7 +68,6 @@ public class SiteJCRNodeExtensions {
     @GraphQLField
     @GraphQLName("site")
     @GraphQLDescription("GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site")
-    @GraphQLNonNull
     public GqlJcrSite getSite() {
         try {
             JCRSiteNode resolveSite = node.getNode().getResolveSite();
