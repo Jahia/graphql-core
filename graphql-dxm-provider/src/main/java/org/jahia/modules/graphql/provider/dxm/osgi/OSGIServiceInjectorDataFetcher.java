@@ -2,13 +2,16 @@ package org.jahia.modules.graphql.provider.dxm.osgi;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
+import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.osgi.BundleUtils;
 
 import javax.inject.Inject;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -31,30 +34,45 @@ public class OSGIServiceInjectorDataFetcher<T> implements DataFetcher<T> {
         T data = originalDataFetcher.get(dataFetchingEnvironment);
 
         if (data != null) {
-            for (Method method : annotatedMethodLookup(data.getClass(), Inject.class)) {
-                method.invoke(data, Arrays.stream(method.getParameterTypes())
-                        .map(klass -> BundleUtils.getOsgiService(klass, null))
-                        .toArray(Object[]::new));
+            for (Method method : MethodUtils.getMethodsListWithAnnotation(data.getClass(), Inject.class, true, true)) {
+                handleMethodInjection(data, method);
+            }
+
+            for (Field field : FieldUtils.getFieldsListWithAnnotation(data.getClass(), Inject.class)) {
+                handleFieldInjection(data, field);
             }
         }
 
         return data;
     }
 
-    private static List<Method> annotatedMethodLookup(final Class<?> type, final Class<? extends Annotation> annotation) {
-        List<Method> methods = new ArrayList<>();
-        Class<?> klass = type;
+    private void handleMethodInjection(T data, Method method) throws IllegalAccessException, InvocationTargetException {
+        if (method.isAnnotationPresent(GraphQLOsgiService.class) && method.getParameterTypes().length > 0) {
 
-        // breaking clause to stop at Object Class, because it's the higher super class
-        while (klass != Object.class) {
-            for (final Method method : klass.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(annotation) && method.isAccessible()) {
-                    methods.add(method);
-                }
+            GraphQLOsgiService annotation = method.getAnnotation(GraphQLOsgiService.class);
+            Class<?> klass = annotation.service().equals(Object.class) ? method.getParameterTypes()[0] : annotation.service();
+            String filter = StringUtils.isNotEmpty(annotation.filter()) ? annotation.filter() : null;
+
+            if (!method.isAccessible()) {
+                method.setAccessible(true);
             }
-            // check parents classes
-            klass = klass.getSuperclass();
+
+            method.invoke(data, BundleUtils.getOsgiService(klass, filter));
         }
-        return methods;
+    }
+
+    private void handleFieldInjection(T data, Field field) throws IllegalAccessException {
+        if (field.isAnnotationPresent(GraphQLOsgiService.class)) {
+
+            GraphQLOsgiService annotation = field.getAnnotation(GraphQLOsgiService.class);
+            Class<?> klass = annotation.service().equals(Object.class) ? field.getType() : annotation.service();
+            String filter = StringUtils.isNotEmpty(annotation.filter()) ? annotation.filter() : null;
+
+            if (!field.isAccessible()) {
+                field.setAccessible(true);
+            }
+
+            field.set(data, BundleUtils.getOsgiService(klass, filter));
+        }
     }
 }
