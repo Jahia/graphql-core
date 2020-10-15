@@ -60,6 +60,8 @@
         <export-package>org.jahia.modules.graphql.provider.dxm,org.jahia.modules.graphql.provider.dxm.node,org.jahia.modules.graphql.provider.dxm.nodetype,org.jahia.modules.graphql.provider.dxm.relay</export-package>
         <jahia-module-type>system</jahia-module-type>
         <jahia-module-signature>MCwCFDCTUkdNj2BX3TOmp5D9cEQIuXkXAhQfYsybQrVAO6U5rMdQ5W0Utmy55g==</jahia-module-signature>
+        <mockito.version>2.21.0</mockito.version>
+        <powermock.version>2.0.7</powermock.version>
     </properties>
 
     <dependencies>
@@ -94,12 +96,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.jahia.test</groupId>
-            <artifactId>module-test-framework</artifactId>
-            <version>8.0.0.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>io.reactivex.rxjava2</groupId>
             <artifactId>rxjava</artifactId>
             <version>2.1.5</version>
@@ -111,6 +107,25 @@
             <version>4.0.0</version>
             <scope>provided</scope>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jahia.test</groupId>
+            <artifactId>module-test-framework</artifactId>
+            <version>8.0.0.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-module-junit4</artifactId>
+            <version>${powermock.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-api-mockito2</artifactId>
+            <version>${powermock.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -132,7 +147,8 @@
                             org.jahia.modules.graphql.provider.dxm,
                             org.jahia.modules.graphql.provider.dxm.sdl.extension,
                             org.jahia.modules.graphql.provider.dxm.sdl.fetchers,
-                            org.jahia.modules.graphql.provider.dxm.sdl
+                            org.jahia.modules.graphql.provider.dxm.sdl,
+                            org.jahia.modules.graphql.provider.dxm.osgi.annotations,
                         </Export-Package>
                     </instructions>
                 </configuration>

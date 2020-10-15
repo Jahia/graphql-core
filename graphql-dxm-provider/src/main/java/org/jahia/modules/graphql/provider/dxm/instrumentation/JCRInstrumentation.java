@@ -50,6 +50,7 @@ import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchPar
 import graphql.schema.DataFetcher;
 import graphql.servlet.GraphQLContext;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
+import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
 
 import javax.servlet.http.HttpServletRequest;
@@ -71,7 +72,14 @@ public class JCRInstrumentation extends SimpleInstrumentation {
 
     @Override
     public DataFetcher<?> instrumentDataFetcher(DataFetcher<?> dataFetcher, InstrumentationFieldFetchParameters parameters) {
-        return super.instrumentDataFetcher(new GqlJcrPermissionDataFetcher<>(dataFetcher, dxGraphQLConfig.getPermissions()), parameters);
+        return super.instrumentDataFetcher(
+                new GqlJcrPermissionDataFetcher<>(
+                        new OSGIServiceInjectorDataFetcher<>(
+                                dataFetcher
+                        ), 
+                        dxGraphQLConfig.getPermissions()), 
+                parameters
+        );
     }
 
     @Override
