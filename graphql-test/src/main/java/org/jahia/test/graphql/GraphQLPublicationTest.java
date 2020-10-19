@@ -173,6 +173,7 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
 
         long startedWaitingAt = System.currentTimeMillis();
 
+        // Wait until the node is published via a background job.
         while(schedulerService.getAllActiveJobs().stream().anyMatch(job -> job.getDescription().equals("Publication"))){
             if (System.currentTimeMillis() - startedWaitingAt > TIMEOUT_WAITING_FOR_PUBLICATION) {
                 Assert.fail("Timeout waiting for node to be published");
@@ -182,13 +183,12 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
         JSONObject mutationResult = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode");
         Assert.assertTrue(mutationResult.getBoolean("publish"));
 
-        // Wait until the node is published via a background job.
         try {
             liveSession.getNode("/sites/" + siteName + "/testList");
             Assert.assertEquals(publishSubNodes, liveSession.nodeExists("/sites/" + siteName + "/testList/publicationTestList"));
             Assert.assertEquals(publishSubNodes, liveSession.nodeExists("/sites/" + siteName + "/testList/publicationTestList"));
         } catch (PathNotFoundException e) {
-            // Continue waiting: the node hasn't been published yet. Should not happen
+            Assert.fail("/sites/" + siteName + "/testList is not found");
         }
     }
 
