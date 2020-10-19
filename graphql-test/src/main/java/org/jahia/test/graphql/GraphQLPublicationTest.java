@@ -46,8 +46,10 @@ package org.jahia.test.graphql;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
+import org.jahia.services.scheduler.SchedulerService;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.usermanager.JahiaUserManagerService;
@@ -56,6 +58,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.*;
 import org.junit.rules.TestName;
+import org.quartz.JobDetail;
 import org.quartz.SchedulerException;
 import org.springframework.util.CollectionUtils;
 
@@ -166,30 +169,27 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
                 + "}"
         );
 
-        JSONObject mutationResult = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode");
-        Assert.assertTrue(mutationResult.getBoolean("publish"));
+        SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
+
+        long startedWaitingAt = System.currentTimeMillis();
 
         // Wait until the node is published via a background job.
-        long startedWaitingAt = System.currentTimeMillis();
-        do {
+        while(schedulerService.getAllActiveJobs().stream().anyMatch(job -> job.getDescription().equals("Publication"))){
             if (System.currentTimeMillis() - startedWaitingAt > TIMEOUT_WAITING_FOR_PUBLICATION) {
                 Assert.fail("Timeout waiting for node to be published");
             }
-            try {
-                liveSession.getNode("/sites/" + siteName + "/testList");
-                Assert.assertEquals(publishSubNodes, liveSession.nodeExists("/sites/" + siteName + "/testList/publicationTestList"));
-                Assert.assertEquals(publishSubNodes, liveSession.nodeExists("/sites/" + siteName + "/testList/publicationTestList"));
-                break;
-            } catch (PathNotFoundException e) {
-                // Continue waiting: the node hasn't been published yet.
-            }
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new JahiaRuntimeException(e);
-            }
-        } while (true);
+        }
+
+        JSONObject mutationResult = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode");
+        Assert.assertTrue(mutationResult.getBoolean("publish"));
+
+        try {
+            liveSession.getNode("/sites/" + siteName + "/testList");
+            Assert.assertEquals(publishSubNodes, liveSession.nodeExists("/sites/" + siteName + "/testList/publicationTestList"));
+            Assert.assertEquals(publishSubNodes, liveSession.nodeExists("/sites/" + siteName + "/testList/publicationTestList"));
+        } catch (PathNotFoundException e) {
+            Assert.fail("/sites/" + siteName + "/testList is not found");
+        }
     }
 
     @Test
