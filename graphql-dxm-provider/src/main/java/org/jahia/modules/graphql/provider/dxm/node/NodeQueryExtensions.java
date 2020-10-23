@@ -43,10 +43,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import graphql.annotations.annotationTypes.*;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 
@@ -97,6 +94,7 @@ public class NodeQueryExtensions {
      */
     @GraphQLField
     @GraphQLName("jcr")
+    @GraphQLNonNull
     @GraphQLDescription("JCR Queries")
     public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either EDIT, LIVE, or null to use EDIT by default") Workspace workspace) {
         return new GqlJcrQuery(workspace != null ? workspace : Workspace.EDIT);
@@ -108,6 +106,7 @@ public class NodeQueryExtensions {
      */
     @GraphQLField
     @GraphQLName("admin")
+    @GraphQLNonNull
     @GraphQLDescription("Admin Queries")
     public static GqlAdminQuery getAdmin()  {
         return new GqlAdminQuery();
