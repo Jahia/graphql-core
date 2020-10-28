@@ -213,7 +213,7 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
                                        + "    }"
                                        + "}");
 
-        validateError(result, "javax.jcr.PathNotFoundException: /testList/testSubList2");
+        validateErrors(result, new String[]{"javax.jcr.PathNotFoundException: /testList/testSubList2", "javax.jcr.PathNotFoundException: /testList/testSubList1"});
     }
 
     @Test
@@ -302,6 +302,6 @@ public class GraphQLNodeRetrievalTest extends GraphQLTestSupport {
                                        + "    }"
                                        + "}");
 
-        validateError(result, "javax.jcr.ItemNotFoundException: " + subNodeUuid2);
+        validateErrors(result, new String[]{"javax.jcr.ItemNotFoundException: " + subNodeUuid2, "javax.jcr.ItemNotFoundException: " + subNodeUuid1});
     }
 }
