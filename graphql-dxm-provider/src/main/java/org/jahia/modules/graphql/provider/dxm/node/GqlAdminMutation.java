@@ -2,7 +2,10 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.jahia.bin.Jahia;
 
 /**
  * GraphQL root object for Admin related mutations.
@@ -10,4 +13,12 @@ import graphql.annotations.annotationTypes.GraphQLName;
 @GraphQLName("adminMutation")
 @GraphQLDescription("Admin mutations")
 public class GqlAdminMutation {
+
+    @GraphQLField
+    @GraphQLName("version")
+    @GraphQLNonNull
+    @GraphQLDescription("Stub mutation which displays current Jahia product version")
+    public String getProductVersion() {
+        return Jahia.getFullProductVersion();
+    }
 }
