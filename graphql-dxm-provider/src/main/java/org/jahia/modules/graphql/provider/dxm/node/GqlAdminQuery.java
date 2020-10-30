@@ -16,7 +16,7 @@ public class GqlAdminQuery {
     @GraphQLField
     @GraphQLName("version")
     @GraphQLNonNull
-    @GraphQLDescription("Stub query which displays current Jahia product version")
+    @GraphQLDescription("Version of the running Jahia instance")
     public String getProductVersion() {
         return Jahia.getFullProductVersion();
     }
