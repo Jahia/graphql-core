@@ -70,17 +70,4 @@ public class NodeMutationExtensions {
                                         @GraphQLName("save") @GraphQLDescription("Should save") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean save) throws RepositoryException {
         return new GqlJcrMutation(workspace != null ? workspace.getValue() : null, save);
     }
-
-    /**
-     * Root for all Admin mutations.
-     * @return GraphQL root object for Admin related mutations
-     * @throws RepositoryException in case of JCR related errors
-     */
-    @GraphQLField
-    @GraphQLName("admin")
-    @GraphQLDescription("Admin Mutation")
-    public static GqlAdminMutation getAdmin() throws RepositoryException {
-        return new GqlAdminMutation();
-    }
-
 }

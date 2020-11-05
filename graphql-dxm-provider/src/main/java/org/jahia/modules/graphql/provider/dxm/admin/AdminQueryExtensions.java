@@ -41,62 +41,27 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.graphql.provider.dxm.node;
+package org.jahia.modules.graphql.provider.dxm.admin;
 
 import graphql.annotations.annotationTypes.*;
-import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 
 /**
- * A query extension that adds a possibility to fetch nodes by their UUIDs, paths, or via an SQL2/Xpath query.
+ * A query extension that adds admin query endpoint
  */
 @GraphQLTypeExtension(DXGraphQLProvider.Query.class)
-@GraphQLDescription("A query extension that adds a possibility to fetch nodes by their UUIDs, paths, or via an SQL2/Xpath query")
-public class NodeQueryExtensions {
-
+@GraphQLDescription("A query extension that adds admin query endpoint")
+public class AdminQueryExtensions {
     /**
-     * JCR workspace to use for the operations.
-     */
-    @GraphQLDescription("JCR workspace to use for the operations")
-    public enum Workspace {
-
-        /**
-         * Edit workspace
-         */
-        @GraphQLDescription("Edit workspace")
-        EDIT(Constants.EDIT_WORKSPACE),
-
-        /**
-         * Live workspace
-         */
-        @GraphQLDescription("Live workspace")
-        LIVE(Constants.LIVE_WORKSPACE);
-
-        private String workspace;
-
-        private Workspace(String workspace) {
-            this.workspace = workspace;
-        }
-
-        /**
-         * @return corresponding workspace name
-         */
-        public String getValue() {
-            return workspace;
-        }
-    }
-
-
-    /**
-     * Root for all JCR queries.
-     * @param workspace the JCR workspace name for the query 
-     * @return the root query object
+     * Root for all admin queries.
+     * @return admin query object.
      */
     @GraphQLField
-    @GraphQLName("jcr")
+    @GraphQLName("admin")
     @GraphQLNonNull
-    @GraphQLDescription("JCR Queries")
-    public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either EDIT, LIVE, or null to use EDIT by default") Workspace workspace) {
-        return new GqlJcrQuery(workspace != null ? workspace : Workspace.EDIT);
+    @GraphQLDescription("Admin Queries")
+    public static GqlAdminQuery getAdmin()  {
+        return new GqlAdminQuery();
     }
+
 }

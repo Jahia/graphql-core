@@ -58,6 +58,7 @@
 
     <properties>
         <export-package>
+            org.jahia.modules.graphql.provider.dxm.admin,
             org.jahia.modules.graphql.provider.dxm.relay,
             org.jahia.modules.graphql.provider.dxm.node,
             org.jahia.modules.graphql.provider.dxm.nodetype,
