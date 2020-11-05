@@ -68,17 +68,4 @@ public class NodeMutationExtensions {
     public static GqlJcrMutation getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") NodeQueryExtensions.Workspace workspace) throws RepositoryException {
         return new GqlJcrMutation(workspace != null ? workspace.getValue() : null);
     }
-
-    /**
-     * Root for all Admin mutations.
-     * @return GraphQL root object for Admin related mutations
-     * @throws RepositoryException in case of JCR related errors
-     */
-    @GraphQLField
-    @GraphQLName("admin")
-    @GraphQLDescription("Admin Mutation")
-    public static GqlAdminMutation getAdmin() throws RepositoryException {
-        return new GqlAdminMutation();
-    }
-
 }
