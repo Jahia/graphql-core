@@ -7,7 +7,7 @@
 
                                     http://www.jahia.com
 
-        Copyright (C) 2002-2019 Jahia Solutions Group SA. All rights reserved.
+        Copyright (C) 2002-2020 Jahia Solutions Group SA. All rights reserved.
 
         THIS FILE IS AVAILABLE UNDER TWO DIFFERENT LICENSES:
         1/GPL OR 2/JSEL
@@ -57,7 +57,16 @@
     <description>This is the provider project for the DX GraphQL Core integration project</description>
 
     <properties>
-        <export-package>org.jahia.modules.graphql.provider.dxm,org.jahia.modules.graphql.provider.dxm.node,org.jahia.modules.graphql.provider.dxm.nodetype,org.jahia.modules.graphql.provider.dxm.relay</export-package>
+        <export-package>
+            org.jahia.modules.graphql.provider.dxm.admin,
+            org.jahia.modules.graphql.provider.dxm.relay,
+            org.jahia.modules.graphql.provider.dxm.node,
+            org.jahia.modules.graphql.provider.dxm.nodetype,
+            org.jahia.modules.graphql.provider.dxm,
+            org.jahia.modules.graphql.provider.dxm.sdl.extension,
+            org.jahia.modules.graphql.provider.dxm.sdl.fetchers,
+            org.jahia.modules.graphql.provider.dxm.sdl
+        </export-package>
         <jahia-module-type>system</jahia-module-type>
     </properties>
 
@@ -124,15 +133,6 @@
                     <instructions>
                         <Jahia-Depends>default</Jahia-Depends>
                         <_dsannotations>*</_dsannotations>
-                        <Export-Package>
-                            org.jahia.modules.graphql.provider.dxm.relay,
-                            org.jahia.modules.graphql.provider.dxm.node,
-                            org.jahia.modules.graphql.provider.dxm.nodetype,
-                            org.jahia.modules.graphql.provider.dxm,
-                            org.jahia.modules.graphql.provider.dxm.sdl.extension,
-                            org.jahia.modules.graphql.provider.dxm.sdl.fetchers,
-                            org.jahia.modules.graphql.provider.dxm.sdl
-                        </Export-Package>
                     </instructions>
                 </configuration>
             </plugin>
