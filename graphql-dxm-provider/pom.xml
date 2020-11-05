@@ -57,7 +57,18 @@
     <description>This is the provider project for the DX GraphQL Core integration project</description>
 
     <properties>
-        <export-package>org.jahia.modules.graphql.provider.dxm,org.jahia.modules.graphql.provider.dxm.node,org.jahia.modules.graphql.provider.dxm.nodetype,org.jahia.modules.graphql.provider.dxm.relay</export-package>
+        <export-package>
+            org.jahia.modules.graphql.provider.dxm.admin,
+            org.jahia.modules.graphql.provider.dxm.relay,
+            org.jahia.modules.graphql.provider.dxm.node,
+            org.jahia.modules.graphql.provider.dxm.nodetype,
+            org.jahia.modules.graphql.provider.dxm,
+            org.jahia.modules.graphql.provider.dxm.sdl.extension,
+            org.jahia.modules.graphql.provider.dxm.sdl.fetchers,
+            org.jahia.modules.graphql.provider.dxm.sdl,
+            org.jahia.modules.graphql.provider.dxm.user,
+            org.jahia.modules.graphql.provider.dxm.osgi.annotations
+        </export-package>
         <jahia-module-type>system</jahia-module-type>
         <jahia-module-signature>MCwCFDCTUkdNj2BX3TOmp5D9cEQIuXkXAhQfYsybQrVAO6U5rMdQ5W0Utmy55g==</jahia-module-signature>
         <mockito.version>2.21.0</mockito.version>
@@ -140,16 +151,6 @@
                     <instructions>
                         <Jahia-Depends>default</Jahia-Depends>
                         <_dsannotations>*</_dsannotations>
-                        <Export-Package>
-                            org.jahia.modules.graphql.provider.dxm.relay,
-                            org.jahia.modules.graphql.provider.dxm.node,
-                            org.jahia.modules.graphql.provider.dxm.nodetype,
-                            org.jahia.modules.graphql.provider.dxm,
-                            org.jahia.modules.graphql.provider.dxm.sdl.extension,
-                            org.jahia.modules.graphql.provider.dxm.sdl.fetchers,
-                            org.jahia.modules.graphql.provider.dxm.sdl,
-                            org.jahia.modules.graphql.provider.dxm.osgi.annotations,
-                        </Export-Package>
                     </instructions>
                 </configuration>
             </plugin>
