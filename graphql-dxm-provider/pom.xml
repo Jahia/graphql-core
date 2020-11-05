@@ -65,8 +65,7 @@
             org.jahia.modules.graphql.provider.dxm,
             org.jahia.modules.graphql.provider.dxm.sdl.extension,
             org.jahia.modules.graphql.provider.dxm.sdl.fetchers,
-            org.jahia.modules.graphql.provider.dxm.sdl,
-            org.jahia.modules.graphql.provider.dxm.user
+            org.jahia.modules.graphql.provider.dxm.sdl
         </export-package>
         <jahia-module-type>system</jahia-module-type>
     </properties>
