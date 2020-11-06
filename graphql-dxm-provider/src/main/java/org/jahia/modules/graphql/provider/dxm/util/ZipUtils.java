@@ -155,11 +155,7 @@ public class ZipUtils {
                     zout.closeEntry();
                 }
             } else if (node.isNodeType(Constants.JAHIANT_FOLDER)) {
-                if ((node.getParent().getName() + "/").equals(parent)) {
-                    parent += node.getName() + "/";
-                } else {
-                    parent = node.getName() + "/";
-                }
+                parent += node.getName() + "/";
                 zout.putNextEntry(new ZipEntry(parent));
                 JCRNodeIteratorWrapper it = node.getNodes();
                 while (it.hasNext()) {
