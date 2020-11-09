@@ -12,6 +12,7 @@ import javax.inject.Inject;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -33,20 +34,28 @@ public class OSGIServiceInjectorDataFetcher<T> implements DataFetcher<T> {
     public T get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
         T data = originalDataFetcher.get(dataFetchingEnvironment);
 
-        if (data != null) {
-            for (Method method : MethodUtils.getMethodsListWithAnnotation(data.getClass(), Inject.class, true, true)) {
-                handleMethodInjection(data, method);
+        if (data instanceof Collection) {
+            for (Object item : ((Collection)data)) {
+                handleMethodInjection(item);
             }
-
-            for (Field field : FieldUtils.getFieldsListWithAnnotation(data.getClass(), Inject.class)) {
-                handleFieldInjection(data, field);
-            }
+        } else if (data != null) {
+            handleMethodInjection(data);
         }
 
         return data;
     }
 
-    private void handleMethodInjection(T data, Method method) throws IllegalAccessException, InvocationTargetException {
+    private void handleMethodInjection(Object data) throws IllegalAccessException, InvocationTargetException {
+        for (Method method : MethodUtils.getMethodsListWithAnnotation(data.getClass(), Inject.class, true, true)) {
+            handleMethodInjection(data, method);
+        }
+
+        for (Field field : FieldUtils.getFieldsListWithAnnotation(data.getClass(), Inject.class)) {
+            handleFieldInjection(data, field);
+        }
+    }
+
+    private void handleMethodInjection(Object data, Method method) throws IllegalAccessException, InvocationTargetException {
         if (method.isAnnotationPresent(GraphQLOsgiService.class) && method.getParameterTypes().length > 0) {
 
             GraphQLOsgiService annotation = method.getAnnotation(GraphQLOsgiService.class);
@@ -61,7 +70,7 @@ public class OSGIServiceInjectorDataFetcher<T> implements DataFetcher<T> {
         }
     }
 
-    private void handleFieldInjection(T data, Field field) throws IllegalAccessException {
+    private void handleFieldInjection(Object data, Field field) throws IllegalAccessException {
         if (field.isAnnotationPresent(GraphQLOsgiService.class)) {
 
             GraphQLOsgiService annotation = field.getAnnotation(GraphQLOsgiService.class);
