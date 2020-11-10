@@ -14,11 +14,13 @@ public class GqlUser {
     }
 
     @GraphQLField
+    @GraphQLDescription("User name")
     public String getName() {
         return user.getName();
     }
 
     @GraphQLField
+    @GraphQLDescription("User property")
     public String getProperty(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property") String name) {
         return user.getProperty(name);
     }
