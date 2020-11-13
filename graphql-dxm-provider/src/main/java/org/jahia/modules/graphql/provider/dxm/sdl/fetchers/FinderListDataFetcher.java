@@ -2,7 +2,7 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
-import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
 import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;

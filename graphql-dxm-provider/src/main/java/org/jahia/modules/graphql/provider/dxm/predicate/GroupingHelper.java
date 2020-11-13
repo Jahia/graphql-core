@@ -44,10 +44,11 @@
 package org.jahia.modules.graphql.provider.dxm.predicate;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
-import org.jahia.modules.graphql.provider.dxm.node.FieldGroupingInput;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -69,18 +70,18 @@ public class GroupingHelper {
         START
     }
 
-    public static Stream<GqlJcrNode> group(Stream<GqlJcrNode> stream, FieldGroupingInput fieldGroupingInput, FieldEvaluator fieldEvaluator) {
+    public static <T> Stream<T> group(Stream<T> stream, FieldGroupingInput fieldGroupingInput, FieldEvaluator fieldEvaluator) {
 
-        List<GqlJcrNode> originalList = stream.collect(Collectors.toList());
+        List<T> originalList = stream.collect(Collectors.toList());
         //Create buckets for groups
-        Map<String, List<GqlJcrNode>> buckets = new LinkedHashMap<>();
+        Map<String, List<T>> buckets = new LinkedHashMap<>();
         buckets.put(UNGROUPED_LIST, new ArrayList<>());
         for (String group : fieldGroupingInput.getGroups()) {
             buckets.put(group, new ArrayList<>());
         }
 
         //Distribute nodes among groups
-        for (GqlJcrNode node : originalList) {
+        for (T node : originalList) {
             String groupByFieldValue = (String)fieldEvaluator.getFieldValue(node, fieldGroupingInput.getFieldName());
             if (buckets.containsKey(groupByFieldValue)) {
                 buckets.get(groupByFieldValue).add(node);
@@ -90,10 +91,10 @@ public class GroupingHelper {
             }
         }
 
-        List<GqlJcrNode> groupedList = new ArrayList<>();
+        List<T> groupedList = new ArrayList<>();
 
         //Concat grouped lists together in order they were processed
-        for(Map.Entry<String, List<GqlJcrNode>> entry : buckets.entrySet()) {
+        for(Map.Entry<String, List<T>> entry : buckets.entrySet()) {
             if (!entry.getKey().equals(UNGROUPED_LIST)) {
                 groupedList.addAll(entry.getValue());
             }

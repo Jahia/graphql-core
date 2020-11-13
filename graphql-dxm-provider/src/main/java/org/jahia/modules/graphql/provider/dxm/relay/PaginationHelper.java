@@ -44,11 +44,13 @@
 package org.jahia.modules.graphql.provider.dxm.relay;
 
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.collections.iterators.IteratorChain;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.commons.lang.mutable.MutableObject;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.modules.graphql.provider.dxm.util.StreamUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -57,6 +59,9 @@ import java.util.stream.Stream;
 import static java.util.Base64.getEncoder;
 
 public class PaginationHelper {
+
+    private PaginationHelper() {
+    }
 
     public static <T> DXPaginatedData<T> paginate(List<T> source, DataFetchingEnvironment environment) {
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
@@ -68,8 +73,8 @@ public class PaginationHelper {
         filtered = applyFirstLast(filtered, arguments);
         filtered = applyLimitOffset(filtered, arguments);
 
-        boolean hasPrevious = filtered.size() > 0 && filtered.get(0) != source.get(0);
-        boolean hasNext = filtered.size() > 0 && filtered.get(filtered.size() - 1) != source.get(source.size() - 1);
+        boolean hasPrevious = !filtered.isEmpty() && filtered.get(0) != source.get(0);
+        boolean hasNext = !filtered.isEmpty() && filtered.get(filtered.size() - 1) != source.get(source.size() - 1);
 
         return new SimpleDXPaginatedData<>(source, filtered, cursorSupport, hasPrevious, hasNext);
     }
@@ -114,33 +119,18 @@ public class PaginationHelper {
     public static <T> DXPaginatedData<T> paginate(Stream<T> source, CursorSupport<T> cursorSupport, Arguments arguments) {
         MutableInt count = new MutableInt(0);
         MutableObject last = new MutableObject();
-        source = source.peek(c -> count.increment());
-        source = source.peek(last::setValue);
-        if (arguments.isCursor()) {
-            if (arguments.after != null) {
-                // Drop first elements until cursor match, then also skip matching element
-                source = StreamUtils.dropUntil(source, t -> cursorSupport.getCursor(t).equals(arguments.after)).skip(1);
-            }
-        } else if (arguments.isOffsetLimit()) {
-            if (arguments.offset != null) {
-                source = source.skip(arguments.offset);
-            }
+        if (arguments.isCursor() && arguments.after != null) {
+            // Drop first elements until cursor match, then also skip matching element
+            source = StreamUtils.dropUntil(source, t -> cursorSupport.getCursor(t).equals(arguments.after), count).skip(1);
+        } else if (arguments.isOffsetLimit() && arguments.offset != null && arguments.offset > 0) {
+            // Drop first elements until the offset is reached
+            source = StreamUtils.dropUntil(source, t -> count.intValue() == arguments.offset, count).skip(1);
         }
 
-        // Elements collected in dedicated list, depending on last/before combination
-        Collection<T> items = arguments.last == null ? new ArrayList<>() : (arguments.before == null ? new CircularFifoQueue<>(arguments.last) : new CircularFifoQueue<>(arguments.last + 1));
-        source = source.peek(items::add);
+        Iterator<T> it = source.iterator();
 
         // Execute, collect items until condition is met
-        Iterator<T> it = source.iterator();
-        while (it.hasNext()
-                && (arguments.limit == null || items.size() <= arguments.limit)
-                && (arguments.first == null || items.size() <= arguments.first)
-                && (arguments.before == null || !cursorSupport.getCursor((T) last.getValue()).equals(arguments.before))) {
-            it.next();
-        }
-
-        List<T> filtered = new ArrayList<>(items);
+        List<T> filtered = collectItems(it, arguments, cursorSupport, count, last);
 
         // Substract result size from count to get the offset of first item
         count.subtract(filtered.size());
@@ -153,17 +143,47 @@ public class PaginationHelper {
             hasNext = filtered.size() > arguments.first;
         }
         if (!hasNext && arguments.before != null) {
-            hasNext = filtered.size() > 0 && arguments.before.equals(cursorSupport.getCursor(filtered.get(filtered.size()-1)));
-            if (!hasNext && arguments.last != null) {
+            hasNext = !filtered.isEmpty() && arguments.before.equals(cursorSupport.getCursor(filtered.get(filtered.size()-1)));
+            if (!hasNext && hasPrevious && arguments.last != null) {
                 // Cursor was not found, drop first element
                 filtered = filtered.subList(1, filtered.size());
                 count.increment();
             }
         }
         if (hasNext) {
+            // Restore last item in iterator to get correct total count
+            it = new IteratorChain(Collections.singleton(filtered.get(filtered.size() - 1)).iterator(), it);
             filtered = filtered.subList(0, filtered.size() -1 );
         }
         return new StreamBasedDXPaginatedData<>(filtered, cursorSupport, hasPrevious, hasNext, count.intValue(), it);
+    }
+
+    @NotNull
+    private static <T> List<T> collectItems(Iterator<T> it, Arguments arguments, CursorSupport<T> cursorSupport, MutableInt count, MutableObject last) {
+        // Elements collected in dedicated list, depending on last/before combination
+        Collection<T> items;
+        if (arguments.last == null) {
+            items = new ArrayList<>();
+        } else if (arguments.before == null) {
+            items = new CircularFifoQueue<>(arguments.last);
+        } else {
+            items = new CircularFifoQueue<>(arguments.last + 1);
+        }
+
+        while (it.hasNext()
+                && (arguments.limit == null || items.size() <= arguments.limit)
+                && (arguments.first == null || items.size() <= arguments.first)
+               ) {
+            T value = it.next();
+            last.setValue(value);
+            items.add(value);
+            count.increment();
+
+            if (arguments.before != null && cursorSupport.getCursor(value).equals(arguments.before)) {
+                break;
+            }
+        }
+        return new ArrayList<>(items);
     }
 
     public static Arguments parseArguments(DataFetchingEnvironment environment) {
@@ -261,6 +281,7 @@ public class PaginationHelper {
             return startOffset + filtered.indexOf(entity);
         }
 
+        @Override
         public int getTotalCount() {
             if (totalCount == -1) {
                 totalCount = startOffset + filtered.size();

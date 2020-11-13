@@ -44,7 +44,6 @@
 package org.jahia.modules.graphql.provider.dxm.predicate;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
-import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 
 import java.util.Comparator;
 import java.util.EnumMap;

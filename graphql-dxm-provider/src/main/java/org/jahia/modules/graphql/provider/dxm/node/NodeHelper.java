@@ -230,7 +230,7 @@ public class NodeHelper {
         if (fieldSorterInput != null) {
             List<GqlJcrNode> items = stream.sorted(SorterHelper.getFieldComparator(fieldSorterInput, FieldEvaluator.forConnection(environment))).collect(Collectors.toList());
             if (fieldGroupingInput != null) {
-                items = (List<GqlJcrNode>) GroupingHelper.group(items.stream(), fieldGroupingInput, FieldEvaluator.forConnection(environment)).collect(Collectors.toList());
+                items = GroupingHelper.group(items.stream(), fieldGroupingInput, FieldEvaluator.forConnection(environment)).collect(Collectors.toList());
             }
             return PaginationHelper.paginate(items, environment);
         }

@@ -41,7 +41,7 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.graphql.provider.dxm.node;
+package org.jahia.modules.graphql.provider.dxm.predicate;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
