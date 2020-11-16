@@ -60,7 +60,6 @@ import javax.jcr.RepositoryException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -228,11 +227,7 @@ public class NodeHelper {
             .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
 
         if (fieldSorterInput != null) {
-            List<GqlJcrNode> items = stream.sorted(SorterHelper.getFieldComparator(fieldSorterInput, FieldEvaluator.forConnection(environment))).collect(Collectors.toList());
-            if (fieldGroupingInput != null) {
-                items = GroupingHelper.group(items.stream(), fieldGroupingInput, FieldEvaluator.forConnection(environment)).collect(Collectors.toList());
-            }
-            return PaginationHelper.paginate(items, environment);
+            stream = stream.sorted(SorterHelper.getFieldComparator(fieldSorterInput, FieldEvaluator.forConnection(environment)));
         }
 
         if (fieldGroupingInput != null) {

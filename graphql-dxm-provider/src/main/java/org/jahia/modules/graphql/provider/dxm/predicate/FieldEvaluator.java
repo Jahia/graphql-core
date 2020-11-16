@@ -55,7 +55,11 @@ import graphql.language.FragmentDefinition;
 import graphql.language.SelectionSet;
 import graphql.schema.*;
 import graphql.servlet.GraphQLContext;
+import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +72,8 @@ import static org.jahia.modules.graphql.provider.dxm.instrumentation.JCRInstrume
  * Environment required to dynamically evaluate a sub-field
  */
 public class FieldEvaluator {
+    private static final Logger logger = LoggerFactory.getLogger(FieldEvaluator.class);
+
     private GraphQLType type;
     private FieldFinder fieldFinder;
     private Map<String, Object> variables;
@@ -222,6 +228,13 @@ public class FieldEvaluator {
         GraphQLObjectType objectType = getObjectType(source);
         if (objectType == null) {
             return null;
+        }
+
+        try {
+            // Inject object field if necessary
+            OSGIServiceInjectorDataFetcher.handleMethodInjection(source);
+        } catch (IllegalAccessException |InvocationTargetException e) {
+            logger.warn("Cannot inject fields ",e);
         }
 
         DataFetchingEnvironmentBuilder fieldEnv = newDataFetchingEnvironment()

@@ -9,11 +9,10 @@ import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiServic
 import org.jahia.osgi.BundleUtils;
 
 import javax.inject.Inject;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
-import java.util.ArrayList;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * This custom data fetcher is used to detect if the returned data class need some OSGI Service injection
@@ -45,7 +44,7 @@ public class OSGIServiceInjectorDataFetcher<T> implements DataFetcher<T> {
         return data;
     }
 
-    private void handleMethodInjection(Object data) throws IllegalAccessException, InvocationTargetException {
+    public static void handleMethodInjection(Object data) throws IllegalAccessException, InvocationTargetException {
         for (Method method : MethodUtils.getMethodsListWithAnnotation(data.getClass(), Inject.class, true, true)) {
             handleMethodInjection(data, method);
         }
@@ -55,7 +54,7 @@ public class OSGIServiceInjectorDataFetcher<T> implements DataFetcher<T> {
         }
     }
 
-    private void handleMethodInjection(Object data, Method method) throws IllegalAccessException, InvocationTargetException {
+    private static void handleMethodInjection(Object data, Method method) throws IllegalAccessException, InvocationTargetException {
         if (method.isAnnotationPresent(GraphQLOsgiService.class) && method.getParameterTypes().length > 0) {
 
             GraphQLOsgiService annotation = method.getAnnotation(GraphQLOsgiService.class);
@@ -70,7 +69,7 @@ public class OSGIServiceInjectorDataFetcher<T> implements DataFetcher<T> {
         }
     }
 
-    private void handleFieldInjection(Object data, Field field) throws IllegalAccessException {
+    private static void handleFieldInjection(Object data, Field field) throws IllegalAccessException {
         if (field.isAnnotationPresent(GraphQLOsgiService.class)) {
 
             GraphQLOsgiService annotation = field.getAnnotation(GraphQLOsgiService.class);
