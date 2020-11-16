@@ -52,6 +52,8 @@ import org.jahia.modules.graphql.provider.dxm.DXGraphQLError;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.GqlConstraintHandler;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldGroupingInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.services.content.*;

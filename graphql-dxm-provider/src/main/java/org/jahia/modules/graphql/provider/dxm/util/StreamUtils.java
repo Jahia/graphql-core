@@ -43,10 +43,13 @@
  */
 package org.jahia.modules.graphql.provider.dxm.util;
 
+import org.apache.commons.lang.mutable.MutableInt;
+
 import java.util.Comparator;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -115,24 +118,30 @@ public class StreamUtils {
      * @param p the predicate
      * @return the stream
      */
-    public static <T> Stream<T> dropUntil(Stream<T> stream, Predicate<? super T> p) {
-        return stream.filter(FromPredicate.from(p));
+    public static <T> Stream<T> dropUntil(Stream<T> stream, Predicate<? super T> p, MutableInt counter) {
+        return stream.filter(FromPredicate.from(p, counter));
     }
 
     static class FromPredicate<T> implements Predicate<T> {
+        private MutableInt counter;
         private boolean started = false;
         private Predicate<T> test;
 
-        private FromPredicate(Predicate<T> test) {
+        private FromPredicate(Predicate<T> test, MutableInt counter) {
             this.test = test;
+            this.counter = counter != null ? counter : new MutableInt(0);
         }
 
-        public static <T> Predicate<T> from(Predicate<T> test) {
-            return new FromPredicate<>(test);
+        public static <T> Predicate<T> from(Predicate<T> test, MutableInt counter) {
+            return new FromPredicate<>(test, counter);
         }
 
         public boolean test(T t) {
-            return started || (started = test.test(t));
+            if (!started) {
+                counter.increment();
+                started = test.test(t);
+            }
+            return started;
         }
     }
 }

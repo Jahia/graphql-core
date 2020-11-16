@@ -44,7 +44,6 @@
 package org.jahia.modules.graphql.provider.dxm.predicate;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
-import org.jahia.modules.graphql.provider.dxm.node.FieldSorterInput;
 
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -79,47 +78,33 @@ public class SorterHelper {
     }
 
     static {
-        SORT_BY_DIRECTION.put(SortType.ASC, ((source, fieldName, fieldValue, ignoreCase, environment) -> {
+        FieldSorterAlgorithm fieldSorterAlgorithm = (source, fieldName, fieldValue, ignoreCase, environment) -> {
             Object value = environment.getFieldValue(source, fieldName);
             if (value == null && fieldValue == null) {
                 return 0;
-            } else if (value == null && fieldValue != null) {
+            } else if (value == null) {
                 return -1;
-            } else if (value != null && fieldValue == null) {
+            } else if (fieldValue == null) {
                 return 1;
             } else if (fieldValue instanceof Boolean) {
-                return Boolean.compare((Boolean)value, (Boolean)fieldValue);
+                return Boolean.compare((Boolean) value, (Boolean) fieldValue);
             } else if (fieldValue instanceof Long) {
-                return Long.compare((Long)value, (Long)fieldValue);
+                return Long.compare((Long) value, (Long) fieldValue);
             } else if (fieldValue instanceof Double) {
-                return Double.compare((Double)value, (Double)fieldValue);
+                return Double.compare((Double) value, (Double) fieldValue);
             } else if (fieldValue instanceof Integer) {
-                return Integer.compare((Integer)value, (Integer)fieldValue);
+                return Integer.compare((Integer) value, (Integer) fieldValue);
+            } else if (fieldValue instanceof String) {
+                return ignoreCase ? ((String)value).compareToIgnoreCase(((String)fieldValue)) : ((String)value).compareTo(((String)fieldValue));
             } else {
-                return ignoreCase ? value.toString().compareToIgnoreCase((String)fieldValue) : value.toString().compareTo((String)fieldValue);
-            }
-        }));
-
-        SORT_BY_DIRECTION.put(SortType.DESC, ((source, fieldName, fieldValue, ignoreCase, environment) -> {
-            Object value = environment.getFieldValue(source, fieldName);
-            if (value == null && fieldValue == null) {
                 return 0;
-            } else if (value == null && fieldValue != null) {
-                return 1;
-            } else if (value != null && fieldValue == null) {
-                return -1;
-            } else if (fieldValue instanceof Boolean) {
-                return Boolean.compare((Boolean)fieldValue, (Boolean)value);
-            } else if (fieldValue instanceof Long) {
-                return Long.compare((Long)fieldValue, (Long)value);
-            } else if (fieldValue instanceof Double) {
-                return Double.compare((Double)fieldValue, (Double)value);
-            } else if (fieldValue instanceof Integer) {
-                return Integer.compare((Integer)fieldValue, (Integer)value);
-            }else {
-                return ignoreCase ? -(value.toString().compareToIgnoreCase((String)fieldValue)) : -(value.toString().compareTo((String)fieldValue));
             }
-        }));
+        };
+
+        SORT_BY_DIRECTION.put(SortType.ASC, fieldSorterAlgorithm);
+        SORT_BY_DIRECTION.put(SortType.DESC, ((source, fieldName, fieldValue, ignoreCase, environment) ->
+            -fieldSorterAlgorithm.evaluate(source, fieldName, fieldValue, ignoreCase, environment)
+        ));
 
     }
 
