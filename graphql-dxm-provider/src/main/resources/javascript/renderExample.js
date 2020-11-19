@@ -112,7 +112,7 @@ function graphQLFetcher(graphQLParams, opts = { headers: {} }) {
       headers,
     ),
     body: JSON.stringify(graphQLParams),
-    credentials: 'omit',
+    credentials: 'include',
   })
     .then(function (response) {
       return response.text();
