@@ -321,10 +321,10 @@ public class GqlJcrProperty {
     @GraphQLDescription("The binary size of the JCR node as a Long, null otherwise")
     public Long getSize() {
         try {
-            if (property.isMultiple() && property.getValue().getType() != PropertyType.BINARY) {
+            if (property.isMultiple() && property.getType() != PropertyType.BINARY) {
                 return null;
             }
-            return property.getValue().getBinary().getSize();
+            return property.getBinary().getSize();
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
