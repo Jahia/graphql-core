@@ -19,7 +19,7 @@ parameters:
     default: 'jahia/graphql-core'
   MODULE_ID:
     type: string
-    default: 'sandbox'    
+    default: 'graphql-core'
   TESTRAIL_PROJECTNAME:
     type: string
     default: 'GraphQL Core module'    
@@ -135,8 +135,9 @@ jobs:
           name: Prepare artifacts
           command: |
             mkdir /tmp/artifacts/
-            cp /home/circleci/source/target/*.jar /tmp/artifacts/
-            cp /home/circleci/source/target/*SNAPSHOT.jar /home/circleci/source/target/<< pipeline.parameters.MODULE_ID >>-SNAPSHOT.jar            
+            cp /home/circleci/source/graphql-dxm-provider/target/*.jar /tmp/artifacts/
+            cp /home/circleci/source/graphql-extension-example/target/*.jar /tmp/artifacts/
+            cp /home/circleci/source/graphql-test/target/*.jar /tmp/artifacts/
       - store_artifacts:
           path: /tmp/artifacts/
       - *persist-workspace
@@ -223,7 +224,9 @@ jobs:
       - run:
           name: Spin-up dockerized jahia
           # At that point we're only sprinning up Jahia and its runtime dependencies, 
-          # We are not starting the tests yet since we first want to build the test container (or run from a previously built container) \
+          # We are not starting the tests yet since we first want to build the test container (or run from a previously built container)
+          # Copying the main folder content into the tests folder is there to have
+          #   the POM files usable by the tests executed by Maven at this level
           # Checking the presence of the .env file is there because it's needed by the tests, but to not break ci/cd if variables
           #   are added to the compose file but not to the environment variables in circleci config.yml
           command: |

@@ -42,8 +42,8 @@ echo " == Get the Jahia version =="
 JAHIA_FULL_VERSION=$(curl --location --request POST '${JAHIA_URL}/modules/graphql' --header 'Authorization: Basic cm9vdDpyb290' --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
 echo " == Using JAHIA_FULL_VERSION: ${JAHIA_FULL_VERSION}" 
 
-# Extract the Jahia version for the full label
-JAHIA_VERSION=$(echo ${JAHIA_FULL_VERSION} | sed -r 's/"[a-zA-Z ]* ([0-9\.]*) - [a-zA-Z ]*"/\1/g')
+# Extract the Jahia version from the full label
+JAHIA_VERSION=$(echo ${JAHIA_FULL_VERSION} | sed -r 's/"[a-zA-Z ]* ([0-9\.]*) (\[.*\]) - .*"/\1/g')
 echo " == Using JAHIA_VERSION: ${JAHIA_VERSION}" 
 
 sed -i -e "s/JAHIA_VERSION/${JAHIA_VERSION}/g" /tmp/run-artifacts/${MANIFEST}
