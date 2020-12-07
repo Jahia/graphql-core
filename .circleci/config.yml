@@ -438,22 +438,6 @@ jobs:
 
 workflows:
   version: 2
-  # This one is run only when triggered with the API, using a GitHub action
-  pull_request:
-    when: << pipeline.parameters.run_pull_request >>
-    jobs:
-      - checkout:
-          name: PR Checkout
-      - build:
-          name: PR Build
-          context: QA_ENVIRONMENT
-          requires:
-            - PR Checkout
-      - sonar:
-          name: PR Sonar analysis
-          context: QA_ENVIRONMENT
-          requires:
-            - PR Build
   # On code change is executed each time new code is pushed to a branch
   # Current project configuration in circleci only builds on PR + main, so effectively this is only being executed
   on-code-change:
