@@ -86,9 +86,8 @@ public class SorterHelper {
                 return -1;
             } else if (fieldValue == null) {
                 return 1;
-            } else if (fieldValue instanceof Boolean) {
-                return Boolean.compare((Boolean) value, (Boolean) fieldValue);
-            } else if (fieldValue instanceof Long) {
+            }
+            else if (fieldValue instanceof Long) {
                 return Long.compare((Long) value, (Long) fieldValue);
             } else if (fieldValue instanceof Double) {
                 return Double.compare((Double) value, (Double) fieldValue);
@@ -96,6 +95,8 @@ public class SorterHelper {
                 return Integer.compare((Integer) value, (Integer) fieldValue);
             } else if (fieldValue instanceof String) {
                 return ignoreCase ? ((String)value).compareToIgnoreCase(((String)fieldValue)) : ((String)value).compareTo(((String)fieldValue));
+            } else if (fieldValue instanceof Enum) {
+                return value.toString().compareTo(fieldValue.toString());
             } else {
                 return 0;
             }
