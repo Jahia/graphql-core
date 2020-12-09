@@ -22,10 +22,10 @@ services:
       - JAHIA_PASSWORD=${JAHIA_PASSWORD}
       - JAHIA_HOST=${JAHIA_HOST}
       - JAHIA_PORT=${JAHIA_PORT}
+      - JAHIA_URL=${JAHIA_URL}
       - NEXUS_USERNAME=${NEXUS_USERNAME}
       - NEXUS_PASSWORD=${NEXUS_PASSWORD}
       - NEXUS_INTERNAL_URL=${NEXUS_INTERNAL_URL}
-      - TEST_URL=${TEST_URL}
     volumes: 
       - type: bind
         source: ./results
