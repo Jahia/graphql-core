@@ -96,6 +96,8 @@ public class SorterHelper {
                 return Integer.compare((Integer) value, (Integer) fieldValue);
             } else if (fieldValue instanceof String) {
                 return ignoreCase ? ((String)value).compareToIgnoreCase(((String)fieldValue)) : ((String)value).compareTo(((String)fieldValue));
+            } else if (fieldValue instanceof Enum) {
+                return value.toString().compareTo(fieldValue.toString());
             } else {
                 return 0;
             }
