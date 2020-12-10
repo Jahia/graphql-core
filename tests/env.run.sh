@@ -10,13 +10,12 @@ fi
 START_TIME=$SECONDS
 
 echo " == Using MANIFEST: ${MANIFEST}"
-echo " == Using JAHIA_URL: ${JAHIA_URL}"
 
 if [[ ${JAHIA_URL} =~ .*/$ ]]; then
-	TEST_URL="${JAHIA_URL}cms"
-else
-	TEST_URL="${JAHIA_URL}/cms"
+	JAHIA_URL=$(echo ${JAHIA_URL} | sed 's/.$//')
 fi
+echo " == Using JAHIA_URL: ${JAHIA_URL}"
+TEST_URL="${JAHIA_URL}/cms"
 
 echo " == Using TEST_URL: ${TEST_URL}"
 
@@ -26,7 +25,7 @@ ELAPSED_TIME=$(($SECONDS - $START_TIME))
 echo " == Jahia became alive in ${ELAPSED_TIME} seconds"
 
 # Add the credentials to a temporary manifest for downloading files
-mkdir /tmp/run-artifacts
+
 # Execute jobs listed in the manifest
 # If the file doesn't exist, we assume it is a URL and we download it locally
 if [[ -e ${MANIFEST} ]]; then
@@ -40,7 +39,7 @@ sed -i -e "s/NEXUS_USERNAME/${NEXUS_USERNAME}/g" /tmp/run-artifacts/${MANIFEST}
 sed -i -e "s/NEXUS_PASSWORD/${NEXUS_PASSWORD}/g" /tmp/run-artifacts/${MANIFEST}
 
 echo " == Get the Jahia version =="
-JAHIA_FULL_VERSION=$(curl --location --request POST ${JAHIA_URL}modules/graphql --header 'Authorization: Basic cm9vdDpyb290' --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
+JAHIA_FULL_VERSION=$(curl --location --request POST ${JAHIA_URL}/modules/graphql --header 'Authorization: Basic cm9vdDpyb290' --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
 echo " == Using JAHIA_FULL_VERSION: ${JAHIA_FULL_VERSION}" 
 
 # Extract the Jahia version from the full label
