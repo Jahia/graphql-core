@@ -137,7 +137,6 @@
 				</plugins>
 			</build>
 			<properties>
-				<jahia.test.url>${env.TEST_URL}</jahia.test.url>
 				<JacocoOutput>it-jacoco.exec</JacocoOutput>
 			</properties>
 		</profile>
