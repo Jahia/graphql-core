@@ -16,11 +16,17 @@ if [ ! -d ./.circleci ]; then
 fi
 cp -R ../.circleci/.circleci.settings.xml ./.circleci/.circleci.settings.xml
 
-# Copy subprojects
+# Copy the artifacts previously build locally by the CI tool
+if [ ! -d ./artifacts ]; then
+    mkdir -p ./artifacts
+fi
+
 if [ ! -d ./graphql-dxm-provider ]; then
 	mkdir ./graphql-dxm-provider
 fi
 cp -R ../graphql-dxm-provider/* ./graphql-dxm-provider/
+cp -R ./graphql-dxm-provider/target/* ./artifacts/
+cp ./artifacts/graphql-dxm-provider*SNAPSHOT.jar ./artifacts/graphql-dxm-provider-SNAPSHOT.jar
 
 if [ ! -d ./graphql-extension-example ]; then
 	mkdir ./graphql-extension-example
@@ -31,16 +37,8 @@ if [ ! -d ./graphql-test ]; then
 	mkdir ./graphql-test
 fi
 cp -R ../graphql-test/* ./graphql-test/
+cp -R ./graphql-test/target/* ./artifacts/
+cp ./artifacts/graphql-test*SNAPSHOT.jar ./artifacts/graphql-test-SNAPSHOT.jar
 
-# Copy the artifacts previously build locally by the CI tool
-if [ ! -d ./artifacts ]; then
-  mkdir -p ./artifacts
-fi
-
-if [[ -e ../target ]]; then
-    cp -R graphql-dxm-provider/target/* ./artifacts/
-    cp -R graphql-test/target/* ./artifacts/
-    cp ./artifacts/*SNAPSHOT.jar ./artifacts/
-fi
 
 docker build -t jahia/graphql-core:latest .

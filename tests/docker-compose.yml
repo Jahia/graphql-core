@@ -4,7 +4,7 @@ services:
     image: "${JAHIA_IMAGE}"
     container_name: jahia
     ports:
-      - "${JAHIA_PORT}:8080"
+      - "8080:8080"
     extra_hosts:
       - jahia:127.0.0.1
     networks:
@@ -17,11 +17,8 @@ services:
       - jahia
     environment:
       - MANIFEST=${MANIFEST}
-      - JAHIA_CONTEXT=${JAHIA_CONTEXT}
       - JAHIA_USERNAME=${JAHIA_USERNAME}
       - JAHIA_PASSWORD=${JAHIA_PASSWORD}
-      - JAHIA_HOST=${JAHIA_HOST}
-      - JAHIA_PORT=${JAHIA_PORT}
       - JAHIA_URL=${JAHIA_URL}
       - NEXUS_USERNAME=${NEXUS_USERNAME}
       - NEXUS_PASSWORD=${NEXUS_PASSWORD}
