@@ -442,14 +442,7 @@ workflows:
   # Current project configuration in circleci only builds on PR + main, so effectively this is only being executed
   on-code-change:
     jobs:
-      - initialize:
-          filters:
-            branches:
-              only:
-                - master
-                - /feature-.*/
-                - /[0-9]_[0-9]_x/
-                - /[0-9]_x/
+      - initialize
       - lint:
           requires:
             - initialize
