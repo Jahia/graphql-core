@@ -67,26 +67,6 @@ jobs:
           paths:
             - << pipeline.parameters.TESTS_PATH >>node_modules
       - *persist-workspace
-
-  # Lint the project or any other static code analysis
-  # This action should run in parrallel, failed linting should trigger an error but should not stop execution of the tests
-  # Ideally this should lint both the module codebase and the test codebase, we want to fail on warning (it is up the the 
-  # team to either fix the warning, ignore the warning, or modify the ruleset so that this warnning doesn't happen again)
-  lint:
-    <<: *workdir
-    docker:
-      - image: cimg/node:14.15
-    steps:
-      - *attach-workspace
-      - run:
-          name: Yarn lint tests
-          command: |
-            cd << pipeline.parameters.TESTS_PATH >>
-            yarn run lint --max-warnings 1
-      - run:
-          name: Yarn lint module
-          command: |
-            yarn run lint --max-warnings 1
             
   # Run security checks
   # Security checks on the project are used to validate that we don't use any problematic javascript libraries
@@ -205,15 +185,31 @@ jobs:
             - v1-dependencies-
       - run:
           name: Prepare artifacts
-            # This command copy the various build artifacts into the /tests/ folder to be later
-            # used by jahia-cli to provision Jahia for testing
+            # This command copy the source subfolders and the various build artifacts into the /tests/ folder
+            # The POM files will be used by the Maven test call
+            # The artifacts will be used by jahia-cli to provision Jahia for testing
           command: |
             if [ ! -d << pipeline.parameters.TESTS_PATH >>artifacts ]; then
               mkdir -p << pipeline.parameters.TESTS_PATH >>artifacts
               mkdir << pipeline.parameters.TESTS_PATH >>artifacts/reports
             fi          
+            cp pom.xml << pipeline.parameters.TESTS_PATH >>pom.xml
+            if [ ! -d << pipeline.parameters.TESTS_PATH >>graphql-dxm-provider ]; then
+                mkdir << pipeline.parameters.TESTS_PATH >>graphql-dxm-provider
+            fi
+            if [ ! -d << pipeline.parameters.TESTS_PATH >>graphql-extension-example ]; then
+                mkdir << pipeline.parameters.TESTS_PATH >>graphql-extension-example
+            fi
+            if [ ! -d << pipeline.parameters.TESTS_PATH >>graphql-test ]; then
+                mkdir << pipeline.parameters.TESTS_PATH >>graphql-test
+            fi
+            cp -R /home/circleci/source/graphql-dxm-provider/* << pipeline.parameters.TESTS_PATH >>graphql-dxm-provider/
+            cp -R /home/circleci/source/graphql-extension-example/* << pipeline.parameters.TESTS_PATH >>graphql-extension-example/
+            cp -R /home/circleci/source/graphql-test/* << pipeline.parameters.TESTS_PATH >>graphql-test/
             if [ << parameters.SKIP_ARTIFACTS >> == false ]; then
-              sudo cp -r /home/circleci/source/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
+              sudo cp -r /home/circleci/source/graphql-dxm-provider/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
+              sudo cp -r /home/circleci/source/graphql-extension-example/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
+              sudo cp -r /home/circleci/source/graphql-test/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
             fi         
       - run:
           name: Docker login
@@ -443,9 +439,6 @@ workflows:
   on-code-change:
     jobs:
       - initialize
-      - lint:
-          requires:
-            - initialize
       - security:
           requires:
             - initialize
