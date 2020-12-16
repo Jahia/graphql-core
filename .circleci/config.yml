@@ -207,9 +207,12 @@ jobs:
             cp -R /home/circleci/source/graphql-extension-example/* << pipeline.parameters.TESTS_PATH >>graphql-extension-example/
             cp -R /home/circleci/source/graphql-test/* << pipeline.parameters.TESTS_PATH >>graphql-test/
             if [ << parameters.SKIP_ARTIFACTS >> == false ]; then
-              sudo cp -r /home/circleci/source/graphql-dxm-provider/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
-              sudo cp -r /home/circleci/source/graphql-extension-example/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
-              sudo cp -r /home/circleci/source/graphql-test/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
+              sudo cp /home/circleci/source/graphql-dxm-provider/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
+              sudo cp << pipeline.parameters.TESTS_PATH >>artifacts/graphql-dxm-provider*SNAPSHOT.jar ./artifacts/graphql-dxm-provider-SNAPSHOT.jar
+              sudo cp /home/circleci/source/graphql-extension-example/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
+              sudo cp << pipeline.parameters.TESTS_PATH >>artifacts/graphql-extension-example*SNAPSHOT.jar ./artifacts/graphql-extension-example-SNAPSHOT.jar
+              sudo cp /home/circleci/source/graphql-test/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
+              sudo cp << pipeline.parameters.TESTS_PATH >>artifacts/graphql-test*SNAPSHOT.jar ./artifacts/graphql-test-SNAPSHOT.jar
             fi         
       - run:
           name: Docker login
