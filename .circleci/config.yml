@@ -67,6 +67,8 @@ jobs:
           paths:
             - << pipeline.parameters.TESTS_PATH >>node_modules
       - *persist-workspace
+    environment:
+      MAVEN_OPTS: -Xmx2G
             
   # Run security checks
   # Security checks on the project are used to validate that we don't use any problematic javascript libraries
