@@ -19,7 +19,7 @@ parameters:
     default: 'jahia/graphql-core'
   MODULE_ID:
     type: string
-    default: 'graphql-core'
+    default: 'graphql-dxm-provider'
   TESTRAIL_PROJECTNAME:
     type: string
     default: 'GraphQL Core module'    
@@ -50,45 +50,10 @@ jobs:
   initialize:
     <<: *workdir
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/openjdk:8.0.275
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - v1-npm-{{ checksum "<< pipeline.parameters.TESTS_PATH >>yarn.lock" }}
-      - run:
-          name: Install dependencies
-          command: |
-            yarn
-            cd << pipeline.parameters.TESTS_PATH >>
-            yarn
-      - save_cache:
-          key: v1-npm-{{ checksum "<< pipeline.parameters.TESTS_PATH >>yarn.lock" }}
-          paths:
-            - << pipeline.parameters.TESTS_PATH >>node_modules
       - *persist-workspace
-            
-  # Run security checks
-  # Security checks on the project are used to validate that we don't use any problematic javascript libraries
-  # It is using audit-ci by IBM (https://github.com/IBM/audit-ci)
-  security:
-    <<: *workdir
-    docker:
-      - image: cimg/node:14.15
-    steps:
-      - *attach-workspace
-      - run:
-          name: Install dependencies
-          command: sudo npm install -g audit-ci
-      - run:
-          name: Run Audit-ci on tests
-          command: |
-            cd << pipeline.parameters.TESTS_PATH >>
-            audit-ci --<< pipeline.parameters.AUDITCI_LEVEL >>
-      - run:
-          name: Run Audit-ci on module
-          command: |
-            audit-ci --<< pipeline.parameters.AUDITCI_LEVEL >>
 
   # Build the module and save it locally
   # We're saving the artifacts that are then used later on to execute the tests 
@@ -96,7 +61,7 @@ jobs:
   build:
     <<: *workdir
     docker: 
-      - image: circleci/openjdk:8-jdk-stretch
+      - image: cimg/openjdk:8.0.275
     resource_class: large
     steps:
       - *attach-workspace
@@ -130,7 +95,7 @@ jobs:
   publish:
     <<: *workdir
     docker: 
-      - image: circleci/openjdk:8-jdk-stretch
+      - image: cimg/openjdk:8.0.275
     steps:
       - *attach-workspace
       - restore_cache:
@@ -373,7 +338,7 @@ jobs:
   docker-publish:
     <<: *workdir
     docker:
-      - image: circleci/openjdk:8-jdk-stretch-browsers
+      - image: cimg/openjdk:8.0.275-browsers
     steps:
       - *attach-workspace
       - setup_remote_docker:
@@ -398,7 +363,7 @@ jobs:
   sonar:
     <<: *workdir
     docker: # run the steps with Docker
-      - image: circleci/openjdk:11-jdk-stretch
+      - image: cimg/openjdk:11.0.9
     resource_class: medium
     steps:
       - *attach-workspace
@@ -444,9 +409,6 @@ workflows:
   on-code-change:
     jobs:
       - initialize
-      - security:
-          requires:
-            - initialize
       - build:
           context: QA_ENVIRONMENT
           requires:
