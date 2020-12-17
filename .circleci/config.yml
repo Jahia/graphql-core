@@ -232,7 +232,6 @@ jobs:
           # Checking the presence of the .env file is there because it's needed by the tests, but to not break ci/cd if variables
           #   are added to the compose file but not to the environment variables in circleci config.yml
           command: |
-            cp -r !(<< pipeline.parameters.TESTS_PATH >>) /<< pipeline.parameters.TESTS_PATH >>
             set -e
             cd << pipeline.parameters.TESTS_PATH >>
             if [[ ! -e .env ]]; then
