@@ -61,8 +61,6 @@ jahia-cli manifest:run --manifest=/tmp/run-artifacts/${MANIFEST} --jahiaAdminUrl
 
 echo " == Environment warmup complete =="
 
-mkdir /tmp/results/reports
-
 echo "== Run tests =="
 # The additional settings is useful when you have to get dependencies from internal repositories
 mvn -Pmodule-integration-tests -Djahia.test.url=${TEST_URL} jahia:test surefire-report:report-only
