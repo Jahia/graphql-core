@@ -281,7 +281,7 @@ jobs:
           # This looks at the report and fail the job if one of the test has failed
           command: |
             cd << pipeline.parameters.TESTS_PATH >>
-            if [[ -e ./artifacts/results/test_failure ]]; then
+            if [[ ! -e ./artifacts/results/test_success ]]; then
               echo "More than one failure found, sending exit signal"
               exit 1
             fi
