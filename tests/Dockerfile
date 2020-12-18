@@ -36,7 +36,7 @@ RUN sudo mkdir -p /usr/share/maven /usr/share/maven/ref \
 # 6- Define environmental variables required by Maven, like Maven_Home directory and where the maven repo is located
 ENV MAVEN_HOME /usr/share/maven
 ENV MAVEN_CONFIG "$USER_HOME_DIR/.m2"
-ENV MAVEN_OPTS "-Xmx2G"
+
 
 COPY . /tmp
 WORKDIR /tmp
@@ -44,7 +44,7 @@ WORKDIR /tmp
 # Jahia-cli is used to warmup the environment at startup
 RUN PUPPETEER_SKIP_DOWNLOAD=true sudo npm install -g jahia-cli@0.0.47 --unsafe-perm
 
-RUN sudo chmod +x /tmp/env.run.sh
+RUN sudo chmod 755 /tmp/env.run.sh
 
 RUN sudo adduser --disabled-password jahians
 RUN sudo chown -R jahians:jahians /tmp
