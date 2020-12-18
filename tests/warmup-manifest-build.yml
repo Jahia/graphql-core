@@ -1,8 +1,5 @@
 version: 1.0
 jobs:
-  - type: webproject
-    source: prepackaged
-    sitekey: digitall  
   - type: asset
     fetch: http
     username: NEXUS_USERNAME
@@ -11,7 +8,7 @@ jobs:
     filepath: /tmp/jahia-test-module-JAHIA_VERSION.jar
   - type: module
     id: jahia-test-module
-    filepath: /tmp/jahia-test-module-LATEST.jar
+    filepath: /tmp/jahia-test-module-JAHIA_VERSION.jar
   - type: module
     id: graphql-dxm-provider
     filepath: /tmp/artifacts/graphql-dxm-provider-SNAPSHOT.jar
