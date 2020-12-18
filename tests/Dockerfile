@@ -52,6 +52,7 @@ USER jahians
 
 RUN mkdir /tmp/run-artifacts
 RUN mkdir /tmp/results
+RUN mkdir /tmp/results/reports
 
 RUN mvn dependency:go-offline
 
