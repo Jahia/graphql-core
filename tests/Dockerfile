@@ -47,12 +47,8 @@ RUN sudo chmod 775 /tmp/env.run.sh
 
 RUN sudo adduser --disabled-password jahians
 RUN sudo chown -R jahians:jahians /tmp
-RUN sudo chmod -R 777 /tmp
+RUN sudo chmod -R 775 /tmp
 USER jahians
-
-RUN mkdir /tmp/results
-RUN mkdir /tmp/results/reports
-RUN mkdir /tmp/run-artifacts
 
 RUN mvn dependency:go-offline
 

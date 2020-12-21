@@ -45,6 +45,7 @@ echo " == Using JAHIA_VERSION: ${JAHIA_VERSION}"
 
 # Execute jobs listed in the manifest
 # If the file doesn't exist, we assume it is a URL and we download it locally
+mkdir /tmp/run-artifacts
 if [[ -e ${MANIFEST} ]]; then
   cp ${MANIFEST} /tmp/run-artifacts
 else
@@ -61,17 +62,18 @@ jahia-cli manifest:run --manifest=/tmp/run-artifacts/${MANIFEST} --jahiaAdminUrl
 
 echo " == Environment warmup complete =="
 
+mkdir /tmp/results
+mkdir /tmp/results/reports
+
 echo "== Run tests =="
 # The additional settings is useful when you have to get dependencies from internal repositories
 mvn -Pmodule-integration-tests -Djahia.test.url=${TEST_URL} jahia:test surefire-report:report-only
 if [[ $? -eq 0 ]]; then
-  ls -al /tmp/
   echo "success" > /tmp/results/test_success
   cp /tmp/target/surefire-reports/* /tmp/results/reports/
   cp /tmp/target/site/surefire-report.html /tmp/results/reports/
   exit 0
 else
-  ls -al /tmp/
   echo "failure" > /tmp/results/test_failure
   cp /tmp/target/surefire-reports/* /tmp/results/reports/
   cp /tmp/target/site/surefire-report.html /tmp/results/reports/
