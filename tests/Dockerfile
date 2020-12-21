@@ -57,7 +57,7 @@ RUN ls -al /tmp/results
 
 RUN sudo adduser --disabled-password jahians
 RUN sudo chown -R jahians:jahians /tmp
-RUN sudo chmod -R 755 /tmp
+RUN sudo chmod -R 775 /tmp
 USER jahians
 
 RUN mkdir /tmp/run-artifacts
