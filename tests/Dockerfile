@@ -37,33 +37,22 @@ RUN sudo mkdir -p /usr/share/maven /usr/share/maven/ref \
 ENV MAVEN_HOME /usr/share/maven
 ENV MAVEN_CONFIG "$USER_HOME_DIR/.m2"
 
-RUN ls -al
-
 COPY . /tmp
 WORKDIR /tmp
-
-RUN ls -al
 
 # Jahia-cli is used to warmup the environment at startup
 RUN PUPPETEER_SKIP_DOWNLOAD=true sudo npm install -g jahia-cli@0.0.47 --unsafe-perm
 
-RUN sudo chmod 755 /tmp/env.run.sh
+RUN sudo chmod 775 /tmp/env.run.sh
 
 RUN sudo mkdir /tmp/results
 RUN sudo mkdir /tmp/results/reports
-
-RUN ls -al
-RUN ls -al /tmp/results
+RUN sudo mkdir /tmp/run-artifacts
 
 RUN sudo adduser --disabled-password jahians
 RUN sudo chown -R jahians:jahians /tmp
-RUN sudo chmod -R 775 /tmp
+RUN sudo chmod -R 777 /tmp
 USER jahians
-
-RUN mkdir /tmp/run-artifacts
-
-RUN ls -al
-RUN ls -al /tmp/results
 
 RUN mvn dependency:go-offline
 

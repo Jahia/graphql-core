@@ -56,26 +56,22 @@ sed -i -e "s/NEXUS_USERNAME/${NEXUS_USERNAME}/g" /tmp/run-artifacts/${MANIFEST}
 sed -i -e "s/NEXUS_PASSWORD/${NEXUS_PASSWORD}/g" /tmp/run-artifacts/${MANIFEST}
 sed -i -e "s/JAHIA_VERSION/${JAHIA_VERSION}/g" /tmp/run-artifacts/${MANIFEST}
 
-ls -al /tmp/results
-
 echo " == Warming up the environement =="
 jahia-cli manifest:run --manifest=/tmp/run-artifacts/${MANIFEST} --jahiaAdminUrl=${JAHIA_URL}
 
 echo " == Environment warmup complete =="
 
-ls -al /tmp/results
-
 echo "== Run tests =="
 # The additional settings is useful when you have to get dependencies from internal repositories
 mvn -Pmodule-integration-tests -Djahia.test.url=${TEST_URL} jahia:test surefire-report:report-only
 if [[ $? -eq 0 ]]; then
-  ls -al /tmp/results
+  ls -al /tmp/
   echo "success" > /tmp/results/test_success
   cp /tmp/target/surefire-reports/* /tmp/results/reports/
   cp /tmp/target/site/surefire-report.html /tmp/results/reports/
   exit 0
 else
-  ls -al /tmp/results
+  ls -al /tmp/
   echo "failure" > /tmp/results/test_failure
   cp /tmp/target/surefire-reports/* /tmp/results/reports/
   cp /tmp/target/site/surefire-report.html /tmp/results/reports/
