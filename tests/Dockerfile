@@ -45,14 +45,14 @@ RUN PUPPETEER_SKIP_DOWNLOAD=true sudo npm install -g jahia-cli@0.0.47 --unsafe-p
 
 RUN sudo chmod 775 /tmp/env.run.sh
 
-RUN sudo mkdir /tmp/results
-RUN sudo mkdir /tmp/results/reports
-RUN sudo mkdir /tmp/run-artifacts
-
 RUN sudo adduser --disabled-password jahians
 RUN sudo chown -R jahians:jahians /tmp
 RUN sudo chmod -R 777 /tmp
 USER jahians
+
+RUN mkdir /tmp/results
+RUN mkdir /tmp/results/reports
+RUN mkdir /tmp/run-artifacts
 
 RUN mvn dependency:go-offline
 
