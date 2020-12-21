@@ -56,10 +56,14 @@ sed -i -e "s/NEXUS_USERNAME/${NEXUS_USERNAME}/g" /tmp/run-artifacts/${MANIFEST}
 sed -i -e "s/NEXUS_PASSWORD/${NEXUS_PASSWORD}/g" /tmp/run-artifacts/${MANIFEST}
 sed -i -e "s/JAHIA_VERSION/${JAHIA_VERSION}/g" /tmp/run-artifacts/${MANIFEST}
 
+ls -al /tmp/results
+
 echo " == Warming up the environement =="
 jahia-cli manifest:run --manifest=/tmp/run-artifacts/${MANIFEST} --jahiaAdminUrl=${JAHIA_URL}
 
 echo " == Environment warmup complete =="
+
+ls -al /tmp/results
 
 echo "== Run tests =="
 # The additional settings is useful when you have to get dependencies from internal repositories
