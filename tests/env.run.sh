@@ -67,7 +67,7 @@ mkdir /tmp/results/reports
 
 echo "== Run tests =="
 # The additional settings is useful when you have to get dependencies from internal repositories
-mvn -Pmodule-integration-tests -Djahia.test.url=${TEST_URL} jahia:test surefire-report:report-only
+mvn -fae -Pmodule-integration-tests -Djahia.test.url=${TEST_URL} jahia:test surefire-report:report-only
 if [[ $? -eq 0 ]]; then
   echo "success" > /tmp/results/test_success
   cp /tmp/target/surefire-reports/* /tmp/results/reports/
