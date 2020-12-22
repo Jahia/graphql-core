@@ -23,10 +23,6 @@ services:
       - NEXUS_USERNAME=${NEXUS_USERNAME}
       - NEXUS_PASSWORD=${NEXUS_PASSWORD}
       - NEXUS_INTERNAL_URL=${NEXUS_INTERNAL_URL}
-    volumes: 
-      - type: bind
-        source: ./results
-        target: /tmp/results
     networks:
       - stack
 networks:
