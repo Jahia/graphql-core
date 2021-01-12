@@ -401,7 +401,7 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
         JSONArray nodeTypes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeTypes").getJSONArray("nodes");
 
         NodeTypeRegistry nodeTypeRegistry = NodeTypeRegistry.getInstance();
-        Assert.assertEquals(11, nodeTypes.length());
+        Assert.assertEquals(10, nodeTypes.length());
         for (int i = 0; i < nodeTypes.length(); i++) {
             JSONObject nodeType = nodeTypes.getJSONObject(i);
             ExtendedNodeType nt = nodeTypeRegistry.getNodeType(nodeType.getString("name"));
@@ -410,6 +410,6 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
             Assert.assertFalse(nt.isNodeType("jmix:hiddenType"));
         }
 
-        Assert.assertEquals(11, nodeTypes.length());
+        Assert.assertEquals(10, nodeTypes.length());
     }
 }
