@@ -194,34 +194,34 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
 
     @Test
     public void shouldGetPropertyDefinitionWithConstraints() throws Exception {
-        JSONObject result = executeQuery("{\n" + 
-                "  jcr {\n" + 
-                "    nodeByPath(path: \"/j:acl/GRANT_g_users\") {\n" + 
-                "      uuid\n" + 
-                "      path\n" + 
-                "      name\n" + 
-                "      aceType: property(name: \"j:aceType\") {\n" + 
-                "        definition {\n" + 
-                "          declaringNodeType {\n" + 
-                "            name\n" + 
-                "          }\n" + 
-                "          name\n" + 
-                "          constraints\n" + 
-                "        }\n" + 
-                "        name\n" + 
-                "      }\n" + 
-                "      principal: property(name: \"j:principal\") {\n" + 
-                "        definition {\n" + 
-                "          declaringNodeType {\n" + 
-                "            name\n" + 
-                "          }\n" + 
-                "          name\n" + 
-                "          constraints\n" + 
-                "        }\n" + 
-                "        name\n" + 
-                "      }\n" + 
-                "    }\n" + 
-                "  }\n" + 
+        JSONObject result = executeQuery("{\n" +
+                "  jcr {\n" +
+                "    nodeByPath(path: \"/j:acl/GRANT_g_users\") {\n" +
+                "      uuid\n" +
+                "      path\n" +
+                "      name\n" +
+                "      aceType: property(name: \"j:aceType\") {\n" +
+                "        definition {\n" +
+                "          declaringNodeType {\n" +
+                "            name\n" +
+                "          }\n" +
+                "          name\n" +
+                "          constraints\n" +
+                "        }\n" +
+                "        name\n" +
+                "      }\n" +
+                "      principal: property(name: \"j:principal\") {\n" +
+                "        definition {\n" +
+                "          declaringNodeType {\n" +
+                "            name\n" +
+                "          }\n" +
+                "          name\n" +
+                "          constraints\n" +
+                "        }\n" +
+                "        name\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
                 "}\n");
 
         // property with constraints
@@ -401,7 +401,7 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
         JSONArray nodeTypes = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeTypes").getJSONArray("nodes");
 
         NodeTypeRegistry nodeTypeRegistry = NodeTypeRegistry.getInstance();
-        Assert.assertEquals(10, nodeTypes.length());
+        Assert.assertTrue(nodeTypes.length() > 0);
         for (int i = 0; i < nodeTypes.length(); i++) {
             JSONObject nodeType = nodeTypes.getJSONObject(i);
             ExtendedNodeType nt = nodeTypeRegistry.getNodeType(nodeType.getString("name"));
@@ -409,7 +409,5 @@ public class GraphQLNodeTypesTest extends GraphQLTestSupport {
             Assert.assertFalse(nt.isNodeType("jmix:studioOnly"));
             Assert.assertFalse(nt.isNodeType("jmix:hiddenType"));
         }
-
-        Assert.assertEquals(10, nodeTypes.length());
     }
 }
