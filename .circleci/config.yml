@@ -254,7 +254,7 @@ jobs:
             set -e
             cd << pipeline.parameters.TESTS_PATH >>
             docker logs jahia > ./artifacts/results/jahia.log
-            docker logs e2e-tests > ./artifacts/results/cypress.log
+            docker logs e2e-tests > ./artifacts/results/tests.log
       # This fetches data about the running Jahia (jahia versions, module version, ...)
       # This is useful as an artifact but also used by the slack and zencrepes reporters to
       # Populate the data they're sending
