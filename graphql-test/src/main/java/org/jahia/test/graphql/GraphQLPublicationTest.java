@@ -54,12 +54,15 @@ import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.jahia.test.TestHelper;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.*;
 import org.junit.rules.TestName;
 import org.quartz.JobDetail;
 import org.quartz.SchedulerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import javax.jcr.PathNotFoundException;
@@ -71,7 +74,7 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
 
     @Rule public TestName name = new TestName();
 
-
+    private final Logger logger = LoggerFactory.getLogger(GraphQLPublicationTest.class);
     private static final long TIMEOUT_WAITING_FOR_PUBLICATION = 5000;
     private static final String TESTSITE_NAME = "graphqlPublicationTestSite";
 
@@ -183,11 +186,27 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
         JSONObject mutationResult = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode");
         Assert.assertTrue(mutationResult.getBoolean("publish"));
 
+        JSONObject expectedResult = executeQuery(""
+                + "query {"
+                + "  jcr(workspace: LIVE) {"
+                + "     nodeByPath(path: \"/sites/"+ siteName + "/testList\") {"
+                + "         property(name: \"j:published\") {"
+                + "            value"
+                + "         }"
+                +"      }"
+                +"   }"
+                +"}"
+        );
+        JSONObject queryResult = expectedResult.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject(
+                "property");
+        Assert.assertTrue("The node: '/sites/" + siteName + "/testList' should have been published", queryResult.getBoolean("value"));
+
         try {
             liveSession.getNode("/sites/" + siteName + "/testList");
             Assert.assertEquals(publishSubNodes, liveSession.nodeExists("/sites/" + siteName + "/testList/publicationTestList"));
             Assert.assertEquals(publishSubNodes, liveSession.nodeExists("/sites/" + siteName + "/testList/publicationTestList"));
         } catch (PathNotFoundException e) {
+            debugSession(liveSession);
             Assert.fail("/sites/" + siteName + "/testList is not found");
         }
     }
@@ -295,5 +314,35 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
 
         defaultSession.save();
         return site;
+    }
+
+    private void debugSession(JCRSessionWrapper session) throws RepositoryException, SchedulerException, JSONException {
+        Assert.assertNotNull("Sitename should not be null", siteName);
+        Assert.assertNotNull("testListIdentifier should not be null", testListIdentifier);
+        if (session.nodeExists("/sites/" + siteName)) {
+            final JCRNodeWrapper node = session.getNode("/sites/" + siteName);
+            Assert.assertTrue("Site" + siteName + " should have node testList", node.hasNode("testList"));
+            logger.info("Site: {} has node 'testList': {}", siteName, node.hasNode("testList"));
+            if (!node.hasNode("testList")) {
+                JSONObject expectedResult = executeQuery(""
+                        + "query {"
+                        + "  jcr(workspace: LIVE) {"
+                        + "     nodeByPath(path: \"/sites/"+ siteName + "\") {"
+                        + "         children(names: [\"testList\"]) {"
+                        + "            nodes {"
+                        + "              name"
+                        + "            }"
+                        + "         }"
+                        +"      }"
+                        +"   }"
+                        +"}"
+                );
+                JSONArray queryResults = expectedResult.getJSONObject("data").getJSONObject("jcr")
+                        .getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
+                Assert.assertEquals("The node: '/sites/" + siteName + "' should have a child node named testList", 1, queryResults.length());
+            }
+        } else {
+            logger.error("/sites/{} not found. It may have been deleted", siteName);
+        }
     }
 }
