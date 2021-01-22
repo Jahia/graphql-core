@@ -43,6 +43,7 @@
  */
 package org.jahia.test.graphql;
 
+import org.awaitility.core.ConditionTimeoutException;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaRuntimeException;
@@ -298,18 +299,19 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
 
     private void waitForPublicationToFinish() {
         SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
-        with().pollInterval(ONE_SECOND).await().atMost(TIMEOUT_WAITING_FOR_PUBLICATION, MILLISECONDS)
-                .until(new Callable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
-                        final String[] triggerNames = schedulerService.getScheduler()
-                                .getTriggerNames(SchedulerService.INSTANT_TRIGGER_GROUP);
-                        final List<JobDetail> allActiveJobs = schedulerService.getAllActiveJobs();
-                        final boolean publicationJobs = allActiveJobs.stream()
-                                .anyMatch(job -> job.getDescription().equals("Publication"));
-                        logger.debug("Trigger names: {}", Arrays.toString(triggerNames));
-                        allActiveJobs.forEach(j -> logger.debug("Active job '{}'", j.getDescription()));
-                        return Arrays.stream(triggerNames).anyMatch(triggerName -> triggerName.contains("Publication")) && publicationJobs;
-                    }
-                }, equalTo(false));
+        try {
+            with().pollInterval(ONE_SECOND).await().atMost(TIMEOUT_WAITING_FOR_PUBLICATION, MILLISECONDS).until(new Callable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    final String[] triggerNames = schedulerService.getScheduler().getTriggerNames(SchedulerService.INSTANT_TRIGGER_GROUP);
+                    final List<JobDetail> allActiveJobs = schedulerService.getAllActiveJobs();
+                    final boolean publicationJobs = allActiveJobs.stream().anyMatch(job -> job.getDescription().equals("Publication"));
+                    logger.debug("Trigger names: {}", Arrays.toString(triggerNames));
+                    allActiveJobs.forEach(j -> logger.debug("Active job '{}'", j.getDescription()));
+                    return Arrays.stream(triggerNames).anyMatch(triggerName -> triggerName.contains("Publication")) && publicationJobs;
+                }
+            }, equalTo(false));
+        } catch (ConditionTimeoutException e) {
+            Assert.fail("Publication job did not finish within the set timeout of " + TIMEOUT_WAITING_FOR_PUBLICATION + " ms");
+        }
     }
 }
