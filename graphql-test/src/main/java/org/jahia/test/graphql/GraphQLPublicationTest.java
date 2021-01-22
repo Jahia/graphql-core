@@ -54,7 +54,6 @@ import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.jahia.test.TestHelper;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.*;
@@ -89,7 +88,6 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
     private String testListIdentifier;
     private JahiaUser user;
     private String siteName;
-    private SchedulerService schedulerService;
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
@@ -98,7 +96,6 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
         defaultSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE, Locale.ENGLISH);
         liveSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.LIVE_WORKSPACE, Locale.ENGLISH);
         siteName = TESTSITE_NAME + name.getMethodName();
@@ -190,7 +187,6 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
             Assert.assertEquals(publishSubNodes, liveSession.nodeExists("/sites/" + siteName + "/testList/publicationTestList"));
             Assert.assertEquals(publishSubNodes, liveSession.nodeExists("/sites/" + siteName + "/testList/publicationTestList"));
         } catch (PathNotFoundException e) {
-            debugSession(liveSession);
             Assert.fail("/sites/" + siteName + "/testList is not found");
         }
     }
@@ -300,80 +296,20 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
         return site;
     }
 
-    private void debugSession(JCRSessionWrapper session) throws RepositoryException, SchedulerException, JSONException {
-        Assert.assertNotNull("Sitename should not be null", siteName);
-        Assert.assertNotNull("testListIdentifier should not be null", testListIdentifier);
-        if (session.nodeExists("/sites/" + siteName)) {
-            logger.info("Trigger names: {}",
-                    Arrays.toString(schedulerService.getScheduler().getTriggerNames(SchedulerService.INSTANT_TRIGGER_GROUP)));
-            JSONObject query = executeQuery(""
-                    + "query {"
-                    + "  jcr(workspace: LIVE) {"
-                    + "     nodeByPath(path: \"/sites/"+ siteName + "/testList\") {"
-                    + "         property(name: \"j:published\") {"
-                    + "            value"
-                    + "         }"
-                    +"      }"
-                    +"   }"
-                    +"}"
-            );
-            JSONObject property = query.getJSONObject("data").getJSONObject("jcr")
-                    .getJSONObject("nodeByPath").getJSONObject("property");
-            logger.info("Path: /sites/{}/testList\nProperty: j:published\nValue: {}", siteName, property.getBoolean("value"));
-
-            final JCRNodeWrapper node = session.getNode("/sites/" + siteName);
-            Assert.assertTrue("Site" + siteName + " should have node testList", node.hasNode("testList"));
-            logger.info("Site: {} has node 'testList': {}", siteName, node.hasNode("testList"));
-            if (!node.hasNode("testList")) {
-                query = executeQuery(""
-                        + "query {"
-                        + "  jcr(workspace: LIVE) {"
-                        + "     nodeByPath(path: \"/sites/"+ siteName + "\") {"
-                        + "         children(names: [\"testList\"]) {"
-                        + "            nodes {"
-                        + "              name"
-                        + "            }"
-                        + "         }"
-                        +"      }"
-                        +"   }"
-                        +"}"
-                );
-                JSONArray nodes = query.getJSONObject("data").getJSONObject("jcr")
-                        .getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
-                for (int index = 0; index < nodes.length(); index++ ) {
-                    logger.info("Node names for /sites/{}: {}", siteName, nodes.getString(index));
-                }
-            }
-        } else {
-            logger.error("/sites/{} not found. It may have been deleted", siteName);
-        }
-    }
-
-    private void waitForPublicationToFinish() throws SchedulerException {
-
-        // Method #1
-        long startedWaitingAt = System.currentTimeMillis();
-
-        // Wait until the node is published via a background job.
-        while(Arrays.stream(schedulerService.getScheduler().getTriggerNames(SchedulerService.INSTANT_TRIGGER_GROUP))
-                .anyMatch(t -> t.contains("Publication"))) {
-            if (System.currentTimeMillis() - startedWaitingAt > TIMEOUT_WAITING_FOR_PUBLICATION) {
-                Assert.fail("Timeout waiting for node to be published");
-            }
-        }
-
-
-        // Method #2
-        /*
+    private void waitForPublicationToFinish() {
+        SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
         with().pollInterval(ONE_SECOND).await().atMost(TIMEOUT_WAITING_FOR_PUBLICATION, MILLISECONDS)
-                .ignoreExceptions()
                 .until(new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {
                         final String[] triggerNames = schedulerService.getScheduler()
                                 .getTriggerNames(SchedulerService.INSTANT_TRIGGER_GROUP);
-                        return Arrays.stream(triggerNames).noneMatch(t -> t.contains("Publication"));
+                        final List<JobDetail> allActiveJobs = schedulerService.getAllActiveJobs();
+                        final boolean publicationJobs = allActiveJobs.stream()
+                                .anyMatch(job -> job.getDescription().equals("Publication"));
+                        logger.debug("Trigger names: {}", Arrays.toString(triggerNames));
+                        allActiveJobs.forEach(j -> logger.debug("Active job '{}'", j.getDescription()));
+                        return Arrays.stream(triggerNames).anyMatch(triggerName -> triggerName.contains("Publication")) && publicationJobs;
                     }
-                }, equalTo(true));
-         */
+                }, equalTo(false));
     }
 }
