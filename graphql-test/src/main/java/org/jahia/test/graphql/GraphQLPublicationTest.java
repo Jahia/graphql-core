@@ -69,6 +69,12 @@ import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Callable;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.awaitility.Awaitility.*;
+import static org.awaitility.Duration.ONE_SECOND;
+import static org.hamcrest.Matchers.equalTo;
 
 public class GraphQLPublicationTest extends GraphQLTestSupport {
 
@@ -83,6 +89,7 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
     private String testListIdentifier;
     private JahiaUser user;
     private String siteName;
+    private SchedulerService schedulerService;
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
@@ -91,6 +98,7 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
 
     @Before
     public void setUp() throws Exception {
+        schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
         defaultSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE, Locale.ENGLISH);
         liveSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.LIVE_WORKSPACE, Locale.ENGLISH);
         siteName = TESTSITE_NAME + name.getMethodName();
@@ -172,34 +180,10 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
                 + "}"
         );
 
-        SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
-
-        long startedWaitingAt = System.currentTimeMillis();
-
-        // Wait until the node is published via a background job.
-        while(schedulerService.getAllActiveJobs().stream().anyMatch(job -> job.getDescription().equals("Publication"))){
-            if (System.currentTimeMillis() - startedWaitingAt > TIMEOUT_WAITING_FOR_PUBLICATION) {
-                Assert.fail("Timeout waiting for node to be published");
-            }
-        }
+        waitForPublicationToFinish();
 
         JSONObject mutationResult = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode");
         Assert.assertTrue(mutationResult.getBoolean("publish"));
-
-        JSONObject expectedResult = executeQuery(""
-                + "query {"
-                + "  jcr(workspace: LIVE) {"
-                + "     nodeByPath(path: \"/sites/"+ siteName + "/testList\") {"
-                + "         property(name: \"j:published\") {"
-                + "            value"
-                + "         }"
-                +"      }"
-                +"   }"
-                +"}"
-        );
-        JSONObject queryResult = expectedResult.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject(
-                "property");
-        Assert.assertTrue("The node: '/sites/" + siteName + "/testList' should have been published", queryResult.getBoolean("value"));
 
         try {
             liveSession.getNode("/sites/" + siteName + "/testList");
@@ -320,11 +304,28 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
         Assert.assertNotNull("Sitename should not be null", siteName);
         Assert.assertNotNull("testListIdentifier should not be null", testListIdentifier);
         if (session.nodeExists("/sites/" + siteName)) {
+            logger.info("Trigger names: {}",
+                    Arrays.toString(schedulerService.getScheduler().getTriggerNames(SchedulerService.INSTANT_TRIGGER_GROUP)));
+            JSONObject query = executeQuery(""
+                    + "query {"
+                    + "  jcr(workspace: LIVE) {"
+                    + "     nodeByPath(path: \"/sites/"+ siteName + "/testList\") {"
+                    + "         property(name: \"j:published\") {"
+                    + "            value"
+                    + "         }"
+                    +"      }"
+                    +"   }"
+                    +"}"
+            );
+            JSONObject property = query.getJSONObject("data").getJSONObject("jcr")
+                    .getJSONObject("nodeByPath").getJSONObject("property");
+            logger.info("Path: /sites/{}/testList\nProperty: j:published\nValue: {}", siteName, property.getBoolean("value"));
+
             final JCRNodeWrapper node = session.getNode("/sites/" + siteName);
             Assert.assertTrue("Site" + siteName + " should have node testList", node.hasNode("testList"));
             logger.info("Site: {} has node 'testList': {}", siteName, node.hasNode("testList"));
             if (!node.hasNode("testList")) {
-                JSONObject expectedResult = executeQuery(""
+                query = executeQuery(""
                         + "query {"
                         + "  jcr(workspace: LIVE) {"
                         + "     nodeByPath(path: \"/sites/"+ siteName + "\") {"
@@ -337,12 +338,42 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
                         +"   }"
                         +"}"
                 );
-                JSONArray queryResults = expectedResult.getJSONObject("data").getJSONObject("jcr")
+                JSONArray nodes = query.getJSONObject("data").getJSONObject("jcr")
                         .getJSONObject("nodeByPath").getJSONObject("children").getJSONArray("nodes");
-                Assert.assertEquals("The node: '/sites/" + siteName + "' should have a child node named testList", 1, queryResults.length());
+                for (int index = 0; index < nodes.length(); index++ ) {
+                    logger.info("Node names for /sites/{}: {}", siteName, nodes.getString(index));
+                }
             }
         } else {
             logger.error("/sites/{} not found. It may have been deleted", siteName);
         }
+    }
+
+    private void waitForPublicationToFinish() throws SchedulerException {
+
+        // Method #1
+        long startedWaitingAt = System.currentTimeMillis();
+
+        // Wait until the node is published via a background job.
+        while(Arrays.stream(schedulerService.getScheduler().getTriggerNames(SchedulerService.INSTANT_TRIGGER_GROUP))
+                .anyMatch(t -> t.contains("Publication"))) {
+            if (System.currentTimeMillis() - startedWaitingAt > TIMEOUT_WAITING_FOR_PUBLICATION) {
+                Assert.fail("Timeout waiting for node to be published");
+            }
+        }
+
+
+        // Method #2
+        /*
+        with().pollInterval(ONE_SECOND).await().atMost(TIMEOUT_WAITING_FOR_PUBLICATION, MILLISECONDS)
+                .ignoreExceptions()
+                .until(new Callable<Boolean>() {
+                    @Override public Boolean call() throws Exception {
+                        final String[] triggerNames = schedulerService.getScheduler()
+                                .getTriggerNames(SchedulerService.INSTANT_TRIGGER_GROUP);
+                        return Arrays.stream(triggerNames).noneMatch(t -> t.contains("Publication"));
+                    }
+                }, equalTo(true));
+         */
     }
 }
