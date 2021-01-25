@@ -43,7 +43,7 @@
  */
 package org.jahia.test.graphql;
 
-import org.awaitility.core.ConditionTimeoutException;
+import org.awaitility.core.ConditionFactory;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaRuntimeException;
@@ -61,27 +61,23 @@ import org.junit.*;
 import org.junit.rules.TestName;
 import org.quartz.JobDetail;
 import org.quartz.SchedulerException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Callable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.*;
 import static org.awaitility.Duration.ONE_SECOND;
-import static org.hamcrest.Matchers.equalTo;
 
 public class GraphQLPublicationTest extends GraphQLTestSupport {
 
     @Rule public TestName name = new TestName();
 
-    private final Logger logger = LoggerFactory.getLogger(GraphQLPublicationTest.class);
     private static final long TIMEOUT_WAITING_FOR_PUBLICATION = 5000;
+    private static final String PUBLICATION_JOB_NAME = "PublicationJob";
     private static final String TESTSITE_NAME = "graphqlPublicationTestSite";
 
     private JCRSessionWrapper defaultSession;
@@ -299,19 +295,12 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
 
     private void waitForPublicationToFinish() {
         SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
-        try {
-            with().pollInterval(ONE_SECOND).await().atMost(TIMEOUT_WAITING_FOR_PUBLICATION, MILLISECONDS).until(new Callable<Boolean>() {
-                @Override public Boolean call() throws Exception {
-                    final String[] triggerNames = schedulerService.getScheduler().getTriggerNames(SchedulerService.INSTANT_TRIGGER_GROUP);
-                    final List<JobDetail> allActiveJobs = schedulerService.getAllActiveJobs();
-                    final boolean publicationJobs = allActiveJobs.stream().anyMatch(job -> job.getDescription().equals("Publication"));
-                    logger.debug("Trigger names: {}", Arrays.toString(triggerNames));
-                    allActiveJobs.forEach(j -> logger.debug("Active job '{}'", j.getDescription()));
-                    return Arrays.stream(triggerNames).anyMatch(triggerName -> triggerName.contains("Publication")) && publicationJobs;
-                }
-            }, equalTo(false));
-        } catch (ConditionTimeoutException e) {
-            Assert.fail("Publication job did not finish within the set timeout of " + TIMEOUT_WAITING_FOR_PUBLICATION + " ms");
-        }
+
+        final ConditionFactory conditionFactory = with().pollInterval(ONE_SECOND).await()
+                .atMost(TIMEOUT_WAITING_FOR_PUBLICATION, MILLISECONDS);
+        conditionFactory.until(() -> Arrays.stream(schedulerService.getScheduler().getTriggerNames(SchedulerService.INSTANT_TRIGGER_GROUP))
+                .noneMatch(triggerName -> triggerName.contains(PUBLICATION_JOB_NAME)));
+        conditionFactory.until(() -> schedulerService.getAllActiveJobs().stream()
+                .noneMatch(job -> job.getJobClass().getName().contains(PUBLICATION_JOB_NAME)));
     }
 }
