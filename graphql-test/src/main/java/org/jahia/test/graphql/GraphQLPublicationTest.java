@@ -43,6 +43,7 @@
  */
 package org.jahia.test.graphql;
 
+import org.awaitility.core.ConditionFactory;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaRuntimeException;
@@ -67,12 +68,16 @@ import javax.jcr.RepositoryException;
 import java.io.IOException;
 import java.util.*;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.awaitility.Awaitility.*;
+import static org.awaitility.Duration.ONE_SECOND;
+
 public class GraphQLPublicationTest extends GraphQLTestSupport {
 
     @Rule public TestName name = new TestName();
 
-
     private static final long TIMEOUT_WAITING_FOR_PUBLICATION = 5000;
+    private static final String PUBLICATION_JOB_NAME = "PublicationJob";
     private static final String TESTSITE_NAME = "graphqlPublicationTestSite";
 
     private JCRSessionWrapper defaultSession;
@@ -169,16 +174,7 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
                 + "}"
         );
 
-        SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
-
-        long startedWaitingAt = System.currentTimeMillis();
-
-        // Wait until the node is published via a background job.
-        while(schedulerService.getAllActiveJobs().stream().anyMatch(job -> job.getDescription().equals("Publication"))){
-            if (System.currentTimeMillis() - startedWaitingAt > TIMEOUT_WAITING_FOR_PUBLICATION) {
-                Assert.fail("Timeout waiting for node to be published");
-            }
-        }
+        waitForPublicationToFinish();
 
         JSONObject mutationResult = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode");
         Assert.assertTrue(mutationResult.getBoolean("publish"));
@@ -295,5 +291,16 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
 
         defaultSession.save();
         return site;
+    }
+
+    private void waitForPublicationToFinish() {
+        SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
+
+        final ConditionFactory conditionFactory = with().pollInterval(ONE_SECOND).await()
+                .atMost(TIMEOUT_WAITING_FOR_PUBLICATION, MILLISECONDS);
+        conditionFactory.until(() -> Arrays.stream(schedulerService.getScheduler().getTriggerNames(SchedulerService.INSTANT_TRIGGER_GROUP))
+                .noneMatch(triggerName -> triggerName.contains(PUBLICATION_JOB_NAME)));
+        conditionFactory.until(() -> schedulerService.getAllActiveJobs().stream()
+                .noneMatch(job -> job.getJobClass().getName().contains(PUBLICATION_JOB_NAME)));
     }
 }

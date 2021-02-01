@@ -49,7 +49,7 @@
     <parent>
         <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>2.2.4-SNAPSHOT</version>
+        <version>2.4.0-SNAPSHOT</version>
     </parent>
     <artifactId>graphql-dxm-provider</artifactId>
     <name>Jahia GraphQL Core Provider</name>
@@ -71,7 +71,7 @@
             org.jahia.modules.graphql.provider.dxm.osgi.annotations
         </export-package>
         <jahia-module-type>system</jahia-module-type>
-        <jahia-module-signature>MCwCFDCTUkdNj2BX3TOmp5D9cEQIuXkXAhQfYsybQrVAO6U5rMdQ5W0Utmy55g==</jahia-module-signature>
+        <jahia-module-signature>MC0CFBuYjWkzF1V2i81L/yHgZBP5zpNsAhUAkCDkXd6b3XCsPa90yzPmbB+QIqc=</jahia-module-signature>
         <mockito.version>2.21.0</mockito.version>
         <powermock.version>2.0.7</powermock.version>
     </properties>

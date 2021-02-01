@@ -49,7 +49,7 @@
     <parent>
         <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>2.2.4-SNAPSHOT</version>
+        <version>2.4.0-SNAPSHOT</version>
     </parent>
     <artifactId>graphql-test</artifactId>
     <groupId>org.jahia.test</groupId>
@@ -78,7 +78,7 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>graphql-dxm-provider</artifactId>
-            <version>2.2.4-SNAPSHOT</version>
+            <version>2.4.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -104,6 +104,11 @@
             <artifactId>king-http-client</artifactId>
             <version>3.0.6</version>
         </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>2.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -115,7 +120,7 @@
                 <configuration>
                     <instructions>
                         <Import-Package>${jahia.plugin.projectPackageImport},javax.jcr,*</Import-Package>
-                        <Jahia-Signature>MCwCFFefKNq3bRArdAMmYanrclKJiM1TAhR9E3I/4Vr6nlDuyXbbDz9Uf+EvPA==</Jahia-Signature>
+                        <Jahia-Signature>MCwCFFtmY1OQJIuMEqystydDPC6qCib9AhQoz68OiH9ayGCYo03u9PLLRgknYg==</Jahia-Signature>
                         <Require-Capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</Require-Capability>
                     </instructions>
                 </configuration>
