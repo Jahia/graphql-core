@@ -43,11 +43,17 @@
  */
 package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
+import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.servlet.InstrumentationProvider;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.*;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * JCR instrumentation provider, basic instrumentation provider that provide an instance of JCRInstrumentation
@@ -56,14 +62,27 @@ import org.osgi.service.component.annotations.Reference;
 public class JCRInstrumentationProvider implements InstrumentationProvider {
 
     private DXGraphQLConfig dxGraphQLConfig;
+    private List<JahiaInstrumentation> instrumentations = new ArrayList<>();
 
     @Reference
     public void bindDxGraphQLConfig(DXGraphQLConfig dxGraphQLConfig) {
         this.dxGraphQLConfig = dxGraphQLConfig;
     }
 
+    @Reference(service = JahiaInstrumentation.class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC, policyOption = ReferencePolicyOption.GREEDY)
+    public void setInstrumentations(JahiaInstrumentation instrumentation) {
+        this.instrumentations.add(instrumentation);
+    }
+
     @Override
     public Instrumentation getInstrumentation() {
-        return new JCRInstrumentation(dxGraphQLConfig);
+        List<Instrumentation> instns = new ArrayList<>();
+        instns.add(new JCRInstrumentation(dxGraphQLConfig));
+        instns.addAll(instrumentations.stream()
+                .sorted(Comparator.comparingInt(JahiaInstrumentation::getPriority))
+                .map(inst -> inst.getInstrumentation(dxGraphQLConfig))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList()));
+        return new ChainedInstrumentation(instns);
     }
 }
