@@ -1,7 +1,7 @@
 FROM cimg/node:14.15.1-browsers
 
 RUN sudo apt-get update 
-RUN sudo apt-get install -y default-jre-headless locales 
+RUN sudo apt-get install -y openjdk-8-jre-headless locales 
 RUN sudo sed -i -e 's/# \(en_US\.UTF-8 .*\)/\1/' /etc/locale.gen && \
     sudo locale-gen
 
