@@ -1,4 +1,4 @@
-FROM cimg/node:14.15.1-browsers
+FROM cimg/openjdk:8.0.275-browsers
 
 RUN sudo apt-get update 
 RUN sudo apt-get install -y openjdk-8-jre-headless locales 
