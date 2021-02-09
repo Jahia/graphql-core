@@ -69,9 +69,13 @@ public class JCRInstrumentationProvider implements InstrumentationProvider {
         this.dxGraphQLConfig = dxGraphQLConfig;
     }
 
-    @Reference(service = JahiaInstrumentation.class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC, policyOption = ReferencePolicyOption.GREEDY)
-    public void setInstrumentations(JahiaInstrumentation instrumentation) {
+    @Reference(service = JahiaInstrumentation.class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC, policyOption = ReferencePolicyOption.GREEDY, unbind = "unbindInstrumentation")
+    public void bindInstrumentations(JahiaInstrumentation instrumentation) {
         this.instrumentations.add(instrumentation);
+    }
+
+    public void unbindInstrumentation(JahiaInstrumentation instrumentation) {
+        instrumentations.remove(instrumentation);
     }
 
     @Override
