@@ -16,12 +16,12 @@ ARG USER_HOME_DIR="/root"
 ARG SHA=fae9c12b570c3ba18116a4e26ea524b29f7279c17cbaadc3326ca72927368924d9131d11b9e851b8dc9162228b6fdea955446be41207a5cfc61283dd8a561d2f
 
 # 4- Define the URL where maven can be downloaded from
-ARG BASE_URL=https://apache.osuosl.org/maven/maven-3/${MAVEN_VERSION}/binaries
+ARG BASE_URL=http://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/
 
 # 5- Create the directories, download maven, validate the download, install it, remove downloaded file and set links
 RUN sudo mkdir -p /usr/share/maven /usr/share/maven/ref \
   && echo "Downloading maven" \
-  && sudo curl -fsSL -o /tmp/apache-maven.tar.gz http://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz \
+  && sudo curl -fsSL -o /tmp/apache-maven.tar.gz ${BASE_URL}/apache-maven-${MAVEN_VERSION}-bin.tar.gz \
   \
   && echo "Checking download hash" \
   && echo "${SHA}  /tmp/apache-maven.tar.gz" | sha512sum -c - \
