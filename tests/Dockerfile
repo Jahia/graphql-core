@@ -7,13 +7,13 @@ RUN sudo sed -i -e 's/# \(en_US\.UTF-8 .*\)/\1/' /etc/locale.gen && \
 
 # Downloading and installing Maven
 # 1- Define a constant with the version of maven you want to install
-ARG MAVEN_VERSION=3.6.0         
+ARG MAVEN_VERSION=3.6.3
 
 # 2- Define a constant with the working directory
 ARG USER_HOME_DIR="/root"
 
 # 3- Define the SHA key to validate the maven download
-ARG SHA=fae9c12b570c3ba18116a4e26ea524b29f7279c17cbaadc3326ca72927368924d9131d11b9e851b8dc9162228b6fdea955446be41207a5cfc61283dd8a561d2f
+ARG SHA=c35a1803a6e70a126e80b2b3ae33eed961f83ed74d18fcd16909b2d44d7dada3203f1ffe726c17ef8dcca2dcaa9fca676987befeadc9b9f759967a8cb77181c0
 
 # 4- Define the URL where maven can be downloaded from
 ARG BASE_URL=http://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries
@@ -24,7 +24,7 @@ RUN sudo mkdir -p /usr/share/maven /usr/share/maven/ref \
   && sudo curl -fsSL -o /tmp/apache-maven.tar.gz ${BASE_URL}/apache-maven-${MAVEN_VERSION}-bin.tar.gz \
   \
   && echo "Checking download hash" \
-  && echo "${SHA} /tmp/apache-maven.tar.gz" | sha512sum -c - \
+  && echo "${SHA}  /tmp/apache-maven.tar.gz" | sha512sum -c - \
   \
   && echo "Unziping maven" \
   && sudo tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1 \
