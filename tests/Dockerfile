@@ -24,7 +24,7 @@ RUN sudo mkdir -p /usr/share/maven /usr/share/maven/ref \
   && sudo curl -fsSL -o /tmp/apache-maven.tar.gz ${BASE_URL}/apache-maven-${MAVEN_VERSION}-bin.tar.gz \
   \
   && echo "Checking download hash" \
-  && echo "${SHA}  /tmp/apache-maven.tar.gz" | sha512sum -c - \
+  && echo "${SHA} /tmp/apache-maven.tar.gz" | sha512sum -c - \
   \
   && echo "Unziping maven" \
   && sudo tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1 \
