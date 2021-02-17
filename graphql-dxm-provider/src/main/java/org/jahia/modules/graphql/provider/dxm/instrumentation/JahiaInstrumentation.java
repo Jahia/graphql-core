@@ -43,50 +43,26 @@
  */
 package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
-import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
-import graphql.servlet.InstrumentationProvider;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
-import org.osgi.service.component.annotations.*;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
- * JCR instrumentation provider, basic instrumentation provider that provide an instance of JCRInstrumentation
+ * Jahia instrumentation interface. Can be used to add instrumentation to graphql by creating an OSGI service implementing
+ * this interface.
  */
-@Component(immediate = true)
-public class JCRInstrumentationProvider implements InstrumentationProvider {
+public interface JahiaInstrumentation {
+    /**
+     * Specify priority of instrumentation
+     *
+     * @return Integer
+     */
+    int getPriority();
 
-    private DXGraphQLConfig dxGraphQLConfig;
-    private List<JahiaInstrumentation> instrumentations = new ArrayList<>();
-
-    @Reference
-    public void bindDxGraphQLConfig(DXGraphQLConfig dxGraphQLConfig) {
-        this.dxGraphQLConfig = dxGraphQLConfig;
-    }
-
-    @Reference(service = JahiaInstrumentation.class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC, policyOption = ReferencePolicyOption.GREEDY, unbind = "unbindInstrumentation")
-    public void bindInstrumentations(JahiaInstrumentation instrumentation) {
-        this.instrumentations.add(instrumentation);
-    }
-
-    public void unbindInstrumentation(JahiaInstrumentation instrumentation) {
-        instrumentations.remove(instrumentation);
-    }
-
-    @Override
-    public Instrumentation getInstrumentation() {
-        List<Instrumentation> instns = new ArrayList<>();
-        instns.add(new JCRInstrumentation(dxGraphQLConfig));
-        instns.addAll(instrumentations.stream()
-                .sorted(Comparator.comparingInt(JahiaInstrumentation::getPriority))
-                .map(inst -> inst.getInstrumentation(dxGraphQLConfig))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList()));
-        return new ChainedInstrumentation(instns);
-    }
+    /**
+     * Provide implementation of graphql's Instrumentation
+     *
+     * @param dxGraphQLConfig DXGraphQLConfig
+     * @return Instrumentation
+     */
+    Instrumentation getInstrumentation(DXGraphQLConfig dxGraphQLConfig);
 }
