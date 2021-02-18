@@ -308,7 +308,7 @@ jobs:
                 --webhookAll=$SLACK_WEBHOOK_QA_NOTIFICATIONS_ALL \
                 --skipSuccessful \
                 --sourcePath="artifacts/results/reports" \
-                --sourceType="json" \
+                --sourceType="xml" \
                 --moduleFilepath="artifacts/results/installed-jahia-modules.json" \
                 --msgAuthor="CircleCI ($CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME)" \
                 --runUrl=$CIRCLE_BUILD_URL
@@ -317,7 +317,7 @@ jobs:
                 --webhook="https://zencrepes.jahia.com/zqueue/testing/webhook" \
                 --webhookSecret=$ZENCREPES_WEBHOOK_SECRET \
                 --sourcePath="artifacts/results/reports" \
-                --sourceType="json" \
+                --sourceType="xml" \
                 --moduleFilepath="artifacts/results/installed-jahia-modules.json" \
                 --name="<< pipeline.parameters.MODULE_ID >>" \
                 --runUrl=$CIRCLE_BUILD_URL
@@ -326,7 +326,7 @@ jobs:
                 --testrailUsername=$TESTRAIL_USERNAME \
                 --testrailPassword=$TESTRAIL_PASSWORD \
                 --sourcePath="artifacts/results/reports" \
-                --sourceType="json" \
+                --sourceType="xml" \
                 --projectName="<< pipeline.parameters.TESTRAIL_PROJECTNAME >>" \
                 --milestone="<< parameters.TESTRAIL_MILESTONE >>" \
                 --defaultRunDescription="This test was executed on circleci, $CIRCLE_BUILD_URL"
