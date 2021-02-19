@@ -99,5 +99,48 @@
             </plugin>
         </plugins>
     </build>
+	
+	<profiles>
+		<profile>
+			<id>module-integration-tests</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.jahia.server</groupId>
+						<artifactId>jahia-maven-plugin</artifactId>
+						<configuration>
+							<skipCoreTests>true</skipCoreTests>
+						</configuration>
+						<executions>
+							<execution>
+								<id>run-test</id>
+								<phase>integration-test</phase>
+								<goals>
+									<goal>test</goal> 
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-report-plugin</artifactId>
+						<version>3.0.0-M5</version>
+						<executions>
+							<execution>
+								<phase>post-integration-test</phase>
+								<goals>
+									<goal>report-only</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+			<properties>
+				<JacocoOutput>it-jacoco.exec</JacocoOutput>
+			</properties>
+		</profile>
+	</profiles>
 
+	
 </project>

@@ -1,0 +1,29 @@
+version: '3.3'
+services:
+  jahia:
+    image: "${JAHIA_IMAGE}"
+    container_name: jahia
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - jahia:127.0.0.1
+    networks:
+      - stack      
+  # Maven container
+  maven:
+    image: "${TESTS_IMAGE}"
+    container_name: e2e-tests
+    depends_on:
+      - jahia
+    environment:
+      - MANIFEST=${MANIFEST}
+      - JAHIA_USERNAME=${JAHIA_USERNAME}
+      - JAHIA_PASSWORD=${JAHIA_PASSWORD}
+      - JAHIA_URL=${JAHIA_URL}
+      - NEXUS_USERNAME=${NEXUS_USERNAME}
+      - NEXUS_PASSWORD=${NEXUS_PASSWORD}
+      - NEXUS_INTERNAL_URL=${NEXUS_INTERNAL_URL}
+    networks:
+      - stack
+networks:
+  stack: 
