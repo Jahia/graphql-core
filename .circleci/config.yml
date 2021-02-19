@@ -96,6 +96,7 @@ jobs:
     <<: *workdir
     docker: 
       - image: cimg/openjdk:8.0.275
+    resource_class: large
     steps:
       - *attach-workspace
       - restore_cache:
