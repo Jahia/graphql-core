@@ -72,7 +72,7 @@
             org.jahia.modules.graphql.provider.dxm.osgi.annotations
         </export-package>
         <jahia-module-type>system</jahia-module-type>
-        <jahia-module-signature>MC0CFBuYjWkzF1V2i81L/yHgZBP5zpNsAhUAkCDkXd6b3XCsPa90yzPmbB+QIqc=</jahia-module-signature>
+        <Jahia-Signature>MCwCFG/Y9ktmgcGv0addKtBFM93cwUqKAhQQ9O+1mweHd6pTC7SwmP2xv7G/kg==</Jahia-Signature>
         <mockito.version>2.21.0</mockito.version>
         <powermock.version>2.0.7</powermock.version>
     </properties>
