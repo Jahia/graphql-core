@@ -4,8 +4,14 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
-import org.jahia.bin.Jahia;
+import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
+import org.jahia.bin.Jahia;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 /**
  * GraphQL root object for Admin related queries.
@@ -34,12 +40,24 @@ public class GqlAdminQuery {
     @GraphQLField
     @GraphQLName("jahia")
     @GraphQLDescription("Version of the running Jahia instance")
-    public GqlJahiaVersion getJahiaVersion() {
-        return new GqlJahiaVersion(
-                Constants.JAHIA_PROJECT_VERSION,
-                String.valueOf(Jahia.getBuildNumber()),
-                Constants.JAHIA_PROJECT_VERSION.contains("SNAPSHOT")
-        );
+    public GqlJahiaVersion getJahiaVersion()  {
+
+        GqlJahiaVersion gqlJahiaVersion = new GqlJahiaVersion();
+        gqlJahiaVersion.setRelease(Constants.JAHIA_PROJECT_VERSION);
+        gqlJahiaVersion.setBuild(String.valueOf(Jahia.getBuildNumber()));
+        gqlJahiaVersion.setSnapshot(Constants.JAHIA_PROJECT_VERSION.contains("SNAPSHOT"));
+
+        //Formatting buildDate
+        Date date = null;
+        try {
+            date = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG, Locale.ENGLISH).parse(Jahia.getBuildDate());
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(date);
+            gqlJahiaVersion.setBuildDate(ISO8601.format(calendar));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return gqlJahiaVersion;
     }
 
     /**
@@ -49,9 +67,9 @@ public class GqlAdminQuery {
      */
     @GraphQLField
     @GraphQLName("datetime")
-    @GraphQLDescription("Build datetime of the running Jahia instance")
+    @GraphQLDescription("Current datetime")
     public String getDatetime() {
-        return Jahia.getBuildDate();
+        return ISO8601.format(Calendar.getInstance());
     }
 
 }
