@@ -7,6 +7,9 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Calendar;
@@ -19,6 +22,8 @@ import java.util.Locale;
 @GraphQLName("adminQuery")
 @GraphQLDescription("Admin queries root")
 public class GqlAdminQuery {
+
+    public static final Logger logger = LoggerFactory.getLogger(GqlAdminQuery.class);
 
     /**
      * @deprecated replaced by jahia node
@@ -55,7 +60,7 @@ public class GqlAdminQuery {
             calendar.setTime(date);
             gqlJahiaVersion.setBuildDate(ISO8601.format(calendar));
         } catch (ParseException e) {
-            e.printStackTrace();
+            logger.warn("Exception while parsing build date",e);
         }
         return gqlJahiaVersion;
     }
