@@ -49,7 +49,7 @@ public class GqlAdminQuery {
      */
     @GraphQLField
     @GraphQLName("datetime")
-    @GraphQLDescription("Build Datetime of the running Jahia instance")
+    @GraphQLDescription("Build datetime of the running Jahia instance")
     public String getDatetime() {
         return Jahia.getBuildDate();
     }

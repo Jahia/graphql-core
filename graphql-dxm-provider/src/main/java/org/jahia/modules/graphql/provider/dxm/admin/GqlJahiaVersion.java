@@ -23,6 +23,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.admin;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 
@@ -40,18 +41,21 @@ public class GqlJahiaVersion {
 
     @GraphQLField
     @GraphQLName("release")
+    @GraphQLDescription("Release of the running Jahia instance")
     public String getRelease() {
         return release;
     }
 
     @GraphQLField
     @GraphQLName("build")
+    @GraphQLDescription("Build number of the running Jahia instance")
     public String getBuild() {
         return build;
     }
 
     @GraphQLField
     @GraphQLName("isSnapshot")
+    @GraphQLDescription("Flag returning if running Jahia instance is a SNAPSHOT")
     public boolean isSnapshot() {
         return snapshot;
     }
