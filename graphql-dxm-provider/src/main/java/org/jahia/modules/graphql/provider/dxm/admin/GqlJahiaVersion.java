@@ -32,9 +32,6 @@ public class GqlJahiaVersion {
     private String build;
     private boolean snapshot;
 
-    public GqlJahiaVersion() {
-    }
-
     public GqlJahiaVersion(String release, String build, boolean snapshot) {
         this.release = release;
         this.build = build;
@@ -59,17 +56,6 @@ public class GqlJahiaVersion {
         return snapshot;
     }
 
-    public void setRelease(String release) {
-        this.release = release;
-    }
-
-    public void setBuild(String build) {
-        this.build = build;
-    }
-
-    public void setSnapshot(boolean snapshot) {
-        this.snapshot = snapshot;
-    }
 }
 
 

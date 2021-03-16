@@ -26,7 +26,6 @@ public class GqlAdminQuery {
         return Jahia.getFullProductVersion();
     }
 
-
     /**
      * Get getJahiaVersion
      *
@@ -43,6 +42,11 @@ public class GqlAdminQuery {
         );
     }
 
+    /**
+     * Get Build Datetime
+     *
+     * @return String datetime
+     */
     @GraphQLField
     @GraphQLName("datetime")
     @GraphQLDescription("Build Datetime of the running Jahia instance")
