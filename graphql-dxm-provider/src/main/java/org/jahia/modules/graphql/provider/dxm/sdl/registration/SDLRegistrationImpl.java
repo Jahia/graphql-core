@@ -101,7 +101,7 @@ public class SDLRegistrationImpl implements SDLRegistrationService, SynchronousB
     }
 
     private boolean checkForSDLResourceInBundle(Bundle bundle, boolean register, boolean withSources) {
-        if (BundleUtils.isJahiaBundle(bundle)) {
+        if (BundleUtils.isJahiaBundle(bundle) && bundle.getState() >= Bundle.RESOLVED) {
             URL url = bundle.getResource(GRAPHQL_EXTENSION_SDL);
             if (url != null) {
                 logger.debug("get bundle schema {}", url.getPath());
