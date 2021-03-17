@@ -9,7 +9,6 @@ import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Calendar;
@@ -52,7 +51,7 @@ public class GqlAdminQuery {
         gqlJahiaVersion.setBuild(String.valueOf(Jahia.getBuildNumber()));
         gqlJahiaVersion.setSnapshot(Constants.JAHIA_PROJECT_VERSION.contains("SNAPSHOT"));
 
-        //Formatting buildDate
+        //Formatting buildDate to ISO8601
         Date date = null;
         try {
             date = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG, Locale.ENGLISH).parse(Jahia.getBuildDate());
