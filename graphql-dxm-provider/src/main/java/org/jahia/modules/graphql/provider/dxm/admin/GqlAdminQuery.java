@@ -67,7 +67,7 @@ public class GqlAdminQuery {
     /**
      * Get Build Datetime
      *
-     * @return String datetime
+     * @return String datetime in ISO8601 format
      */
     @GraphQLField
     @GraphQLName("datetime")
