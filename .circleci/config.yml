@@ -471,10 +471,10 @@ workflows:
             JAHIA_IMAGE: "jahia/jahia-private:snapshot-dev"
             RUN_TESTSIMAGE: "<< pipeline.parameters.TESTS_IMAGE >>:latest"
             MANIFEST: "warmup-manifest-snapshot.yml"
-            TESTRAIL_MILESTONE: "<< JAHIA_IMAGE >>"
+            TESTRAIL_MILESTONE: "<< parameters.JAHIA_IMAGE >>"
             TOOLS_USER: "root"
             TOOLS_PWD: "root"
-          name: Nightly-snapshot<< JAHIA_IMAGE >>
+          name: Nightly-<< parameters.JAHIA_IMAGE >>
           context: QA_ENVIRONMENT
           requires:
             - initialize
@@ -484,10 +484,10 @@ workflows:
             JAHIA_IMAGE: "jahia/jahia-dev:8.0"
             RUN_TESTSIMAGE: "<< pipeline.parameters.TESTS_IMAGE >>:latest"
             MANIFEST: "warmup-manifest-release.yml"
-            TESTRAIL_MILESTONE: "<< JAHIA_IMAGE >>"
+            TESTRAIL_MILESTONE: "<< parameters.JAHIA_IMAGE >>"
             TOOLS_USER: "root"
             TOOLS_PWD: "root"
-          name: Nightly-release-<< JAHIA_IMAGE >>
+          name: Nightly-<< parameters.JAHIA_IMAGE >>
           context: QA_ENVIRONMENT
           requires:
             - initialize
