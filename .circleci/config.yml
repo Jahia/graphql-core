@@ -479,7 +479,6 @@ workflows:
           requires:
             - initialize
       - integration_tests:
-          matrix:
           parameters:
             JAHIA_IMAGE: "jahia/jahia-dev:8.0"
             RUN_TESTSIMAGE: "<< pipeline.parameters.TESTS_IMAGE >>:latest"
