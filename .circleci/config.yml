@@ -437,7 +437,7 @@ workflows:
           RUN_TESTSIMAGE: << pipeline.parameters.TESTS_IMAGE >>:latest
           TOOLS_USER: root
           TOOLS_PWD: root
-          MANIFEST: warmup-manifest-release.yml
+          MANIFEST: warmup-manifest-build.yml
           TESTRAIL_MILESTONE: Jahia-Latest
           SKIP_TESTRAIL: "true"
           SKIP_ARTIFACTS: false
@@ -467,16 +467,24 @@ workflows:
     jobs:
       - initialize
       - integration_tests:
-          matrix:
-            parameters:
-              JAHIA_IMAGE: ["jahia/jahia-private:snapshot-dev", "jahia/jahia-dev:8.0"]
-              RUN_TESTSIMAGE: ["<< pipeline.parameters.TESTS_IMAGE >>:latest"]
-              MANIFEST: ["warmup-manifest-snapshot.yml"]
-              TESTRAIL_MILESTONE: ["<< matrix.JAHIA_IMAGE >>"]
-              TOOLS_USER: ["root"]
-              TOOLS_PWD: ["root"]
-          name: Nightly-<< matrix.JAHIA_IMAGE >>
+          JAHIA_IMAGE: "jahia/jahia-private:snapshot-dev"
+          RUN_TESTSIMAGE: "<< pipeline.parameters.TESTS_IMAGE >>:latest"
+          MANIFEST: "warmup-manifest-snapshot.yml"
+          TESTRAIL_MILESTONE: Jahia-Latest-Snapshot"
+          TOOLS_USER: "root"
+          TOOLS_PWD: "root"
+          name: Nightly-Jahia-Latest-Snapshot
           context: QA_ENVIRONMENT
           requires:
             - initialize
- 
+      - integration_tests:
+          JAHIA_IMAGE: "jahia/jahia-dev:8.0"
+          RUN_TESTSIMAGE: "<< pipeline.parameters.TESTS_IMAGE >>:latest"
+          MANIFEST: "warmup-manifest-release.yml"
+          TESTRAIL_MILESTONE: Jahia-Latest-Release
+          TOOLS_USER: "root"
+          TOOLS_PWD: "root"
+          name: Nightly-Jahia-Latest-Release
+          context: QA_ENVIRONMENT
+          requires:
+            - initialize
