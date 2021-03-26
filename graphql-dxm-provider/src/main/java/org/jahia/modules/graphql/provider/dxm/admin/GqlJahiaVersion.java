@@ -27,6 +27,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 
+@GraphQLDescription("Version of the running Jahia instance")
 public class GqlJahiaVersion {
 
     private String release;
