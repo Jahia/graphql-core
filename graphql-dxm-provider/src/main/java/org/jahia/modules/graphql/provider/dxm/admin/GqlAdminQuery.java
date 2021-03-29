@@ -9,11 +9,15 @@ import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.Properties;
+
 
 /**
  * GraphQL root object for Admin related queries.
@@ -23,6 +27,7 @@ import java.util.Locale;
 public class GqlAdminQuery {
 
     public static final Logger logger = LoggerFactory.getLogger(GqlAdminQuery.class);
+    public static String JAHIA_PROJECT_VERSION;
 
     /**
      * @deprecated replaced by jahia node
@@ -47,9 +52,9 @@ public class GqlAdminQuery {
     public GqlJahiaVersion getJahiaVersion()  {
 
         GqlJahiaVersion gqlJahiaVersion = new GqlJahiaVersion();
-        gqlJahiaVersion.setRelease(Constants.JAHIA_PROJECT_VERSION);
+        gqlJahiaVersion.setRelease(Optional.ofNullable(JAHIA_PROJECT_VERSION).orElse(""));
         gqlJahiaVersion.setBuild(String.valueOf(Jahia.getBuildNumber()));
-        gqlJahiaVersion.setSnapshot(Constants.JAHIA_PROJECT_VERSION.contains("SNAPSHOT"));
+        gqlJahiaVersion.setSnapshot(Optional.ofNullable(JAHIA_PROJECT_VERSION).orElse("").contains("SNAPSHOT"));
 
         //Formatting buildDate to ISO8601
         Date date = null;
@@ -76,4 +81,14 @@ public class GqlAdminQuery {
         return ISO8601.format(Calendar.getInstance());
     }
 
+    static {
+        Properties p = new Properties();
+        try {
+            p.load(Constants.class.getClassLoader().getResourceAsStream("version.properties"));
+        } catch (IOException e) {
+            logger.warn("Exception while retrieving JAHIA_PROJECT_VERSION",e);
+            throw new RuntimeException(e);
+        }
+        JAHIA_PROJECT_VERSION = p.getProperty("version");
+    }
 }
