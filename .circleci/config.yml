@@ -82,6 +82,7 @@ jobs:
           command: |
             mkdir /tmp/artifacts/
             cp /home/circleci/source/graphql-dxm-provider/target/*.jar /tmp/artifacts/
+            cp -R /home/circleci/source/graphql-dxm-provider/target/surefire-reports/* /tmp/artifacts/
             cp /home/circleci/source/graphql-extension-example/target/*.jar /tmp/artifacts/
             cp /home/circleci/source/graphql-test/target/*.jar /tmp/artifacts/
       - store_artifacts:
