@@ -87,6 +87,8 @@ jobs:
             cp /home/circleci/source/graphql-test/target/*.jar /tmp/artifacts/
       - store_artifacts:
           path: /tmp/artifacts/
+      - store_test_results:
+          path: /tmp/artifacts/surefire-reports/
       - *persist-workspace
     environment:
       MAVEN_OPTS: -Xmx2G
