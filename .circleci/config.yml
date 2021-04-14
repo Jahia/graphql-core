@@ -86,6 +86,7 @@ jobs:
             cp /home/circleci/source/graphql-test/target/*.jar /tmp/artifacts/
             mkdir /tmp/artifacts/test-results/
             cp /home/circleci/source/graphql-dxm-provider/target/surefire-reports/*.xml /tmp/artifacts/test-results/ || :
+            mkdir /tmp/artifacts/test-results/testng-junit-results/
             mkdir /tmp/artifacts/test-results/testng-junit-results/junitreports/
             cp /home/circleci/source/graphql-dxm-provider/target/surefire-reports/testng-junit-results/junitreports/* /tmp/artifacts/test-results/testng-junit-results/junitreports/ || :
       - store_artifacts:
