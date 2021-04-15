@@ -84,8 +84,25 @@ jobs:
             cp /home/circleci/source/graphql-dxm-provider/target/*.jar /tmp/artifacts/
             cp /home/circleci/source/graphql-extension-example/target/*.jar /tmp/artifacts/
             cp /home/circleci/source/graphql-test/target/*.jar /tmp/artifacts/
+      - run:
+          name: Copy test report
+          command: |
+            mkdir /tmp/artifacts/test-results/
+            cp /home/circleci/source/graphql-dxm-provider/target/surefire-reports/*.xml /tmp/artifacts/test-results/ || :
+      - run:
+          name: Copy test report details
+          command: |
+            mkdir /tmp/artifacts/surefire-reports/
+            cp /home/circleci/source/graphql-dxm-provider/target/surefire-reports/*.txt /tmp/artifacts/surefire-reports/ || :
+            mkdir /tmp/artifacts/surefire-reports/testng-junit-results/
+            cp /home/circleci/source/graphql-dxm-provider/target/surefire-reports/testng-junit-results/* /tmp/artifacts/surefire-reports/testng-junit-results/ || :
+            mkdir /tmp/artifacts/surefire-reports/testng-junit-results/junitreports/
+            cp /home/circleci/source/graphql-dxm-provider/target/surefire-reports/testng-junit-results/junitreports/* /tmp/artifacts/surefire-reports/testng-junit-results/junitreports/ || :
+
       - store_artifacts:
           path: /tmp/artifacts/
+      - store_test_results:
+          path: /tmp/artifacts/test-results/
       - *persist-workspace
     environment:
       MAVEN_OPTS: -Xmx2G
