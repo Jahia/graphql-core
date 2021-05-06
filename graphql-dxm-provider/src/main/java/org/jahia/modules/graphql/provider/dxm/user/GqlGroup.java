@@ -43,47 +43,68 @@
  */
 package org.jahia.modules.graphql.provider.dxm.user;
 
-import graphql.annotations.annotationTypes.*;
-import org.jahia.data.viewhelper.principal.PrincipalViewHelper;
-import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.connection.GraphQLConnection;
+import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
+import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
+import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.decorator.JCRGroupNode;
+import org.jahia.services.content.decorator.JCRUserNode;
+import org.jahia.services.usermanager.JahiaGroup;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
-import org.jahia.services.usermanager.JahiaUser;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@GraphQLName("User")
+@GraphQLName("Group")
 @GraphQLDescription("GraphQL representation of a Jahia user")
-public class GqlUser implements GqlPrincipal {
-    private JahiaUser user;
+public class GqlGroup implements GqlPrincipal {
+    private JahiaGroup group;
 
     @Inject
     @GraphQLOsgiService
     private JahiaGroupManagerService groupManagerService;
 
-    public GqlUser(JahiaUser jahiaUser) {
-        this.user = jahiaUser;
+    public GqlGroup(JahiaGroup jahiaGroup) {
+        this.group = jahiaGroup;
     }
 
     @GraphQLField
-    @GraphQLDescription("User name")
+    @GraphQLDescription("Group name")
     public String getName() {
-        return user.getName();
+        return group.getName();
     }
 
     @GraphQLField
-    public String getFullName() {
-        return PrincipalViewHelper.getFullName(user);
-    }
-
-    @GraphQLField
-    @GraphQLDescription("User property")
+    @GraphQLDescription("Group property")
     public String getProperty(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property") String name) {
-        return user.getProperty(name);
+        return group.getProperty(name);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Group members")
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
+    public DXPaginatedData<GqlPrincipal> getMembers(DataFetchingEnvironment environment) {
+        Collection<JCRNodeWrapper> nodes = groupManagerService.lookupGroupByPath(group.getLocalPath()).getMembers();
+        List<GqlPrincipal> result = new ArrayList<>();
+        for (JCRNodeWrapper node : nodes) {
+            if (node instanceof JCRUserNode) {
+                result.add(new GqlUser(((JCRUserNode) node).getJahiaUser()));
+            } else if (node instanceof JCRGroupNode) {
+                result.add(new GqlGroup(((JCRGroupNode) node).getJahiaGroup()));
+            }
+        }
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
+        return PaginationHelper.paginate(result, n -> PaginationHelper.encodeCursor(n.getName()), arguments);
     }
 
     @GraphQLField
@@ -93,12 +114,12 @@ public class GqlUser implements GqlPrincipal {
         if (groupNode == null) {
             return false;
         }
-        return groupNode.isMember(user.getLocalPath());
+        return groupNode.isMember(this.group.getLocalPath());
     }
 
     @GraphQLField
     public Collection<GqlGroup> getGroupMembership() {
-        List<String> paths = groupManagerService.getMembershipByPath(user.getLocalPath());
+        List<String> paths = groupManagerService.getMembershipByPath(group.getLocalPath());
         return paths.stream().map(path -> new GqlGroup(groupManagerService.lookupGroupByPath(path).getJahiaGroup())).collect(Collectors.toList());
     }
 }

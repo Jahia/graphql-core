@@ -43,62 +43,50 @@
  */
 package org.jahia.modules.graphql.provider.dxm.user;
 
-import graphql.annotations.annotationTypes.*;
-import org.jahia.data.viewhelper.principal.PrincipalViewHelper;
-import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.services.content.decorator.JCRGroupNode;
+import org.jahia.services.content.decorator.JCRUserNode;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
-import org.jahia.services.usermanager.JahiaUser;
+import org.jahia.services.usermanager.JahiaUserManagerService;
 
 import javax.inject.Inject;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
 
-@GraphQLName("User")
-@GraphQLDescription("GraphQL representation of a Jahia user")
-public class GqlUser implements GqlPrincipal {
-    private JahiaUser user;
+@GraphQLName("userAdminQuery")
+@GraphQLDescription("User admin queries")
+public class GqlUserAdmin {
+
+    @Inject
+    @GraphQLOsgiService
+    private JahiaUserManagerService userManagerService;
 
     @Inject
     @GraphQLOsgiService
     private JahiaGroupManagerService groupManagerService;
 
-    public GqlUser(JahiaUser jahiaUser) {
-        this.user = jahiaUser;
-    }
-
     @GraphQLField
-    @GraphQLDescription("User name")
-    public String getName() {
-        return user.getName();
-    }
-
-    @GraphQLField
-    public String getFullName() {
-        return PrincipalViewHelper.getFullName(user);
-    }
-
-    @GraphQLField
-    @GraphQLDescription("User property")
-    public String getProperty(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property") String name) {
-        return user.getProperty(name);
-    }
-
-    @GraphQLField
-    public boolean isMemberOf(@GraphQLName("group") String group,
-                              @GraphQLName("site") @GraphQLDescription("Site where the group is defined") String site) {
-        JCRGroupNode groupNode = groupManagerService.lookupGroup(site, group);
-        if (groupNode == null) {
-            return false;
+    @GraphQLDescription("Get a user")
+    public GqlUser getUser(@GraphQLName("name") @GraphQLDescription("User name") @GraphQLNonNull String userName,
+                           @GraphQLName("site") @GraphQLDescription("Site where the user is defined") String site) {
+        JCRUserNode jcrUserNode = userManagerService.lookupUser(userName, site);
+        if (jcrUserNode == null) {
+            return null;
         }
-        return groupNode.isMember(user.getLocalPath());
+        return new GqlUser(jcrUserNode.getJahiaUser());
     }
 
     @GraphQLField
-    public Collection<GqlGroup> getGroupMembership() {
-        List<String> paths = groupManagerService.getMembershipByPath(user.getLocalPath());
-        return paths.stream().map(path -> new GqlGroup(groupManagerService.lookupGroupByPath(path).getJahiaGroup())).collect(Collectors.toList());
+    @GraphQLDescription("Get a group")
+    public GqlGroup getGroup(@GraphQLName("name") @GraphQLDescription("Group name") @GraphQLNonNull String groupName,
+                             @GraphQLName("site") @GraphQLDescription("Site where the group is defined") String site) {
+        JCRGroupNode jcrGroupNode = groupManagerService.lookupGroup(site, groupName);
+        if (jcrGroupNode == null) {
+            return null;
+        }
+        return new GqlGroup(jcrGroupNode.getJahiaGroup());
     }
+
 }

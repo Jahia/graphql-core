@@ -43,62 +43,21 @@
  */
 package org.jahia.modules.graphql.provider.dxm.user;
 
-import graphql.annotations.annotationTypes.*;
-import org.jahia.data.viewhelper.principal.PrincipalViewHelper;
-import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
-import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
-import org.jahia.services.content.decorator.JCRGroupNode;
-import org.jahia.services.usermanager.JahiaGroupManagerService;
+import graphql.TypeResolutionEnvironment;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.TypeResolver;
+import org.jahia.services.usermanager.JahiaGroup;
 import org.jahia.services.usermanager.JahiaUser;
 
-import javax.inject.Inject;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
-@GraphQLName("User")
-@GraphQLDescription("GraphQL representation of a Jahia user")
-public class GqlUser implements GqlPrincipal {
-    private JahiaUser user;
-
-    @Inject
-    @GraphQLOsgiService
-    private JahiaGroupManagerService groupManagerService;
-
-    public GqlUser(JahiaUser jahiaUser) {
-        this.user = jahiaUser;
-    }
-
-    @GraphQLField
-    @GraphQLDescription("User name")
-    public String getName() {
-        return user.getName();
-    }
-
-    @GraphQLField
-    public String getFullName() {
-        return PrincipalViewHelper.getFullName(user);
-    }
-
-    @GraphQLField
-    @GraphQLDescription("User property")
-    public String getProperty(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property") String name) {
-        return user.getProperty(name);
-    }
-
-    @GraphQLField
-    public boolean isMemberOf(@GraphQLName("group") String group,
-                              @GraphQLName("site") @GraphQLDescription("Site where the group is defined") String site) {
-        JCRGroupNode groupNode = groupManagerService.lookupGroup(site, group);
-        if (groupNode == null) {
-            return false;
+public class PrincipalTypeResolver implements TypeResolver {
+    @Override
+    public GraphQLObjectType getType(TypeResolutionEnvironment env) {
+        Object javaObject = env.getObject();
+        if (javaObject instanceof GqlUser) {
+            return env.getSchema().getObjectType("User");
+        } else if (javaObject instanceof GqlGroup) {
+            return env.getSchema().getObjectType("Group");
         }
-        return groupNode.isMember(user.getLocalPath());
-    }
-
-    @GraphQLField
-    public Collection<GqlGroup> getGroupMembership() {
-        List<String> paths = groupManagerService.getMembershipByPath(user.getLocalPath());
-        return paths.stream().map(path -> new GqlGroup(groupManagerService.lookupGroupByPath(path).getJahiaGroup())).collect(Collectors.toList());
+        return null;
     }
 }
