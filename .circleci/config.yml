@@ -11,10 +11,10 @@ parameters:
   AUDITCI_LEVEL:
     type: string
     default: 'moderate'
-  TESTS_PATH:
+  TESTSJAVA_PATH:
     type: string
-    default: 'tests/'
-  TESTS_IMAGE:
+    default: 'graphql-test-docker/'
+  TESTSJAVA_IMAGE:
     type: string
     default: 'jahia/graphql-core'
   MODULE_ID:
@@ -127,7 +127,7 @@ jobs:
   # It is fully containerized.
   # Node that we might want to migrate it to Docker executor down the road
   # It is aimed at being called by matrix jobs (in the workflow section)
-  integration_tests:
+  integration_testsjava:
     <<: *workdir
     machine: true
     # Available types: medium, large, xlarge, 2xlarge https://circleci.com/docs/2.0/configuration-reference/#machine-executor-linux
@@ -158,7 +158,7 @@ jobs:
         default: true
       RUN_TESTSIMAGE:
         type: string
-        default: << pipeline.parameters.TESTS_IMAGE >>:latest        
+        default: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest        
       BUILD_TESTSIMAGE:
         type: boolean
         default: false
@@ -171,34 +171,34 @@ jobs:
             - v1-dependencies-
       - run:
           name: Prepare artifacts
-            # This command copy the source subfolders and the various build artifacts into the /tests/ folder
+            # This command copy the source subfolders and the various build artifacts into the /graphql-test-docker/ folder
             # The POM files will be used by the Maven test call
             # The artifacts will be used by jahia-cli to provision Jahia for testing
           command: |
-            if [ ! -d << pipeline.parameters.TESTS_PATH >>artifacts ]; then
-              mkdir -p << pipeline.parameters.TESTS_PATH >>artifacts
-              mkdir << pipeline.parameters.TESTS_PATH >>artifacts/reports
+            if [ ! -d << pipeline.parameters.TESTSJAVA_PATH >>artifacts ]; then
+              mkdir -p << pipeline.parameters.TESTSJAVA_PATH >>artifacts
+              mkdir << pipeline.parameters.TESTSJAVA_PATH >>artifacts/reports
             fi          
-            cp pom.xml << pipeline.parameters.TESTS_PATH >>pom.xml
-            if [ ! -d << pipeline.parameters.TESTS_PATH >>graphql-dxm-provider ]; then
-                mkdir << pipeline.parameters.TESTS_PATH >>graphql-dxm-provider
+            cp pom.xml << pipeline.parameters.TESTSJAVA_PATH >>pom.xml
+            if [ ! -d << pipeline.parameters.TESTSJAVA_PATH >>graphql-dxm-provider ]; then
+                mkdir << pipeline.parameters.TESTSJAVA_PATH >>graphql-dxm-provider
             fi
-            if [ ! -d << pipeline.parameters.TESTS_PATH >>graphql-extension-example ]; then
-                mkdir << pipeline.parameters.TESTS_PATH >>graphql-extension-example
+            if [ ! -d << pipeline.parameters.TESTSJAVA_PATH >>graphql-extension-example ]; then
+                mkdir << pipeline.parameters.TESTSJAVA_PATH >>graphql-extension-example
             fi
-            if [ ! -d << pipeline.parameters.TESTS_PATH >>graphql-test ]; then
-                mkdir << pipeline.parameters.TESTS_PATH >>graphql-test
+            if [ ! -d << pipeline.parameters.TESTSJAVA_PATH >>graphql-test ]; then
+                mkdir << pipeline.parameters.TESTSJAVA_PATH >>graphql-test
             fi
-            cp -R /home/circleci/source/graphql-dxm-provider/* << pipeline.parameters.TESTS_PATH >>graphql-dxm-provider/
-            cp -R /home/circleci/source/graphql-extension-example/* << pipeline.parameters.TESTS_PATH >>graphql-extension-example/
-            cp -R /home/circleci/source/graphql-test/* << pipeline.parameters.TESTS_PATH >>graphql-test/
+            cp -R /home/circleci/source/graphql-dxm-provider/* << pipeline.parameters.TESTSJAVA_PATH >>graphql-dxm-provider/
+            cp -R /home/circleci/source/graphql-extension-example/* << pipeline.parameters.TESTSJAVA_PATH >>graphql-extension-example/
+            cp -R /home/circleci/source/graphql-test/* << pipeline.parameters.TESTSJAVA_PATH >>graphql-test/
             if [ << parameters.SKIP_ARTIFACTS >> == false ]; then
-              sudo cp /home/circleci/source/graphql-dxm-provider/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
-              sudo cp << pipeline.parameters.TESTS_PATH >>artifacts/graphql-dxm-provider*SNAPSHOT.jar << pipeline.parameters.TESTS_PATH >>artifacts/graphql-dxm-provider-SNAPSHOT.jar
-              sudo cp /home/circleci/source/graphql-extension-example/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
-              sudo cp << pipeline.parameters.TESTS_PATH >>artifacts/graphql-extension-example*SNAPSHOT.jar << pipeline.parameters.TESTS_PATH >>artifacts/graphql-extension-example-SNAPSHOT.jar
-              sudo cp /home/circleci/source/graphql-test/target/*.jar << pipeline.parameters.TESTS_PATH >>artifacts/
-              sudo cp << pipeline.parameters.TESTS_PATH >>artifacts/graphql-test*SNAPSHOT.jar << pipeline.parameters.TESTS_PATH >>artifacts/graphql-test-SNAPSHOT.jar
+              sudo cp /home/circleci/source/graphql-dxm-provider/target/*.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/
+              sudo cp << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-dxm-provider*SNAPSHOT.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-dxm-provider-SNAPSHOT.jar
+              sudo cp /home/circleci/source/graphql-extension-example/target/*.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/
+              sudo cp << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-extension-example*SNAPSHOT.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-extension-example-SNAPSHOT.jar
+              sudo cp /home/circleci/source/graphql-test/target/*.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/
+              sudo cp << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-test*SNAPSHOT.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-test-SNAPSHOT.jar
             fi         
       - run:
           name: Docker login
@@ -216,7 +216,7 @@ jobs:
           #   are added to the compose file but not to the environment variables in circleci config.yml
           command: |
             set -e
-            cd << pipeline.parameters.TESTS_PATH >>
+            cd << pipeline.parameters.TESTSJAVA_PATH >>
             if [[ ! -e .env ]]; then
               mv .env.example .env
             fi            
@@ -225,7 +225,7 @@ jobs:
           environment:
             MANIFEST: << parameters.MANIFEST >>
             JAHIA_IMAGE: << parameters.JAHIA_IMAGE >>
-            TESTS_IMAGE: << parameters.RUN_TESTSIMAGE >>
+            TESTSJAVA_IMAGE: << parameters.RUN_TESTSIMAGE >>
             JAHIA_URL: << parameters.JAHIA_URL >>
             JAHIA_HOST: jahia
             JAHIA_PORT: 8080
@@ -234,12 +234,12 @@ jobs:
             JAHIA_PASSWORD: root
       - run:
           # We want to build the test image from scratch with any code change (since that code change could be in the tests themselves)
-          name: Build << pipeline.parameters.TESTS_IMAGE >> image
+          name: Build << pipeline.parameters.TESTSJAVA_IMAGE >> image
           command: |
             if [ << parameters.BUILD_TESTSIMAGE >> == true ]; then
-              cd << pipeline.parameters.TESTS_PATH >>
-              docker build -t << pipeline.parameters.TESTS_IMAGE >> .
-              docker save -o tests_image.tar << pipeline.parameters.TESTS_IMAGE >>
+              cd << pipeline.parameters.TESTSJAVA_PATH >>
+              docker build -t << pipeline.parameters.TESTSJAVA_IMAGE >> .
+              docker save -o tests_image.tar << pipeline.parameters.TESTSJAVA_IMAGE >>
             fi
       - run:
           name: Execute tests
@@ -249,7 +249,7 @@ jobs:
           # Note: the timeout env vars are added to address this: https://github.com/docker/compose/issues/3927
           command: |
             set -e
-            cd << pipeline.parameters.TESTS_PATH >>
+            cd << pipeline.parameters.TESTSJAVA_PATH >>
             export DOCKER_CLIENT_TIMEOUT=120
             export COMPOSE_HTTP_TIMEOUT=120            
             docker-compose -f docker-compose.yml up maven
@@ -258,7 +258,7 @@ jobs:
           environment:
             MANIFEST: << parameters.MANIFEST >>
             JAHIA_IMAGE: << parameters.JAHIA_IMAGE >>
-            TESTS_IMAGE: << parameters.RUN_TESTSIMAGE >>
+            TESTSJAVA_IMAGE: << parameters.RUN_TESTSIMAGE >>
             JAHIA_URL: << parameters.JAHIA_URL >>
             JAHIA_HOST: jahia
             JAHIA_PORT: 8080
@@ -270,7 +270,7 @@ jobs:
           when: always
           command: |
             set -e
-            cd << pipeline.parameters.TESTS_PATH >>
+            cd << pipeline.parameters.TESTSJAVA_PATH >>
             docker logs jahia > ./artifacts/results/jahia.log
             docker logs e2e-tests > ./artifacts/results/tests.log
       # This fetches data about the running Jahia (jahia versions, module version, ...)
@@ -281,7 +281,7 @@ jobs:
           when: always
           command: |
             set +e
-            cd << pipeline.parameters.TESTS_PATH >>
+            cd << pipeline.parameters.TESTSJAVA_PATH >>
             export NVM_DIR="/opt/circleci/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm install v12
@@ -298,15 +298,15 @@ jobs:
           when: always
           # This looks at the report and fail the job if one of the test has failed
           command: |
-            cd << pipeline.parameters.TESTS_PATH >>
+            cd << pipeline.parameters.TESTSJAVA_PATH >>
             if [[ ! -e ./artifacts/results/test_success ]]; then
               echo "More than one failure found, sending exit signal"
               exit 1
             fi
       - store_test_results:
-          path: << pipeline.parameters.TESTS_PATH >>artifacts/results/reports
+          path: << pipeline.parameters.TESTSJAVA_PATH >>artifacts/results/reports
       - store_artifacts:
-          path: << pipeline.parameters.TESTS_PATH >>artifacts/results
+          path: << pipeline.parameters.TESTSJAVA_PATH >>artifacts/results
       # Once all is executed, results are submitted to external platforms
       # Testrail report and Slack (failure only) notifications are sent during scheduled executions or merged into the main branch
       # jahia-reporter can be executed either in docker or through node directly. 
@@ -316,7 +316,7 @@ jobs:
           command: |
             set +e
             if [ "<< parameters.SKIP_TESTRAIL >>" != "true" ] || [ "$CIRCLE_BRANCH" = "<< pipeline.parameters.PRIMARY_RELEASE_BRANCH >>" ]; then            
-              cd << pipeline.parameters.TESTS_PATH >>
+              cd << pipeline.parameters.TESTSJAVA_PATH >>
               export NVM_DIR="/opt/circleci/.nvm"
               [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
               nvm alias default v12              
@@ -362,9 +362,9 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - run:
-          name: Push << pipeline.parameters.TESTS_IMAGE >> image to docker hub
+          name: Push << pipeline.parameters.TESTSJAVA_IMAGE >> image to docker hub
           command: |
-            cd << pipeline.parameters.TESTS_PATH >>
+            cd << pipeline.parameters.TESTSJAVA_PATH >>
             docker load -i tests_image.tar
             if [ "$CIRCLE_BRANCH" = "<< pipeline.parameters.PRIMARY_RELEASE_BRANCH >>" ]; then
                 IMAGE_TAG=latest
@@ -372,10 +372,10 @@ jobs:
                 IMAGE_TAG=${CIRCLE_TAG/''}
             fi
             echo "Image tag is: $IMAGE_TAG"
-            docker tag << pipeline.parameters.TESTS_IMAGE >>:latest << pipeline.parameters.TESTS_IMAGE >>:$IMAGE_TAG
+            docker tag << pipeline.parameters.TESTSJAVA_IMAGE >>:latest << pipeline.parameters.TESTSJAVA_IMAGE >>:$IMAGE_TAG
             docker login -u $DOCKERHUB_LOGIN -p $DOCKERHUB_PASSWORD
             echo "Tagged the image"
-            docker push << pipeline.parameters.TESTS_IMAGE >>:$IMAGE_TAG
+            docker push << pipeline.parameters.TESTSJAVA_IMAGE >>:$IMAGE_TAG
             echo "Pushed tag"
 
   sonar:
@@ -444,14 +444,14 @@ workflows:
               only:
                 - << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>                
       # Verifies that the new code works with the latest released version of Jahia
-      - integration_tests:
+      - integration_testsjava:
           name: 'Int. Tests - Jahia Latest - Built modules'
           requires:
             - build
           context: QA_ENVIRONMENT
           #Using Aliases here (8 is the latest of the 8 tree, 8.1 is the latest of the tree, ...)
           JAHIA_IMAGE: jahia/jahia-private:snapshot-dev
-          RUN_TESTSIMAGE: << pipeline.parameters.TESTS_IMAGE >>:latest
+          RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           TOOLS_USER: root
           TOOLS_PWD: root
           MANIFEST: warmup-manifest-build.yml
@@ -483,9 +483,9 @@ workflows:
                 - << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
     jobs:
       - initialize
-      - integration_tests:
+      - integration_testsjava:
           JAHIA_IMAGE: jahia/jahia-private:snapshot-dev
-          RUN_TESTSIMAGE: << pipeline.parameters.TESTS_IMAGE >>:latest
+          RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           MANIFEST: warmup-manifest-snapshot.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Snapshot
           TOOLS_USER: root
@@ -494,9 +494,9 @@ workflows:
           context: QA_ENVIRONMENT
           requires:
             - initialize
-      - integration_tests:
+      - integration_testsjava:
           JAHIA_IMAGE: jahia/jahia-dev:8.0
-          RUN_TESTSIMAGE: << pipeline.parameters.TESTS_IMAGE >>:latest
+          RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           MANIFEST: warmup-manifest-release.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Release
           TOOLS_USER: root
