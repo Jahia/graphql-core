@@ -1,0 +1,3 @@
+- include: mvn:org.jahia.packages/jahia-additional-modules/JAHIA_VERSION/yaml/provisioning
+- importSite: jar:mvn:org.jahia.modules/digitall/2.0.0/zip/import!/Digitall.zip
+- import: jar:mvn:org.jahia.modules/digitall/2.0.0/zip/import!/users.zip
