@@ -16,6 +16,7 @@
     "cypress-file-upload": "^5.0.2",
     "cypress-multi-reporters": "^1.4.0",
     "cypress-terminal-report": "^3.0.3",
+    "date-fns": "^2.21.3",
     "diff": "^4.0.2",
     "dotenv": "^8.2.0",
     "eslint": "^7.3.1",

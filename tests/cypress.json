@@ -9,7 +9,7 @@
     },
     "screenshotsFolder": "./results/screenshots",
     "videosFolder": "./results/videos",
-    "ignoreTestFiles": "*.example.ts",
+    "ignoreTestFiles": "*.ignore.ts",
     "viewportWidth": 1366,
     "viewportHeight": 768
 }
