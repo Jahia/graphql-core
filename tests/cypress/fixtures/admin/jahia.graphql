@@ -1,0 +1,13 @@
+query {
+  currentUser {
+    name
+  }  
+  admin {
+    jahia {
+      build
+      buildDate
+      release
+      isSnapshot
+    }
+  }
+}
