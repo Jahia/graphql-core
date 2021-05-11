@@ -119,10 +119,36 @@ describe('Test admin user endpoint', () => {
         }).then(async (response: any) => {
             cy.log(JSON.stringify(response))
             expect(response.data.admin.userAdmin).to.exist
-            // expect(response.data.admin.userAdmin.user.groupMembership.pageInfo.totalCount).to.equal(3)
+            expect(response.data.admin.userAdmin.user.groupMembership.pageInfo.totalCount).to.be.greaterThan(3)
             expect(response.data.admin.userAdmin.user.groupMembership.nodes.map((n) => n.name)).to.contains(
                 'site-administrators',
             )
+        })
+    })
+
+    it('tests membership list for a site', () => {
+        cy.task('apolloNode', {
+            baseUrl: Cypress.config().baseUrl,
+            authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
+            query: gql`
+                {
+                    admin {
+                        userAdmin {
+                            user(userName: "bill") {
+                                groupMembership(site: "digitall") {
+                                    pageInfo {
+                                        totalCount
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `,
+        }).then(async (response: any) => {
+            cy.log(JSON.stringify(response))
+            expect(response.data.admin.userAdmin).to.exist
+            expect(response.data.admin.userAdmin.user.groupMembership.pageInfo.totalCount).to.equal(3)
         })
     })
 

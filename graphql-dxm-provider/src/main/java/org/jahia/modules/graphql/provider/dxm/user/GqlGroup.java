@@ -53,9 +53,11 @@ import org.jahia.data.viewhelper.principal.PrincipalViewHelper;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
+import org.jahia.modules.graphql.provider.dxm.predicate.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
+import org.jahia.modules.graphql.provider.dxm.site.GqlJcrSite;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.decorator.JCRGroupNode;
@@ -68,6 +70,7 @@ import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 @GraphQLName("Group")
@@ -107,21 +110,43 @@ public class GqlGroup implements GqlPrincipal {
     }
 
     @GraphQLField
+    @GraphQLDescription("Site where the group is defined")
+    public GqlJcrSite getSite() throws RepositoryException {
+        return new GqlJcrSite(jcrSessionFactory.getCurrentUserSession().getNode(group.getLocalPath()).getResolveSite());
+    }
+
+    @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("Group members")
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
-    public DXPaginatedData<GqlPrincipal> getMembers(DataFetchingEnvironment environment) {
-        Collection<JCRNodeWrapper> nodes = groupManagerService.lookupGroupByPath(group.getLocalPath()).getMembers();
-        List<GqlPrincipal> result = new ArrayList<>();
-        for (JCRNodeWrapper node : nodes) {
-            if (node instanceof JCRUserNode) {
-                result.add(new GqlUser(((JCRUserNode) node).getJahiaUser()));
-            } else if (node instanceof JCRGroupNode) {
-                result.add(new GqlGroup(((JCRGroupNode) node).getJahiaGroup()));
-            }
+    public DXPaginatedData<GqlPrincipal> getMembers(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                                    @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
+                                                    @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields according to specified criteria") FieldGroupingInput fieldGrouping,
+                                                    DataFetchingEnvironment environment) {
+        Stream<GqlPrincipal> stream = groupManagerService.lookupGroupByPath(group.getLocalPath()).getMembers().stream()
+                .map(this::convertMember)
+                .filter(Objects::nonNull)
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
+
+        if (fieldSorter != null) {
+            stream = stream.sorted(SorterHelper.getFieldComparator(fieldSorter, FieldEvaluator.forConnection(environment)));
         }
+
+        if (fieldGrouping != null) {
+            stream = GroupingHelper.group(stream, fieldGrouping, FieldEvaluator.forConnection(environment));
+        }
+
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
-        return PaginationHelper.paginate(result, n -> PaginationHelper.encodeCursor(n.getName()), arguments);
+        return PaginationHelper.paginate(stream, n -> PaginationHelper.encodeCursor(n.getName()), arguments);
+    }
+
+    private GqlPrincipal convertMember(JCRNodeWrapper node) {
+        if (node instanceof JCRUserNode) {
+            return new GqlUser(((JCRUserNode) node).getJahiaUser());
+        } else if (node instanceof JCRGroupNode) {
+            return new GqlGroup(((JCRGroupNode) node).getJahiaGroup());
+        }
+        return null;
     }
 
     @GraphQLField
@@ -139,12 +164,12 @@ public class GqlGroup implements GqlPrincipal {
     @GraphQLNonNull
     @GraphQLDescription("List of groups this principal belongs to")
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
-    public DXPaginatedData<GqlGroup> getGroupMembership(DataFetchingEnvironment environment) {
-        List<String> paths = groupManagerService.getMembershipByPath(group.getLocalPath());
-        Stream<GqlGroup> groups = paths.stream().map(path -> new GqlGroup(groupManagerService.lookupGroupByPath(path).getJahiaGroup()));
-
-        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
-        return PaginationHelper.paginate(groups, n -> PaginationHelper.encodeCursor(n.getName()), arguments);
+    public DXPaginatedData<GqlGroup> getGroupMembership(@GraphQLName("site") @GraphQLDescription("Return only groups which belong to this site") String site,
+                                                        @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                                        @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
+                                                        @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields according to specified criteria") FieldGroupingInput fieldGrouping,
+                                                        DataFetchingEnvironment environment) {
+        return GqlPrincipal.getGroupMembership(group.getLocalPath(), site, fieldFilter, fieldSorter, fieldGrouping, environment, groupManagerService);
     }
 
     @GraphQLField
