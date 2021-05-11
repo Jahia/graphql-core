@@ -55,7 +55,7 @@ import org.jahia.services.usermanager.JahiaUserManagerService;
 
 import javax.inject.Inject;
 
-@GraphQLName("userAdminQuery")
+@GraphQLName("UserAdminQuery")
 @GraphQLDescription("User admin queries")
 public class GqlUserAdmin {
 
@@ -69,7 +69,7 @@ public class GqlUserAdmin {
 
     @GraphQLField
     @GraphQLDescription("Get a user")
-    public GqlUser getUser(@GraphQLName("name") @GraphQLDescription("User name") @GraphQLNonNull String userName,
+    public GqlUser getUser(@GraphQLName("userName") @GraphQLDescription("User name") @GraphQLNonNull String userName,
                            @GraphQLName("site") @GraphQLDescription("Site where the user is defined") String site) {
         JCRUserNode jcrUserNode = userManagerService.lookupUser(userName, site);
         if (jcrUserNode == null) {
@@ -80,7 +80,7 @@ public class GqlUserAdmin {
 
     @GraphQLField
     @GraphQLDescription("Get a group")
-    public GqlGroup getGroup(@GraphQLName("name") @GraphQLDescription("Group name") @GraphQLNonNull String groupName,
+    public GqlGroup getGroup(@GraphQLName("groupName") @GraphQLDescription("Group name") @GraphQLNonNull String groupName,
                              @GraphQLName("site") @GraphQLDescription("Site where the group is defined") String site) {
         JCRGroupNode jcrGroupNode = groupManagerService.lookupGroup(site, groupName);
         if (jcrGroupNode == null) {

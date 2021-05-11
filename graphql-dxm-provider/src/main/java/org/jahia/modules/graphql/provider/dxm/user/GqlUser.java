@@ -43,40 +43,56 @@
  */
 package org.jahia.modules.graphql.provider.dxm.user;
 
-import graphql.annotations.annotationTypes.*;
+import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.connection.GraphQLConnection;
+import graphql.schema.DataFetchingEnvironment;
 import org.jahia.data.viewhelper.principal.PrincipalViewHelper;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
+import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
+import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
+import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.decorator.JCRGroupNode;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUser;
 
 import javax.inject.Inject;
-import java.util.Collection;
+import javax.jcr.RepositoryException;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @GraphQLName("User")
 @GraphQLDescription("GraphQL representation of a Jahia user")
 public class GqlUser implements GqlPrincipal {
-    private JahiaUser user;
+    private final JahiaUser user;
 
     @Inject
     @GraphQLOsgiService
     private JahiaGroupManagerService groupManagerService;
+
+    @Inject
+    @GraphQLOsgiService
+    private JCRSessionFactory jcrSessionFactory;
 
     public GqlUser(JahiaUser jahiaUser) {
         this.user = jahiaUser;
     }
 
     @GraphQLField
+    @GraphQLNonNull
     @GraphQLDescription("User name")
     public String getName() {
         return user.getName();
     }
 
     @GraphQLField
-    public String getFullName() {
+    @GraphQLDescription("Full display name")
+    public String getDisplayName() {
         return PrincipalViewHelper.getFullName(user);
     }
 
@@ -87,6 +103,7 @@ public class GqlUser implements GqlPrincipal {
     }
 
     @GraphQLField
+    @GraphQLDescription("Is this principal member of the specified group")
     public boolean isMemberOf(@GraphQLName("group") String group,
                               @GraphQLName("site") @GraphQLDescription("Site where the group is defined") String site) {
         JCRGroupNode groupNode = groupManagerService.lookupGroup(site, group);
@@ -97,8 +114,20 @@ public class GqlUser implements GqlPrincipal {
     }
 
     @GraphQLField
-    public Collection<GqlGroup> getGroupMembership() {
+    @GraphQLNonNull
+    @GraphQLDescription("List of groups this principal belongs to")
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
+    public DXPaginatedData<GqlGroup> getGroupMembership(DataFetchingEnvironment environment) {
         List<String> paths = groupManagerService.getMembershipByPath(user.getLocalPath());
-        return paths.stream().map(path -> new GqlGroup(groupManagerService.lookupGroupByPath(path).getJahiaGroup())).collect(Collectors.toList());
+        Stream<GqlGroup> groups = paths.stream().map(path -> new GqlGroup(groupManagerService.lookupGroupByPath(path).getJahiaGroup()));
+
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
+        return PaginationHelper.paginate(groups, n -> PaginationHelper.encodeCursor(n.getName()), arguments);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Get the corresponding JCR node")
+    public GqlJcrNode getNode() throws RepositoryException {
+        return SpecializedTypesHandler.getNode(jcrSessionFactory.getCurrentUserSession().getNode(user.getLocalPath()));
     }
 }

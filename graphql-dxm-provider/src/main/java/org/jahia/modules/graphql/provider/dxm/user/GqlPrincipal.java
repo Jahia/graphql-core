@@ -43,17 +43,14 @@
  */
 package org.jahia.modules.graphql.provider.dxm.user;
 
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLTypeResolver;
-import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
-import org.jahia.services.usermanager.JahiaGroupManagerService;
+import graphql.annotations.annotationTypes.*;
+import graphql.annotations.connection.GraphQLConnection;
+import graphql.schema.DataFetchingEnvironment;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
+import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 
-import javax.inject.Inject;
-import java.security.Principal;
-import java.util.Collection;
-import java.util.List;
+import javax.jcr.RepositoryException;
 
 @GraphQLName("Principal")
 @GraphQLDescription("GraphQL representation of a principal")
@@ -62,16 +59,27 @@ public interface GqlPrincipal {
 
 
     @GraphQLField
+    @GraphQLNonNull
     @GraphQLDescription("Name")
-    public String getName();
+    String getName();
+
+    @GraphQLField
+    @GraphQLDescription("Full display name")
+    String getDisplayName();
 
     @GraphQLField
     @GraphQLDescription("Is this principal member of the specified group")
-    public boolean isMemberOf(@GraphQLName("group") String group,
-                              @GraphQLName("site") @GraphQLDescription("Site where the group is defined") String site);
+    boolean isMemberOf(@GraphQLName("group") String group,
+                       @GraphQLName("site") @GraphQLDescription("Site where the group is defined") String site);
 
     @GraphQLField
+    @GraphQLNonNull
     @GraphQLDescription("List of groups this principal belongs to")
-    public Collection<GqlGroup> getGroupMembership();
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
+    DXPaginatedData<GqlGroup> getGroupMembership(DataFetchingEnvironment environment);
+
+    @GraphQLField
+    @GraphQLDescription("Get the corresponding JCR node")
+    GqlJcrNode getNode() throws RepositoryException;
 
 }
