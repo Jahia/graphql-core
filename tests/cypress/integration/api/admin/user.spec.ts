@@ -152,6 +152,34 @@ describe('Test admin user endpoint', () => {
         })
     })
 
+    it('tests membership list with filter', () => {
+        cy.task('apolloNode', {
+            baseUrl: Cypress.config().baseUrl,
+            authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
+            query: gql`
+                {
+                    admin {
+                        userAdmin {
+                            user(userName: "bill") {
+                                groupMembership(
+                                    fieldFilter: { filters: { fieldName: "site.name", value: "digitall" } }
+                                ) {
+                                    pageInfo {
+                                        totalCount
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `,
+        }).then(async (response: any) => {
+            cy.log(JSON.stringify(response))
+            expect(response.data.admin.userAdmin).to.exist
+            expect(response.data.admin.userAdmin.user.groupMembership.pageInfo.totalCount).to.equal(3)
+        })
+    })
+
     it('tests members list', () => {
         cy.task('apolloNode', {
             baseUrl: Cypress.config().baseUrl,
