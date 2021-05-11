@@ -51,6 +51,8 @@ import org.jahia.modules.graphql.provider.dxm.admin.GqlAdminQuery;
 @GraphQLTypeExtension(GqlAdminQuery.class)
 @GraphQLDescription("A query extension that gives access to the users")
 public class UserAdminExtension {
+    private UserAdminExtension() {
+    }
 
     @GraphQLField
     @GraphQLDescription("Get the current user")

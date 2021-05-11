@@ -46,8 +46,6 @@ package org.jahia.modules.graphql.provider.dxm.user;
 import graphql.TypeResolutionEnvironment;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.TypeResolver;
-import org.jahia.services.usermanager.JahiaGroup;
-import org.jahia.services.usermanager.JahiaUser;
 
 public class PrincipalTypeResolver implements TypeResolver {
     @Override

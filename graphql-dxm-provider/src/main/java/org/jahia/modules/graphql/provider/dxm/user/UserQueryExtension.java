@@ -43,18 +43,17 @@
  */
 package org.jahia.modules.graphql.provider.dxm.user;
 
-import graphql.annotations.annotationTypes.*;
+import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
-import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.usermanager.JahiaGroupManagerService;
-import org.jahia.services.usermanager.JahiaUserManagerService;
-
-import javax.inject.Inject;
 
 @GraphQLTypeExtension(DXGraphQLProvider.Query.class)
 @GraphQLDescription("A query extension that gives access to the users")
 public class UserQueryExtension {
+    private UserQueryExtension() {
+    }
 
     @GraphQLField
     @GraphQLDescription("Get the current user")
