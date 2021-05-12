@@ -41,27 +41,22 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.graphql.provider.dxm.node;
+package org.jahia.modules.graphql.provider.dxm.user;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.relay.Edge;
-import graphql.relay.PageInfo;
-import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import org.jahia.modules.graphql.provider.dxm.admin.GqlAdminQuery;
 
-import java.util.List;
-
-public class GqlJcrNodeConnection extends DXConnection<GqlJcrNode> {
-    public GqlJcrNodeConnection(List<Edge<GqlJcrNode>> edges, PageInfo pageInfo) {
-        super(edges, pageInfo);
+@GraphQLTypeExtension(GqlAdminQuery.class)
+@GraphQLDescription("A query extension that gives access to the users")
+public class UserAdminExtension {
+    private UserAdminExtension() {
     }
 
     @GraphQLField
-    @GraphQLName("aggregation")
-    @GraphQLDescription("Get an aggregation by fields on nodes of this connection")
-    public GqlJcrNodeAggregation getAggregation() {
-        return new GqlJcrNodeAggregation(getEdges());
+    @GraphQLDescription("Get the current user")
+    public static GqlUserAdmin getUserAdmin() {
+        return new GqlUserAdmin();
     }
-
 }

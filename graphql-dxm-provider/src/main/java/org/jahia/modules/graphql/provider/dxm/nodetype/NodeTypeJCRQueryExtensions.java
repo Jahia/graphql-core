@@ -70,7 +70,7 @@ public class NodeTypeJCRQueryExtensions {
     @GraphQLField
     @GraphQLName("nodeTypeByName")
     @GraphQLDescription("Get a node type by its name")
-    public static GqlJcrNodeType getNodeTypeByName(@GraphQLNonNull @GraphQLName("name") String name) {
+    public static GqlJcrNodeType getNodeTypeByName(@GraphQLNonNull @GraphQLName("name") @GraphQLDescription("Node type name") String name) {
         try {
             return new GqlJcrNodeType(NodeTypeRegistry.getInstance().getNodeType(name));
         } catch (NoSuchNodeTypeException e) {
@@ -81,7 +81,7 @@ public class NodeTypeJCRQueryExtensions {
     @GraphQLField
     @GraphQLName("nodeTypesByNames")
     @GraphQLDescription("Get multiple node types by their names")
-    public static Collection<GqlJcrNodeType> getNodeTypesByNames(@GraphQLNonNull @GraphQLName("names") Collection<String> names) {
+    public static Collection<GqlJcrNodeType> getNodeTypesByNames(@GraphQLNonNull @GraphQLName("names") @GraphQLDescription("Node type names") Collection<String> names) {
         LinkedHashSet<GqlJcrNodeType> result = new LinkedHashSet<>(names.size());
         for (String name : names) {
             ExtendedNodeType nodeType;
@@ -99,7 +99,7 @@ public class NodeTypeJCRQueryExtensions {
     @GraphQLName("nodeTypes")
     @GraphQLDescription("Get a list of nodetypes based on specified parameter")
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
-    public static DXPaginatedData<GqlJcrNodeType> getNodeTypes(@GraphQLName("filter") NodeTypesListInput input,
+    public static DXPaginatedData<GqlJcrNodeType> getNodeTypes(@GraphQLName("filter") @GraphQLDescription("Filter on node type") NodeTypesListInput input,
                                                                @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
                                                                DataFetchingEnvironment environment) {
         try {

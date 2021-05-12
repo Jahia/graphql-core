@@ -8,6 +8,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
 
+@GraphQLDescription("Possible operations on a node")
 public class GqlOperationsSupport {
     private GqlJcrNode node;
 

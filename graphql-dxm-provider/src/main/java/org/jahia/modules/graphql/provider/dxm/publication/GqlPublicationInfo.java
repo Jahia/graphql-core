@@ -59,6 +59,7 @@ import javax.jcr.RepositoryException;
 /**
  * Aggregated publication info about a JCR node.
  */
+@GraphQLDescription("Publication status information for a JCR node")
 public class GqlPublicationInfo {
 
     private ComplexPublicationService.AggregatedPublicationInfo aggregatedInfo;

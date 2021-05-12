@@ -57,6 +57,7 @@ import java.util.Collection;
  *
  * @author yousria
  */
+@GraphQLDescription("Node criterias")
 public class GqlJcrNodeCriteriaInput {
 
     /**

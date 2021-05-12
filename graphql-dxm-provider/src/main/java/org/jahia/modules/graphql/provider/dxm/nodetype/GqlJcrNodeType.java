@@ -89,20 +89,21 @@ public class GqlJcrNodeType {
 
     @GraphQLField()
     @GraphQLName("name")
+    @GraphQLDescription("Node type name")
     public String getName() {
         return nodeType.getName();
     }
 
     @GraphQLField()
     @GraphQLName("displayName")
-    public String getDisplayName(@GraphQLName("language") @GraphQLNonNull String language) {
+    @GraphQLDescription("Node type displayable name")
+    public String getDisplayName(@GraphQLName("language") @GraphQLDescription("Language") @GraphQLNonNull String language) {
         return nodeType.getLabel(LanguageCodeConverters.languageCodeToLocale(language));
-
     }
 
     @GraphQLField()
     @GraphQLName("icon")
-    @GraphQLDescription
+    @GraphQLDescription("Node type icon")
     public String getIcon(){
         try {
             return getIcon(nodeType);
@@ -150,7 +151,7 @@ public class GqlJcrNodeType {
     @GraphQLName("isNodeType")
     @GraphQLDescription("Reports if the current node type matches the nodetype(s) passed in parameter")
     @GraphQLNonNull
-    public boolean isNodeType(@GraphQLName("type") @GraphQLNonNull GqlJcrNode.NodeTypesInput input) {
+    public boolean isNodeType(@GraphQLName("type") @GraphQLDescription("Node type name") @GraphQLNonNull GqlJcrNode.NodeTypesInput input) {
         return NodeTypeHelper.getTypesPredicate(input).test(nodeType);
     }
 

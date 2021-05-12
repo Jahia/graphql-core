@@ -231,7 +231,8 @@ public interface GqlJcrNode {
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the ancestor nodes of the JCR node, top down direction")
     List<GqlJcrNode> getAncestors(@GraphQLName("upToPath") @GraphQLDescription("The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes") String upToPath,
-                                  @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment)
+                                  @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                  DataFetchingEnvironment environment)
     throws GqlJcrWrongInputException;
 
     /**
@@ -243,7 +244,8 @@ public interface GqlJcrNode {
     @GraphQLNonNull
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
-    DXPaginatedData<GqlJcrProperty> getReferences(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,DataFetchingEnvironment environment);
+    DXPaginatedData<GqlJcrProperty> getReferences(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                                  DataFetchingEnvironment environment);
 
     /**
      * Get GraphQL representation of this node in certain workspace.
@@ -303,6 +305,7 @@ public interface GqlJcrNode {
     /**
      * Nodes filter based on their types.
      */
+    @GraphQLDescription("Node types selection")
     static class NodeTypesInput {
 
         private MulticriteriaEvaluation multicriteriaEvaluation;
@@ -375,6 +378,7 @@ public interface GqlJcrNode {
     /**
      * Nodes filter based on their properties.
      */
+    @GraphQLDescription("Node properties selection")
     static class NodePropertiesInput {
 
         private MulticriteriaEvaluation multicriteriaEvaluation;
@@ -417,6 +421,7 @@ public interface GqlJcrNode {
     /**
      * Nodes filter based on a single property.
      */
+    @GraphQLDescription("Node property selection")
     static class NodePropertyInput {
 
         private String language;

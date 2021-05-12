@@ -41,27 +41,52 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.graphql.provider.dxm.node;
+package org.jahia.modules.graphql.provider.dxm.user;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.relay.Edge;
-import graphql.relay.PageInfo;
-import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
+import org.jahia.services.content.decorator.JCRGroupNode;
+import org.jahia.services.content.decorator.JCRUserNode;
+import org.jahia.services.usermanager.JahiaGroupManagerService;
+import org.jahia.services.usermanager.JahiaUserManagerService;
 
-import java.util.List;
+import javax.inject.Inject;
 
-public class GqlJcrNodeConnection extends DXConnection<GqlJcrNode> {
-    public GqlJcrNodeConnection(List<Edge<GqlJcrNode>> edges, PageInfo pageInfo) {
-        super(edges, pageInfo);
+@GraphQLName("UserAdminQuery")
+@GraphQLDescription("User admin queries")
+public class GqlUserAdmin {
+
+    @Inject
+    @GraphQLOsgiService
+    private JahiaUserManagerService userManagerService;
+
+    @Inject
+    @GraphQLOsgiService
+    private JahiaGroupManagerService groupManagerService;
+
+    @GraphQLField
+    @GraphQLDescription("Get a user")
+    public GqlUser getUser(@GraphQLName("userName") @GraphQLDescription("User name") @GraphQLNonNull String userName,
+                           @GraphQLName("site") @GraphQLDescription("Site where the user is defined") String site) {
+        JCRUserNode jcrUserNode = userManagerService.lookupUser(userName, site);
+        if (jcrUserNode == null) {
+            return null;
+        }
+        return new GqlUser(jcrUserNode.getJahiaUser());
     }
 
     @GraphQLField
-    @GraphQLName("aggregation")
-    @GraphQLDescription("Get an aggregation by fields on nodes of this connection")
-    public GqlJcrNodeAggregation getAggregation() {
-        return new GqlJcrNodeAggregation(getEdges());
+    @GraphQLDescription("Get a group")
+    public GqlGroup getGroup(@GraphQLName("groupName") @GraphQLDescription("Group name") @GraphQLNonNull String groupName,
+                             @GraphQLName("site") @GraphQLDescription("Site where the group is defined") String site) {
+        JCRGroupNode jcrGroupNode = groupManagerService.lookupGroup(site, groupName);
+        if (jcrGroupNode == null) {
+            return null;
+        }
+        return new GqlGroup(jcrGroupNode.getJahiaGroup());
     }
 
 }

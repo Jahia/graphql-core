@@ -60,6 +60,7 @@ import static org.jahia.services.seo.jcr.VanityUrlManager.*;
  * GraphQL representation of a vanity URL.
  */
 @GraphQLName("VanityUrl")
+@GraphQLDescription("GraphQL representation of a vanity URL")
 @SpecializedType("jnt:vanityUrl")
 public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
 

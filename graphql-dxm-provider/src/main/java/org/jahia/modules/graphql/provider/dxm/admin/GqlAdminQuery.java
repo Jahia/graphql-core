@@ -24,7 +24,7 @@ import java.util.Properties;
 /**
  * GraphQL root object for Admin related queries.
  */
-@GraphQLName("adminQuery")
+@GraphQLName("AdminQuery")
 @GraphQLDescription("Admin queries root")
 public class GqlAdminQuery {
 

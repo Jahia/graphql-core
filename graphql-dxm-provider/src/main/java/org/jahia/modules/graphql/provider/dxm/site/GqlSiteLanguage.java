@@ -43,6 +43,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.site;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.utils.LanguageCodeConverters;
@@ -50,6 +51,7 @@ import org.jahia.utils.LanguageCodeConverters;
 import java.util.Locale;
 
 @GraphQLName("JCRSiteLanguage")
+@GraphQLDescription("Site language representation")
 public class GqlSiteLanguage {
 
     private String language;
@@ -67,28 +69,33 @@ public class GqlSiteLanguage {
 
     @GraphQLField
     @GraphQLName("language")
+    @GraphQLDescription("Language code")
     public String getLanguage() {
         return language;
     }
 
     @GraphQLField
     @GraphQLName("displayName")
-    public String getDisplayName(@GraphQLName("language") String displayLanguage) {
+    @GraphQLDescription("Display name")
+    public String getDisplayName(@GraphQLName("language") @GraphQLDescription("Language") String displayLanguage) {
         Locale locale = LanguageCodeConverters.languageCodeToLocale(language);
         return displayLanguage != null ? locale.getDisplayName(Locale.forLanguageTag(displayLanguage)) : locale.getDisplayName(locale);
     }
 
     @GraphQLField
+    @GraphQLDescription("Is this language active in edit")
     public boolean isActiveInEdit() {
         return activeInEdit;
     }
 
     @GraphQLField
+    @GraphQLDescription("Is this language active in live")
     public boolean isActiveInLive() {
         return activeInLive;
     }
 
     @GraphQLField
+    @GraphQLDescription("Is this language mandatory")
     public boolean isMandatory() {
         return mandatory;
     }

@@ -55,6 +55,7 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 /**
  * Input for nodetypes list
  */
+@GraphQLDescription("Input for nodetypes list")
 public class NodeTypesListInput {
 
     private List<String> modules;

@@ -53,6 +53,7 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
  *
  * @author yousria
  */
+@GraphQLDescription("Ordering")
 public class GqlOrdering {
 
     public enum OrderType {

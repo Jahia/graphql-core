@@ -53,24 +53,30 @@ import org.jahia.data.viewhelper.principal.PrincipalViewHelper;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
-import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
-import org.jahia.modules.graphql.provider.dxm.predicate.FieldGroupingInput;
-import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
+import org.jahia.modules.graphql.provider.dxm.predicate.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.site.GqlJcrSite;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.decorator.JCRGroupNode;
+import org.jahia.services.content.decorator.JCRUserNode;
+import org.jahia.services.usermanager.JahiaGroup;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
-import org.jahia.services.usermanager.JahiaUser;
 
 import javax.inject.Inject;
 import javax.jcr.RepositoryException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
-@GraphQLName("User")
-@GraphQLDescription("GraphQL representation of a Jahia user")
-public class GqlUser implements GqlPrincipal {
-    private final JahiaUser user;
+@GraphQLName("Group")
+@GraphQLDescription("GraphQL representation of a Jahia group")
+public class GqlGroup implements GqlPrincipal {
+    private final JahiaGroup group;
 
     @Inject
     @GraphQLOsgiService
@@ -80,33 +86,67 @@ public class GqlUser implements GqlPrincipal {
     @GraphQLOsgiService
     private JCRSessionFactory jcrSessionFactory;
 
-    public GqlUser(JahiaUser jahiaUser) {
-        this.user = jahiaUser;
+    public GqlGroup(JahiaGroup jahiaGroup) {
+        this.group = jahiaGroup;
     }
 
     @GraphQLField
     @GraphQLNonNull
-    @GraphQLDescription("User name")
+    @GraphQLDescription("Group name")
     public String getName() {
-        return user.getName();
+        return group.getName();
     }
 
     @GraphQLField
     @GraphQLDescription("Full display name")
     public String getDisplayName() {
-        return PrincipalViewHelper.getFullName(user);
+        return PrincipalViewHelper.getFullName(group);
     }
 
     @GraphQLField
-    @GraphQLDescription("User property")
+    @GraphQLDescription("Group property")
     public String getProperty(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property") String name) {
-        return user.getProperty(name);
+        return group.getProperty(name);
     }
 
     @GraphQLField
-    @GraphQLDescription("Site where the user is defined")
+    @GraphQLDescription("Site where the group is defined")
     public GqlJcrSite getSite() throws RepositoryException {
-        return new GqlJcrSite(jcrSessionFactory.getCurrentUserSession().getNode(user.getLocalPath()).getResolveSite());
+        return new GqlJcrSite(jcrSessionFactory.getCurrentUserSession().getNode(group.getLocalPath()).getResolveSite());
+    }
+
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("Group members")
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
+    public DXPaginatedData<GqlPrincipal> getMembers(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                                    @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
+                                                    @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields according to specified criteria") FieldGroupingInput fieldGrouping,
+                                                    DataFetchingEnvironment environment) {
+        Stream<GqlPrincipal> stream = groupManagerService.lookupGroupByPath(group.getLocalPath()).getMembers().stream()
+                .map(this::convertMember)
+                .filter(Objects::nonNull)
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
+
+        if (fieldSorter != null) {
+            stream = stream.sorted(SorterHelper.getFieldComparator(fieldSorter, FieldEvaluator.forConnection(environment)));
+        }
+
+        if (fieldGrouping != null) {
+            stream = GroupingHelper.group(stream, fieldGrouping, FieldEvaluator.forConnection(environment));
+        }
+
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
+        return PaginationHelper.paginate(stream, n -> PaginationHelper.encodeCursor(n.getName()), arguments);
+    }
+
+    private GqlPrincipal convertMember(JCRNodeWrapper node) {
+        if (node instanceof JCRUserNode) {
+            return new GqlUser(((JCRUserNode) node).getJahiaUser());
+        } else if (node instanceof JCRGroupNode) {
+            return new GqlGroup(((JCRGroupNode) node).getJahiaGroup());
+        }
+        return null;
     }
 
     @GraphQLField
@@ -117,7 +157,7 @@ public class GqlUser implements GqlPrincipal {
         if (groupNode == null) {
             return false;
         }
-        return groupNode.isMember(user.getLocalPath());
+        return groupNode.isMember(this.group.getLocalPath());
     }
 
     @GraphQLField
@@ -129,12 +169,12 @@ public class GqlUser implements GqlPrincipal {
                                                         @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
                                                         @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields according to specified criteria") FieldGroupingInput fieldGrouping,
                                                         DataFetchingEnvironment environment) {
-        return GqlPrincipal.getGroupMembership(user.getLocalPath(), site, fieldFilter, fieldSorter, fieldGrouping, environment, groupManagerService);
+        return GqlPrincipal.getGroupMembership(group.getLocalPath(), site, fieldFilter, fieldSorter, fieldGrouping, environment, groupManagerService);
     }
 
     @GraphQLField
     @GraphQLDescription("Get the corresponding JCR node")
     public GqlJcrNode getNode() throws RepositoryException {
-        return SpecializedTypesHandler.getNode(jcrSessionFactory.getCurrentUserSession().getNode(user.getLocalPath()));
+        return SpecializedTypesHandler.getNode(jcrSessionFactory.getCurrentUserSession().getNode(group.getLocalPath()));
     }
 }
