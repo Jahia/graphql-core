@@ -6,14 +6,19 @@ type Metadata @mapping(node:"jnt:content", ignoreDefaultQueries: true) {
     "Date of creation for the associated content"
     created : Date @mapping(property:"jcr:created")
 
+    "Original author of the associated content"
     createdBy : String @mapping(property:"jcr:createdBy")
 
+    "Date of last modification of the associated content"
     lastModified : Date @mapping(property:"jcr:lastModified")
 
+    "Author of last modification of the associated content"
     lastModifiedBy : String @mapping(property:"jcr:lastModifiedBy")
 
+    "Date of last publication of the associated content"
     lastPublished : Date @mapping(property:"j:lastPublished")
 
+    "Author of last publication of the associated content"
     lastPublishedBy : String @mapping(property:"j:lastPublishedBy")
 }
 
@@ -21,8 +26,13 @@ type Metadata @mapping(node:"jnt:content", ignoreDefaultQueries: true) {
 Asset type for files
 """
 type Asset @mapping(node: "jnt:file", ignoreDefaultQueries: true) {
+    "Asset metadata"
     metadata: Metadata
+
+    "Mime type of the asset"
     type: String @mapping(property: "jcr:content.jcr:mimeType")
+
+    "Asset size"
     size: Long @mapping(property: "jcr:content.jcr:data")
 }
 
@@ -30,11 +40,19 @@ type Asset @mapping(node: "jnt:file", ignoreDefaultQueries: true) {
 Asset type for image
 """
 type ImageAsset @mapping(node: "jmix:image,jnt:file", ignoreDefaultQueries: true) {
+    "Asset metadata"
     metadata: Metadata
+
     "Mime type of image"
     type: String @mapping(property: "jcr:content.jcr:mimeType")
+
+    "Image size"
     size: Long @mapping(property: "jcr:content.jcr:data")
+
+    "Image height"
     height: Long @mapping(property: "j:height")
+
+    "Image width"
     width: Long @mapping(property: "j:width")
 }
 
@@ -42,7 +60,12 @@ type ImageAsset @mapping(node: "jmix:image,jnt:file", ignoreDefaultQueries: true
 Category type
 """
 type Category @mapping(node: "jnt:category") {
+    "Asset metadata"
 	metadata: Metadata
+
+    "Description"
 	description: String @mapping(property: "jcr:description")
+
+    "Title"
 	title: String @mapping(property: "jcr:title")
 }
