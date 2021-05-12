@@ -43,11 +43,13 @@
  */
 package org.jahia.modules.graphql.provider.dxm.locking;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@GraphQLDescription("Details on a lock")
 public class GqlLockDetail {
     private static final Logger logger = LoggerFactory.getLogger(GqlLockDetail.class);
     private String language;
@@ -62,18 +64,21 @@ public class GqlLockDetail {
 
     @GraphQLField
     @GraphQLName("language")
+    @GraphQLDescription("Language")
     public String getLanguage() {
         return language;
     }
 
     @GraphQLField
     @GraphQLName("owner")
+    @GraphQLDescription("Lock owner")
     public String getOwner() {
         return owner;
     }
 
     @GraphQLField
     @GraphQLName("type")
+    @GraphQLDescription("Lock type")
     public String getType() {
         return type;
     }

@@ -69,30 +69,35 @@ public class GqlJcrNodeDefinition implements GqlJcrItemDefinition {
     @Override
     @GraphQLName("name")
     @GraphQLNonNull
+    @GraphQLDescription("Gets the name of the child item.")
     public String getName() {
         return definition.getName();
     }
 
     @Override
     @GraphQLNonNull
+    @GraphQLDescription("Reports whether the item is mandatory. A mandatory item is one that, if its parent node exists, must also exist.")
     public boolean isMandatory() {
         return definition.isMandatory();
     }
 
     @Override
     @GraphQLNonNull
+    @GraphQLDescription("Reports whether the item is to be automatically created when its parent node is created.")
     public boolean isAutoCreated() {
         return definition.isAutoCreated();
     }
 
     @Override
     @GraphQLNonNull
+    @GraphQLDescription("Reports whether the child item is protected.")
     public boolean isProtected() {
         return definition.isProtected();
     }
 
     @Override
     @GraphQLNonNull
+    @GraphQLDescription("Reports whether the child item is hidden from UI.")
     public boolean isHidden() {
         return definition.isHidden();
     }
@@ -100,6 +105,7 @@ public class GqlJcrNodeDefinition implements GqlJcrItemDefinition {
     @Override
     @GraphQLName("declaringNodeType")
     @GraphQLNonNull
+    @GraphQLDescription("Gets the node type that contains the declaration of this definition.")
     public GqlJcrNodeType getDeclaringNodeType() {
         return new GqlJcrNodeType(definition.getDeclaringNodeType());
     }
@@ -119,8 +125,8 @@ public class GqlJcrNodeDefinition implements GqlJcrItemDefinition {
     }
 
     @GraphQLField
-    @GraphQLDescription("Reports whether this child node can have same-name siblings. In other words, whether the parent node can have more than one child node of this name.")
     @GraphQLNonNull
+    @GraphQLDescription("Reports whether this child node can have same-name siblings. In other words, whether the parent node can have more than one child node of this name.")
     public boolean allowsSameNameSiblings() {
         return definition.allowsSameNameSiblings();
     }

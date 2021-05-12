@@ -111,7 +111,7 @@ public class GqlUser implements GqlPrincipal {
 
     @GraphQLField
     @GraphQLDescription("Is this principal member of the specified group")
-    public boolean isMemberOf(@GraphQLName("group") String group,
+    public boolean isMemberOf(@GraphQLName("group") @GraphQLDescription("Target group") String group,
                               @GraphQLName("site") @GraphQLDescription("Site where the group is defined") String site) {
         JCRGroupNode groupNode = groupManagerService.lookupGroup(site, group);
         if (groupNode == null) {

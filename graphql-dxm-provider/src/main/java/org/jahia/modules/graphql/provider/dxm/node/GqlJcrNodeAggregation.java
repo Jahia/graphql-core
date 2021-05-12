@@ -115,6 +115,7 @@ public class GqlJcrNodeAggregation {
     }
 
 
+    @GraphQLDescription("Simple node count aggregation")
     public class CountAggregation {
         @GraphQLField
         @GraphQLDescription("Count all values")
@@ -124,6 +125,7 @@ public class GqlJcrNodeAggregation {
         }
     }
 
+    @GraphQLDescription("Simple numeric aggregation on properties values")
     public class StatAggregation {
         private Function<LongStream, Long> longFunction;
         private Function<DoubleStream, Double> doubleFunction;

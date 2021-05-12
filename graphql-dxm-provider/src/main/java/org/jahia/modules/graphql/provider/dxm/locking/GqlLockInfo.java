@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 
 @GraphQLName("LockInfo")
+@GraphQLDescription("Information on node lock")
 public class GqlLockInfo {
     public static final Logger logger = LoggerFactory.getLogger(GqlLockInfo.class);
 

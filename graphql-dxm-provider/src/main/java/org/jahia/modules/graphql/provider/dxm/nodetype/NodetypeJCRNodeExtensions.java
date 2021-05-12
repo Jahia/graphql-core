@@ -60,12 +60,7 @@ import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.NodeTypeIterator;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -81,8 +76,17 @@ public class NodetypeJCRNodeExtensions {
         this.node = node;
     }
 
+    private static void collectSubTypes(Collection<ExtendedNodeType> result, ExtendedNodeType type) {
+        for (NodeTypeIterator it = type.getSubtypes(); it.hasNext(); ) {
+            ExtendedNodeType subType = (ExtendedNodeType) it.next();
+            result.add(subType);
+            collectSubTypes(result, subType);
+        }
+    }
+
     @GraphQLField
     @GraphQLName("primaryNodeType")
+    @GraphQLDescription("Get the primary node type of this node")
     @GraphQLNonNull
     public GqlJcrNodeType getPrimaryNodeType() {
         try {
@@ -96,7 +100,7 @@ public class NodetypeJCRNodeExtensions {
     @GraphQLName("isNodeType")
     @GraphQLDescription("Reports if the current node matches the nodetype(s) passed in parameter")
     @GraphQLNonNull
-    public boolean isNodeType(@GraphQLName("type") @GraphQLNonNull GqlJcrNode.NodeTypesInput input) {
+    public boolean isNodeType(@GraphQLName("type") @GraphQLDescription("Node type name") @GraphQLNonNull GqlJcrNode.NodeTypesInput input) {
         return NodeHelper.getTypesPredicate(input).test(node.getNode());
     }
 
@@ -137,9 +141,9 @@ public class NodetypeJCRNodeExtensions {
     @GraphQLName("allowedChildNodeTypes")
     @GraphQLDescription("Returns a list of types allowed under the provided node")
     public List<GqlJcrNodeType> getAllowedChildNodeTypes(
-        @GraphQLName("includeSubTypes") @GraphQLDescription("Whether all sub-types of allowed child node types should be included") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean includeSubTypes,
-        @GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL fields values") FieldFiltersInput fieldFilter,
-        DataFetchingEnvironment environment
+            @GraphQLName("includeSubTypes") @GraphQLDescription("Whether all sub-types of allowed child node types should be included") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean includeSubTypes,
+            @GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL fields values") FieldFiltersInput fieldFilter,
+            DataFetchingEnvironment environment
     ) {
 
         // TODO: update to invoke the ConstraintsHelper.getConstraintSet and avoid splitting the string.
@@ -171,17 +175,9 @@ public class NodetypeJCRNodeExtensions {
         }
 
         return types
-            .stream()
-            .map(GqlJcrNodeType::new)
-            .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
-            .collect(Collectors.toList());
-    }
-
-    private static void collectSubTypes(Collection<ExtendedNodeType> result, ExtendedNodeType type) {
-        for (NodeTypeIterator it = type.getSubtypes(); it.hasNext(); ) {
-            ExtendedNodeType subType = (ExtendedNodeType) it.next();
-            result.add(subType);
-            collectSubTypes(result, subType);
-        }
+                .stream()
+                .map(GqlJcrNodeType::new)
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))
+                .collect(Collectors.toList());
     }
 }

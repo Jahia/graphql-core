@@ -58,6 +58,7 @@ import java.util.Collection;
 import java.util.List;
 
 @GraphQLName("JCRSite")
+@GraphQLDescription("GraphQL representation of a site node")
 @SpecializedType("jnt:virtualsite")
 public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode {
 
@@ -70,24 +71,28 @@ public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode {
 
     @GraphQLField
     @GraphQLName("sitekey")
+    @GraphQLDescription("Site key")
     public String getSiteKey() {
         return siteNode.getSiteKey();
     }
 
     @GraphQLField
     @GraphQLName("serverName")
+    @GraphQLDescription("Site server name")
     public String getServerName() {
         return siteNode.getServerName();
     }
 
     @GraphQLField
     @GraphQLName("description")
+    @GraphQLDescription("Site description")
     public String getDescription() {
         return siteNode.getDescription();
     }
 
     @GraphQLField
     @GraphQLName("defaultLanguage")
+    @GraphQLDescription("Site default language")
     public String getDefaultLanguage() {
         return siteNode.getDefaultLanguage();
     }
@@ -108,6 +113,7 @@ public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode {
 
     @GraphQLField
     @GraphQLName("languages")
+    @GraphQLDescription("Site languages")
     public Collection<GqlSiteLanguage> getLanguages() {
         List<GqlSiteLanguage> result = new ArrayList<>();
 

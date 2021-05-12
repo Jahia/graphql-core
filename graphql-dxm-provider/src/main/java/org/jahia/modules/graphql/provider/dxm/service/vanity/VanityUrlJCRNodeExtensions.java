@@ -89,8 +89,8 @@ public class VanityUrlJCRNodeExtensions {
     @GraphQLField
     @GraphQLName("vanityUrls")
     @GraphQLDescription("Get vanity URLs from the current node filtered by the parameters")
-    public Collection<GqlJcrVanityUrl> getVanityUrls(@GraphQLName("languages") Collection<String> languages,
-                                                     @GraphQLName("fieldFilter") FieldFiltersInput fieldFilter,
+    public Collection<GqlJcrVanityUrl> getVanityUrls(@GraphQLName("languages") @GraphQLDescription("Languages") Collection<String> languages,
+                                                     @GraphQLName("fieldFilter") @GraphQLDescription("Filter results based on graphql field values") FieldFiltersInput fieldFilter,
                                                      DataFetchingEnvironment environment) {
 
         JCRNodeIteratorWrapper vanityUrls;
@@ -103,7 +103,7 @@ public class VanityUrlJCRNodeExtensions {
             throw new RuntimeException(e);
         }
 
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)vanityUrls, Spliterator.ORDERED), false)
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) vanityUrls, Spliterator.ORDERED), false)
                 .map(GqlJcrVanityUrl::new)
                 .filter(gqlJcrVanityUrl -> languages == null || languages.contains(gqlJcrVanityUrl.getLanguage()))
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forList(environment)))

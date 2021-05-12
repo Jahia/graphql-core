@@ -89,7 +89,7 @@ public class RenderNodeExtensions {
     public GqlJcrNode getDisplayableNode(DataFetchingEnvironment environment) {
         Optional<HttpServletRequest> httpServletRequest = ((GraphQLContext) environment.getContext()).getRequest();
         Optional<HttpServletResponse> httpServletResponse = ((GraphQLContext) environment.getContext()).getResponse();
-        if(!httpServletRequest.isPresent() || !httpServletResponse.isPresent()) {
+        if (!httpServletRequest.isPresent() || !httpServletResponse.isPresent()) {
             return null;
         }
         RenderContext context = new RenderContext(httpServletRequest.get(),
@@ -127,16 +127,18 @@ public class RenderNodeExtensions {
     }
 
     @GraphQLField
+    @GraphQLDescription("Render URL in ajax mode")
     public String getAjaxRenderUrl() {
         return node.getNode().getUrl() + ".ajax";
     }
 
     @GraphQLField
-    public RenderedNode getRenderedContent(@GraphQLName("view") String view,
-                                           @GraphQLName("templateType") String templateType,
-                                           @GraphQLName("contextConfiguration") String contextConfiguration,
-                                           @GraphQLName("language") String language,
-                                           @GraphQLName("requestAttributes") Collection<RenderRequestAttributeInput> requestAttributes, DataFetchingEnvironment environment) {
+    @GraphQLDescription("Gets the fully rendered content for this node")
+    public RenderedNode getRenderedContent(@GraphQLName("view") @GraphQLDescription("Name of the view") String view,
+                                           @GraphQLName("templateType") @GraphQLDescription("Template type") String templateType,
+                                           @GraphQLName("contextConfiguration") @GraphQLDescription("Rendering context configuration") String contextConfiguration,
+                                           @GraphQLName("language") @GraphQLDescription("Language") String language,
+                                           @GraphQLName("requestAttributes") @GraphQLDescription("Additional request attributes") Collection<RenderRequestAttributeInput> requestAttributes, DataFetchingEnvironment environment) {
         try {
             RenderService renderService = (RenderService) SpringContextSingleton.getBean("RenderService");
 
@@ -156,7 +158,7 @@ public class RenderNodeExtensions {
 
             Optional<HttpServletRequest> httpServletRequest = ((GraphQLContext) environment.getContext()).getRequest();
             Optional<HttpServletResponse> httpServletResponse = ((GraphQLContext) environment.getContext()).getResponse();
-            if(!httpServletRequest.isPresent() || !httpServletResponse.isPresent()) {
+            if (!httpServletRequest.isPresent() || !httpServletResponse.isPresent()) {
                 throw new RuntimeException("No HttpRequest or HttpResponse");
             }
             HttpServletRequest request = httpServletRequest.get();
@@ -193,6 +195,7 @@ public class RenderNodeExtensions {
         }
     }
 
+    @GraphQLDescription("Rendering result for a node")
     public static class RenderedNode {
         private String output;
         private RenderContext renderContext;
@@ -200,14 +203,16 @@ public class RenderNodeExtensions {
         public RenderedNode(String output, RenderContext renderContext) {
             this.output = output;
             this.renderContext = renderContext;
-       }
+        }
 
         @GraphQLField
+        @GraphQLDescription("Rendering output")
         public String getOutput() {
             return output;
         }
 
         @GraphQLField
+        @GraphQLDescription("Contraints on this node")
         public String getConstraints() {
             String constraints = null;
             try {
@@ -219,8 +224,9 @@ public class RenderNodeExtensions {
         }
 
         @GraphQLField
-        public List<StaticAsset> getStaticAssets(@GraphQLName("type") @GraphQLNonNull String type) {
-            Map<String, Map<String, Map<String, String>>> staticAssets = (Map)renderContext.getRequest().getAttribute("staticAssets");
+        @GraphQLDescription("List of static assets")
+        public List<StaticAsset> getStaticAssets(@GraphQLName("type") @GraphQLDescription("Assets type") @GraphQLNonNull String type) {
+            Map<String, Map<String, Map<String, String>>> staticAssets = (Map) renderContext.getRequest().getAttribute("staticAssets");
             if (staticAssets != null) {
                 Map<String, Map<String, String>> entries = staticAssets.get(type);
                 if (entries != null) {
@@ -237,6 +243,7 @@ public class RenderNodeExtensions {
         }
     }
 
+    @GraphQLDescription("Representation of a static assert")
     public static class StaticAsset {
         private String key;
         private Map<String, String> options;
@@ -247,12 +254,14 @@ public class RenderNodeExtensions {
         }
 
         @GraphQLField
+        @GraphQLDescription("Asset key")
         public String getKey() {
             return key;
         }
 
         @GraphQLField
-        public String getOption(@GraphQLName("name") @GraphQLNonNull String name) {
+        @GraphQLDescription("Asset option")
+        public String getOption(@GraphQLName("name") @GraphQLDescription("Asset option name") @GraphQLNonNull String name) {
             return options.get(name);
         }
 

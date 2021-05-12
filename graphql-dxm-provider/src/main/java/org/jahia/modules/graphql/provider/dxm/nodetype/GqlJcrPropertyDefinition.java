@@ -73,36 +73,42 @@ public class GqlJcrPropertyDefinition implements GqlJcrItemDefinition {
     @Override
     @GraphQLName("name")
     @GraphQLNonNull
+    @GraphQLDescription("Gets the name of the child item.")
     public String getName() {
         return definition.getName();
     }
 
     @Override
     @GraphQLNonNull
+    @GraphQLDescription("Reports whether the item is mandatory. A mandatory item is one that, if its parent node exists, must also exist.")
     public boolean isMandatory() {
         return definition.isMandatory();
     }
 
     @Override
     @GraphQLNonNull
+    @GraphQLDescription("Reports whether the item is to be automatically created when its parent node is created.")
     public boolean isAutoCreated() {
         return definition.isAutoCreated();
     }
 
     @Override
     @GraphQLNonNull
+    @GraphQLDescription("Reports whether the child item is protected.")
     public boolean isProtected() {
         return definition.isProtected();
     }
 
     @Override
     @GraphQLNonNull
+    @GraphQLDescription("Reports whether the child item is hidden from UI.")
     public boolean isHidden() {
         return definition.isHidden();
     }
 
     @GraphQLNonNull
     @GraphQLField
+    @GraphQLDescription("Property constraints")
     public List<String> getConstraints() {
         return Arrays.stream(definition.getValueConstraintObjects()).map(ValueConstraint::getString).collect(Collectors.toList());
     }
@@ -110,6 +116,7 @@ public class GqlJcrPropertyDefinition implements GqlJcrItemDefinition {
     @Override
     @GraphQLName("declaringNodeType")
     @GraphQLNonNull
+    @GraphQLDescription("Gets the node type that contains the declaration of this definition.")
     public GqlJcrNodeType getDeclaringNodeType() {
         return new GqlJcrNodeType(definition.getDeclaringNodeType());
     }
@@ -141,7 +148,7 @@ public class GqlJcrPropertyDefinition implements GqlJcrItemDefinition {
     @GraphQLName("displayName")
     @GraphQLDescription("Gets the displayable name of the property for the given language code. Return the system name in case the label doesn't exists")
     @GraphQLNonNull
-    public String getDisplayName(@GraphQLName("language") @GraphQLNonNull String language) {
+    public String getDisplayName(@GraphQLName("language") @GraphQLDescription("Language") @GraphQLNonNull String language) {
         String displayName = definition.getLabel(new Locale(language));
         return StringUtils.isNotEmpty(displayName) ? displayName : getName();
     }
