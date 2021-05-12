@@ -7,6 +7,37 @@ describe('Test if every type in graphQL API has description', () => {
         const noDesc = new Set()
         const invalidNames = new Set()
         await executeTest('Query', types, noDesc, invalidNames)
+
+        const noDescBlacklist = [
+            'type=JCRSite/field=findAvailableNodeName/arg=nodeType',
+            'type=JCRSite/field=findAvailableNodeName/arg=language',
+            'type=VanityUrl/field=findAvailableNodeName/arg=nodeType',
+            'type=VanityUrl/field=findAvailableNodeName/arg=language',
+            'type=GqlDashboard',
+            'type=GqlModule',
+            'type=GqlEditorForms',
+            'type=EditorForm',
+            'type=EditorFormSection',
+            'type=EditorFormFieldSet',
+            'type=EditorFormField',
+            'type=EditorFormFieldValue',
+            'type=EditorFormProperty',
+            'type=EditorFormFieldValueConstraint',
+            'type=InputContextEntryInput',
+            'inputType=InputContextEntryInput/field=key',
+            'inputType=InputContextEntryInput/field=value',
+            'type=Query/field=categoryById/arg=id',
+            'type=Metadata/field=uuid',
+            'type=Metadata/field=path',
+            'type=Category/field=uuid',
+            'type=Category/field=path',
+            'type=Query/field=categoryByPath/arg=path',
+        ]
+        noDescBlacklist.forEach((n) => noDesc.delete(n))
+
+        const invalidNameBlacklist = ['wipInfo']
+        invalidNameBlacklist.forEach((n) => invalidNames.delete(n))
+
         expect(JSON.stringify(Array.from(noDesc))).to.equals('[]')
         expect(JSON.stringify(Array.from(invalidNames))).to.equals('[]')
     })
