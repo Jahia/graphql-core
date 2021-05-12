@@ -52,7 +52,7 @@ import java.util.Collection;
 /**
  * GraphQL Work in progress informations.
  */
-@GraphQLName("WipInfo")
+@GraphQLName("wipInfo")
 @GraphQLDescription("Work in progress information")
 public class GqlJcrWipInfo {
 
