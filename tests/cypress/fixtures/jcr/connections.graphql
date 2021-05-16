@@ -1,0 +1,26 @@
+query($query: String!, $before: String, $after: String, $first: Int, $last: Int, $offset: Int, $limit: Int) {
+    jcr(workspace: EDIT) {
+        nodesByQuery(query: $query, before: $before, after: $after, first: $first, last: $last, offset: $offset, limit: $limit) {
+            edges {
+                index
+                cursor
+                node {
+                    name
+                    uuid
+                }
+            }
+            pageInfo {
+                totalCount
+                nodesCount
+                startCursor
+                endCursor
+                hasNextPage
+                hasPreviousPage
+            }
+            nodes {
+                name
+                uuid
+            }
+        }
+    }
+}

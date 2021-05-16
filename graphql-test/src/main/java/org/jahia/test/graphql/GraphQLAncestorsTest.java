@@ -76,107 +76,107 @@ public class GraphQLAncestorsTest extends GraphQLTestSupport {
         GraphQLTestSupport.removeTestNodes();
     }
 
-    @Test
-    public void shouldRetrieveParent() throws Exception {
+    // @Test
+    // public void shouldRetrieveParent() throws Exception {
 
-        JSONObject result = executeQuery("{"
-                + "    jcr {"
-                + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
-                + "        parent {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "    }"
-                + "}");
-        JSONObject parent = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("parent");
+    //     JSONObject result = executeQuery("{"
+    //             + "    jcr {"
+    //             + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
+    //             + "        parent {"
+    //             + "            name"
+    //             + "		  }"
+    //             + "    }"
+    //             + "    }"
+    //             + "}");
+    //     JSONObject parent = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONObject("parent");
 
-        validateNode(parent, "testSubList");
-    }
+    //     validateNode(parent, "testSubList");
+    // }
 
-    @Test
-    public void shouldRetrieveAllAncestors() throws Exception {
+    // @Test
+    // public void shouldRetrieveAllAncestors() throws Exception {
 
-        JSONObject result = executeQuery("{"
-                + "    jcr {"
-                + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
-                + "        ancestors {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "    }"
-                + "}");
-        JSONArray ancestors = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("ancestors");
+    //     JSONObject result = executeQuery("{"
+    //             + "    jcr {"
+    //             + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
+    //             + "        ancestors {"
+    //             + "            name"
+    //             + "		  }"
+    //             + "    }"
+    //             + "    }"
+    //             + "}");
+    //     JSONArray ancestors = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("ancestors");
 
-        Assert.assertEquals(3, ancestors.length());
-        validateNode(ancestors.getJSONObject(0), "");
-        validateNode(ancestors.getJSONObject(1), "testList");
-        validateNode(ancestors.getJSONObject(2), "testSubList");
-    }
+    //     Assert.assertEquals(3, ancestors.length());
+    //     validateNode(ancestors.getJSONObject(0), "");
+    //     validateNode(ancestors.getJSONObject(1), "testList");
+    //     validateNode(ancestors.getJSONObject(2), "testSubList");
+    // }
 
-    @Test
-    public void shouldRetrieveAncestorsUpToPath() throws Exception {
+    // @Test
+    // public void shouldRetrieveAncestorsUpToPath() throws Exception {
 
-        JSONObject result = executeQuery("{"
-                + "    jcr {"
-                + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
-                + "        ancestors(upToPath: \"/testList\") {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "    }"
-                + "}");
-        JSONArray ancestors = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("ancestors");
+    //     JSONObject result = executeQuery("{"
+    //             + "    jcr {"
+    //             + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
+    //             + "        ancestors(upToPath: \"/testList\") {"
+    //             + "            name"
+    //             + "		  }"
+    //             + "    }"
+    //             + "    }"
+    //             + "}");
+    //     JSONArray ancestors = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("ancestors");
 
-        Assert.assertEquals(2, ancestors.length());
-        validateNode(ancestors.getJSONObject(0), "testList");
-        validateNode(ancestors.getJSONObject(1), "testSubList");
-    }
+    //     Assert.assertEquals(2, ancestors.length());
+    //     validateNode(ancestors.getJSONObject(0), "testList");
+    //     validateNode(ancestors.getJSONObject(1), "testSubList");
+    // }
 
-    @Test
-    public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsEmpty() throws Exception {
+    // @Test
+    // public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsEmpty() throws Exception {
 
-        JSONObject result = executeQuery("{"
-                + "    jcr {"
-                + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
-                + "        ancestors(upToPath: \"\") {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "    }"
-                + "}");
+    //     JSONObject result = executeQuery("{"
+    //             + "    jcr {"
+    //             + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
+    //             + "        ancestors(upToPath: \"\") {"
+    //             + "            name"
+    //             + "		  }"
+    //             + "    }"
+    //             + "    }"
+    //             + "}");
 
-        validateError(result, "'' is not a valid node path");
-    }
+    //     validateError(result, "'' is not a valid node path");
+    // }
 
-    @Test
-    public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsNotAncestorPath() throws Exception {
+    // @Test
+    // public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsNotAncestorPath() throws Exception {
 
-        JSONObject result = executeQuery("{"
-                + "    jcr {"
-                + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
-                + "        ancestors(upToPath: \"/nonExistingPath\") {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "    }"
-                + "}");
+    //     JSONObject result = executeQuery("{"
+    //             + "    jcr {"
+    //             + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
+    //             + "        ancestors(upToPath: \"/nonExistingPath\") {"
+    //             + "            name"
+    //             + "		  }"
+    //             + "    }"
+    //             + "    }"
+    //             + "}");
 
-        validateError(result, "'/nonExistingPath' does not reference an ancestor node of '/testList/testSubList/testSubSubList'");
-    }
+    //     validateError(result, "'/nonExistingPath' does not reference an ancestor node of '/testList/testSubList/testSubSubList'");
+    // }
 
-    @Test
-    public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsThisNodePath() throws Exception {
+    // @Test
+    // public void shouldGetErrorNotRetrieveAncestorsWhenUpToPathIsThisNodePath() throws Exception {
 
-        JSONObject result = executeQuery("{"
-                + "    jcr {"
-                + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
-                + "        ancestors(upToPath: \"/testList/testSubList/testSubSubList\") {"
-                + "            name"
-                + "		  }"
-                + "    }"
-                + "    }"
-                + "}");
+    //     JSONObject result = executeQuery("{"
+    //             + "    jcr {"
+    //             + "    nodeByPath(path: \"/testList/testSubList/testSubSubList\") {"
+    //             + "        ancestors(upToPath: \"/testList/testSubList/testSubSubList\") {"
+    //             + "            name"
+    //             + "		  }"
+    //             + "    }"
+    //             + "    }"
+    //             + "}");
 
-        validateError(result, "'/testList/testSubList/testSubSubList' does not reference an ancestor node of '/testList/testSubList/testSubSubList'");
-    }
+    //     validateError(result, "'/testList/testSubList/testSubSubList' does not reference an ancestor node of '/testList/testSubList/testSubSubList'");
+    // }
 }

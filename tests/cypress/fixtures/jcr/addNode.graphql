@@ -1,0 +1,11 @@
+mutation($parentPathOrId: String!, $nodeName: String!, $nodeType: String!) {
+    jcr(workspace: EDIT) {
+        addNode(
+          parentPathOrId: $parentPathOrId,
+          name: $nodeName,
+          primaryNodeType: $nodeType,
+        ) {
+            uuid
+        }
+    }
+}

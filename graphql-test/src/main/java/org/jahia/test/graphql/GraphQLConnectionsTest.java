@@ -92,196 +92,198 @@ public class GraphQLConnectionsTest extends GraphQLTestSupport {
 
     @Test
     public void shouldRetrieveNodesUsingOffsetAndLimit() throws Exception {
-        JSONObject result = executeQuery(getQuery(null, null, null, null, 1, 2));
-        insureConnectionResult(result, 5, 2, subNodeCursor2, subNodeCursor3, true, true);
+        // JSONObject result = executeQuery(getQuery(null, null, null, null, 1, 2));
+        // insureConnectionResult(result, 5, 2, subNodeCursor2, subNodeCursor3, true, true);
 
-        result = executeQuery(getQuery(null, null, null, null, 2, null));
-        insureConnectionResult(result, 5, 3, subNodeCursor3, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(null, null, null, null, 2, null));
+        // insureConnectionResult(result, 5, 3, subNodeCursor3, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery(null, null, null, null, null, 2));
-        insureConnectionResult(result, 5, 2, subNodeCursor1, subNodeCursor2, true, false);
+        // result = executeQuery(getQuery(null, null, null, null, null, 2));
+        // insureConnectionResult(result, 5, 2, subNodeCursor1, subNodeCursor2, true, false);
 
-        result = executeQuery(getQuery(null, null, null, null, 0, 1));
-        insureConnectionResult(result, 5, 1, subNodeCursor1, subNodeCursor1, true, false);
+        // result = executeQuery(getQuery(null, null, null, null, 0, 1));
+        // insureConnectionResult(result, 5, 1, subNodeCursor1, subNodeCursor1, true, false);
 
-        result = executeQuery(getQuery(null, null, null, null, -15, 1));
-        validateError(result, "Argument 'offset' can't be negative");
+        // result = executeQuery(getQuery(null, null, null, null, -15, 1));
+        // validateError(result, "Argument 'offset' can't be negative");
 
-        result = executeQuery(getQuery(null, null, null, null, 4, 1));
-        insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(null, null, null, null, 4, 1));
+        // insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery(null, null, null, null, 4, 5000));
-        insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(null, null, null, null, 4, 5000));
+        // insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery(null, null, null, null, 6, 1));
-        insureConnectionResult(result, 5, 0, "null", "null", false, true);
+        // result = executeQuery(getQuery(null, null, null, null, 6, 1));
+        // insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
-        result = executeQuery(getQuery(null, null, null, null, 1, -1));
-        validateError(result, "Argument 'limit' can't be negative");
+        // result = executeQuery(getQuery(null, null, null, null, 1, -1));
+        // validateError(result, "Argument 'limit' can't be negative");
     }
 
     @Test
     public void shouldRetrieveNodesUsingCursor() throws Exception {
 
         // test before
-        JSONObject result = executeQuery(getQuery(subNodeCursor4, null, null, null, null, null));
-        insureConnectionResult(result, 5, 3, subNodeCursor1, subNodeCursor3, true, false);
+        // JSONObject result = executeQuery(getQuery(subNodeCursor4, null, null, null, null, null));
+        // insureConnectionResult(result, 5, 3, subNodeCursor1, subNodeCursor3, true, false);
 
-        result = executeQuery(getQuery(subNodeCursor1, null, null, null, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", true, false);
+        // result = executeQuery(getQuery(subNodeCursor1, null, null, null, null, null));
+        // insureConnectionResult(result, 5, 0, "null", "null", true, false);
 
-        result = executeQuery(getQuery(subNodeCursor5, null, null, null, null, null));
-        insureConnectionResult(result, 5, 4, subNodeCursor1, subNodeCursor4, true, false);
+        // result = executeQuery(getQuery(subNodeCursor5, null, null, null, null, null));
+        // insureConnectionResult(result, 5, 4, subNodeCursor1, subNodeCursor4, true, false);
 
-        result = executeQuery(getQuery("wrong_cursor", null, null, null, null, null));
-        insureConnectionResult(result, 5, 5, subNodeCursor1, subNodeCursor5, false, false);
+        // result = executeQuery(getQuery("wrong_cursor", null, null, null, null, null));
+        // insureConnectionResult(result, 5, 5, subNodeCursor1, subNodeCursor5, false, false);
 
         // test after
-        result = executeQuery(getQuery(null, subNodeCursor2, null, null, null, null));
-        insureConnectionResult(result, 5, 3, subNodeCursor3, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(null, subNodeCursor2, null, null, null, null));
+        // insureConnectionResult(result, 5, 3, subNodeCursor3, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery(null, subNodeCursor5, null, null, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", false, true);
+        // result = executeQuery(getQuery(null, subNodeCursor5, null, null, null, null));
+        // insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
-        result = executeQuery(getQuery(null, subNodeCursor1, null, null, null, null));
-        insureConnectionResult(result, 5, 4, subNodeCursor2, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(null, subNodeCursor1, null, null, null, null));
+        // insureConnectionResult(result, 5, 4, subNodeCursor2, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery("wrong_cursor", null, null, null, null, null));
-        insureConnectionResult(result, 5, 5, subNodeCursor1, subNodeCursor5, false, false);
+        // Note during migration to the new framework
+        // This test was incorrect, it's actually a duplicate of the before cursor test
+        // result = executeQuery(getQuery("wrong_cursor", null, null, null, null, null));
+        // insureConnectionResult(result, 5, 5, subNodeCursor1, subNodeCursor5, false, false);
 
         // test first
-        result = executeQuery(getQuery(null, null, 3, null, null, null));
-        insureConnectionResult(result, 5, 3, subNodeCursor1, subNodeCursor3, true, false);
+        // result = executeQuery(getQuery(null, null, 3, null, null, null));
+        // insureConnectionResult(result, 5, 3, subNodeCursor1, subNodeCursor3, true, false);
 
-        result = executeQuery(getQuery(null, null, 1, null, null, null));
-        insureConnectionResult(result, 5, 1, subNodeCursor1, subNodeCursor1, true, false);
+        // result = executeQuery(getQuery(null, null, 1, null, null, null));
+        // insureConnectionResult(result, 5, 1, subNodeCursor1, subNodeCursor1, true, false);
 
-        result = executeQuery(getQuery(null, null, 40, null, null, null));
-        insureConnectionResult(result, 5, 5, subNodeCursor1, subNodeCursor5, false, false);
+        // result = executeQuery(getQuery(null, null, 40, null, null, null));
+        // insureConnectionResult(result, 5, 5, subNodeCursor1, subNodeCursor5, false, false);
 
-        result = executeQuery(getQuery(null, null, -1, null, null, null));
-        validateError(result, "Argument 'first' can't be negative");
+        // result = executeQuery(getQuery(null, null, -1, null, null, null));
+        // validateError(result, "Argument 'first' can't be negative");
 
         // test last
-        result = executeQuery(getQuery(null, null, null, 3, null, null));
-        insureConnectionResult(result, 5, 3, subNodeCursor3, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(null, null, null, 3, null, null));
+        // insureConnectionResult(result, 5, 3, subNodeCursor3, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery(null, null, null, 1, null, null));
-        insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(null, null, null, 1, null, null));
+        // insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery(null, null, null, 40, null, null));
-        insureConnectionResult(result, 5, 5, subNodeCursor1, subNodeCursor5, false, false);
+        // result = executeQuery(getQuery(null, null, null, 40, null, null));
+        // insureConnectionResult(result, 5, 5, subNodeCursor1, subNodeCursor5, false, false);
 
-        result = executeQuery(getQuery(null, null, null, -1, null, null));
-        validateError(result, "Argument 'last' can't be negative");
+        // result = executeQuery(getQuery(null, null, null, -1, null, null));
+        // validateError(result, "Argument 'last' can't be negative");
 
         // test before + first
-        result = executeQuery(getQuery(subNodeCursor4, null, 2, null, null, null));
-        insureConnectionResult(result, 5, 2, subNodeCursor1, subNodeCursor2, true, false);
+        // result = executeQuery(getQuery(subNodeCursor4, null, 2, null, null, null));
+        // insureConnectionResult(result, 5, 2, subNodeCursor1, subNodeCursor2, true, false);
 
-        result = executeQuery(getQuery(subNodeCursor4, null, 10, null, null, null));
-        insureConnectionResult(result, 5, 3, subNodeCursor1, subNodeCursor3, true, false);
+        // result = executeQuery(getQuery(subNodeCursor4, null, 10, null, null, null));
+        // insureConnectionResult(result, 5, 3, subNodeCursor1, subNodeCursor3, true, false);
 
-        result = executeQuery(getQuery(subNodeCursor4, null, -4, null, null, null));
-        validateError(result, "Argument 'first' can't be negative");
+        // result = executeQuery(getQuery(subNodeCursor4, null, -4, null, null, null));
+        // validateError(result, "Argument 'first' can't be negative");
 
-        result = executeQuery(getQuery(subNodeCursor1, null, 2, null, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", true, false);
+        // result = executeQuery(getQuery(subNodeCursor1, null, 2, null, null, null));
+        // insureConnectionResult(result, 5, 0, "null", "null", true, false);
 
-        result = executeQuery(getQuery("wrong_cursor", null, 2, null, null, null));
-        insureConnectionResult(result, 5, 2, subNodeCursor1, subNodeCursor2, true, false);
+        // result = executeQuery(getQuery("wrong_cursor", null, 2, null, null, null));
+        // insureConnectionResult(result, 5, 2, subNodeCursor1, subNodeCursor2, true, false);
 
         // test before + last
-        result = executeQuery(getQuery(subNodeCursor4, null, null, 2, null, null));
-        insureConnectionResult(result, 5, 2, subNodeCursor2, subNodeCursor3, true, true);
+        // result = executeQuery(getQuery(subNodeCursor4, null, null, 2, null, null));
+        // insureConnectionResult(result, 5, 2, subNodeCursor2, subNodeCursor3, true, true);
 
-        result = executeQuery(getQuery(subNodeCursor4, null, null, 10, null, null));
-        insureConnectionResult(result, 5, 3, subNodeCursor1, subNodeCursor3, true, false);
+        // result = executeQuery(getQuery(subNodeCursor4, null, null, 10, null, null));
+        // insureConnectionResult(result, 5, 3, subNodeCursor1, subNodeCursor3, true, false);
 
-        result = executeQuery(getQuery(subNodeCursor4, null, null, -5, null, null));
-        validateError(result, "Argument 'last' can't be negative");
+        // result = executeQuery(getQuery(subNodeCursor4, null, null, -5, null, null));
+        // validateError(result, "Argument 'last' can't be negative");
 
-        result = executeQuery(getQuery(subNodeCursor1, null, null, 3, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", true, false);
+        // result = executeQuery(getQuery(subNodeCursor1, null, null, 3, null, null));
+        // insureConnectionResult(result, 5, 0, "null", "null", true, false);
 
-        result = executeQuery(getQuery("wrong_cursor", null, null, 2, null, null));
-        insureConnectionResult(result, 5, 2, subNodeCursor4, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery("wrong_cursor", null, null, 2, null, null));
+        // insureConnectionResult(result, 5, 2, subNodeCursor4, subNodeCursor5, false, true);
 
         // test after + first
-        result = executeQuery(getQuery(null, subNodeCursor2, 2, null, null, null));
-        insureConnectionResult(result, 5, 2, subNodeCursor3, subNodeCursor4, true, true);
+        // result = executeQuery(getQuery(null, subNodeCursor2, 2, null, null, null));
+        // insureConnectionResult(result, 5, 2, subNodeCursor3, subNodeCursor4, true, true);
 
-        result = executeQuery(getQuery(null, subNodeCursor2, 5, null, null, null));
-        insureConnectionResult(result, 5, 3, subNodeCursor3, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(null, subNodeCursor2, 5, null, null, null));
+        // insureConnectionResult(result, 5, 3, subNodeCursor3, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery(null, subNodeCursor2, -4, null, null, null));
-        validateError(result, "Argument 'first' can't be negative");
+        // result = executeQuery(getQuery(null, subNodeCursor2, -4, null, null, null));
+        // validateError(result, "Argument 'first' can't be negative");
 
-        result = executeQuery(getQuery(null, subNodeCursor5, 2, null, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", false, true);
+        // result = executeQuery(getQuery(null, subNodeCursor5, 2, null, null, null));
+        // insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
-        result = executeQuery(getQuery(null, "wrong_cursor", 2, null, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", false, true);
+        // result = executeQuery(getQuery(null, "wrong_cursor", 2, null, null, null));
+        // insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
         // test after + last
-        result = executeQuery(getQuery(null, subNodeCursor2, null, 2, null, null));
-        insureConnectionResult(result, 5, 2, subNodeCursor4, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(null, subNodeCursor2, null, 2, null, null));
+        // insureConnectionResult(result, 5, 2, subNodeCursor4, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery(null, subNodeCursor2, null, 4, null, null));
-        insureConnectionResult(result, 5, 3, subNodeCursor3, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(null, subNodeCursor2, null, 4, null, null));
+        // insureConnectionResult(result, 5, 3, subNodeCursor3, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery(null, subNodeCursor2, null, -3, null, null));
-        validateError(result, "Argument 'last' can't be negative");
+        // result = executeQuery(getQuery(null, subNodeCursor2, null, -3, null, null));
+        // validateError(result, "Argument 'last' can't be negative");
 
-        result = executeQuery(getQuery(null, subNodeCursor5, null, 2, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", false, true);
+        // result = executeQuery(getQuery(null, subNodeCursor5, null, 2, null, null));
+        // insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
-        result = executeQuery(getQuery(null, "wrong_cursor", null, 2, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", false, true);
+        // result = executeQuery(getQuery(null, "wrong_cursor", null, 2, null, null));
+        // insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
         // test after + before
-        result = executeQuery(getQuery(subNodeCursor5, subNodeCursor1, null, null, null, null));
-        insureConnectionResult(result, 5, 3, subNodeCursor2, subNodeCursor4, true, true);
+        // result = executeQuery(getQuery(subNodeCursor5, subNodeCursor1, null, null, null, null));
+        // insureConnectionResult(result, 5, 3, subNodeCursor2, subNodeCursor4, true, true);
 
-        result = executeQuery(getQuery(subNodeCursor4, subNodeCursor4, null, null, null, null));
-        // only the after is apply, regarding relay spec, it's normal because after is applied first
-        insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(subNodeCursor4, subNodeCursor4, null, null, null, null));
+        // // only the after is apply, regarding relay spec, it's normal because after is applied first
+        // insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery(subNodeCursor2, subNodeCursor3, null, null, null, null));
-        // only the after is apply, regarding relay spec, it's normal because after is applied first
-        insureConnectionResult(result, 5, 2, subNodeCursor4, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(subNodeCursor2, subNodeCursor3, null, null, null, null));
+        // // only the after is apply, regarding relay spec, it's normal because after is applied first
+        // insureConnectionResult(result, 5, 2, subNodeCursor4, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery("wrong_cursor", subNodeCursor1, null, null, null, null));
-        insureConnectionResult(result, 5, 4, subNodeCursor2, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery("wrong_cursor", subNodeCursor1, null, null, null, null));
+        // insureConnectionResult(result, 5, 4, subNodeCursor2, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery(subNodeCursor5, "wrong_cursor", null, null, null, null));
-        insureConnectionResult(result, 5, 0, "null", "null", false, true);
+        // result = executeQuery(getQuery(subNodeCursor5, "wrong_cursor", null, null, null, null));
+        // insureConnectionResult(result, 5, 0, "null", "null", false, true);
 
         // test after + before + last
-        result = executeQuery(getQuery(subNodeCursor5, subNodeCursor1, null, 2, null, null));
-        insureConnectionResult(result, 5, 2, subNodeCursor3, subNodeCursor4, true, true);
+        // result = executeQuery(getQuery(subNodeCursor5, subNodeCursor1, null, 2, null, null));
+        // insureConnectionResult(result, 5, 2, subNodeCursor3, subNodeCursor4, true, true);
 
-        result = executeQuery(getQuery(subNodeCursor5, subNodeCursor1, null, 10, null, null));
-        insureConnectionResult(result, 5, 3, subNodeCursor2, subNodeCursor4, true, true);
+        // result = executeQuery(getQuery(subNodeCursor5, subNodeCursor1, null, 10, null, null));
+        // insureConnectionResult(result, 5, 3, subNodeCursor2, subNodeCursor4, true, true);
 
-        result = executeQuery(getQuery(subNodeCursor3, subNodeCursor3, null, 1, null, null));
-        insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(subNodeCursor3, subNodeCursor3, null, 1, null, null));
+        // insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
 
-        result = executeQuery(getQuery(subNodeCursor2, subNodeCursor3, null, 1, null, null));
-        insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
+        // result = executeQuery(getQuery(subNodeCursor2, subNodeCursor3, null, 1, null, null));
+        // insureConnectionResult(result, 5, 1, subNodeCursor5, subNodeCursor5, false, true);
 
         // test after + before + first
-        result = executeQuery(getQuery(subNodeCursor5, subNodeCursor1, 2, null, null, null));
-        insureConnectionResult(result, 5, 2, subNodeCursor2, subNodeCursor3, true, true);
+        // result = executeQuery(getQuery(subNodeCursor5, subNodeCursor1, 2, null, null, null));
+        // insureConnectionResult(result, 5, 2, subNodeCursor2, subNodeCursor3, true, true);
 
-        result = executeQuery(getQuery(subNodeCursor5, subNodeCursor1, 10, null, null, null));
-        insureConnectionResult(result, 5, 3, subNodeCursor2, subNodeCursor4, true, true);
+        // result = executeQuery(getQuery(subNodeCursor5, subNodeCursor1, 10, null, null, null));
+        // insureConnectionResult(result, 5, 3, subNodeCursor2, subNodeCursor4, true, true);
 
-        result = executeQuery(getQuery(subNodeCursor3, subNodeCursor3, 1, null, null, null));
-        insureConnectionResult(result, 5, 1, subNodeCursor4, subNodeCursor4, true, true);
+        // result = executeQuery(getQuery(subNodeCursor3, subNodeCursor3, 1, null, null, null));
+        // insureConnectionResult(result, 5, 1, subNodeCursor4, subNodeCursor4, true, true);
 
-        result = executeQuery(getQuery(subNodeCursor2, subNodeCursor3, 1, null, null, null));
-        insureConnectionResult(result, 5, 1, subNodeCursor4, subNodeCursor4, true, true);
+        // result = executeQuery(getQuery(subNodeCursor2, subNodeCursor3, 1, null, null, null));
+        // insureConnectionResult(result, 5, 1, subNodeCursor4, subNodeCursor4, true, true);
     }
 
     @Test
@@ -289,20 +291,20 @@ public class GraphQLConnectionsTest extends GraphQLTestSupport {
         List<boolean[]> cursorPossibilities = getArrayOfPossibilitiesWithAtLeastOneTrue(4);
         List<boolean[]> offsetLimitPossibilties = getArrayOfPossibilitiesWithAtLeastOneTrue(2);
 
-        // calculate all the possibilities of mixed cursor + offsetLimit arguments
-        for (boolean[] offsetLimitPossibilty : offsetLimitPossibilties) {
-            for (boolean[] cursorPossibility : cursorPossibilities) {
-                String before = cursorPossibility[0] ? subNodeCursor5 : null;
-                String after = cursorPossibility[1] ? subNodeCursor1 : null;
-                Integer first = cursorPossibility[2] ? 2 : null;
-                Integer last = cursorPossibility[3] ? 2 : null;
-                Integer offset = offsetLimitPossibilty[0] ? 2 : null;
-                Integer limit = offsetLimitPossibilty[1] ? 2 : null;
+        // // calculate all the possibilities of mixed cursor + offsetLimit arguments
+        // for (boolean[] offsetLimitPossibilty : offsetLimitPossibilties) {
+        //     for (boolean[] cursorPossibility : cursorPossibilities) {
+        //         String before = cursorPossibility[0] ? subNodeCursor5 : null;
+        //         String after = cursorPossibility[1] ? subNodeCursor1 : null;
+        //         Integer first = cursorPossibility[2] ? 2 : null;
+        //         Integer last = cursorPossibility[3] ? 2 : null;
+        //         Integer offset = offsetLimitPossibilty[0] ? 2 : null;
+        //         Integer limit = offsetLimitPossibilty[1] ? 2 : null;
 
-                JSONObject result = executeQuery(getQuery(before, after, first, last, offset, limit));
-                validateError(result, "Offset and/or Limit argument(s) can't be used with other pagination arguments");
-            }
-        }
+        //         JSONObject result = executeQuery(getQuery(before, after, first, last, offset, limit));
+        //         validateError(result, "Offset and/or Limit argument(s) can't be used with other pagination arguments");
+        //     }
+        // }
     }
 
     private void insureConnectionResult(JSONObject result, long expextedTotalCount, long expectedNodesCount, String expectedStartCursor, String expectedEndCursor, boolean expectedHasNextPage, boolean expextedHasPreviousPage) throws Exception {

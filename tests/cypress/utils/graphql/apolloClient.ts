@@ -62,9 +62,11 @@ export const apolloClient = (baseUrl: string, authMethod?: authMethod): ApolloCl
         link: from([(authLink as unknown) as ApolloLink, errorLink, httpLink]),
         defaultOptions: {
             query: {
+                errorPolicy: 'all',
                 fetchPolicy: 'network-only',
             },
             watchQuery: {
+                errorPolicy: 'all',
                 fetchPolicy: 'network-only',
             },
         },
