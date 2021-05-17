@@ -1,0 +1,18 @@
+mutation($pathOrId: String!, $mixins:[String]!, $properties:[InputJCRProperty]!) {
+    jcr (workspace: EDIT) {
+        mutateNode(pathOrId: $pathOrId) {
+            uuid
+            addMixins(mixins: $mixins)
+            setPropertiesBatch(
+                properties: $properties
+            ) {
+                path
+                property {
+                    name
+                    value
+                    values
+                } 
+            }              
+        }      
+    }
+}
