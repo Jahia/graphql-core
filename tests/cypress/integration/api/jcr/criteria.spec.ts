@@ -1,12 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DocumentNode } from 'graphql'
 import { sub } from 'date-fns'
-import { createNodes } from '../../../support/createNodes'
-
-interface uuidNode {
-    name: string
-    uuid: string
-}
 
 describe('GraphQLCriteriaTest', () => {
     let GQL_ADDNODE: DocumentNode
