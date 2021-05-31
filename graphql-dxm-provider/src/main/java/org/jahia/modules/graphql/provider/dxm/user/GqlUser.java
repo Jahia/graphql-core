@@ -47,6 +47,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.data.viewhelper.principal.PrincipalViewHelper;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
@@ -56,6 +57,7 @@ import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldGroupingInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
+import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.site.GqlJcrSite;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.decorator.JCRGroupNode;
@@ -118,6 +120,10 @@ public class GqlUser implements GqlPrincipal {
         return groupNode.isMember(user.getLocalPath());
     }
 
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("List of groups this principal belongs to")
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     public DXPaginatedData<GqlGroup> getGroupMembership(@GraphQLName("site") @GraphQLDescription("Return only groups which belong to this site") String site,
                                                         @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
                                                         @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
