@@ -44,6 +44,38 @@ public class GqlAdminQuery {
     }
 
     /**
+     * Get getJahiaVersion
+     *
+     * @return GqlJahiaVersion
+     */
+    @GraphQLField
+    @GraphQLName("jahia")
+    @GraphQLDescription("Version of the running Jahia instance")
+    public GqlJahiaVersion getJahiaVersion()  {
+
+        GqlJahiaVersion gqlJahiaVersion = new GqlJahiaVersion();
+        gqlJahiaVersion.setRelease(Optional.ofNullable(JAHIA_PROJECT_VERSION).orElse(""));
+        try {
+            gqlJahiaVersion.setBuild(MethodUtils.invokeExactStaticMethod(Jahia.class, "getBuildNumber", new Object[0]).toString());
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            logger.warn("Cannot get build number");
+        }
+        gqlJahiaVersion.setSnapshot(Optional.ofNullable(JAHIA_PROJECT_VERSION).orElse("").contains("SNAPSHOT"));
+
+        //Formatting buildDate to ISO8601
+        Date date = null;
+        try {
+            date = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG, Locale.ENGLISH).parse(Jahia.getBuildDate());
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(date);
+            gqlJahiaVersion.setBuildDate(ISO8601.format(calendar));
+        } catch (ParseException e) {
+            logger.warn("Exception while parsing build date",e);
+        }
+        return gqlJahiaVersion;
+    }
+
+    /**
      * Get Build Datetime
      *
      * @return String datetime in ISO8601 format
