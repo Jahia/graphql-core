@@ -7,16 +7,14 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
+import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 
 
 /**
@@ -49,6 +47,7 @@ public class GqlAdminQuery {
     @GraphQLField
     @GraphQLName("jahia")
     @GraphQLDescription("Version of the running Jahia instance")
+    @GraphQLRequiresPermission(value = "admin")
     public GqlJahiaVersion getJahiaVersion()  {
 
         GqlJahiaVersion gqlJahiaVersion = new GqlJahiaVersion();
