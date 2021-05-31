@@ -48,7 +48,6 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
-import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 
 import javax.jcr.RepositoryException;
 
@@ -66,7 +65,6 @@ public class AdminMutationExtensions {
     @GraphQLField
     @GraphQLName("admin")
     @GraphQLDescription("Admin Mutation")
-    @GraphQLRequiresPermission(value = "admin")
     public static GqlAdminMutation getAdmin() throws RepositoryException {
         return new GqlAdminMutation();
     }
