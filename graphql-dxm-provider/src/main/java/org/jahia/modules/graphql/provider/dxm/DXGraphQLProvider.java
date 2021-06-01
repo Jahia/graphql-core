@@ -189,7 +189,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         graphQLTypeRetriever.setMethodSearchAlgorithm(methodSearchAlgorithm);
         graphQLTypeRetriever.setExtensionsHandler(extensionsHandler);
 
-        graphQLFieldWithPermissionsRetriever.setAlwaysPrettify(true);
+        graphQLFieldRetriever.setAlwaysPrettify(true);
         container = graphQLAnnotations.createContainer();
 
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);

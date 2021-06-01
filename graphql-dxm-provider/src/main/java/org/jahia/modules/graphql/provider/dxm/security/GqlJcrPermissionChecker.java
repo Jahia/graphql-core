@@ -52,6 +52,7 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 
+import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -101,8 +102,18 @@ public class GqlJcrPermissionChecker {
             // iterate on permissions to check
             for (Map.Entry<String, String> requiredPermissionForField : requiredPermissionPerFields.entrySet()) {
 
-                if (!session.getNode("/").hasPermission(requiredPermissionForField.getValue())) {
-                    throw new GqlAccessDeniedException(requiredPermissionForField.getValue());
+                String path = "/";
+                String perm = requiredPermissionForField.getValue();
+                if (perm.contains("/")) {
+                    path = "/" + StringUtils.substringAfter(perm, "/");
+                    perm = StringUtils.substringBefore(perm, "/");
+                }
+                try {
+                    if (!session.getNode(path).hasPermission(perm)) {
+                        throw new GqlAccessDeniedException(perm);
+                    }
+                } catch (PathNotFoundException e) {
+                    throw new GqlAccessDeniedException(perm);
                 }
             }
         }
