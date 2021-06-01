@@ -53,12 +53,10 @@ import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.schema.*;
 import graphql.servlet.*;
-import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
-import org.jahia.modules.graphql.provider.dxm.security.GraphQLFieldWithPermissionRetriever;
 import org.osgi.service.component.annotations.*;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -87,7 +85,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private SearchAlgorithm fieldSearchAlgorithm;
     private SearchAlgorithm methodSearchAlgorithm;
     private GraphQLExtensionsHandler extensionsHandler;
-    private DXGraphQLConfig dxGraphQLConfig;
 
     private ProcessingElementsContainer container;
 
@@ -171,20 +168,12 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         this.extensionsProviders.remove(provider);
     }
 
-    @Reference
-    public void setDxGraphQLConfig(DXGraphQLConfig dxGraphQLConfig) {
-        this.dxGraphQLConfig = dxGraphQLConfig;
-    }
-
     @Activate
     public void activate() {
         instance = this;
-
-        GraphQLFieldWithPermissionRetriever graphQLFieldWithPermissionsRetriever = new GraphQLFieldWithPermissionRetriever(dxGraphQLConfig, graphQLFieldRetriever);
-
         graphQLTypeRetriever.setGraphQLObjectInfoRetriever(graphQLObjectInfoRetriever);
         graphQLTypeRetriever.setGraphQLInterfaceRetriever(graphQLInterfaceRetriever);
-        graphQLTypeRetriever.setGraphQLFieldRetriever(graphQLFieldWithPermissionsRetriever);
+        graphQLTypeRetriever.setGraphQLFieldRetriever(graphQLFieldRetriever);
         graphQLTypeRetriever.setFieldSearchAlgorithm(fieldSearchAlgorithm);
         graphQLTypeRetriever.setMethodSearchAlgorithm(methodSearchAlgorithm);
         graphQLTypeRetriever.setExtensionsHandler(extensionsHandler);
@@ -196,7 +185,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         ((DefaultTypeFunction) defaultTypeFunction).register(this);
 
         GraphQLExtensionsHandler extensionsHandler = graphQLAnnotations.getExtensionsHandler();
-        extensionsHandler.setFieldRetriever(graphQLFieldWithPermissionsRetriever);
 
         relay = new DXRelay();
         sdlSchemaService.setRelay(relay);
