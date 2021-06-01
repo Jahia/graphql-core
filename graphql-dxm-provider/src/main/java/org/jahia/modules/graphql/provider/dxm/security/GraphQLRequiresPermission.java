@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * Add a permission check on a field
  */
-@Target({ElementType.METHOD})
+@Target({ElementType.METHOD, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface GraphQLRequiresPermission {
     String value();
