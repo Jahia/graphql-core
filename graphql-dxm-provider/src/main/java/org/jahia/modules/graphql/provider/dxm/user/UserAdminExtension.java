@@ -55,7 +55,7 @@ public class UserAdminExtension {
     }
 
     @GraphQLField
-    @GraphQLDescription("Get the current user")
+    @GraphQLDescription("Get user administration endpoint")
     public static GqlUserAdmin getUserAdmin() {
         return new GqlUserAdmin();
     }
