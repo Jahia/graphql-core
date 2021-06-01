@@ -45,6 +45,7 @@ package org.jahia.modules.graphql.provider.dxm.admin;
 
 import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 
 /**
  * A query extension that adds admin query endpoint
@@ -60,6 +61,7 @@ public class AdminQueryExtensions {
     @GraphQLName("admin")
     @GraphQLNonNull
     @GraphQLDescription("Admin Queries")
+    @GraphQLRequiresPermission(value = "jcr:read/jcr:system")
     public static GqlAdminQuery getAdmin()  {
         return new GqlAdminQuery();
     }
