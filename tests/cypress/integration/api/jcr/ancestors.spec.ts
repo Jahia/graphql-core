@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DocumentNode } from 'graphql'
+import gql from 'graphql-tag'
 
 describe('Test admin user endpoint', () => {
-    let GQL_ADDNODE: DocumentNode
     let GQL_DELETENODE: DocumentNode
     let GQL_NODEBYPATHPARENT: DocumentNode
     let GQL_NODEBYPATHANCESTORS: DocumentNode
 
     before('load graphql file and create test dataset', () => {
-        GQL_ADDNODE = require(`graphql-tag/loader!../../../fixtures/jcr/addNode.graphql`)
         GQL_DELETENODE = require(`graphql-tag/loader!../../../fixtures/jcr/deleteNode.graphql`)
         GQL_NODEBYPATHPARENT = require(`graphql-tag/loader!../../../fixtures/jcr/nodeByPathParentAncestors.graphql`)
         GQL_NODEBYPATHANCESTORS = require(`graphql-tag/loader!../../../fixtures/jcr/nodeByPathAncestors.graphql`)
@@ -18,45 +17,26 @@ describe('Test admin user endpoint', () => {
             baseUrl: Cypress.config().baseUrl,
             authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
             mode: 'mutate',
-            variables: {
-                parentPathOrId: '/',
-                nodeName: 'testList',
-                nodeType: 'jnt:contentList',
-            },
-            query: GQL_ADDNODE,
+            query: gql`
+                mutation {
+                    jcr(workspace: EDIT) {
+                        addNode(parentPathOrId: "/", name: "testList", primaryNodeType: "jnt:contentList") {
+                            uuid
+                            addChild(name: "testSubList", primaryNodeType: "jnt:contentList") {
+                                uuid
+                                addChild(name: "testSubSubList", primaryNodeType: "jnt:contentList") {
+                                    uuid
+                                }
+                            }
+                        }
+                    }
+                }
+            `,
         }).then((response: any) => {
             cy.log(JSON.stringify(response))
             expect(response.data.jcr.addNode.uuid).not.to.be.null
-            cy.log('Preparing the test suite dataset: testSubList')
-            cy.task('apolloNode', {
-                baseUrl: Cypress.config().baseUrl,
-                authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
-                mode: 'mutate',
-                variables: {
-                    parentPathOrId: response.data.jcr.addNode.uuid,
-                    nodeName: 'testSubList',
-                    nodeType: 'jnt:contentList',
-                },
-                query: GQL_ADDNODE,
-            }).then((response: any) => {
-                cy.log(JSON.stringify(response))
-                expect(response.data.jcr.addNode.uuid).not.to.be.null
-                cy.log('Preparing the test suite dataset: testSubSubList')
-                cy.task('apolloNode', {
-                    baseUrl: Cypress.config().baseUrl,
-                    authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
-                    mode: 'mutate',
-                    variables: {
-                        parentPathOrId: response.data.jcr.addNode.uuid,
-                        nodeName: 'testSubSubList',
-                        nodeType: 'jnt:contentList',
-                    },
-                    query: GQL_ADDNODE,
-                }).then((response: any) => {
-                    cy.log(JSON.stringify(response))
-                    expect(response.data.jcr.addNode.uuid).not.to.be.null
-                })
-            })
+            expect(response.data.jcr.addNode.addChild.uuid).not.to.be.null
+            expect(response.data.jcr.addNode.addChild.addChild.uuid).not.to.be.null
         })
     })
 

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DocumentNode } from 'graphql'
+import gql from 'graphql-tag'
 
 interface Run {
     t: string
@@ -23,7 +24,6 @@ interface Run {
 }
 
 describe('GraphQLConnectionsTest', () => {
-    let GQL_ADDNODE: DocumentNode
     let GQL_DELETENODE: DocumentNode
     let GQL_CONNECTIONS: DocumentNode
     const testSubSubList: Array<string> = ['this-is-not-a-uuid-and-it-does-not-exist']
@@ -31,7 +31,6 @@ describe('GraphQLConnectionsTest', () => {
         "Select * from [jnt:contentList] as cl where isdescendantnode(cl, ['/testList/testSubList']) order by cl.[j:nodename]"
 
     before('load graphql file and create test dataset', () => {
-        GQL_ADDNODE = require(`graphql-tag/loader!../../../fixtures/jcr/addNode.graphql`)
         GQL_DELETENODE = require(`graphql-tag/loader!../../../fixtures/jcr/deleteNode.graphql`)
         GQL_CONNECTIONS = require(`graphql-tag/loader!../../../fixtures/jcr/connections.graphql`)
 
@@ -40,47 +39,43 @@ describe('GraphQLConnectionsTest', () => {
             baseUrl: Cypress.config().baseUrl,
             authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
             mode: 'mutate',
-            variables: {
-                parentPathOrId: '/',
-                nodeName: 'testList',
-                nodeType: 'jnt:contentList',
-            },
-            query: GQL_ADDNODE,
+            query: gql`
+                mutation {
+                    jcr(workspace: EDIT) {
+                        addNode(parentPathOrId: "/", name: "testList", primaryNodeType: "jnt:contentList") {
+                            uuid
+                            addChild(name: "testSubList", primaryNodeType: "jnt:contentList") {
+                                uuid
+                                sub1: addChild(name: "testSubSubList1", primaryNodeType: "jnt:contentList") {
+                                    uuid
+                                }
+                                sub2: addChild(name: "testSubSubList2", primaryNodeType: "jnt:contentList") {
+                                    uuid
+                                }
+                                sub3: addChild(name: "testSubSubList3", primaryNodeType: "jnt:contentList") {
+                                    uuid
+                                }
+                                sub4: addChild(name: "testSubSubList4", primaryNodeType: "jnt:contentList") {
+                                    uuid
+                                }
+                                sub5: addChild(name: "testSubSubList5", primaryNodeType: "jnt:contentList") {
+                                    uuid
+                                }
+                            }
+                        }
+                    }
+                }
+            `,
         }).then((response: any) => {
             cy.log(JSON.stringify(response))
             expect(response.data.jcr.addNode.uuid).not.to.be.null
-            cy.task('apolloNode', {
-                baseUrl: Cypress.config().baseUrl,
-                authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
-                mode: 'mutate',
-                variables: {
-                    parentPathOrId: '/testList',
-                    nodeName: 'testSubList',
-                    nodeType: 'jnt:contentList',
-                },
-                query: GQL_ADDNODE,
-            }).then((response: any) => {
-                cy.log(JSON.stringify(response))
-                expect(response.data.jcr.addNode.uuid).not.to.be.null
-                for (const x of [1, 2, 3, 4, 5]) {
-                    cy.task('apolloNode', {
-                        baseUrl: Cypress.config().baseUrl,
-                        authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
-                        mode: 'mutate',
-                        variables: {
-                            parentPathOrId: '/testList/testSubList',
-                            nodeName: `testSubSubList${x}`,
-                            nodeType: 'jnt:contentList',
-                        },
-                        query: GQL_ADDNODE,
-                    }).then((response: any) => {
-                        cy.log(JSON.stringify(response))
-                        cy.log(`testSubSubList${x}: ${response.data.jcr.addNode.uuid}`)
-                        expect(response.data.jcr.addNode.uuid).not.to.be.null
-                        testSubSubList.push(response.data.jcr.addNode.uuid)
-                    })
-                }
-            })
+            expect(response.data.jcr.addNode.addChild.uuid).not.to.be.null
+            for (const x of [1, 2, 3, 4, 5]) {
+                const key = `sub${x}`
+                cy.log(`testSubSubList${x}: ${response.data.jcr.addNode.addChild[key].uuid}`)
+                expect(response.data.jcr.addNode.addChild[key].uuid).not.to.be.null
+                testSubSubList.push(response.data.jcr.addNode.addChild[key].uuid)
+            }
         })
     })
 
@@ -804,6 +799,7 @@ describe('GraphQLConnectionsTest', () => {
     ]
     for (const run of runsDataset) {
         it(run.t, () => {
+            cy.log(JSON.stringify(testSubSubList))
             cy.task('apolloNode', {
                 baseUrl: Cypress.config().baseUrl,
                 authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
