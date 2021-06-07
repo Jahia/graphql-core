@@ -437,7 +437,6 @@ workflows:
           requires:
             - jahia-modules-orb/build          
           primary_release_branch: << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
-          module_id: << pipeline.parameters.MODULE_ID >>
           github_slug: << pipeline.parameters.GITHUB_SLUG >>            
       - jahia-modules-orb/publish:
           context: QA_ENVIRONMENT
