@@ -27,6 +27,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 
+@GraphQLName("JahiaVersion")
 @GraphQLDescription("Version of the running Jahia instance")
 public class GqlJahiaVersion {
 
@@ -36,13 +37,6 @@ public class GqlJahiaVersion {
     private boolean snapshot;
 
     public GqlJahiaVersion() {
-    }
-
-    public GqlJahiaVersion(String release, String build, String buildDate, boolean snapshot) {
-        this.release = release;
-        this.build = build;
-        this.buildDate = buildDate;
-        this.snapshot = snapshot;
     }
 
     @GraphQLField
