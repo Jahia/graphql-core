@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-@GraphQLName("ConfigurationItemsListMutation")
+@GraphQLName("ConfigurationItemsListQuery")
 public class GqlListQuery {
     PropertiesList propertiesList;
 
@@ -25,7 +25,7 @@ public class GqlListQuery {
 
     @GraphQLField
     @GraphQLDescription("Get sub structured object values")
-    public List<GqlValueQuery> getObjets() {
+    public List<GqlValueQuery> getObjects() {
         return IntStream.range(0, propertiesList.getSize()).boxed()
                 .map(propertiesList::getValues).map(GqlValueQuery::new)
                 .collect(Collectors.toList());

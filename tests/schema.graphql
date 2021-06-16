@@ -130,6 +130,8 @@ interface JCRNode {
     ): String
     "Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned."
     displayableNode: JCRNode
+    "Returns the next available name for a node, appending if needed numbers."
+    findAvailableNodeName(language: String, nodeType: String): String
     "Check if the current user has a specific permission"
     hasPermission(
         "The name of the permission"
@@ -151,6 +153,8 @@ interface JCRNode {
     ): [String]
     "Retrieve lock info of the current node"
     lockInfo: LockInfo
+    "Returns edit lock status of the current node object"
+    lockedAndCannotBeEdited: Boolean
     "Returns an array of <code>NodeType</code> objects representing the mixin node types in effect for this node."
     mixinTypes(
         "Filter by GraphQL fields values"
@@ -320,12 +324,23 @@ type Category {
 }
 
 type ConfigurationItemValuesMutation {
+    "Modify a list of items"
+    mutateList(name: String): ConfigurationItemsListMutation
+    "Modify a structured object"
+    mutateObject(name: String): ConfigurationItemValuesMutation
+    "Remove the specified property and all sub/list properties"
+    remove(name: String): Boolean
+    "Set a property value"
+    value(name: String, value: String): String
+}
+
+type ConfigurationItemValuesQuery {
     "Get keys"
     keys: [String]
     "Get a list of items"
-    list(name: String): ConfigurationItemsListMutation
+    list(name: String): ConfigurationItemsListQuery
     "Get a sub structured object value"
-    object(name: String): ConfigurationItemValuesMutation
+    object(name: String): ConfigurationItemValuesQuery
     "Get a property value"
     value(name: String): String
     "Get property values"
@@ -333,10 +348,19 @@ type ConfigurationItemValuesMutation {
 }
 
 type ConfigurationItemsListMutation {
+    "Adds a new sub list to the list"
+    addList: ConfigurationItemsListMutation
+    "Adds a new structured object to the list"
+    addObject: ConfigurationItemValuesMutation
+    "Adds a property value to the list"
+    addValue(value: String): String
+}
+
+type ConfigurationItemsListQuery {
     "Get sub lists of items"
-    lists: [ConfigurationItemsListMutation]
+    lists: [ConfigurationItemsListQuery]
     "Get sub structured object values"
-    objets: [ConfigurationItemValuesMutation]
+    objects: [ConfigurationItemValuesQuery]
     "Adds a new structured object to the list"
     size: Int
     "Get property values"
@@ -352,6 +376,105 @@ type CountAggregation {
         "The name of the JCR property"
         name: String!
     ): Int
+}
+
+type EditorForm {
+    "Retrieve a description text for the form, might contain explanations on how to use the form"
+    description: String
+    "Retrieve the displayable name of the form (in a specific language)"
+    displayName: String
+    "Returns the preview status of the form. If true, the form can display a preview."
+    hasPreview: Boolean
+    "Retrieve the name (aka identifier) of the form"
+    name: String
+    "Retrieve the sections that make up the form"
+    sections: [EditorFormSection]
+}
+
+type EditorFormField {
+    "This value contains the current existing values for the field."
+    currentValues: [EditorFormFieldValue]
+    "This value contains the default values for the field."
+    defaultValues: [EditorFormFieldValue]
+    "The description of the field"
+    description: String
+    "The displayable name of the field"
+    displayName: String
+    "The error message of the field"
+    errorMessage: String
+    "This value is true if the field allows for internationalized values"
+    i18n: Boolean
+    "This value is true if the field is mandatory"
+    mandatory: Boolean
+    "This value is true if the field value is multi-valued."
+    multiple: Boolean
+    "The name of the field"
+    name: String
+    "This value is true if the field is readonly. This could be due to locks or permissions"
+    readOnly: Boolean
+    "The required type for the field"
+    requiredType: JCRPropertyType
+    "Options for the selector type. For JCR definitions, this will usually include choicelist initializer name and properties."
+    selectorOptions: [EditorFormProperty]
+    "The selector type for the field. In the case of fields generated from node types, this is actually the SelectorType."
+    selectorType: String
+    "This array contains the list of possible values to choose from"
+    valueConstraints: [EditorFormFieldValueConstraint]
+}
+
+type EditorFormFieldSet {
+    "Only used in the case of a dynamic field set. Set to true if it is activated"
+    activated: Boolean
+    "Get the internationalized description of the field set"
+    description: String
+    "Get the internationalized displayable name of the field set"
+    displayName: String
+    "Defines if the field has to be displayed or not"
+    displayed: Boolean
+    "True if this is dynamic field set (meaningin it can be activated or not)"
+    dynamic: Boolean
+    "Get the fields contained in the target"
+    fields: [EditorFormField]
+    "Get the name of the field set"
+    name: String
+    "This value is true if the fieldset is readonly. This could be due to locks or permissions"
+    readOnly: Boolean
+}
+
+type EditorFormFieldValue {
+    "This value's string representation"
+    string: String
+    "The type of this value"
+    type: String
+}
+
+type EditorFormFieldValueConstraint {
+    "The value as it is intended to be displayed in UIs"
+    displayValue: String
+    "The properties for the value"
+    properties: [EditorFormProperty]
+    "The actual value to be used in storage"
+    value: EditorFormFieldValue
+}
+
+type EditorFormProperty {
+    "Property name"
+    name: String
+    "Property value"
+    value: String
+}
+
+type EditorFormSection {
+    "Returns the description of the section"
+    description: String
+    "Retrieve the displayable name of the section"
+    displayName: String
+    "Returns the field sets contained in this section"
+    fieldSets: [EditorFormFieldSet]
+    "Check if this section should be hide"
+    hide: Boolean
+    "Retrieve the name (aka identifier) of the section"
+    name: String
 }
 
 "GraphQL representation of a generic JCR node"
@@ -462,6 +585,8 @@ type GenericJCRNode implements JCRNode {
     ): String
     "Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned."
     displayableNode: JCRNode
+    "Returns the next available name for a node, appending if needed numbers."
+    findAvailableNodeName(language: String, nodeType: String): String
     "Check if the current user has a specific permission"
     hasPermission(
         "The name of the permission"
@@ -483,6 +608,8 @@ type GenericJCRNode implements JCRNode {
     ): [String]
     "Retrieve lock info of the current node"
     lockInfo: LockInfo
+    "Returns edit lock status of the current node object"
+    lockedAndCannotBeEdited: Boolean
     "Returns an array of <code>NodeType</code> objects representing the mixin node types in effect for this node."
     mixinTypes(
         "Filter by GraphQL fields values"
@@ -603,7 +730,9 @@ type GqlConfigurationMutation {
 }
 
 type GqlConfigurationProperty {
+    "The property key"
     key: String
+    "The property value"
     value: String
 }
 
@@ -615,13 +744,118 @@ type GqlConfigurationQuery {
     "Get keys"
     keys: [String]
     "Get a list of items"
-    list(name: String): ConfigurationItemsListMutation
+    list(name: String): ConfigurationItemsListQuery
     "Get a sub structured object value"
-    object(name: String): ConfigurationItemValuesMutation
+    object(name: String): ConfigurationItemValuesQuery
     "Get a property value"
     value(name: String): String
     "Get property values"
     values: [GqlConfigurationProperty]
+}
+
+type GqlDashboard {
+    "Retrieves the list of modules currently available on the platform"
+    modules: [GqlModule]
+    "Whether the tools are accessible on the installation"
+    toolsAccess: Boolean
+}
+
+type GqlEditorFormMutations {
+    "Unlock the given node for edition, if the node is locked."
+    unlockEditor(
+        "An ID generated client side used to identify the lock"
+        editorID: String!
+    ): Boolean
+}
+
+type GqlEditorForms {
+    "Retrieve the custom configuration path for CKEditor"
+    ckeditorConfigPath(
+        "node path"
+        nodePath: String
+    ): String
+    "Retrieve the toolbar type for CKEditor"
+    ckeditorToolbar(
+        "node path"
+        nodePath: String
+    ): String
+    "Get a list of allowed child nodeTypes for a given nodeType and path. (Note that it returns nothing for type [jnt:page]. [jnt:contentFolder] is filterered by [jmix:editorialContent])"
+    contentTypesAsTree(
+        "the child node name, used to check the type allowed for this named child node, do not specify if you want to check for unnamed children"
+        childNodeName: String,
+        "List of types we want to exclude, null for all"
+        excludedNodeTypes: [String],
+        "if true, retrieves all the sub types of the given node types, if false, returns the type only. Default value is true"
+        includeSubTypes: Boolean = true,
+        "thPath of an existing node under with the new content will be created."
+        nodePath: String!,
+        "List of types we want to retrieve, null for all"
+        nodeTypes: [String],
+        "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
+        uiLocale: String!,
+        "if true, check the contribute property of the node. Default value is true"
+        useContribute: Boolean = true
+    ): [NodeTypeTreeEntry]
+    "Get a editor form to create a new content from its nodetype and parent"
+    createForm(
+        "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
+        locale: String!,
+        "The primary node type name identifying the form we want to retrieve"
+        primaryNodeType: String!,
+        "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
+        uiLocale: String!,
+        "uuid or path of an existing node under with the new content will be created."
+        uuidOrPath: String!
+    ): EditorForm
+    "Get a editor form from a locale and an existing node"
+    editForm(
+        "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
+        locale: String!,
+        "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
+        uiLocale: String!,
+        "UUID or path of an existing node under with the new content will be created."
+        uuidOrPath: String!
+    ): EditorForm
+    "Get field constraints"
+    fieldConstraints(
+        "Object contains additional information of the node"
+        context: [InputContextEntryInput],
+        "A string representation of field name"
+        fieldName: String!,
+        "A string representation of the field node type (the node type that contains the field, can be the node type of the node, a mixin or a super type)"
+        fieldNodeType: String!,
+        "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
+        locale: String!,
+        "UUID or path of the node (optional in case you are creating it, and it doesnt exist yet)"
+        nodeUuidOrPath: String,
+        "UUID or path of the parent node"
+        parentNodeUuidOrPath: String!,
+        "A string representation of the primary node type of the node"
+        primaryNodeType: String!,
+        "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
+        uiLocale: String!
+    ): [EditorFormFieldValueConstraint]
+    "Retrieve the number of sub contents under the node for given types"
+    subContentsCount(
+        "List of node types to check for"
+        includeTypes: [String],
+        "Limit of sub contents count"
+        limit: Int,
+        "node path"
+        nodePath: String
+    ): Int
+}
+
+type GqlEditorLockHeartBeat {
+    "The empty heartbeat signal"
+    heartbeat: String
+}
+
+"Server healthcheck"
+type GqlHealthcheck {
+    probes: [GqlProbe]
+    "Highest reported status across all probes"
+    status: GqlProbeStatus
 }
 
 type GqlJcrImageTransformMutation {
@@ -662,6 +896,21 @@ type GqlLockDetail {
     type: String
 }
 
+type GqlModule {
+    "User facing description for the module"
+    description: String
+    "Unique identifier for the module"
+    id: String
+    "If the module is in development, mostly because the sources have been downloaded."
+    inDevelopment: Boolean
+    "Bundle last modification date"
+    lastModified: Long
+    "User facing name for the module"
+    name: String
+    "Version number for the module"
+    version: String
+}
+
 "Possible operations on a node"
 type GqlOperationsSupport {
     "Can node be locked"
@@ -670,6 +919,17 @@ type GqlOperationsSupport {
     markForDeletion: Boolean
     "does the node supports publication"
     publication: Boolean!
+}
+
+type GqlProbe {
+    "Description specified by the developer of the probe"
+    description: String
+    "Name of the probe"
+    name: String
+    "Severity of the probe (LOW to CRITICAL)"
+    severity: GqlProbeSeverity
+    "Status reported by the probe (GREEN to RED)"
+    status: GqlProbeStatus
 }
 
 "Publication status information for a JCR node"
@@ -1551,6 +1811,8 @@ type JCRSite implements JCRNode {
     ): String
     "Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned."
     displayableNode: JCRNode
+    "Returns the next available name for a node, appending if needed numbers."
+    findAvailableNodeName(language: String, nodeType: String): String
     "Check if the current user has a specific permission"
     hasPermission(
         "The name of the permission"
@@ -1578,6 +1840,8 @@ type JCRSite implements JCRNode {
     ): [String]
     "Retrieve lock info of the current node"
     lockInfo: LockInfo
+    "Returns edit lock status of the current node object"
+    lockedAndCannotBeEdited: Boolean
     "Returns an array of <code>NodeType</code> objects representing the mixin node types in effect for this node."
     mixinTypes(
         "Filter by GraphQL fields values"
@@ -1709,16 +1973,51 @@ type JCRTags {
     ): [JCRTag]
 }
 
+type JWTToken {
+    claims: String
+    id: String
+    token: String
+}
+
 "Admin mutations"
 type JahiaAdminMutation {
     "Mutate an OSGi configuration"
     configuration(identifier: String, pid: String!): GqlConfigurationMutation
+    "Create a task"
+    createTask(
+        "Task name"
+        name: String!,
+        "Service name"
+        service: String!
+    ): Boolean
+    "Delete a task"
+    deleteTask(
+        "Task name"
+        name: String!,
+        "Service name"
+        service: String!
+    ): Boolean
+    "Shutdown the server"
+    shutdown(
+        "Do not send the shutdown event"
+        dryRun: Boolean,
+        "Force immediate shutdown even if server is busy"
+        force: Boolean,
+        "In seconds, maximum time to wait for server to be ready to shutdown"
+        timeout: Int
+    ): Boolean
 }
 
 "Jahia admin queries root"
 type JahiaAdminQuery {
     "Read an OSGi configuration"
     configuration(identifier: String, pid: String!): GqlConfigurationQuery
+    "Healthcheck node"
+    healthCheck(severity: GqlProbeSeverity): GqlHealthcheck
+    "Get server load"
+    load: Load
+    "Lists tasks running on the Jahia server. A server should not be stopped/restarted when any of these tasks are present. These tasks are specific to the server being queried and are not shared accorss a cluster"
+    tasks: [task]
     "Version of the running Jahia instance"
     version: JahiaVersion
 }
@@ -1733,6 +2032,22 @@ type JahiaVersion {
     isSnapshot: Boolean
     "Release of the running Jahia instance"
     release: String
+}
+
+"Server load"
+type Load {
+    "Get requests load"
+    requests: LoadValue
+    "Get JCR Sessions load"
+    sessions: LoadValue
+}
+
+"Load value"
+type LoadValue {
+    "Exponential moving average"
+    average(interval: LoadInterval): Float
+    "Instantaneous count"
+    count: Int
 }
 
 "Information on node lock"
@@ -1772,6 +2087,8 @@ type Metadata {
 type Mutation {
     "Admin Mutation"
     admin: AdminMutation!
+    "Main access field to the DX GraphQL Form mutation API"
+    forms: GqlEditorFormMutations
     "JCR Mutation"
     jcr(
         "Should save"
@@ -1779,7 +2096,30 @@ type Mutation {
         "The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default"
         workspace: Workspace
     ): JCRMutation
+    "Generate a new JWT token"
+    jwtToken(ips: [String], referer: [String], scopes: [String]!): JWTToken
     mutateWorkflows(definition: String): [WorkflowMutation]
+}
+
+"GraphQL representation of node type tree entry"
+type NodeTypeTreeEntry {
+    "Return the children if any"
+    children: [NodeTypeTreeEntry]
+    "Return icon URL with png extension"
+    iconURL(
+        "if true (default) add '.png' to the icon path."
+        addExtension: Boolean = true
+    ): String
+    "Return uniq identifier for tree entry"
+    id: String
+    "Return the i18n label"
+    label: String
+    "Return nodeType name"
+    name: String
+    "Return nodeType"
+    nodeType: JCRNodeType
+    "Return the parent tree entry (if any)"
+    parent: NodeTypeTreeEntry
 }
 
 "Information about pagination in a connection."
@@ -1840,6 +2180,10 @@ type Query {
     ): Category
     "Get the current user"
     currentUser: User
+    "Main access field to the DX GraphQL Dashboard API"
+    dashboard: GqlDashboard
+    "Main access field to the DX GraphQL Form API"
+    forms: GqlEditorForms
     "JCR Queries"
     jcr(
         "The name of the workspace to fetch the node from; either EDIT, LIVE, or null to use EDIT by default"
@@ -1913,6 +2257,13 @@ type Subscription {
         "The target scheduler for listening jobs"
         targetScheduler: TargetScheduler = BOTH
     ): GqlBackgroundJob
+    "Lock the node for edition and subscribe to hold the lock. The node is automatically unlocked when the client disconnect or close the connection"
+    subscribeToEditorLock(
+        "An ID generated client side used to identify the lock"
+        editorID: String!,
+        "Path of the node to be locked."
+        nodePath: String!
+    ): GqlEditorLockHeartBeat
 }
 
 "GraphQL representation of a Jahia user"
@@ -2092,6 +2443,8 @@ type VanityUrl implements JCRNode {
     ): String
     "Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned."
     displayableNode: JCRNode
+    "Returns the next available name for a node, appending if needed numbers."
+    findAvailableNodeName(language: String, nodeType: String): String
     "Check if the current user has a specific permission"
     hasPermission(
         "The name of the permission"
@@ -2115,6 +2468,8 @@ type VanityUrl implements JCRNode {
     ): [String]
     "Retrieve lock info of the current node"
     lockInfo: LockInfo
+    "Returns edit lock status of the current node object"
+    lockedAndCannotBeEdited: Boolean
     "Returns an array of <code>NodeType</code> objects representing the mixin node types in effect for this node."
     mixinTypes(
         "Filter by GraphQL fields values"
@@ -2249,6 +2604,16 @@ type ZipFileMutation {
     ): Boolean
 }
 
+"Task that prevents server from shutdown"
+type task {
+    "The name of the task associated with the service"
+    name: String
+    "Service attached to the task being monitored"
+    service: String
+    "Datetime at which the task was started or registered"
+    started: String
+}
+
 "Work in progress information"
 type wipInfo {
     "The languages set for Work in progress"
@@ -2298,6 +2663,26 @@ enum GqlBackgroundJobStatus {
     SUCCESSFUL
 }
 
+enum GqlProbeSeverity {
+    "CRITICAL"
+    CRITICAL
+    "HIGH"
+    HIGH
+    "LOW"
+    LOW
+    "MEDIUM"
+    MEDIUM
+}
+
+enum GqlProbeStatus {
+    "GREEN"
+    GREEN
+    "RED"
+    RED
+    "YELLOW"
+    YELLOW
+}
+
 enum GroupingType {
     "Put grouped items at the end in the order groups appear in the 'groups' list"
     END
@@ -2339,6 +2724,15 @@ enum JCRPropertyType {
     URI
     "WEAKREFERENCE"
     WEAKREFERENCE
+}
+
+enum LoadInterval {
+    "FIFTEEN"
+    FIFTEEN
+    "FIVE"
+    FIVE
+    "ONE"
+    ONE
 }
 
 enum MulticriteriaEvaluation {
@@ -2487,6 +2881,11 @@ input InputCarriedJCRNode {
     destParentPathOrId: String!
     "Path or UUID of the node to be copied/moved"
     pathOrId: String!
+}
+
+input InputContextEntryInput {
+    key: String
+    value: [String]
 }
 
 "Input object representing either a sub-filter (so that nested conditional logic can be composed), or a condition to filter by a single field"
