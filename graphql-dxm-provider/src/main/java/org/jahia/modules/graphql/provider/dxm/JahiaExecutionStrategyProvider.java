@@ -43,23 +43,22 @@
  */
 package org.jahia.modules.graphql.provider.dxm;
 
-import graphql.execution.AsyncExecutionStrategy;
 import graphql.execution.ExecutionStrategy;
 import graphql.execution.SubscriptionExecutionStrategy;
 import graphql.servlet.ExecutionStrategyProvider;
 import org.osgi.service.component.annotations.Component;
 
 @Component(immediate = true)
-public class JCRExecutionStrategyProvider implements ExecutionStrategyProvider {
+public class JahiaExecutionStrategyProvider implements ExecutionStrategyProvider {
 
     private final ExecutionStrategy queryStrategy;
     private final ExecutionStrategy mutationStrategy;
     private final ExecutionStrategy subscriptionExecutionStrategy;
 
-    public JCRExecutionStrategyProvider() {
-        queryStrategy = new AsyncExecutionStrategy(new JCRDataFetchingExceptionHandler());
-        mutationStrategy = new JCRMutationExecutionStrategy(new JCRDataFetchingExceptionHandler());
-        subscriptionExecutionStrategy = new SubscriptionExecutionStrategy(new JCRDataFetchingExceptionHandler());
+    public JahiaExecutionStrategyProvider() {
+        queryStrategy = new JahiaQueryExecutionStrategy(new JahiaDataFetchingExceptionHandler());
+        mutationStrategy = new JahiaMutationExecutionStrategy(new JahiaDataFetchingExceptionHandler());
+        subscriptionExecutionStrategy = new SubscriptionExecutionStrategy(new JahiaDataFetchingExceptionHandler());
     }
 
     @Override

@@ -1,9 +1,12 @@
 package org.jahia.modules.graphql.provider.dxm.admin;
 
 
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.*;
+import graphql.execution.Async;
+import graphql.schema.AsyncDataFetcher;
+
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * GraphQL root object for Admin related mutations.
@@ -18,7 +21,8 @@ public class GqlJahiaAdminMutation {
      * @return true
      */
     @GraphQLField
-    public boolean noop() {
-        return true;
+    public GqlConfigurationMutation configuration(@GraphQLName("pid") @GraphQLNonNull String pid,
+                                                  @GraphQLName("identifier") String identifier) {
+        return new GqlConfigurationMutation(pid, identifier);
     }
 }
