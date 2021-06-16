@@ -2,11 +2,7 @@ package org.jahia.modules.graphql.provider.dxm.admin;
 
 
 import graphql.annotations.annotationTypes.*;
-import graphql.execution.Async;
-import graphql.schema.AsyncDataFetcher;
-
-import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
+import org.jahia.modules.graphql.provider.dxm.osgiconfig.GqlConfigurationMutation;
 
 /**
  * GraphQL root object for Admin related mutations.
@@ -21,6 +17,7 @@ public class GqlJahiaAdminMutation {
      * @return true
      */
     @GraphQLField
+    @GraphQLDescription("Mutate an OSGi configuration")
     public GqlConfigurationMutation configuration(@GraphQLName("pid") @GraphQLNonNull String pid,
                                                   @GraphQLName("identifier") String identifier) {
         return new GqlConfigurationMutation(pid, identifier);

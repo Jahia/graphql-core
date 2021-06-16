@@ -1,0 +1,28 @@
+[
+  {
+    "editConfiguration": "org.jahia.test.config",
+    "properties": {
+      "value": "test",
+      "values.A": "testA",
+      "values.B": "testB",
+      "values.list[0]": "test0",
+      "values.list[1]": "test1",
+      "values.listObjects[0].A": "A0",
+      "values.listObjects[0].B": "B0",
+      "values.listObjects[1].A": "A1",
+      "values.listObjects[1].B": "B1"
+    }
+  },
+  {
+    "editConfiguration": "org.jahia.test.configfactory-1",
+    "properties": {
+      "value": "test-factory1"
+    }
+  },
+  {
+    "editConfiguration": "org.jahia.test.configfactory-2",
+    "properties": {
+      "value": "test-factory2"
+    }
+  }
+]

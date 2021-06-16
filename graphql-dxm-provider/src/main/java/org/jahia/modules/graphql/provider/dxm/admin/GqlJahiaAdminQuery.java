@@ -3,10 +3,12 @@ package org.jahia.modules.graphql.provider.dxm.admin;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.beanutils.MethodUtils;
 import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
+import org.jahia.modules.graphql.provider.dxm.osgiconfig.GqlConfigurationQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,5 +68,17 @@ public class GqlJahiaAdminQuery {
             logger.warn("Exception while parsing build date", e);
         }
         return gqlJahiaVersion;
+    }
+
+    /**
+     * We must have at least one field for the schema to be valid
+     *
+     * @return true
+     */
+    @GraphQLField
+    @GraphQLDescription("Read an OSGi configuration")
+    public GqlConfigurationQuery configuration(@GraphQLName("pid") @GraphQLNonNull String pid,
+                                               @GraphQLName("identifier") String identifier) {
+        return new GqlConfigurationQuery(pid, identifier);
     }
 }
