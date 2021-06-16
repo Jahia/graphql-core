@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DocumentNode } from 'graphql'
 import { isValid } from 'date-fns'
+import { apollo } from '../../../support/apollo'
 
 describe('admin.jahia - Jahia Server details', () => {
     let GQL_QUERY: DocumentNode
@@ -15,7 +16,7 @@ describe('admin.jahia - Jahia Server details', () => {
             baseUrl: Cypress.config().baseUrl,
             authMethod: { username: 'guest', password: 'I-DO-NOT-EXIST' },
             query: GQL_QUERY,
-        }).then(async (response: any) => {
+        }).then((response: any) => {
             cy.log(JSON.stringify(response))
             expect(response.data.currentUser.name).to.equal('guest')
             // VERIFY GUEST CANNOT ACCESS NODE DETAILS
@@ -23,11 +24,12 @@ describe('admin.jahia - Jahia Server details', () => {
     })
 
     it('Build number validation', () => {
-        cy.task('apolloNode', {
-            baseUrl: Cypress.config().baseUrl,
-            authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
-            query: GQL_QUERY,
-        }).then(async (response: any) => {
+        cy.apolloQuery(
+            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
+            {
+                query: GQL_QUERY,
+            },
+        ).then((response: any) => {
             cy.log(JSON.stringify(response))
             expect(response.data.currentUser.name).to.equal('root')
             // expect(response.data.admin.jahia.build.length).to.equal(7)
@@ -36,11 +38,12 @@ describe('admin.jahia - Jahia Server details', () => {
     })
 
     it('Build date validation', () => {
-        cy.task('apolloNode', {
-            baseUrl: Cypress.config().baseUrl,
-            authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
-            query: GQL_QUERY,
-        }).then(async (response: any) => {
+        cy.apolloQuery(
+            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
+            {
+                query: GQL_QUERY,
+            },
+        ).then((response: any) => {
             cy.log(JSON.stringify(response))
             expect(response.data.currentUser.name).to.equal('root')
             expect(isValid(new Date(response.data.admin.jahia.buildDate))).to.be.true
@@ -50,11 +53,12 @@ describe('admin.jahia - Jahia Server details', () => {
     })
 
     it('isSnapshot validation', () => {
-        cy.task('apolloNode', {
-            baseUrl: Cypress.config().baseUrl,
-            authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
-            query: GQL_QUERY,
-        }).then(async (response: any) => {
+        cy.apolloQuery(
+            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
+            {
+                query: GQL_QUERY,
+            },
+        ).then((response: any) => {
             cy.log(JSON.stringify(response))
             expect(response.data.currentUser.name).to.equal('root')
 
@@ -66,11 +70,12 @@ describe('admin.jahia - Jahia Server details', () => {
     })
 
     it('Release validation', () => {
-        cy.task('apolloNode', {
-            baseUrl: Cypress.config().baseUrl,
-            authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
-            query: GQL_QUERY,
-        }).then(async (response: any) => {
+        cy.apolloQuery(
+            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
+            {
+                query: GQL_QUERY,
+            },
+        ).then((response: any) => {
             cy.log(JSON.stringify(response))
             expect(response.data.currentUser.name).to.equal('root')
             expect(parseInt(response.data.admin.jahia.build.replace(/[^0-9]/g, ''))).to.be.greaterThan(8000)

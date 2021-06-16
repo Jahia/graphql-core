@@ -56,7 +56,7 @@ const executeTest = async (typeName, types, noDesc, invalidNames) => {
     types.add(typeName)
 
     const query = constructQuery(typeName)
-    const client = apollo()
+    const client = apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') })
     const response = await client.query({ query })
     const responseDataType = response.data.__type
     if (responseDataType === null || responseDataType === undefined || responseDataType.kind === 'UNION') {

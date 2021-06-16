@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DocumentNode } from 'graphql'
+import { apollo } from '../../support/apollo'
 
 describe('Validate ability get current User', () => {
     let GQL_APIUSER: DocumentNode
@@ -9,45 +10,39 @@ describe('Validate ability get current User', () => {
     })
 
     it('Get Current user for Authenticated user (jay)', () => {
-        cy.task('apolloNode', {
-            baseUrl: Cypress.config().baseUrl,
-            authMethod: { username: 'jay', password: 'password' },
+        cy.apolloQuery(apollo(Cypress.config().baseUrl, { username: 'jay', password: 'password' }), {
             query: GQL_APIUSER,
-        }).then(async (response: any) => {
-            cy.log(JSON.stringify(response))
+        }).should((response: any) => {
             expect(response.data.currentUser.name).to.equal('jay')
         })
     })
 
     it('Get Current user for Authenticated user (root)', () => {
-        cy.task('apolloNode', {
-            baseUrl: Cypress.config().baseUrl,
-            authMethod: { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') },
-            query: GQL_APIUSER,
-        }).then(async (response: any) => {
-            cy.log(JSON.stringify(response))
+        cy.apolloQuery(
+            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
+            {
+                query: GQL_APIUSER,
+            },
+        ).should((response: any) => {
             expect(response.data.currentUser.name).to.equal('root')
         })
     })
 
     it('Get Current user for Authenticated user (root) with an incorrect password', () => {
-        cy.task('apolloNode', {
-            baseUrl: Cypress.config().baseUrl,
-            authMethod: { username: 'root', password: 'THIS-IS-INCORRECT' },
+        cy.apolloQuery(apollo(Cypress.config().baseUrl, { username: 'root', password: 'THIS-IS-INCORRECT' }), {
             query: GQL_APIUSER,
-        }).then(async (response: any) => {
-            cy.log(JSON.stringify(response))
+        }).should((response: any) => {
             expect(response.data.currentUser.name).to.equal('guest')
         })
     })
 
     it('Get Current user for Authenticated user (root) with an incorrect user', () => {
-        cy.task('apolloNode', {
-            baseUrl: Cypress.config().baseUrl,
-            authMethod: { username: 'I-DO-NOT-EXIST', password: 'THIS-IS-INCORRECT' },
-            query: GQL_APIUSER,
-        }).then(async (response: any) => {
-            cy.log(JSON.stringify(response))
+        cy.apolloQuery(
+            apollo(Cypress.config().baseUrl, { username: 'I-DO-NOT-EXIST', password: 'THIS-IS-INCORRECT' }),
+            {
+                query: GQL_APIUSER,
+            },
+        ).should((response: any) => {
             expect(response.data.currentUser.name).to.equal('guest')
         })
     })
