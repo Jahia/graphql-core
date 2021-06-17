@@ -127,7 +127,7 @@
         <dependency>
             <groupId>org.jahia.test</groupId>
             <artifactId>module-test-framework</artifactId>
-            <version>8.0.0.0</version>
+            <version>8.0.3.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
