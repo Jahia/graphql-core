@@ -6,6 +6,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.services.modulemanager.util.PropertiesList;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -44,6 +45,7 @@ public class GqlListQuery {
     public List<String> getValues() {
         return IntStream.range(0, propertiesList.getSize()).boxed()
                 .map(propertiesList::getProperty)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 }
