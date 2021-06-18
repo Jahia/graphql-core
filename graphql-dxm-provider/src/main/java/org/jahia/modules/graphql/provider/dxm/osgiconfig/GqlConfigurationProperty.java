@@ -3,6 +3,7 @@ package org.jahia.modules.graphql.provider.dxm.osgiconfig;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 
+@GraphQLDescription("OSGi configuration property")
 public class GqlConfigurationProperty {
     private String key;
     private String value;

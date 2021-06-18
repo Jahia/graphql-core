@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @GraphQLName("ConfigurationItemValuesQuery")
+@GraphQLDescription("Query for configuration value object")
 public class GqlValueQuery {
     protected PropertiesValues propertiesValues;
 
@@ -30,7 +31,7 @@ public class GqlValueQuery {
 
     @GraphQLField
     @GraphQLDescription("Get a sub structured object value")
-    public GqlValueQuery getObject(@GraphQLName("name") String name) {
+    public GqlValueQuery getObject(@GraphQLName("name") @GraphQLDescription("property name part") String name) {
         PropertiesValues values = getPropertiesValues().getValues(name);
         if (!values.getKeys().isEmpty()) {
             return new GqlValueQuery(values);
@@ -40,7 +41,7 @@ public class GqlValueQuery {
 
     @GraphQLField
     @GraphQLDescription("Get a list of items")
-    public GqlListQuery getList(@GraphQLName("name") String name) {
+    public GqlListQuery getList(@GraphQLName("name") @GraphQLDescription("property name part") String name) {
         PropertiesList list = getPropertiesValues().getList(name);
         if (list.getSize() > 0) {
             return new GqlListQuery(list);
@@ -50,7 +51,7 @@ public class GqlValueQuery {
 
     @GraphQLField
     @GraphQLDescription("Get a property value")
-    public String getValue(@GraphQLName("name") String name) {
+    public String getValue(@GraphQLName("name") @GraphQLDescription("property name part") String name) {
         return getPropertiesValues().getProperty(name);
     }
 

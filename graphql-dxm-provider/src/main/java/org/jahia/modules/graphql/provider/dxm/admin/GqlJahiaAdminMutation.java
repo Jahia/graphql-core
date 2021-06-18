@@ -18,8 +18,8 @@ public class GqlJahiaAdminMutation {
      */
     @GraphQLField
     @GraphQLDescription("Mutate an OSGi configuration")
-    public GqlConfigurationMutation configuration(@GraphQLName("pid") @GraphQLNonNull String pid,
-                                                  @GraphQLName("identifier") String identifier) {
+    public GqlConfigurationMutation configuration(@GraphQLName("pid") @GraphQLDescription("Configuration pid ot factory pid") @GraphQLNonNull String pid,
+                                                  @GraphQLName("identifier") @GraphQLDescription("If factory pid, configiration identifier (filename suffix)") String identifier) {
         return new GqlConfigurationMutation(pid, identifier);
     }
 }

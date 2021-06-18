@@ -14,6 +14,7 @@ import org.jahia.services.modulemanager.util.PropertiesValues;
 import javax.inject.Inject;
 import java.io.IOException;
 
+@GraphQLDescription("Mutation for OSGi configuration")
 public class GqlConfigurationMutation extends GqlValueMutation implements DXGraphQLFieldCompleter {
 
     private final String pid;

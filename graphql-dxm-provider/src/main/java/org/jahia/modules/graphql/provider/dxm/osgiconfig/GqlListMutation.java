@@ -6,6 +6,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.services.modulemanager.util.PropertiesList;
 
 @GraphQLName("ConfigurationItemsListMutation")
+@GraphQLDescription("Mutation for configuration list of values")
 public class GqlListMutation {
     PropertiesList propertiesList;
 

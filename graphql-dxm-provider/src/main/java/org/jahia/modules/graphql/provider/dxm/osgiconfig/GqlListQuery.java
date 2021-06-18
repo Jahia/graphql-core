@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @GraphQLName("ConfigurationItemsListQuery")
+@GraphQLDescription("Query for configuration list of values")
 public class GqlListQuery {
     PropertiesList propertiesList;
 

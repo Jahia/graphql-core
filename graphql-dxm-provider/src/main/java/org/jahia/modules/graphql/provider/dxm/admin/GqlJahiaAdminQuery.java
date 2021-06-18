@@ -77,8 +77,8 @@ public class GqlJahiaAdminQuery {
      */
     @GraphQLField
     @GraphQLDescription("Read an OSGi configuration")
-    public GqlConfigurationQuery configuration(@GraphQLName("pid") @GraphQLNonNull String pid,
-                                               @GraphQLName("identifier") String identifier) {
+    public GqlConfigurationQuery configuration(@GraphQLName("pid") @GraphQLDescription("Configuration pid ot factory pid") @GraphQLNonNull String pid,
+                                               @GraphQLName("identifier") @GraphQLDescription("If factory pid, configiration identifier (filename suffix)") String identifier) {
         return new GqlConfigurationQuery(pid, identifier);
     }
 }
