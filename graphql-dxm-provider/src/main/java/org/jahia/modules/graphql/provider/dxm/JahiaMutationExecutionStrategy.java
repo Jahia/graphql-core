@@ -58,11 +58,11 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Extends some aspects of the standard strategy.
  */
-public class JCRMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
+public class JahiaMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
 
-    private static final Logger logger = LoggerFactory.getLogger(JCRMutationExecutionStrategy.class);
+    private static final Logger logger = LoggerFactory.getLogger(JahiaMutationExecutionStrategy.class);
 
-    public JCRMutationExecutionStrategy(DataFetcherExceptionHandler exceptionHandler) {
+    public JahiaMutationExecutionStrategy(DataFetcherExceptionHandler exceptionHandler) {
         super(exceptionHandler);
     }
 
@@ -90,7 +90,7 @@ public class JCRMutationExecutionStrategy extends AsyncSerialExecutionStrategy {
                 ((DXGraphQLFieldCompleter) fetchedValue).completeField();
             } catch (Exception e) {
                 SourceLocation sourceLocation = (parameters.getField() != null && !parameters.getField().isEmpty()) ? parameters.getField().get(0).getSourceLocation() : null;
-                GraphQLError error = JCRDataFetchingExceptionHandler.transformException(e, parameters.getPath(), sourceLocation);
+                GraphQLError error = JahiaDataFetchingExceptionHandler.transformException(e, parameters.getPath(), sourceLocation);
                 executionContext.addError(error, parameters.getPath());
             }
         }

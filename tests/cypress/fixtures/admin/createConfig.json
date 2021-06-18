@@ -1,0 +1,23 @@
+[
+  {
+    "editConfiguration": "org.jahia.test.config",
+    "content": "## clear ##",
+    "properties": {
+      "value": "test",
+      "list[0]": "test0",
+      "list[1]": "test1",
+      "object.A": "testA",
+      "object.B": "testB",
+      "object.list[0]": "testObjectList0",
+      "object.list[1]": "testObjectList1",
+      "object.listObjects[0].A": "A0",
+      "object.listObjects[0].B": "B0",
+      "object.listObjects[1].A": "A1",
+      "object.listObjects[1].B": "B1"
+    }
+  },
+  {
+    "editConfiguration": "org.jahia.test.config.new",
+    "content": "## clear ##"
+  }
+]

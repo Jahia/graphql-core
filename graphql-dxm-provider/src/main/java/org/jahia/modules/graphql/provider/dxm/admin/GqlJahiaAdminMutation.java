@@ -1,9 +1,8 @@
 package org.jahia.modules.graphql.provider.dxm.admin;
 
 
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.*;
+import org.jahia.modules.graphql.provider.dxm.osgiconfig.GqlConfigurationMutation;
 
 /**
  * GraphQL root object for Admin related mutations.
@@ -18,7 +17,9 @@ public class GqlJahiaAdminMutation {
      * @return true
      */
     @GraphQLField
-    public boolean noop() {
-        return true;
+    @GraphQLDescription("Mutate an OSGi configuration")
+    public GqlConfigurationMutation configuration(@GraphQLName("pid") @GraphQLDescription("Configuration pid ot factory pid") @GraphQLNonNull String pid,
+                                                  @GraphQLName("identifier") @GraphQLDescription("If factory pid, configiration identifier (filename suffix)") String identifier) {
+        return new GqlConfigurationMutation(pid, identifier);
     }
 }

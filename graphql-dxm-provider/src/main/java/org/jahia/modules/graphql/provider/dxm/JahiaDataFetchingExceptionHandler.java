@@ -59,8 +59,8 @@ import java.util.Collections;
 /**
  * Custom DataFetchingExceptionHandler
  */
-public class JCRDataFetchingExceptionHandler implements DataFetcherExceptionHandler {
-    private static final Logger log = LoggerFactory.getLogger(JCRDataFetchingExceptionHandler.class);
+public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(JahiaDataFetchingExceptionHandler.class);
 
     @Override
     public void accept(DataFetcherExceptionHandlerParameters handlerParameters) {
