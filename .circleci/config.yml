@@ -1,5 +1,6 @@
 version: 2.1
 
+
 references:
   workdir: &workdir
     working_directory: ~/source
@@ -14,6 +15,21 @@ references:
     attach_workspace:
       at: .
 
+
+commands:
+  generate_cachekey_seed:
+    description: Generate Cache Key Seeds
+    steps:
+      - run:
+          name: Generate Cache Key Seeds
+          command: |
+            find . -name 'pom.xml' | sort | xargs cat > ~/source/maven_cache_seed
+            if [[ ! -z "$CIRCLE_PULL_REQUEST" ]]; then
+              echo "true" > ~/source/is_pr
+            else
+              echo "false" > ~/source/is_pr
+            fi
+
 jobs:
   checkout:
     <<: *workdir
@@ -22,6 +38,82 @@ jobs:
     steps:
       - checkout
       - *persist-workspace
+
+  release:
+    <<: *workdir
+    docker: # run the steps with Docker
+      - image: cimg/openjdk:8.0.275-node
+    resource_class: xlarge
+    steps:
+      - checkout
+      - generate_cachekey_seed
+      - restore_cache:
+          keys:
+            - v1-maven-dependencies-{{ checksum "maven_cache_seed" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-maven-dependencies-
+      - add_ssh_keys:
+          fingerprints:
+            - "de:83:a2:6f:fe:89:6c:6c:34:58:55:f1:82:76:51:11"
+      - run:
+          name: Getting latest changes from the remote branch
+          command: |
+            git fetch --all
+            git pull origin $CIRCLE_BRANCH --quiet
+      - run:
+          name: Delete github tag <<pipeline.parameters.RELEASE_VERSION>>
+          command: |
+            mkdir -p ~/.ssh
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+            git config user.email "jahia-ci@jahia.com"
+            git config user.name "Jahia CI"
+            git tag --delete <<pipeline.parameters.RELEASE_VERSION>>
+            git push --delete origin <<pipeline.parameters.RELEASE_VERSION>>
+      - run:
+          name: Release prepare version for <<pipeline.parameters.RELEASE_VERSION>>
+          command: |
+            FINAL_RELEASE_VERSION=$(echo <<pipeline.parameters.RELEASE_VERSION>> | cut -d'-' -f 1)
+            MAJOR_VERSION=`echo $FINAL_RELEASE_VERSION | cut -d. -f1`
+            MINOR_VERSION=`echo $FINAL_RELEASE_VERSION | cut -d. -f2`
+            REVISION=`echo $FINAL_RELEASE_VERSION | cut -d. -f3`
+            if [[ "<<pipeline.parameters.PRIMARY_RELEASE_BRANCH>>" == "master"  || "<<pipeline.parameters.PRIMARY_RELEASE_BRANCH>>" == "main"  ||  "<<pipeline.parameters.PRIMARY_RELEASE_BRANCH>>" =~ ^[0-9]_x$ ]]; then
+             NEXT_MINOR_VERSION=`expr $MINOR_VERSION + 1`
+             NEXT_DEVELOPMENT_VERSION="$MAJOR_VERSION.$NEXT_MINOR_VERSION.0"-SNAPSHOT
+            else
+              NEXT_REVISION=`expr $REVISION + 1`
+              NEXT_DEVELOPMENT_VERSION="$MAJOR_VERSION.$MINOR_VERSION.$NEXT_REVISION"-SNAPSHOT
+            fi
+            mvn -s .circleci/.circleci.settings.xml -B -Dtag=$FINAL_RELEASE_VERSION release:prepare -DreleaseVersion=$FINAL_RELEASE_VERSION -DdevelopmentVersion="$NEXT_DEVELOPMENT_VERSION"
+      - save_cache:
+          # need to match rollback cache key on restore
+          key: v1-rollback-<<pipeline.parameters.RELEASE_ID>>
+          paths:
+            - pom.xml.releaseBackup
+            - release.properties
+      - run:
+          name: Update github release for id << pipeline.parameters.RELEASE_ID >>
+          command: |
+            curl -X PATCH \
+            -H "Accept:application/vnd.github.v3+json" \
+            -d "{\"tag_name\":\"<<pipeline.parameters.RELEASE_VERSION>>\", \"prerelease\": false, \"draft\": false}" -u \
+            jahia-ci:$GITHUB_API_TOKEN https://api.github.com/repos/<<pipeline.parameters.GITHUB_SLUG>>/releases/<< pipeline.parameters.RELEASE_ID >>
+            curl \
+            -H "Content-Type: $(file -b --mime-type CHANGELOG.md)" \
+            -u jahia-ci:$GITHUB_API_TOKEN  \
+            --data-binary @CHANGELOG.md \
+            "https://uploads.github.com/repos/<<pipeline.parameters.GITHUB_SLUG>>/releases/<< pipeline.parameters.RELEASE_ID >>/assets?name=$(basename CHANGELOG.md)"
+      - run:
+          name: Perform release
+          command: |
+            mvn -s .circleci/.circleci.settings.xml release:perform -Prelease-to-staging-repository -DscmCommentPrefix="[skip ci] [maven-release-plugin]"
+      - run:
+          name: Copy artifacts
+          command: |
+            mkdir /tmp/artifacts/
+            cp /home/circleci/source/target/*.jar /tmp/artifacts/
+      - store_artifacts:
+          path: /tmp/artifacts/
+
 
   build:
     parameters:
@@ -123,10 +215,30 @@ parameters:
   github_repository:
     type: string
     default: ""
+  GITHUB_SLUG:
+    type: string
+    default: "jahia/graphql-core"
+  PRIMARY_RELEASE_BRANCH:
+    type: string
+    default: "1_x"
+  RELEASE_ID:
+    type: string
+    default: ""
+  RELEASE_VERSION:
+    type: string
+    default: ""
+  IS_RELEASE:
+    type: boolean
+    default: false
 
 workflows:
   version: 2
   # This one is run only when triggered with the API, using a GitHub action
+  on-release:
+    when: << pipeline.parameters.IS_RELEASE >>
+    jobs:
+      - release:
+          context: QA_ENVIRONMENT
   pull_request:
     when: << pipeline.parameters.run_pull_request >>
     jobs:
