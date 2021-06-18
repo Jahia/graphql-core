@@ -5,19 +5,23 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
-import org.jahia.bin.Jahia;
+import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 
 /**
  * GraphQL root object for Admin related mutations.
  */
-@GraphQLName("adminMutation")
+@GraphQLName("AdminMutation")
 @GraphQLDescription("Admin mutations")
 public class GqlAdminMutation {
+    /**
+     * Get Jahia admin query
+     */
     @GraphQLField
-    @GraphQLName("version")
     @GraphQLNonNull
-    @GraphQLDescription("Stub mutation to get version of the running Jahia instance")
-    public String getProductVersion() {
-        return Jahia.getFullProductVersion();
+    @GraphQLDescription("Get Jahia admin mutation")
+    @GraphQLRequiresPermission(value = "admin")
+    public GqlJahiaAdminMutation getJahia() {
+        return new GqlJahiaAdminMutation();
     }
+
 }
