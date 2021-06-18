@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  docker: circleci/docker@0.5.20
+  jahia-modules-orb: jahia/jahia-modules-orb@0.2.0
 
 references:
   workdir: &workdir
@@ -38,81 +41,6 @@ jobs:
     steps:
       - checkout
       - *persist-workspace
-
-  release:
-    <<: *workdir
-    docker: # run the steps with Docker
-      - image: cimg/openjdk:8.0.275-node
-    resource_class: xlarge
-    steps:
-      - checkout
-      - generate_cachekey_seed
-      - restore_cache:
-          keys:
-            - v1-maven-dependencies-{{ checksum "maven_cache_seed" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-maven-dependencies-
-      - add_ssh_keys:
-          fingerprints:
-            - "de:83:a2:6f:fe:89:6c:6c:34:58:55:f1:82:76:51:11"
-      - run:
-          name: Getting latest changes from the remote branch
-          command: |
-            git fetch --all
-            git pull origin $CIRCLE_BRANCH --quiet
-      - run:
-          name: Delete github tag <<pipeline.parameters.RELEASE_VERSION>>
-          command: |
-            mkdir -p ~/.ssh
-            ssh-keyscan github.com >> ~/.ssh/known_hosts
-            git config user.email "jahia-ci@jahia.com"
-            git config user.name "Jahia CI"
-            git tag --delete <<pipeline.parameters.RELEASE_VERSION>>
-            git push --delete origin <<pipeline.parameters.RELEASE_VERSION>>
-      - run:
-          name: Release prepare version for <<pipeline.parameters.RELEASE_VERSION>>
-          command: |
-            FINAL_RELEASE_VERSION=$(echo <<pipeline.parameters.RELEASE_VERSION>> | cut -d'-' -f 1)
-            MAJOR_VERSION=`echo $FINAL_RELEASE_VERSION | cut -d. -f1`
-            MINOR_VERSION=`echo $FINAL_RELEASE_VERSION | cut -d. -f2`
-            REVISION=`echo $FINAL_RELEASE_VERSION | cut -d. -f3`
-            if [[ "<<pipeline.parameters.PRIMARY_RELEASE_BRANCH>>" == "master"  || "<<pipeline.parameters.PRIMARY_RELEASE_BRANCH>>" == "main"  ||  "<<pipeline.parameters.PRIMARY_RELEASE_BRANCH>>" =~ ^[0-9]_x$ ]]; then
-             NEXT_MINOR_VERSION=`expr $MINOR_VERSION + 1`
-             NEXT_DEVELOPMENT_VERSION="$MAJOR_VERSION.$NEXT_MINOR_VERSION.0"-SNAPSHOT
-            else
-              NEXT_REVISION=`expr $REVISION + 1`
-              NEXT_DEVELOPMENT_VERSION="$MAJOR_VERSION.$MINOR_VERSION.$NEXT_REVISION"-SNAPSHOT
-            fi
-            mvn -s .circleci/.circleci.settings.xml -B -Dtag=$FINAL_RELEASE_VERSION release:prepare -DreleaseVersion=$FINAL_RELEASE_VERSION -DdevelopmentVersion="$NEXT_DEVELOPMENT_VERSION"
-      - save_cache:
-          # need to match rollback cache key on restore
-          key: v1-rollback-<<pipeline.parameters.RELEASE_ID>>
-          paths:
-            - pom.xml.releaseBackup
-            - release.properties
-      - run:
-          name: Update github release for id << pipeline.parameters.RELEASE_ID >>
-          command: |
-            curl -X PATCH \
-            -H "Accept:application/vnd.github.v3+json" \
-            -d "{\"tag_name\":\"<<pipeline.parameters.RELEASE_VERSION>>\", \"prerelease\": false, \"draft\": false}" -u \
-            jahia-ci:$GITHUB_API_TOKEN https://api.github.com/repos/<<pipeline.parameters.GITHUB_SLUG>>/releases/<< pipeline.parameters.RELEASE_ID >>
-            curl \
-            -H "Content-Type: $(file -b --mime-type CHANGELOG.md)" \
-            -u jahia-ci:$GITHUB_API_TOKEN  \
-            --data-binary @CHANGELOG.md \
-            "https://uploads.github.com/repos/<<pipeline.parameters.GITHUB_SLUG>>/releases/<< pipeline.parameters.RELEASE_ID >>/assets?name=$(basename CHANGELOG.md)"
-      - run:
-          name: Perform release
-          command: |
-            mvn -s .circleci/.circleci.settings.xml release:perform -Prelease-to-staging-repository -DscmCommentPrefix="[skip ci] [maven-release-plugin]"
-      - run:
-          name: Copy artifacts
-          command: |
-            mkdir /tmp/artifacts/
-            cp /home/circleci/source/target/*.jar /tmp/artifacts/
-      - store_artifacts:
-          path: /tmp/artifacts/
 
 
   build:
@@ -218,6 +146,12 @@ parameters:
   GITHUB_SLUG:
     type: string
     default: "jahia/graphql-core"
+  MODULE_ID:
+    type: string
+    default: "graphql-dxm-provider"
+  SSH_KEY_FINGERPRINT:
+    type: string
+    default: "de:83:a2:6f:fe:89:6c:6c:34:58:55:f1:82:76:51:11"
   PRIMARY_RELEASE_BRANCH:
     type: string
     default: "1_x"
@@ -237,8 +171,38 @@ workflows:
   on-release:
     when: << pipeline.parameters.IS_RELEASE >>
     jobs:
-      - release:
+      - jahia-modules-orb/initialize
+      - jahia-modules-orb/generate-changelog:
           context: QA_ENVIRONMENT
+          requires:
+            - jahia-modules-orb/initialize
+          ssh_key_fingerprints: << pipeline.parameters.SSH_KEY_FINGERPRINT >>
+      - jahia-modules-orb/release:
+          context: QA_ENVIRONMENT
+          requires:
+            - jahia-modules-orb/generate-changelog
+          module_id: << pipeline.parameters.MODULE_ID >>
+          github_slug: << pipeline.parameters.GITHUB_SLUG >>
+          release_id: << pipeline.parameters.RELEASE_ID >>
+          release_version: << pipeline.parameters.RELEASE_VERSION >>
+          primary_release_branch: << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
+          ssh_key_fingerprints: << pipeline.parameters.SSH_KEY_FINGERPRINT >>
+      - jahia-modules-orb/update-signature:
+          context: QA_ENVIRONMENT
+          requires:
+            - jahia-modules-orb/release
+          ssh_key_fingerprints: << pipeline.parameters.SSH_KEY_FINGERPRINT >>
+      - wait-for-approval:
+          type: approval
+          context: QA_ENVIRONMENT
+          requires:
+            - jahia-modules-orb/release
+      - jahia-modules-orb/release-publication:
+          context: QA_ENVIRONMENT
+          requires:
+            - wait-for-approval
+          module_id: << pipeline.parameters.MODULE_ID >>
+          release_version: << pipeline.parameters.RELEASE_VERSION >>
   pull_request:
     when: << pipeline.parameters.run_pull_request >>
     jobs:
