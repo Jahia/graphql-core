@@ -1,5 +1,9 @@
 version: 2.1
 
+orbs:
+  docker: circleci/docker@0.5.20
+  jahia-modules-orb: jahia/jahia-modules-orb@0.2.0
+
 references:
   workdir: &workdir
     working_directory: ~/source
@@ -14,6 +18,21 @@ references:
     attach_workspace:
       at: .
 
+
+commands:
+  generate_cachekey_seed:
+    description: Generate Cache Key Seeds
+    steps:
+      - run:
+          name: Generate Cache Key Seeds
+          command: |
+            find . -name 'pom.xml' | sort | xargs cat > ~/source/maven_cache_seed
+            if [[ ! -z "$CIRCLE_PULL_REQUEST" ]]; then
+              echo "true" > ~/source/is_pr
+            else
+              echo "false" > ~/source/is_pr
+            fi
+
 jobs:
   checkout:
     <<: *workdir
@@ -22,6 +41,7 @@ jobs:
     steps:
       - checkout
       - *persist-workspace
+
 
   build:
     parameters:
@@ -123,10 +143,66 @@ parameters:
   github_repository:
     type: string
     default: ""
+  GITHUB_SLUG:
+    type: string
+    default: "jahia/graphql-core"
+  MODULE_ID:
+    type: string
+    default: "graphql-dxm-provider"
+  SSH_KEY_FINGERPRINT:
+    type: string
+    default: "de:83:a2:6f:fe:89:6c:6c:34:58:55:f1:82:76:51:11"
+  PRIMARY_RELEASE_BRANCH:
+    type: string
+    default: "1_x"
+  RELEASE_ID:
+    type: string
+    default: ""
+  RELEASE_VERSION:
+    type: string
+    default: ""
+  IS_RELEASE:
+    type: boolean
+    default: false
 
 workflows:
   version: 2
   # This one is run only when triggered with the API, using a GitHub action
+  on-release:
+    when: << pipeline.parameters.IS_RELEASE >>
+    jobs:
+      - jahia-modules-orb/initialize
+      - jahia-modules-orb/generate-changelog:
+          context: QA_ENVIRONMENT
+          requires:
+            - jahia-modules-orb/initialize
+          ssh_key_fingerprints: << pipeline.parameters.SSH_KEY_FINGERPRINT >>
+      - jahia-modules-orb/release:
+          context: QA_ENVIRONMENT
+          requires:
+            - jahia-modules-orb/generate-changelog
+          module_id: << pipeline.parameters.MODULE_ID >>
+          github_slug: << pipeline.parameters.GITHUB_SLUG >>
+          release_id: << pipeline.parameters.RELEASE_ID >>
+          release_version: << pipeline.parameters.RELEASE_VERSION >>
+          primary_release_branch: << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
+          ssh_key_fingerprints: << pipeline.parameters.SSH_KEY_FINGERPRINT >>
+      - jahia-modules-orb/update-signature:
+          context: QA_ENVIRONMENT
+          requires:
+            - jahia-modules-orb/release
+          ssh_key_fingerprints: << pipeline.parameters.SSH_KEY_FINGERPRINT >>
+      - wait-for-approval:
+          type: approval
+          context: QA_ENVIRONMENT
+          requires:
+            - jahia-modules-orb/release
+      - jahia-modules-orb/release-publication:
+          context: QA_ENVIRONMENT
+          requires:
+            - wait-for-approval
+          module_id: << pipeline.parameters.MODULE_ID >>
+          release_version: << pipeline.parameters.RELEASE_VERSION >>
   pull_request:
     when: << pipeline.parameters.run_pull_request >>
     jobs:
