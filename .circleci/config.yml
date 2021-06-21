@@ -495,7 +495,7 @@ workflows:
             - jahia-modules-orb/build
           context: QA_ENVIRONMENT
           #Using Aliases here (8 is the latest of the 8 tree, 8.1 is the latest of the tree, ...)
-          JAHIA_IMAGE: jahia/jahia-private:snapshot-dev
+          JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           TOOLS_USER: root
           TOOLS_PWD: root
@@ -640,7 +640,7 @@ workflows:
     jobs:
       - jahia-modules-orb/initialize
       - integration_testsjava:
-          JAHIA_IMAGE: jahia/jahia-private:snapshot-dev
+          JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           MANIFEST: warmup-manifest-snapshot.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Snapshot
@@ -651,7 +651,7 @@ workflows:
           requires:
             - jahia-modules-orb/initialize
       - integration_testsjava:
-          JAHIA_IMAGE: jahia/jahia-dev:8.0
+          JAHIA_IMAGE: jahia/jahia-ee:8
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           MANIFEST: warmup-manifest-release.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Release
