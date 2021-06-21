@@ -90,6 +90,20 @@ references:
     attach_workspace:
       at: .
 
+commands:
+  generate_cachekey_seed:
+    description: Generate Cache Key Seeds
+    steps:
+      - run:
+          name: Generate Cache Key Seeds
+          command: |
+            find . -name 'pom.xml' | sort | xargs cat > ~/source/maven_cache_seed
+            if [[ ! -z "$CIRCLE_PULL_REQUEST" ]]; then
+              echo "true" > ~/source/is_pr
+            else
+              echo "false" > ~/source/is_pr
+            fi
+
 jobs:
   # We're saving the artifacts that are then used later on to execute the tests
   # The artifacts are also stored and made available through circleci UI if further investigations are necessary
