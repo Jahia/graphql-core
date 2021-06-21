@@ -178,7 +178,7 @@ jobs:
           name: Copy artifacts
           command: |
             mkdir /tmp/artifacts/
-            cp /home/circleci/source/target/graphql-dxm-provider/*.jar /tmp/artifacts/
+            cp /home/circleci/source/target/checkout/graphql-dxm-provider/target/*.jar /tmp/artifacts/
       - store_artifacts:
           path: /tmp/artifacts/
   build:
