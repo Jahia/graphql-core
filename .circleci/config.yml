@@ -21,7 +21,7 @@ parameters:
     default: "GraphQL Core module"
   TESTRAIL_MILESTONE:
     type: string
-    default: "Default"    
+    default: "Default"
   GITHUB_SLUG:
     type: string
     default: "jahia/graphql-core"
@@ -48,16 +48,16 @@ parameters:
     default: false
   SHOULD_SKIP_ARTIFACTS:
     type: boolean
-    default: true    
+    default: true
   SHOULD_SKIP_TESTRAIL:
     type: boolean
     default: true
-  SHOULD_SKIP_NOTIFICATIONS: 
+  SHOULD_SKIP_NOTIFICATIONS:
     type: boolean
-    default: true  
-  SHOULD_SKIP_ZENCREPES: 
+    default: true
+  SHOULD_SKIP_ZENCREPES:
     type: boolean
-    default: false           
+    default: false
   UPDATE_SIGNATURE:
     type: boolean
     default: false
@@ -74,8 +74,8 @@ parameters:
     default: 'graphql-test-docker/'
   TESTSJAVA_IMAGE:
     type: string
-    default: 'jahia/graphql-core'     
- 
+    default: 'jahia/graphql-core'
+
 references:
   workdir: &workdir
     working_directory: ~/source
@@ -90,12 +90,100 @@ references:
     attach_workspace:
       at: .
 
+commands:
+  generate_cachekey_seed:
+    description: Generate Cache Key Seeds
+    steps:
+      - run:
+          name: Generate Cache Key Seeds
+          command: |
+            find . -name 'pom.xml' | sort | xargs cat > ~/source/maven_cache_seed
+            if [[ ! -z "$CIRCLE_PULL_REQUEST" ]]; then
+              echo "true" > ~/source/is_pr
+            else
+              echo "false" > ~/source/is_pr
+            fi
+
 jobs:
-  # We're saving the artifacts that are then used later on to execute the tests 
-  # The artifacts are also stored and made available through circleci UI if further investigations are necessary 
+  # We're saving the artifacts that are then used later on to execute the tests
+  # The artifacts are also stored and made available through circleci UI if further investigations are necessary
+  release:
+    <<: *workdir
+    docker: # run the steps with Docker
+      - image: cimg/openjdk:8.0.275-node
+    resource_class: xlarge
+    steps:
+      - checkout
+      - generate_cachekey_seed
+      - restore_cache:
+          keys:
+            - v1-maven-dependencies-{{ checksum "maven_cache_seed" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-maven-dependencies-
+      - add_ssh_keys:
+          fingerprints:
+            - <<pipeline.parameters.SSH_KEY_FINGERPRINT>>
+      - run:
+          name: Getting latest changes from the remote branch
+          command: |
+            git fetch --all
+            git pull origin $CIRCLE_BRANCH --quiet
+      - run:
+          name: Delete github tag <<pipeline.parameters.RELEASE_VERSION>>
+          command: |
+            mkdir -p ~/.ssh
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+            git config user.email "jahia-ci@jahia.com"
+            git config user.name "Jahia CI"
+            git tag --delete <<pipeline.parameters.RELEASE_VERSION>>
+            git push --delete origin <<pipeline.parameters.RELEASE_VERSION>>
+      - run:
+          name: Release prepare version for <<pipeline.parameters.RELEASE_VERSION>>
+          command: |
+            FINAL_RELEASE_VERSION=$(echo <<pipeline.parameters.RELEASE_VERSION>> | cut -d'-' -f 1)
+            MAJOR_VERSION=`echo $FINAL_RELEASE_VERSION | cut -d. -f1`
+            MINOR_VERSION=`echo $FINAL_RELEASE_VERSION | cut -d. -f2`
+            REVISION=`echo $FINAL_RELEASE_VERSION | cut -d. -f3`
+            if [[ "<<pipeline.parameters.PRIMARY_RELEASE_BRANCH>>" == "master"  || "<<pipeline.parameters.PRIMARY_RELEASE_BRANCH>>" == "main"  ||  "<<pipeline.parameters.PRIMARY_RELEASE_BRANCH>>" =~ ^[0-9]_x$ ]]; then
+             NEXT_MINOR_VERSION=`expr $MINOR_VERSION + 1`
+             NEXT_DEVELOPMENT_VERSION="$MAJOR_VERSION.$NEXT_MINOR_VERSION.0"-SNAPSHOT
+            else
+              NEXT_REVISION=`expr $REVISION + 1`
+              NEXT_DEVELOPMENT_VERSION="$MAJOR_VERSION.$MINOR_VERSION.$NEXT_REVISION"-SNAPSHOT
+            fi
+            mvn -s .circleci/.circleci.settings.xml -B -Dtag=$FINAL_RELEASE_VERSION release:prepare -DreleaseVersion=$FINAL_RELEASE_VERSION -DdevelopmentVersion="$NEXT_DEVELOPMENT_VERSION"
+      - save_cache:
+          # need to match rollback cache key on restore
+          key: v1-rollback-<<pipeline.parameters.RELEASE_ID>>
+          paths:
+            - pom.xml.releaseBackup
+            - release.properties
+      - run:
+          name: Update github release for id << pipeline.parameters.RELEASE_ID >>
+          command: |
+            curl -X PATCH \
+            -H "Accept:application/vnd.github.v3+json" \
+            -d "{\"tag_name\":\"<<pipeline.parameters.RELEASE_VERSION>>\", \"prerelease\": false, \"draft\": false}" -u \
+            jahia-ci:$GITHUB_API_TOKEN https://api.github.com/repos/<<pipeline.parameters.GITHUB_SLUG>>/releases/<< pipeline.parameters.RELEASE_ID >>
+            curl \
+            -H "Content-Type: $(file -b --mime-type CHANGELOG.md)" \
+            -u jahia-ci:$GITHUB_API_TOKEN  \
+            --data-binary @CHANGELOG.md \
+            "https://uploads.github.com/repos/<<pipeline.parameters.GITHUB_SLUG>>/releases/<< pipeline.parameters.RELEASE_ID >>/assets?name=$(basename CHANGELOG.md)"
+      - run:
+          name: Perform release
+          command: |
+            mvn -s .circleci/.circleci.settings.xml release:perform -Prelease-to-staging-repository -DscmCommentPrefix="[skip ci] [maven-release-plugin]"
+      - run:
+          name: Copy artifacts
+          command: |
+            mkdir /tmp/artifacts/
+            cp /home/circleci/source/target/graphql-dxm-provider/*.jar /tmp/artifacts/
+      - store_artifacts:
+          path: /tmp/artifacts/
   build:
     <<: *workdir
-    docker: 
+    docker:
       - image: cimg/openjdk:8.0.275
     resource_class: large
     steps:
@@ -109,7 +197,7 @@ jobs:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
       # Environment provisioning is sometimes dependent upon dependencies build during mvn clean install
-      # This step copies those dependencies and make them available for further actions, 
+      # This step copies those dependencies and make them available for further actions,
       # such as being used to provision a running Jahia with a set of freshly built artifacts
       - run: mvn -s .circleci/.circleci.settings.xml dependency:copy-dependencies
       - run:
@@ -145,7 +233,7 @@ jobs:
   # It is only executed when merging into master (after successful PR execution)
   publish:
     <<: *workdir
-    docker: 
+    docker:
       - image: cimg/openjdk:8.0.275
     resource_class: large
     steps:
@@ -176,23 +264,23 @@ jobs:
         type: string
       JAHIA_URL:
         type: string
-        default: http://jahia:8080        
+        default: http://jahia:8080
       TOOLS_USER:
         type: string
         default: jahia
       TOOLS_PWD:
         type: string
         default: password
-      # Why this is not a boolean, see: https://discuss.circleci.com/t/run-job-within-workflow-conditionally/34125/2        
+      # Why this is not a boolean, see: https://discuss.circleci.com/t/run-job-within-workflow-conditionally/34125/2
       SKIP_TESTRAIL:
-        type: string 
-        default: "" 
+        type: string
+        default: ""
       SKIP_ARTIFACTS:
         type: boolean
         default: true
       RUN_TESTSIMAGE:
         type: string
-        default: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest        
+        default: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
       BUILD_TESTSIMAGE:
         type: boolean
         default: false
@@ -212,7 +300,7 @@ jobs:
             if [ ! -d << pipeline.parameters.TESTSJAVA_PATH >>artifacts ]; then
               mkdir -p << pipeline.parameters.TESTSJAVA_PATH >>artifacts
               mkdir << pipeline.parameters.TESTSJAVA_PATH >>artifacts/reports
-            fi          
+            fi
             cp pom.xml << pipeline.parameters.TESTSJAVA_PATH >>pom.xml
             if [ ! -d << pipeline.parameters.TESTSJAVA_PATH >>graphql-dxm-provider ]; then
                 mkdir << pipeline.parameters.TESTSJAVA_PATH >>graphql-dxm-provider
@@ -233,7 +321,7 @@ jobs:
               sudo cp << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-extension-example*SNAPSHOT.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-extension-example-SNAPSHOT.jar
               sudo cp /home/circleci/source/graphql-test/target/*.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/
               sudo cp << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-test*SNAPSHOT.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-test-SNAPSHOT.jar
-            fi         
+            fi
       - run:
           name: Docker login
           # This is needed to fetch private docker images (such as Jahia snapshot)
@@ -242,7 +330,7 @@ jobs:
             echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_LOGIN" --password-stdin
       - run:
           name: Spin-up dockerized jahia
-          # At that point we're only sprinning up Jahia and its runtime dependencies, 
+          # At that point we're only sprinning up Jahia and its runtime dependencies,
           # We are not starting the tests yet since we first want to build the test container (or run from a previously built container)
           # Copying the main folder content into the tests folder is there to have
           #   the POM files usable by the tests executed by Maven at this level
@@ -253,7 +341,7 @@ jobs:
             cd << pipeline.parameters.TESTSJAVA_PATH >>
             if [[ ! -e .env ]]; then
               mv .env.example .env
-            fi            
+            fi
             docker-compose -f docker-compose.yml up -d jahia
           no_output_timeout: 2h
           environment:
@@ -285,7 +373,7 @@ jobs:
             set -e
             cd << pipeline.parameters.TESTSJAVA_PATH >>
             export DOCKER_CLIENT_TIMEOUT=120
-            export COMPOSE_HTTP_TIMEOUT=120            
+            export COMPOSE_HTTP_TIMEOUT=120
             docker-compose -f docker-compose.yml up maven
             docker cp e2e-tests:/tmp/results ./artifacts/results
           no_output_timeout: 2h
@@ -326,7 +414,7 @@ jobs:
               --moduleId="<< pipeline.parameters.MODULE_ID >>" \
               --dependencies="graphql-dxm-provider" \
               --filepath="artifacts/results/installed-jahia-modules.json"
-      # This is not needed since cypress is going to terminat on failure with exit code 1      
+      # This is not needed since cypress is going to terminat on failure with exit code 1
       - run:
           name: Analyze Test results
           when: always
@@ -343,17 +431,17 @@ jobs:
           path: << pipeline.parameters.TESTSJAVA_PATH >>artifacts/results
       # Once all is executed, results are submitted to external platforms
       # Testrail report and Slack (failure only) notifications are sent during scheduled executions or merged into the main branch
-      # jahia-reporter can be executed either in docker or through node directly. 
+      # jahia-reporter can be executed either in docker or through node directly.
       - run:
           name: Publish results to testrail
           when: always
           command: |
             set +e
-            if [ "<< parameters.SKIP_TESTRAIL >>" != "true" ] || [ "$CIRCLE_BRANCH" = "<< pipeline.parameters.PRIMARY_RELEASE_BRANCH >>" ]; then            
+            if [ "<< parameters.SKIP_TESTRAIL >>" != "true" ] || [ "$CIRCLE_BRANCH" = "<< pipeline.parameters.PRIMARY_RELEASE_BRANCH >>" ]; then
               cd << pipeline.parameters.TESTSJAVA_PATH >>
               export NVM_DIR="/opt/circleci/.nvm"
               [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-              nvm alias default v12              
+              nvm alias default v12
               echo "Sending slack message"
               jahia-reporter slack \
                 --webhook=$SLACK_WEBHOOK_QA_NOTIFICATIONS \
@@ -385,7 +473,7 @@ jobs:
             fi
       - *persist-workspace
 
-  # We also want the test image to be versioned and published to Docker Hub whenever a new tag is created 
+  # We also want the test image to be versioned and published to Docker Hub whenever a new tag is created
   # This would allow us to re-use a test image whenever we want to test with an earlier version of the module
   docker-publish:
     <<: *workdir
@@ -448,7 +536,7 @@ jobs:
             else
               echo "Executing an analysis on branch: $CIRCLE_BRANCH"
               mvn -s .circleci/.circleci.settings.xml sonar:sonar -Dsonar.branch.name=$CIRCLE_BRANCH
-            fi               
+            fi
       - save_cache:
           paths:
             - ~/.m2
@@ -464,7 +552,7 @@ workflows:
       - jahia-modules-orb/update-signature:
           context: QA_ENVIRONMENT
           requires:
-            - jahia-modules-orb/initialize        
+            - jahia-modules-orb/initialize
           pre-steps:
             - jahia-modules-orb/update-signature-prestep
           ssh_key_fingerprints:  << pipeline.parameters.SSH_KEY_FINGERPRINT >>
@@ -477,9 +565,9 @@ workflows:
       - jahia-modules-orb/sonar-analysis:
           context: QA_ENVIRONMENT
           requires:
-            - jahia-modules-orb/build          
+            - jahia-modules-orb/build
           primary_release_branch: << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
-          github_slug: << pipeline.parameters.GITHUB_SLUG >>            
+          github_slug: << pipeline.parameters.GITHUB_SLUG >>
       - jahia-modules-orb/publish:
           context: QA_ENVIRONMENT
           requires:
@@ -487,7 +575,7 @@ workflows:
           filters:
             branches:
               only:
-                - << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>             
+                - << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
       # Verifies that the new code works with the latest released version of Jahia
       - integration_testsjava:
           name: 'Int. Tests - Jahia Latest - Built modules'
@@ -520,9 +608,9 @@ workflows:
             - jahia-modules-orb/build
           jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
           tests_manifest: provisioning-manifest-build.yml
-          module_id: << pipeline.parameters.MODULE_ID >> 
-          testrail_project: << pipeline.parameters.TESTRAIL_PROJECTNAME >> 
-          testrail_milestone: << pipeline.parameters.TESTRAIL_MILESTONE >>                
+          module_id: << pipeline.parameters.MODULE_ID >>
+          testrail_project: << pipeline.parameters.TESTRAIL_PROJECTNAME >>
+          testrail_milestone: << pipeline.parameters.TESTRAIL_MILESTONE >>
 
   # The on-release workflow was created to handle the full release lifecycle after creating a release using GitHub
   # https://github.com/Jahia/sandbox/releases
@@ -541,26 +629,20 @@ workflows:
           requires:
             - jahia-modules-orb/initialize
           ssh_key_fingerprints: << pipeline.parameters.SSH_KEY_FINGERPRINT >>
-      - jahia-modules-orb/release:
+      - release:
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/generate-changelog
-          module_id: << pipeline.parameters.MODULE_ID >>
-          github_slug: << pipeline.parameters.GITHUB_SLUG >>
-          release_id: << pipeline.parameters.RELEASE_ID >>
-          release_version: << pipeline.parameters.RELEASE_VERSION >>
-          primary_release_branch: << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
-          ssh_key_fingerprints:  << pipeline.parameters.SSH_KEY_FINGERPRINT >>
       - jahia-modules-orb/update-signature:
           context: QA_ENVIRONMENT
           requires:
-            - jahia-modules-orb/release
+            - release
           ssh_key_fingerprints: << pipeline.parameters.SSH_KEY_FINGERPRINT >>
       - wait-for-approval:
           type: approval
           context: QA_ENVIRONMENT
           requires:
-            - jahia-modules-orb/release
+            - release
       - jahia-modules-orb/release-publication:
           context: QA_ENVIRONMENT
           requires:
@@ -571,7 +653,7 @@ workflows:
   # The on-rollback workflow was created to handle release rollback when a release has been deleted from Github
   # The rollback pipeline/job performs the following action:
   # - restore rollback artifact cache created from the release job
-  # - Run mvn:rollback 
+  # - Run mvn:rollback
   # - Delete github tag associated with the release
   on-rollback:
     when: << pipeline.parameters.IS_ROLLBACK >>
@@ -601,7 +683,7 @@ workflows:
     when: << pipeline.parameters.UPDATE_SIGNATURE >>
     jobs:
       - jahia-modules-orb/update-signature:
-          context: QA_ENVIRONMENT      
+          context: QA_ENVIRONMENT
           pre-steps:
             - jahia-modules-orb/update-signature-prestep
           ssh_key_fingerprints:  << pipeline.parameters.SSH_KEY_FINGERPRINT >>
@@ -617,8 +699,8 @@ workflows:
             - jahia-modules-orb/initialize
           jahia_image: << pipeline.parameters.JAHIA_IMAGE >>
           tests_manifest: << pipeline.parameters.TESTS_MANIFEST >>
-          module_id: << pipeline.parameters.MODULE_ID >> 
-          testrail_project: << pipeline.parameters.TESTRAIL_PROJECTNAME >> 
+          module_id: << pipeline.parameters.MODULE_ID >>
+          testrail_project: << pipeline.parameters.TESTRAIL_PROJECTNAME >>
           testrail_milestone: << pipeline.parameters.TESTRAIL_MILESTONE >>
           should_skip_artifacts: << pipeline.parameters.SHOULD_SKIP_ARTIFACTS >>
           should_skip_testrail: << pipeline.parameters.SHOULD_SKIP_TESTRAIL >>
@@ -667,7 +749,7 @@ workflows:
           requires:
             - jahia-modules-orb/initialize
           matrix:
-            parameters:            
+            parameters:
               jahia_image: ["jahia/jahia-ee:8", "jahia/jahia-ee-dev:8-SNAPSHOT"]
               tests_manifest: ["provisioning-manifest-snapshot.yml"]
               module_id: ["<< pipeline.parameters.MODULE_ID >>"]
@@ -676,4 +758,4 @@ workflows:
               should_skip_artifacts: [true]
               should_skip_testrail: [false]
               should_skip_notifications: [false]
-              should_skip_zencrepes: [false]            
+              should_skip_zencrepes: [false]
