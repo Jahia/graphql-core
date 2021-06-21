@@ -499,7 +499,7 @@ workflows:
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           TOOLS_USER: root
           TOOLS_PWD: root
-          MANIFEST: provisioning-manifest-build.yml
+          MANIFEST: warmup-manifest-build.yml
           TESTRAIL_MILESTONE: Jahia-Latest
           SKIP_TESTRAIL: "true"
           SKIP_ARTIFACTS: false
@@ -642,7 +642,7 @@ workflows:
       - integration_testsjava:
           JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
-          MANIFEST: provisioning-manifest-snapshot.yml
+          MANIFEST: warmup-manifest-snapshot.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Snapshot
           TOOLS_USER: root
           TOOLS_PWD: root
@@ -653,7 +653,7 @@ workflows:
       - integration_testsjava:
           JAHIA_IMAGE: jahia/jahia-ee:8
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
-          MANIFEST: provisioning-manifest-snapshot.yml
+          MANIFEST: warmup-manifest-release.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Release
           TOOLS_USER: root
           TOOLS_PWD: root
