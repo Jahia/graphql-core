@@ -615,26 +615,20 @@ workflows:
           requires:
             - jahia-modules-orb/initialize
           ssh_key_fingerprints: << pipeline.parameters.SSH_KEY_FINGERPRINT >>
-      - jahia-modules-orb/release:
+      - release:
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/generate-changelog
-          module_id: << pipeline.parameters.MODULE_ID >>
-          github_slug: << pipeline.parameters.GITHUB_SLUG >>
-          release_id: << pipeline.parameters.RELEASE_ID >>
-          release_version: << pipeline.parameters.RELEASE_VERSION >>
-          primary_release_branch: << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
-          ssh_key_fingerprints:  << pipeline.parameters.SSH_KEY_FINGERPRINT >>
       - jahia-modules-orb/update-signature:
           context: QA_ENVIRONMENT
           requires:
-            - jahia-modules-orb/release
+            - release
           ssh_key_fingerprints: << pipeline.parameters.SSH_KEY_FINGERPRINT >>
       - wait-for-approval:
           type: approval
           context: QA_ENVIRONMENT
           requires:
-            - jahia-modules-orb/release
+            - release
       - jahia-modules-orb/release-publication:
           context: QA_ENVIRONMENT
           requires:
