@@ -65,6 +65,7 @@
     </scm>
 
     <properties>
+        <jahia.nexus.staging.repository.id>64277f72646358</jahia.nexus.staging.repository.id>
         <jahia-plugin-version>5.11</jahia-plugin-version>
     </properties>
 
