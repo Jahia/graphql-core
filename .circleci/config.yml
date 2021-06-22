@@ -176,11 +176,17 @@ jobs:
         type: string
       JAHIA_URL:
         type: string
-        default: http://jahia:8080        
-      TOOLS_USER:
+        default: http://jahia:8080
+      JAHIA_USERNAME:
+        type: string
+        default: root
+      JAHIA_PASSWORD:
+        type: string
+        default: root
+      JAHIA_USERNAME_TOOLS:
         type: string
         default: jahia
-      TOOLS_PWD:
+      JAHIA_PASSWORD_TOOLS:
         type: string
         default: password
       # Why this is not a boolean, see: https://discuss.circleci.com/t/run-job-within-workflow-conditionally/34125/2        
