@@ -497,8 +497,10 @@ workflows:
           #Using Aliases here (8 is the latest of the 8 tree, 8.1 is the latest of the tree, ...)
           JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
-          TOOLS_USER: root
-          TOOLS_PWD: root
+          JAHIA_USERNAME_TOOLS: "root"
+          JAHIA_PASSWORD_TOOLS: "root"
+          JAHIA_USERNAME: "root"
+          JAHIA_PASSWORD: "root"
           MANIFEST: warmup-manifest-build.yml
           TESTRAIL_MILESTONE: Jahia-Latest
           SKIP_TESTRAIL: "true"
@@ -644,8 +646,10 @@ workflows:
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           MANIFEST: warmup-manifest-snapshot.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Snapshot
-          TOOLS_USER: root
-          TOOLS_PWD: root
+          JAHIA_USERNAME_TOOLS: "root"
+          JAHIA_PASSWORD_TOOLS: "root"
+          JAHIA_USERNAME: "root"
+          JAHIA_PASSWORD: "root"
           name: Nightly-Jahia-Latest-Snapshot
           context: QA_ENVIRONMENT
           requires:
@@ -655,8 +659,10 @@ workflows:
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           MANIFEST: warmup-manifest-release.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Release
-          TOOLS_USER: root
-          TOOLS_PWD: root
+          JAHIA_USERNAME_TOOLS: "root"
+          JAHIA_PASSWORD_TOOLS: "root"
+          JAHIA_USERNAME: "root"
+          JAHIA_PASSWORD: "root"
           name: Nightly-Jahia-Latest-Release
           context: QA_ENVIRONMENT
           requires:
