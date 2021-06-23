@@ -43,10 +43,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.user;
 
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.data.viewhelper.principal.PrincipalViewHelper;
@@ -86,9 +83,54 @@ public class GqlUser implements GqlPrincipal {
 
     @GraphQLField
     @GraphQLNonNull
+    @GraphQLDeprecate
     @GraphQLDescription("User name")
+    @Override
     public String getName() {
         return user.getName();
+    }
+
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("Username of the user")
+    public String getUsername() {
+        return user.getName();
+    }
+
+    @GraphQLField
+    @GraphQLDescription("First name of the user")
+    public String getFirstname() {
+        return user.getProperty("j:firstName");
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Last name of the user")
+    public String getLastname() {
+        return user.getProperty("j:lastName");
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Email of the user")
+    public String getEmail() {
+        return user.getProperty("j:email");
+    }
+
+    @GraphQLField
+    @GraphQLDescription("User organization")
+    public String getOrganization() {
+        return user.getProperty("j:organization");
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Preferred language by the user")
+    public String getLanguage() {
+        return user.getProperty("preferredLanguage");
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Displays if user is locked")
+    public boolean getLocked() {
+        return Boolean.parseBoolean(user.getProperty("j:accountLocked"));
     }
 
     @GraphQLField

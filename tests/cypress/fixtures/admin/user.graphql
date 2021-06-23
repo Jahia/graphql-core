@@ -1,0 +1,17 @@
+query(
+    $userName: String
+){
+  admin {
+    userAdmin {
+      user(userName: $userName) {
+        firstname
+        lastname
+        email
+        language
+        organization
+        locked
+        lastname
+      }
+    }
+  }
+}
