@@ -23,7 +23,20 @@ public class GqlAdminQuery {
      */
     @GraphQLField
     @GraphQLNonNull
-    @GraphQLDescription("Get Jahia admin query")
+    @GraphQLDescription(
+        "# Jahia Admin node \n" +
+        "This node contains Jahia administration nodes, it is the API counterpart " + 
+        "of Jahia Administration UI. \n\n" +
+        "## Authorization \n" +
+        "This is _detailed_ on the [Academy](https://academy.jahia.com/home) \n" +
+        "### Level 3\n" +
+        "With __more__ details\n\n"+
+        "## Bullets\n" +
+        "Some text\n" +
+        "* Bullet 1\n" +
+        "* Bullet 2\n" +
+        "Some more text\n\n"
+    )
     @GraphQLRequiresPermission(value = "admin")
     public GqlJahiaAdminQuery getJahia() {
         return new GqlJahiaAdminQuery();
