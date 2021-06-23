@@ -3,6 +3,8 @@ services:
   jahia:
     image: "${JAHIA_IMAGE}"
     container_name: jahia
+    environment:
+      - SUPER_USER_PASSWORD="root"
     ports:
       - "8080:8080"
     extra_hosts:
