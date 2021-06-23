@@ -1,0 +1,20 @@
+query (
+  $userName: String!
+  $site: String!
+){
+      admin {
+          userAdmin {
+              user(userName: $userName) {
+                  groupMembership(site: $site) {
+                      pageInfo {
+                          totalCount
+                      }
+                      nodes {
+                          name
+                      }
+                  }
+              }
+          }
+      }
+ }
+
