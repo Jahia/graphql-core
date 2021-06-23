@@ -1,9 +1,11 @@
 query(
-    $userName: String
+    $userName: String!
 ){
   admin {
     userAdmin {
       user(userName: $userName) {
+        name
+        username
         firstname
         lastname
         email

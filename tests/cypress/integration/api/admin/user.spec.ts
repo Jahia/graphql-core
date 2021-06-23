@@ -1,27 +1,32 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import gql from 'graphql-tag'
 import { apollo } from '../../../support/apollo'
+import { DocumentNode } from 'graphql'
 
 describe('Test admin user endpoint', () => {
+    let GQL_USER: DocumentNode
+
+    before('load graphql file', function () {
+        GQL_USER = require(`graphql-tag/loader!../../../fixtures/admin/user.graphql`)
+    })
+
     it('gets a user', () => {
         cy.apolloQuery(
             apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
             {
-                query: gql`
-                    {
-                        admin {
-                            userAdmin {
-                                user(userName: "root") {
-                                    name
-                                }
-                            }
-                        }
-                    }
-                `,
+                query: GQL_USER,
+                variables: { userName: 'jay' },
             },
         ).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
-            expect(response.data.admin.userAdmin.user.name).to.equal('root')
+            expect(response.data.admin.userAdmin.user.name).to.equal('jay')
+            expect(response.data.admin.userAdmin.user.username).to.equal('jay')
+            expect(response.data.admin.userAdmin.user.firstname).to.equal('Jay')
+            expect(response.data.admin.userAdmin.user.lastname).to.equal('Hawking')
+            expect(response.data.admin.userAdmin.user.organization).not.to.be.undefined
+            expect(response.data.admin.userAdmin.user.language).to.equal('en')
+            expect(response.data.admin.userAdmin.user.locked).to.equal(false)
+            expect(response.data.admin.userAdmin.user.email).not.to.be.undefined
         })
     })
 
