@@ -1,0 +1,13 @@
+query($groupName: String!, $site: String){
+      admin {
+          userAdmin {
+              group(groupName: $groupName, site: $site) {
+                  members {
+                      nodes {
+                          name
+                      }
+                  }
+              }
+          }
+      }
+ }

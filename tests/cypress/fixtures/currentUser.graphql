@@ -1,5 +1,12 @@
 query {
   currentUser {
     name
+    firstname
+    lastname
+    username
+    email
+    organization
+    language
+    locked
   }
 }

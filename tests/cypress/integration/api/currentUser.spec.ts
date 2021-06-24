@@ -14,6 +14,13 @@ describe('Validate ability get current User', () => {
             query: GQL_APIUSER,
         }).should((response: any) => {
             expect(response.data.currentUser.name).to.equal('jay')
+            expect(response.data.currentUser.username).to.equal('jay')
+            expect(response.data.currentUser.firstname).to.equal('Jay')
+            expect(response.data.currentUser.lastname).to.equal('Hawking')
+            expect(response.data.currentUser.organization).to.be.empty
+            expect(response.data.currentUser.language).to.equal('en')
+            expect(response.data.currentUser.locked).to.equal(false)
+            expect(response.data.currentUser.email).to.be.empty
         })
     })
 
