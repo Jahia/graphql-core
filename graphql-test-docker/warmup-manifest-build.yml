@@ -147,9 +147,6 @@ jobs:
   - type: webproject
     source: prepackaged
     sitekey: digitall
-  - type: module
-    id: event
-    filepath: /tmp/event-LATEST.jar
   - type: asset
     fetch: http
     username: NEXUS_USERNAME
