@@ -1,0 +1,24 @@
+query(
+    $userName: String!,
+    $group: String,
+    $site1: String,
+    $site2: String){
+  admin {
+    userAdmin {
+      user(userName: $userName) {
+        name
+        username
+        firstname
+        lastname
+        displayName
+        email
+        language
+        organization
+        locked
+        lastname
+        yes: memberOf(group: $group, site: $site1)
+        no: memberOf(group: $group, site: $site2)
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+query (
+  $userName: String!,
+  $field: String,
+  $value: String
+){
+    admin {
+        userAdmin {
+            user(userName: $userName) {
+                groupMembership(fieldFilter: { filters: { fieldName: $field, value: $value } }) {
+                    pageInfo {
+                        totalCount
+                    }
+                    nodes {
+                        name
+                    }
+                }
+               }
+            }
+        }
+}

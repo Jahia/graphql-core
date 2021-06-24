@@ -47,6 +47,11 @@
             <password>${env.NEXUS_PASSWORD}</password>
         </server>
         <server>
+            <id>staging-repository</id>
+            <username>${env.NEXUS_RELEASE_USERNAME}</username>
+            <password>${env.NEXUS_RELEASE_PASSWORD}</password>
+        </server>
+        <server>
             <id>jahia-internal</id>
             <username>${env.NEXUS_USERNAME}</username>
             <password>${env.NEXUS_PASSWORD}</password>
