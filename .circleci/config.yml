@@ -265,10 +265,16 @@ jobs:
       JAHIA_URL:
         type: string
         default: http://jahia:8080
-      TOOLS_USER:
+      JAHIA_USERNAME:
+        type: string
+        default: root
+      JAHIA_PASSWORD:
+        type: string
+        default: root
+      JAHIA_USERNAME_TOOLS:
         type: string
         default: jahia
-      TOOLS_PWD:
+      JAHIA_PASSWORD_TOOLS:
         type: string
         default: password
       # Why this is not a boolean, see: https://discuss.circleci.com/t/run-job-within-workflow-conditionally/34125/2
@@ -584,10 +590,12 @@ workflows:
             - jahia-modules-orb/build
           context: QA_ENVIRONMENT
           #Using Aliases here (8 is the latest of the 8 tree, 8.1 is the latest of the tree, ...)
-          JAHIA_IMAGE: jahia/jahia-private:snapshot-dev
+          JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
-          TOOLS_USER: root
-          TOOLS_PWD: root
+          JAHIA_USERNAME_TOOLS: "root"
+          JAHIA_PASSWORD_TOOLS: "root"
+          JAHIA_USERNAME: "root"
+          JAHIA_PASSWORD: "root"
           MANIFEST: warmup-manifest-build.yml
           TESTRAIL_MILESTONE: Jahia-Latest
           SKIP_TESTRAIL: "true"
@@ -723,23 +731,27 @@ workflows:
     jobs:
       - jahia-modules-orb/initialize
       - integration_testsjava:
-          JAHIA_IMAGE: jahia/jahia-private:snapshot-dev
+          JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           MANIFEST: warmup-manifest-snapshot.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Snapshot
-          TOOLS_USER: root
-          TOOLS_PWD: root
+          JAHIA_USERNAME_TOOLS: "root"
+          JAHIA_PASSWORD_TOOLS: "root"
+          JAHIA_USERNAME: "root"
+          JAHIA_PASSWORD: "root"
           name: Nightly-Jahia-Latest-Snapshot
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/initialize
       - integration_testsjava:
-          JAHIA_IMAGE: jahia/jahia-dev:8.0
+          JAHIA_IMAGE: jahia/jahia-ee:8
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           MANIFEST: warmup-manifest-release.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Release
-          TOOLS_USER: root
-          TOOLS_PWD: root
+          JAHIA_USERNAME_TOOLS: "root"
+          JAHIA_PASSWORD_TOOLS: "root"
+          JAHIA_USERNAME: "root"
+          JAHIA_PASSWORD: "root"
           name: Nightly-Jahia-Latest-Release
           context: QA_ENVIRONMENT
           requires:
