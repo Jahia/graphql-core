@@ -12,7 +12,7 @@ START_TIME=$SECONDS
 echo " == Using MANIFEST: ${MANIFEST}"
 
 if [[ ${JAHIA_URL} =~ .*/$ ]]; then
-	JAHIA_URL=$(echo ${JAHIA_URL} | sed 's/.$//')
+  JAHIA_URL=$(echo ${JAHIA_URL} | sed 's/.$//')
 fi
 echo " == Using JAHIA_URL: ${JAHIA_URL}"
 TEST_URL="${JAHIA_URL}/cms"
@@ -20,7 +20,9 @@ TEST_URL="${JAHIA_URL}/cms"
 echo " == Using TEST_URL: ${TEST_URL}"
 
 echo " == Waiting for Jahia to startup"
-jahia-cli alive --jahiaAdminUrl=${JAHIA_URL}
+while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' ${JAHIA_URL}/cms/login)" != "200" ]];
+  do sleep 5;
+done
 ELAPSED_TIME=$(($SECONDS - $START_TIME))
 echo " == Jahia became alive in ${ELAPSED_TIME} seconds"
 
