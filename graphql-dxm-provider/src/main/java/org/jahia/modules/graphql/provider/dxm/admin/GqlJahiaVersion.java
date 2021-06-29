@@ -34,7 +34,6 @@ public class GqlJahiaVersion {
     private String release;
     private String build;
     private String buildDate;
-    private boolean snapshot;
 
     public GqlJahiaVersion() {
     }
@@ -60,13 +59,6 @@ public class GqlJahiaVersion {
         return buildDate;
     }
 
-    @GraphQLField
-    @GraphQLName("isSnapshot")
-    @GraphQLDescription("Flag returning if running Jahia instance is a SNAPSHOT")
-    public boolean isSnapshot() {
-        return snapshot;
-    }
-
     public void setRelease(String release) {
         this.release = release;
     }
@@ -77,10 +69,6 @@ public class GqlJahiaVersion {
 
     public void setBuildDate(String buildDate) {
         this.buildDate = buildDate;
-    }
-
-    public void setSnapshot(boolean snapshot) {
-        this.snapshot = snapshot;
     }
 }
 
