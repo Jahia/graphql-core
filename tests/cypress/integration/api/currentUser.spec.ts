@@ -9,15 +9,15 @@ describe('Validate ability get current User', () => {
         GQL_APIUSER = require(`graphql-tag/loader!../../fixtures/currentUser.graphql`)
     })
 
-    it('Get Current user for Authenticated user (jay)', () => {
-        cy.apolloQuery(apollo(Cypress.config().baseUrl, { username: 'jay', password: 'password' }), {
+    it('Get Current user for Authenticated user (irina)', () => {
+        cy.apolloQuery(apollo(Cypress.config().baseUrl, { username: 'irina', password: 'password' }), {
             query: GQL_APIUSER,
         }).should((response: any) => {
-            expect(response.data.currentUser.name).to.equal('jay')
-            expect(response.data.currentUser.username).to.equal('jay')
-            expect(response.data.currentUser.firstname).to.equal('Jay')
-            expect(response.data.currentUser.lastname).to.equal('Hawking')
-            expect(response.data.currentUser.organization).to.be.empty
+            expect(response.data.currentUser.name).to.equal('irina')
+            expect(response.data.currentUser.username).to.equal('irina')
+            expect(response.data.currentUser.firstname).to.equal('Irina')
+            expect(response.data.currentUser.lastname).to.equal('Pasteur')
+            expect(response.data.currentUser.organization).to.equal('Acme Space')
             expect(response.data.currentUser.language).to.equal('en')
             expect(response.data.currentUser.locked).to.equal(false)
             expect(response.data.currentUser.email).to.be.empty
@@ -39,7 +39,7 @@ describe('Validate ability get current User', () => {
         cy.apolloQuery(apollo(Cypress.config().baseUrl, { username: 'root', password: 'THIS-IS-INCORRECT' }), {
             query: GQL_APIUSER,
         }).should((response: any) => {
-            expect(response.data.currentUser.name).to.equal('guest')
+            expect(response.data.currentUser).to.be.null
         })
     })
 
@@ -50,7 +50,7 @@ describe('Validate ability get current User', () => {
                 query: GQL_APIUSER,
             },
         ).should((response: any) => {
-            expect(response.data.currentUser.name).to.equal('guest')
+            expect(response.data.currentUser).to.be.null
         })
     })
 })
