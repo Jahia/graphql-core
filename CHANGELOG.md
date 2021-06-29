@@ -1,3 +1,62 @@
+# v2.6.1 (Tue Jun 29 2021)
+
+#### 🐛 Bug Fix
+
+- BACKLOG-16237 reverted release to 1.9.1 and fixed jahia admin query, removed snapshot [#141](https://github.com/Jahia/graphql-core/pull/141) ([@kovunov](https://github.com/kovunov))
+- BACKLOG-16199 prepare graphql-core 1_x for release [#128](https://github.com/Jahia/graphql-core/pull/128) ([@kovunov](https://github.com/kovunov))
+- Master backport [#127](https://github.com/Jahia/graphql-core/pull/127) ([@rfonseca85](https://github.com/rfonseca85) [@tdraier](https://github.com/tdraier))
+- BACKLOG-15343-jahia-7.3: Fix race condition on GraphQLPublicationTest [#89](https://github.com/Jahia/graphql-core/pull/89) ([@nbugash-jahia](https://github.com/nbugash-jahia))
+- QA-13444 - Fixed GraphiQL configuration to submit auth headers [#78](https://github.com/Jahia/graphql-core/pull/78) ([@Fgerthoffert](https://github.com/Fgerthoffert))
+- Export new admin package [#71](https://github.com/Jahia/graphql-core/pull/71) ([@cedmail](https://github.com/cedmail))
+- Cherry picked structural changes for admin nodes [#70](https://github.com/Jahia/graphql-core/pull/70) ([@kovunov](https://github.com/kovunov))
+- BACKLOG-14944 added version query and mutation [#67](https://github.com/Jahia/graphql-core/pull/67) ([@kovunov](https://github.com/kovunov))
+- Upgraded GraphiQL to version 1.0.6 [#65](https://github.com/Jahia/graphql-core/pull/65) ([@Fgerthoffert](https://github.com/Fgerthoffert))
+- QA-13357 : fix unit test as now we can return multiple error message. [#64](https://github.com/Jahia/graphql-core/pull/64) ([@dgriffon](https://github.com/dgriffon))
+- BACKLOG-14143 added admin mutation and query in provider [#63](https://github.com/Jahia/graphql-core/pull/63) ([@kovunov](https://github.com/kovunov))
+- QA-13171 : waiting until the publication is finished [#61](https://github.com/Jahia/graphql-core/pull/61) ([@jsinovassin](https://github.com/jsinovassin))
+- QA-13357: Fixed return for nodes queries, allows null in case of error [#62](https://github.com/Jahia/graphql-core/pull/62) ([@tdraier](https://github.com/tdraier))
+- BACKLOG-14378 - Updated scm tag to match branch name [#57](https://github.com/Jahia/graphql-core/pull/57) ([@Fgerthoffert](https://github.com/Fgerthoffert))
+- QA-12458 fix NPE [#40](https://github.com/Jahia/graphql-core/pull/40) ([@Taybou](https://github.com/Taybou))
+- QA-12458: Support weakreferences [#38](https://github.com/Jahia/graphql-core/pull/38) ([@tdraier](https://github.com/tdraier))
+- [QA-12458] Update module version to 1.5.0-SNAPSHOT [#36](https://github.com/Jahia/graphql-core/pull/36) ([@rknj](https://github.com/rknj))
+- QA-12458 improve get ref node [#33](https://github.com/Jahia/graphql-core/pull/33) ([@Taybou](https://github.com/Taybou))
+- BACKLOG-12336: custom safe check if clearLock permission exist, becau… [#28](https://github.com/Jahia/graphql-core/pull/28) ([@jkevan](https://github.com/jkevan))
+- BACKLOG-12336: use new permission clearLocks to check if user have th… [#27](https://github.com/Jahia/graphql-core/pull/27) ([@jkevan](https://github.com/jkevan))
+
+#### ⚠️ Pushed to `master`
+
+- [maven-release-plugin] prepare for next development iteration ([@jahia-ci](https://github.com/jahia-ci))
+- [maven-release-plugin] prepare release 1.9.0 ([@jahia-ci](https://github.com/jahia-ci))
+- [maven-release-plugin] prepare release 1_8_0 ([@jahia-ci](https://github.com/jahia-ci))
+- BACKLOG-13977: Refactor code base on feedback from PR ([@nbugash-jahia](https://github.com/nbugash-jahia))
+- BACKLOG-13977: Added check to make sure that the type is a BINARY, otherwise return null ([@nbugash-jahia](https://github.com/nbugash-jahia))
+- BACKLOG-13977: Added new property to return the binary size for a node in Long ([@nbugash-jahia](https://github.com/nbugash-jahia))
+- QA-12762: Zip file retain folder structure ([@nbugash-jahia](https://github.com/nbugash-jahia))
+- [maven-release-plugin] prepare release 1_7_1 ([@jahia-ci](https://github.com/jahia-ci))
+- [maven-release-plugin] prepare release 1_6_0 ([@jahia-ci](https://github.com/jahia-ci))
+- QA-12975 update tag ([@Taybou](https://github.com/Taybou))
+- QA-12975 fix GraphQLReferencesTest ([@Taybou](https://github.com/Taybou))
+- [maven-release-plugin] prepare release 1_5_0 ([@jahia-ci](https://github.com/jahia-ci))
+- QA-12458 fix compilation issue ([@Taybou](https://github.com/Taybou))
+- [maven-release-plugin] prepare release 1_4_0 ([@jahia-ci](https://github.com/jahia-ci))
+
+#### Authors: 12
+
+- [@jsinovassin](https://github.com/jsinovassin)
+- Anton Kovunov ([@kovunov](https://github.com/kovunov))
+- Cedric Mailleux ([@cedmail](https://github.com/cedmail))
+- David Griffon ([@dgriffon](https://github.com/dgriffon))
+- Francois G. ([@Fgerthoffert](https://github.com/Fgerthoffert))
+- Jahia Continuous Integration account ([@jahia-ci](https://github.com/jahia-ci))
+- kevan Jahanshahi ([@jkevan](https://github.com/jkevan))
+- Michael De Checchi ([@rknj](https://github.com/rknj))
+- MT BENTERKI ([@Taybou](https://github.com/Taybou))
+- Nico ([@nbugash-jahia](https://github.com/nbugash-jahia))
+- Rafael Fonseca ([@rfonseca85](https://github.com/rfonseca85))
+- Thomas Draier ([@tdraier](https://github.com/tdraier))
+
+---
+
 # v0.0.1 (Mon Jun 21 2021)
 
 #### 🐛 Bug Fix
