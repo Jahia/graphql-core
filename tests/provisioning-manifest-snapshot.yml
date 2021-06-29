@@ -1,6 +1,8 @@
 - include: mvn:org.jahia.packages/jahia-additional-modules/JAHIA_VERSION/yaml/provisioning
 - importSite: jar:mvn:org.jahia.modules/digitall/2.0.0/zip/import!/Digitall.zip
 - import: jar:mvn:org.jahia.modules/digitall/2.0.0/zip/import!/users.zip
-- installBundle: 'mvn:org.jahia.modules/graphql-dxm-provider'
+- installBundle:
+  - 'mvn:org.jahia.modules/graphql-dxm-provider'
+  - 'mvn:org.jahia.modules/ldap'
   autoStart: true
   uninstallPreviousVersion: true
