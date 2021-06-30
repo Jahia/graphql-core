@@ -21,14 +21,14 @@ describe('Test admin user endpoint', () => {
             apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
             {
                 query: GQL_USER,
-                variables: { userName: 'jay' },
+                variables: { userName: 'irina' },
             },
         ).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
-            expect(response.data.admin.userAdmin.user.name).to.equal('jay')
-            expect(response.data.admin.userAdmin.user.username).to.equal('jay')
-            expect(response.data.admin.userAdmin.user.firstname).to.equal('Jay')
-            expect(response.data.admin.userAdmin.user.lastname).to.equal('Hawking')
+            expect(response.data.admin.userAdmin.user.name).to.equal('irina')
+            expect(response.data.admin.userAdmin.user.username).to.equal('irina')
+            expect(response.data.admin.userAdmin.user.firstname).to.equal('Irina')
+            expect(response.data.admin.userAdmin.user.lastname).to.equal('Pasteur')
             expect(response.data.admin.userAdmin.user.organization).not.to.be.undefined
             expect(response.data.admin.userAdmin.user.language).to.equal('en')
             expect(response.data.admin.userAdmin.user.locked).to.equal(false)
