@@ -102,6 +102,7 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
         String url = getBaseServerURL() + Jahia.getContextPath() + "/modules/graphql?query=" + URLEncoder.encode(subscription, "UTF-8");
         SseClient sseClient = httpClient.createSSE(url)
                 .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString("root:root1234".getBytes()))
+                .addHeader("Origin", getBaseServerURL())
                 .idleTimeoutMillis(0)
                 .totalRequestTimeoutMillis(80000)
                 .keepAlive(true)
