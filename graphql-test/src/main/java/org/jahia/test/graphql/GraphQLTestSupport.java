@@ -125,6 +125,14 @@ public class GraphQLTestSupport extends JahiaTestCase {
             throw new RuntimeException(e);
         }
 
+        if (service != null) {
+            try {
+                service.getClass().getMethod("resetScopes").invoke(service);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                // Ignore
+            }
+        }
+
         if (result != null) {
             if (result.contains("Validation error")) {
                 logger.error("Validation error {} for query: {}", result, query);
