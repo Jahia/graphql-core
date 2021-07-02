@@ -143,7 +143,7 @@ public class GraphQLTestSupport extends JahiaTestCase {
         return new JSONObject(result);
     }
 
-    protected static JSONObject executeQueryWithFiles(String query, Map<String, List<FileItem>> files) throws Exception {
+    protected static JSONObject executeQueryWithFiles(String query, Map<String, List<FileItem>> files) throws JSONException {
         try {
             servlet.setContextProvider((req, resp) -> {
                 GraphQLContext context = new GraphQLContext(req,resp);
