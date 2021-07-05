@@ -54,6 +54,7 @@ import org.jahia.test.JahiaTestCase;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONWriter;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,12 +66,11 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class GraphQLTestSupport extends JahiaTestCase {
 
@@ -102,7 +102,7 @@ public class GraphQLTestSupport extends JahiaTestCase {
     }
 
     protected static JSONObject executeQuery(String query) throws JSONException {
-        MockHttpServletRequest req = new MockHttpServletRequest("GET", "http://localhost:8080/modules/graphql");
+        MockHttpServletRequest req = new MockHttpServletRequest("POST", "http://localhost:8080/modules/graphql");
         req.addHeader("Origin", "http://localhost:8080");
 
         MockHttpServletResponse res = new MockHttpServletResponse();
@@ -115,8 +115,10 @@ public class GraphQLTestSupport extends JahiaTestCase {
                 // Ignore
             }
         }
-
-        req.setParameter("query", query);
+        req.setContentType("application/json");
+        StringWriter writer = new StringWriter();
+        new JSONObject(Collections.singletonMap("query", query)).write(writer);
+        req.setContent(writer.getBuffer().toString().getBytes(StandardCharsets.UTF_8));
         String result = null;
         try {
             servlet.service(req, res);

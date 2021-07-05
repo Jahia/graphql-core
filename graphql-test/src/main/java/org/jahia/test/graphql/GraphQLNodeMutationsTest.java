@@ -1848,88 +1848,91 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             enableFullReadOnlyMode();
         }
 
-        if (getReadOnlyModeStatus() == ReadOnlyModeStatus.ON) {
-            JSONObject result = executeQuery("\n" +
-                    "mutation {\n" +
-                    "  jcr {\n" +
-                    "    addNode(parentPathOrId: \"/testList\", primaryNodeType: \"jnt:contentList\", name: \"blabla\") {\n" +
-                    "      uuid\n" +
-                    "    }\n" +
-                    "  }\n" +
-                    "}\n"
-            );
+        try {
+            if (getReadOnlyModeStatus() == ReadOnlyModeStatus.ON) {
+                JSONObject result = executeQuery("\n" +
+                        "mutation {\n" +
+                        "  jcr {\n" +
+                        "    addNode(parentPathOrId: \"/testList\", primaryNodeType: \"jnt:contentList\", name: \"blabla\") {\n" +
+                        "      uuid\n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "}\n"
+                );
 
-            validateError(result, "Operation is not permitted as DX is in read-only mode");
+                validateError(result, "Operation is not permitted as DX is in read-only mode");
 
-            result = executeQuery("\n" +
-                    "mutation {\n" +
-                    "  jcr {\n" +
-                    "    deleteNode(pathOrId:\"/testList\")\n" +
-                    "  }\n" +
-                    "}\n"
-            );
+                result = executeQuery("\n" +
+                        "mutation {\n" +
+                        "  jcr {\n" +
+                        "    deleteNode(pathOrId:\"/testList\")\n" +
+                        "  }\n" +
+                        "}\n"
+                );
 
-            validateError(result, "Operation is not permitted as DX is in read-only mode");
+                validateError(result, "Operation is not permitted as DX is in read-only mode");
 
-            result = executeQuery("\n" +
-                    "mutation {\n" +
-                    "    jcr {\n" +
-                    "        pasteNode(mode: MOVE, pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\") {\n" +
-                    "            uuid\n" +
-                    "        }\n" +
-                    "    }\n" +
-                    "}\n"
-            );
+                result = executeQuery("\n" +
+                        "mutation {\n" +
+                        "    jcr {\n" +
+                        "        pasteNode(mode: MOVE, pathOrId: \"/testList/testNode\", destParentPathOrId: \"/testList/testSubList1\") {\n" +
+                        "            uuid\n" +
+                        "        }\n" +
+                        "    }\n" +
+                        "}\n"
+                );
 
-            validateError(result, "Operation is not permitted as DX is in read-only mode");
+                validateError(result, "Operation is not permitted as DX is in read-only mode");
 
-            result = executeQuery("\n" +
-                    "mutation {\n" +
-                    "    jcr {\n" +
-                    "        moveNodes(nodes: [\n" +
-                    "            {pathOrId: \"/testList\", destParentPathOrId: \"/testList/testSubList2\"},\n" +
-                    "        ]) {\n" +
-                    "            uuid\n" +
-                    "        }\n" +
-                    "    }\n" +
-                    "}\n"
-            );
+                result = executeQuery("\n" +
+                        "mutation {\n" +
+                        "    jcr {\n" +
+                        "        moveNodes(nodes: [\n" +
+                        "            {pathOrId: \"/testList\", destParentPathOrId: \"/testList/testSubList2\"},\n" +
+                        "        ]) {\n" +
+                        "            uuid\n" +
+                        "        }\n" +
+                        "    }\n" +
+                        "}\n"
+                );
 
-            validateError(result, "Operation is not permitted as DX is in read-only mode");
+                validateError(result, "Operation is not permitted as DX is in read-only mode");
 
-            result = executeQuery("mutation {\n" +
-                    "  jcr {\n" +
-                    "    mutateNodes(pathsOrIds: [\"/testList/testSubList1\",\"/testList/testSubList2\"]) {\n" +
-                    "      mutateProperty(name: \"jcr:title\") {\n" +
-                    "        setValue(language: \"en\", value: \"test\")\n" +
-                    "      }\n" +
-                    "    }\n" +
-                    "  }\n" +
-                    "}\n"
-            );
+                result = executeQuery("mutation {\n" +
+                        "  jcr {\n" +
+                        "    mutateNodes(pathsOrIds: [\"/testList/testSubList1\",\"/testList/testSubList2\"]) {\n" +
+                        "      mutateProperty(name: \"jcr:title\") {\n" +
+                        "        setValue(language: \"en\", value: \"test\")\n" +
+                        "      }\n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "}\n"
+                );
 
-            validateError(result, "Operation is not permitted as DX is in read-only mode");
+                validateError(result, "Operation is not permitted as DX is in read-only mode");
 
-            result =  executeQuery("mutation {\n" +
-                    "  jcr {\n" +
-                    "    mutateNode(pathOrId:\"/testList/testSubList1\")  {\n" +
-                    "      addMixins(mixins:[\"mix:title\",\"jmix:unstructured\"])\n" +
-                    "      setPropertiesBatch(properties:[\n" +
-                    "        {name:\"testPropString\", value:\"string\"}, \n" +
-                    "        {name:\"testPropLong\", value:\"123\", type:LONG}, \n" +
-                    "        {name:\"testPropMultiple\", values:[\"val1\",\"val2\"]},\n" +
-                    "        {name:\"jcr:title\", value:\"en\", language:\"en\"},\n" +
-                    "        {name:\"jcr:title\", value:\"fr\", language:\"fr\"},\n" +
-                    "      ]) {\n" +
-                    "        path\n" +
-                    "      }\n" +
-                    "    }\n" +
-                    "  }\n" +
-                    "}"
-            );
+                result =  executeQuery("mutation {\n" +
+                        "  jcr {\n" +
+                        "    mutateNode(pathOrId:\"/testList/testSubList1\")  {\n" +
+                        "      addMixins(mixins:[\"mix:title\",\"jmix:unstructured\"])\n" +
+                        "      setPropertiesBatch(properties:[\n" +
+                        "        {name:\"testPropString\", value:\"string\"}, \n" +
+                        "        {name:\"testPropLong\", value:\"123\", type:LONG}, \n" +
+                        "        {name:\"testPropMultiple\", values:[\"val1\",\"val2\"]},\n" +
+                        "        {name:\"jcr:title\", value:\"en\", language:\"en\"},\n" +
+                        "        {name:\"jcr:title\", value:\"fr\", language:\"fr\"},\n" +
+                        "      ]) {\n" +
+                        "        path\n" +
+                        "      }\n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "}"
+                );
 
-            validateError(result, "Operation is not permitted as DX is in read-only mode");
+                validateError(result, "Operation is not permitted as DX is in read-only mode");
+            }
+        } finally {
+            disableReadOnlyMode();
         }
-        disableReadOnlyMode();
     }
 }
