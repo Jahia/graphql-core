@@ -21,14 +21,14 @@ describe('Test admin user endpoint', () => {
             apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
             {
                 query: GQL_USER,
-                variables: { username: 'jay' },
+                variables: { userName: 'irina' },
             },
         ).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
-            expect(response.data.admin.userAdmin.user.name).to.equal('jay')
-            expect(response.data.admin.userAdmin.user.username).to.equal('jay')
-            expect(response.data.admin.userAdmin.user.firstname).to.equal('Jay')
-            expect(response.data.admin.userAdmin.user.lastname).to.equal('Hawking')
+            expect(response.data.admin.userAdmin.user.name).to.equal('irina')
+            expect(response.data.admin.userAdmin.user.username).to.equal('irina')
+            expect(response.data.admin.userAdmin.user.firstname).to.equal('Irina')
+            expect(response.data.admin.userAdmin.user.lastname).to.equal('Pasteur')
             expect(response.data.admin.userAdmin.user.organization).not.to.be.undefined
             expect(response.data.admin.userAdmin.user.language).to.equal('en')
             expect(response.data.admin.userAdmin.user.locked).to.equal(false)
@@ -41,7 +41,7 @@ describe('Test admin user endpoint', () => {
             apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
             {
                 query: GQL_USER,
-                variables: { username: 'noob' },
+                variables: { userName: 'noob' },
             },
         ).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
@@ -54,7 +54,7 @@ describe('Test admin user endpoint', () => {
             apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
             {
                 query: GQL_USER,
-                variables: { username: 'bill' },
+                variables: { userName: 'bill' },
             },
         ).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
@@ -68,7 +68,7 @@ describe('Test admin user endpoint', () => {
             apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
             {
                 query: GQL_USER,
-                variables: { username: 'bill', group: 'site-administrators', site1: 'digitall', site2: 'systemsite' },
+                variables: { userName: 'bill', group: 'site-administrators', site1: 'digitall', site2: 'systemsite' },
             },
         ).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
@@ -82,7 +82,7 @@ describe('Test admin user endpoint', () => {
             apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
             {
                 query: GQL_USER_GROUPMEMBERSHIP_BASIC,
-                variables: { username: 'bill', site: 'digitall' },
+                variables: { userName: 'bill', site: 'digitall' },
             },
         ).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
@@ -98,7 +98,7 @@ describe('Test admin user endpoint', () => {
             apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
             {
                 query: GQL_USER_GROUPMEMBERSHIP_BASIC,
-                variables: { username: 'bill', site: 'digitall' },
+                variables: { userName: 'bill', site: 'digitall' },
             },
         ).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
@@ -111,7 +111,7 @@ describe('Test admin user endpoint', () => {
             apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
             {
                 query: GQL_USER_GROUPMEMBERSHIP_FILTER,
-                variables: { username: 'bill', field: 'site.name', value: 'digitall' },
+                variables: { userName: 'bill', field: 'site.name', value: 'digitall' },
             },
         ).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist

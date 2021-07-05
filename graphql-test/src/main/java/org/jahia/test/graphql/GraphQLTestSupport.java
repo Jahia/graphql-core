@@ -48,6 +48,7 @@ import graphql.servlet.OsgiGraphQLServlet;
 import org.apache.commons.fileupload.FileItem;
 import org.jahia.api.Constants;
 import org.jahia.osgi.BundleUtils;
+import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRTemplate;
 import org.jahia.test.JahiaTestCase;
 import org.json.JSONArray;
@@ -56,9 +57,16 @@ import org.json.JSONObject;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 import javax.jcr.RepositoryException;
 import javax.servlet.Servlet;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,7 +102,37 @@ public class GraphQLTestSupport extends JahiaTestCase {
     }
 
     protected static JSONObject executeQuery(String query) throws JSONException {
-        String result = servlet.executeQuery(query);
+        MockHttpServletRequest req = new MockHttpServletRequest("GET", "http://localhost:8080/modules/graphql");
+        req.addHeader("Origin", "http://localhost:8080");
+
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        Object service = BundleUtils.getOsgiService("org.jahia.modules.securityfilter.PermissionService");
+        if (service != null) {
+            try {
+                service.getClass().getMethod("initScopes", HttpServletRequest.class).invoke(service, req);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                // Ignore
+            }
+        }
+
+        req.setParameter("query", query);
+        String result = null;
+        try {
+            servlet.service(req, res);
+            result = res.getContentAsString();
+        } catch (ServletException | IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (service != null) {
+            try {
+                service.getClass().getMethod("resetScopes").invoke(service);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                // Ignore
+            }
+        }
+
         if (result != null) {
             if (result.contains("Validation error")) {
                 logger.error("Validation error {} for query: {}", result, query);

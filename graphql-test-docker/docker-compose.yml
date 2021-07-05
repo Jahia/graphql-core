@@ -3,6 +3,8 @@ services:
   jahia:
     image: "${JAHIA_IMAGE}"
     container_name: jahia
+    environment:
+      - SUPER_USER_PASSWORD=root
     ports:
       - "8080:8080"
     extra_hosts:
@@ -19,6 +21,8 @@ services:
       - MANIFEST=${MANIFEST}
       - JAHIA_USERNAME=${JAHIA_USERNAME}
       - JAHIA_PASSWORD=${JAHIA_PASSWORD}
+      - JAHIA_USERNAME_TOOLS=${JAHIA_USERNAME_TOOLS}
+      - JAHIA_PASSWORD_TOOLS=${JAHIA_PASSWORD_TOOLS}
       - JAHIA_URL=${JAHIA_URL}
       - NEXUS_USERNAME=${NEXUS_USERNAME}
       - NEXUS_PASSWORD=${NEXUS_PASSWORD}

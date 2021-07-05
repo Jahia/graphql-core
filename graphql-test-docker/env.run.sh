@@ -12,7 +12,7 @@ START_TIME=$SECONDS
 echo " == Using MANIFEST: ${MANIFEST}"
 
 if [[ ${JAHIA_URL} =~ .*/$ ]]; then
-	JAHIA_URL=$(echo ${JAHIA_URL} | sed 's/.$//')
+  JAHIA_URL=$(echo ${JAHIA_URL} | sed 's/.$//')
 fi
 echo " == Using JAHIA_URL: ${JAHIA_URL}"
 TEST_URL="${JAHIA_URL}/cms"
@@ -20,7 +20,9 @@ TEST_URL="${JAHIA_URL}/cms"
 echo " == Using TEST_URL: ${TEST_URL}"
 
 echo " == Waiting for Jahia to startup"
-jahia-cli alive --jahiaAdminUrl=${JAHIA_URL}
+while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' ${JAHIA_URL}/cms/login)" != "200" ]];
+  do sleep 5;
+done
 ELAPSED_TIME=$(($SECONDS - $START_TIME))
 echo " == Jahia became alive in ${ELAPSED_TIME} seconds"
 
@@ -28,12 +30,14 @@ echo " == Get the Jahia version =="
 JAHIA_FULL_VERSION=$(curl --location --request POST ${JAHIA_URL}/modules/graphql --header 'Authorization: Basic cm9vdDpyb290' --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
 
 if [[ ${JAHIA_FULL_VERSION} == null ]]; then
-	echo " == Deploy GraphQL =="
+	echo " == Get a more recent version of GraphQL =="
 	sed -i -e "s/NEXUS_USERNAME/${NEXUS_USERNAME}/g" warmup-manifest-graphql.yml
 	sed -i -e "s/NEXUS_PASSWORD/${NEXUS_PASSWORD}/g" warmup-manifest-graphql.yml
+	echo " == Deploy GraphQL module =="
 	jahia-cli manifest:run --manifest=warmup-manifest-graphql.yml --jahiaAdminUrl=${JAHIA_URL}
+	echo " == Get again the Jahia version =="
+	JAHIA_FULL_VERSION=$(curl --location --request POST ${JAHIA_URL}/modules/graphql --header 'Authorization: Basic cm9vdDpyb290' --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
 fi
-JAHIA_FULL_VERSION=$(curl --location --request POST ${JAHIA_URL}/modules/graphql --header 'Authorization: Basic cm9vdDpyb290' --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
 echo " == Using JAHIA_FULL_VERSION: ${JAHIA_FULL_VERSION}"
 
 # Extract the Jahia version from the full label
