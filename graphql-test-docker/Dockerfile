@@ -41,7 +41,7 @@ COPY . /tmp
 WORKDIR /tmp
 
 # Jahia-cli is used to warmup the environment at startup
-RUN PUPPETEER_SKIP_DOWNLOAD=true sudo npm install -g jahia-cli@0.0.62 --unsafe-perm
+RUN PUPPETEER_SKIP_DOWNLOAD=true sudo npm install -g jahia-cli@0.0.63 --unsafe-perm
 
 RUN sudo chmod 775 /tmp/env.run.sh
 
