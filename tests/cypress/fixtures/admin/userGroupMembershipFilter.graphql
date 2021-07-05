@@ -1,11 +1,11 @@
 query (
-  $userName: String!,
+  $username: String!,
   $field: String,
   $value: String
 ){
     admin {
         userAdmin {
-            user(userName: $userName) {
+            user(username: $username) {
                 groupMembership(fieldFilter: { filters: { fieldName: $field, value: $value } }) {
                     pageInfo {
                         totalCount

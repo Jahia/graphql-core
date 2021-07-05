@@ -16,6 +16,9 @@ echo " == Waiting for Jahia to startup"
 while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' ${JAHIA_URL}/cms/login)" != "200" ]];
   do sleep 5;
 done
+
+docker cp org.jahia.services.usermanager.ldap-config-docker.cfg jahia:/var/jahia/karaf/etc
+
 ELAPSED_TIME=$(($SECONDS - $START_TIME))
 echo " == Jahia became alive in ${ELAPSED_TIME} seconds"
 

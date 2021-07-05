@@ -16,6 +16,7 @@ query (
           language
           firstname
           organization
+          locked
         }
       }
     }
