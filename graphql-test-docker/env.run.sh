@@ -27,7 +27,7 @@ ELAPSED_TIME=$(($SECONDS - $START_TIME))
 echo " == Jahia became alive in ${ELAPSED_TIME} seconds"
 
 echo " == Get the Jahia version =="
-JAHIA_FULL_VERSION=$(curl --location --request POST ${JAHIA_URL}/modules/graphql --header 'Authorization: Basic cm9vdDpyb290' --header 'Origin: ${JAHIA_URL}' --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
+JAHIA_FULL_VERSION=$(curl --location --request POST ${JAHIA_URL}/modules/graphql --header 'Authorization: Basic cm9vdDpyb290' --header "Origin: ${JAHIA_URL}" --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
 
 if [[ ${JAHIA_FULL_VERSION} == null ]]; then
 	echo " == Get a more recent version of GraphQL =="
@@ -36,7 +36,7 @@ if [[ ${JAHIA_FULL_VERSION} == null ]]; then
 	echo " == Deploy GraphQL module =="
 	jahia-cli manifest:run --manifest=warmup-manifest-graphql.yml --jahiaAdminUrl=${JAHIA_URL}
 	echo " == Get again the Jahia version =="
-	JAHIA_FULL_VERSION=$(curl --location --request POST ${JAHIA_URL}/modules/graphql --header 'Authorization: Basic cm9vdDpyb290' --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
+	JAHIA_FULL_VERSION=$(curl --location --request POST ${JAHIA_URL}/modules/graphql --header 'Authorization: Basic cm9vdDpyb290' --header "Origin: ${JAHIA_URL}" --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
 fi
 echo " == Using JAHIA_FULL_VERSION: ${JAHIA_FULL_VERSION}"
 
