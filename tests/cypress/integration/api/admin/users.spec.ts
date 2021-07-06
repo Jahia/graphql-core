@@ -5,10 +5,13 @@ import { DocumentNode } from 'graphql'
 describe('Test admin users endpont', () => {
     let GQL_USERS: DocumentNode
     let GQL_USERS_NO_FILTER: DocumentNode
+    let LDAP_CONFIG: JSON
 
     before('load graphql file', function () {
         GQL_USERS = require(`graphql-tag/loader!../../../fixtures/admin/users.graphql`)
         GQL_USERS_NO_FILTER = require(`graphql-tag/loader!../../../fixtures/admin/usersNoFilter.graphql`)
+        LDAP_CONFIG = require('../../../fixtures/admin/addLDAPConfigurationFile.json')
+        cy.runProvisioningScript(JSON.stringify(LDAP_CONFIG))
     })
 
     it('gets all users without any filtering', () => {
