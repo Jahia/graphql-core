@@ -57,7 +57,7 @@ public class UserQueryExtension {
 
     @GraphQLField
     @GraphQLDescription("Get the current user")
-    public static GqlUser getCurrentUser() {
-        return new GqlUser(JCRSessionFactory.getInstance().getCurrentUser());
+    public static GqlCurrentUser getCurrentUser() {
+        return new GqlCurrentUser(JCRSessionFactory.getInstance().getCurrentUser());
     }
 }
