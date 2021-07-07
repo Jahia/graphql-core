@@ -2,8 +2,7 @@ version: 2.1
 
 orbs:
   docker: circleci/docker@0.5.20
-  jahia-modules-orb: jahia/jahia-modules-orb@0.2.0
-
+  jahia-modules-orb: jahia/jahia-modules-orb@dev:alpha
 
 # Parameters are available across the entire config file and can be used with this syntax: << pipeline.parameters.THE_PARAMETER >>
 # Avoid using project-specific variables in the jobs or steps.
@@ -569,6 +568,14 @@ workflows:
             - jahia-modules-orb/initialize
             - jahia-modules-orb/update-signature
           module_id: << pipeline.parameters.MODULE_ID >>
+      - jahia-modules-orb/build:
+          context: QA_ENVIRONMENT
+          name: Build with cached docker image
+          base_image: jahia/cimg-mvn-cache:cimg_openjdk_8.0.275
+          requires:
+            - jahia-modules-orb/initialize
+            - jahia-modules-orb/update-signature
+          module_id: << pipeline.parameters.MODULE_ID >>          
       - jahia-modules-orb/sonar-analysis:
           context: QA_ENVIRONMENT
           requires:
