@@ -572,6 +572,7 @@ workflows:
           context: QA_ENVIRONMENT
           name: Build with cached docker image
           base_image: jahia/cimg-mvn-cache:cimg_openjdk_8.0.275
+          disable_circleci_cache: true
           requires:
             - jahia-modules-orb/initialize
             - jahia-modules-orb/update-signature
