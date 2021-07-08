@@ -1,12 +1,12 @@
 [
   {
-    "editConfiguration": "org.jahia.services.usermanager",
-    "configIdentifier": "ldap-config-docker",
+    "editConfiguration": "org.jahia.services.usermanager.ldap",
+    "configIdentifier": "docker",
     "properties": {
-      "url" :"ldap\\\\://dockerldap/",
-      "group.search.name": "ou\\\\=performance,dc\\\\=jahia,dc\\\\=com",
-      "user.uid.search.name": "ou\\\\=performance,dc\\\\=jahia,dc\\\\=com",
-      "public.bind.dn": "cn\\\\=admin,dc\\\\=jahia,dc\\\\=com",
+      "url" :"ldap://dockerldap/",
+      "group.search.name": "ou=performance,dc=jahia,dc=com",
+      "user.uid.search.name": "ou=performance,dc=jahia,dc=com",
+      "public.bind.dn": "cn=admin,dc=jahia,dc=com",
       "public.bind.password": "admin",
       "user.j_lastName.attribute.map": "sn",
       "ldap.connect.pool.maxIdle": "128",
