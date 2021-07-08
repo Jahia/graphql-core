@@ -1,0 +1,19 @@
+{
+  admin {
+    userAdmin {
+      users {
+        pageInfo {
+          nodesCount
+        }
+        nodes {
+          lastname
+          username
+          language
+          firstname
+          organization
+        }
+      }
+    }
+  }
+}
+

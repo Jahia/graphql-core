@@ -1,0 +1,17 @@
+query {
+  currentUser {
+    name
+    firstname
+    lastname
+    username
+    email
+    organization
+    groupMembership(first: 10) {
+       nodes {
+         name
+       }
+    }
+    language
+    locked
+  }
+}

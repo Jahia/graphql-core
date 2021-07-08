@@ -4,12 +4,36 @@ services:
         image: '${JAHIA_IMAGE}'
         container_name: jahia
         environment:
-            - SUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}        
+            - SUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
             - MAX_RAM_PERCENTAGE=95
         ports:
             - '8080:8080'
         extra_hosts:
             - jahia:127.0.0.1
+        networks:
+            - stack
+    dockerldap:
+        image: "jahia/docker-openldap:${LDAP_TAG}"
+        container_name: dockerldap
+        environment:
+            LDAP_LOG_LEVEL: "256"
+            LDAP_ORGANISATION: "Jahia Inc."
+            LDAP_DOMAIN: "jahia.com"
+            LDAP_BASE_DN: "cn=admin,dc=jahia,dc=com"
+            LDAP_ADMIN_PASSWORD: "admin"
+            LDAP_CONFIG_PASSWORD: "config"
+            LDAP_READONLY_USER: "false"
+        tty: true
+        stdin_open: true
+        volumes:
+            - /var/lib/ldap
+            - /etc/ldap/slapd.d
+            - /container/service/slapd/assets/certs/
+        ports:
+            - "389:389"
+            - "636:636"
+        domainname: "jahia.com"
+        hostname: "ldap-server"
         networks:
             - stack
     # Cypress container

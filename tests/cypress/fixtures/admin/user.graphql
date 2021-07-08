@@ -1,11 +1,11 @@
 query(
-    $userName: String!,
+    $username: String!,
     $group: String,
     $site1: String,
     $site2: String){
   admin {
     userAdmin {
-      user(userName: $userName) {
+      user(username: $username) {
         name
         username
         firstname

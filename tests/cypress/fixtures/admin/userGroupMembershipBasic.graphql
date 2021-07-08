@@ -1,10 +1,10 @@
 query (
-  $userName: String!
+  $username: String!
   $site: String!
 ){
       admin {
           userAdmin {
-              user(userName: $userName) {
+              user(username: $username) {
                   groupMembership(site: $site) {
                       pageInfo {
                           totalCount

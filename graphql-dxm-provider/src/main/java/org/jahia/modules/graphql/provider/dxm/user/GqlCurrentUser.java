@@ -1,0 +1,120 @@
+package org.jahia.modules.graphql.provider.dxm.user;
+
+import graphql.annotations.annotationTypes.*;
+import org.jahia.data.viewhelper.principal.PrincipalViewHelper;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
+import org.jahia.modules.graphql.provider.dxm.site.GqlJcrSite;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.decorator.JCRGroupNode;
+import org.jahia.services.usermanager.JahiaGroupManagerService;
+import org.jahia.services.usermanager.JahiaUser;
+
+import javax.inject.Inject;
+import javax.jcr.RepositoryException;
+
+@GraphQLName("Current user")
+@GraphQLDescription("GraphQL representation of a Jahia current user")
+public class GqlCurrentUser {
+    private final JahiaUser user;
+
+    @Inject
+    @GraphQLOsgiService
+    private JahiaGroupManagerService groupManagerService;
+
+    @Inject
+    @GraphQLOsgiService
+    private JCRSessionFactory jcrSessionFactory;
+
+    public GqlCurrentUser(JahiaUser jahiaUser) {
+        this.user = jahiaUser;
+    }
+
+
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDeprecate
+    @GraphQLDescription("User name")
+    public String getName() {
+        return user.getName();
+    }
+
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("Username of the user")
+    public String getUsername() {
+        return user.getName();
+    }
+
+    @GraphQLField
+    @GraphQLDescription("First name of the user")
+    public String getFirstname() {
+        return user.getProperty("j:firstName");
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Last name of the user")
+    public String getLastname() {
+        return user.getProperty("j:lastName");
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Email of the user")
+    public String getEmail() {
+        return user.getProperty("j:email");
+    }
+
+    @GraphQLField
+    @GraphQLDescription("User organization")
+    public String getOrganization() {
+        return user.getProperty("j:organization");
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Preferred language by the user")
+    public String getLanguage() {
+        return user.getProperty("preferredLanguage");
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Displays if user is locked")
+    public boolean getLocked() {
+        return Boolean.parseBoolean(user.getProperty("j:accountLocked"));
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Full display name")
+    public String getDisplayName() {
+        return PrincipalViewHelper.getFullName(user);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("User property")
+    public String getProperty(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property") String name) {
+        return user.getProperty(name);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Site where the user is defined")
+    public GqlJcrSite getSite() throws RepositoryException {
+        return new GqlJcrSite(jcrSessionFactory.getCurrentUserSession().getNode(user.getLocalPath()).getResolveSite());
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Is this principal member of the specified group")
+    public boolean isMemberOf(@GraphQLName("group") @GraphQLDescription("Target group") String group,
+                              @GraphQLName("site") @GraphQLDescription("Site where the group is defined") String site) {
+        JCRGroupNode groupNode = groupManagerService.lookupGroup(site, group);
+        if (groupNode == null) {
+            return false;
+        }
+        return groupNode.isMember(user.getLocalPath());
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Get the corresponding JCR node")
+    public GqlJcrNode getNode() throws RepositoryException {
+        return SpecializedTypesHandler.getNode(jcrSessionFactory.getCurrentUserSession().getNode(user.getLocalPath()));
+    }
+}

@@ -1,0 +1,25 @@
+query (
+  $field: String,
+  $value: String
+  $limit: Int,
+  $offset: Int
+){
+  admin {
+    userAdmin {
+      users(limit: $limit, offset: $offset, fieldFilter: {filters: {fieldName: $field, value: $value}}) {
+        pageInfo {
+          nodesCount
+        }
+        nodes {
+          lastname
+          username
+          language
+          firstname
+          organization
+          locked
+        }
+      }
+    }
+  }
+}
+
