@@ -30,7 +30,7 @@ parameters:
     default: "master" # main or master ? set the branch for the main release
   JAHIA_IMAGE:
     type: string
-    default: "jahia/jahia-ee-dev:8-SNAPSHOT"
+    default: "jahia/jahia-discovery-dev:8-SNAPSHOT"
   RELEASE_ID:
     type: string
     default: ""
@@ -590,7 +590,7 @@ workflows:
             - jahia-modules-orb/build
           context: QA_ENVIRONMENT
           #Using Aliases here (8 is the latest of the 8 tree, 8.1 is the latest of the tree, ...)
-          JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
+          JAHIA_IMAGE: jahia/jahia-discovery-dev:8-SNAPSHOT
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           JAHIA_USERNAME_TOOLS: "root"
           JAHIA_PASSWORD_TOOLS: "root"
@@ -615,7 +615,7 @@ workflows:
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/build
-          jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
+          jahia_image: jahia/jahia-discovery-dev:8-SNAPSHOT
           tests_manifest: provisioning-manifest-build.yml
           module_id: << pipeline.parameters.MODULE_ID >>
           testrail_project: << pipeline.parameters.TESTRAIL_PROJECTNAME >>
@@ -731,7 +731,7 @@ workflows:
     jobs:
       - jahia-modules-orb/initialize
       - integration_testsjava:
-          JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
+          JAHIA_IMAGE: jahia/jahia-discovery-dev:8-SNAPSHOT
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           MANIFEST: warmup-manifest-snapshot.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Snapshot
@@ -744,7 +744,7 @@ workflows:
           requires:
             - jahia-modules-orb/initialize
       - integration_testsjava:
-          JAHIA_IMAGE: jahia/jahia-ee:8
+          JAHIA_IMAGE: jahia/jahia-discovery:8
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           MANIFEST: warmup-manifest-release.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Release
@@ -763,7 +763,7 @@ workflows:
             - jahia-modules-orb/initialize
           matrix:
             parameters:
-              jahia_image: ["jahia/jahia-ee:8", "jahia/jahia-ee-dev:8-SNAPSHOT"]
+              jahia_image: ["jahia/jahia-discovery:8", "jahia/jahia-discovery-dev:8-SNAPSHOT"]
               tests_manifest: ["provisioning-manifest-snapshot.yml"]
               module_id: ["<< pipeline.parameters.MODULE_ID >>"]
               testrail_project: ["<< pipeline.parameters.TESTRAIL_PROJECTNAME >>"]
