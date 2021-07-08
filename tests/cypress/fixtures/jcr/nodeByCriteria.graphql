@@ -1,0 +1,25 @@
+query($criteria: InputGqlJcrNodeCriteriaInput!) {
+    jcr(workspace: EDIT) {
+        nodesByCriteria(criteria: $criteria) {
+            nodes {
+                uuid
+                name
+                path
+                parent {
+                    path
+                }
+                lastPublished: property(name: "j:lastPublished") {
+                    name
+                    value
+                }
+                title: property(name: "jcr:title") {
+                    name
+                    value
+                }                
+            }
+        }
+    }
+    admin {
+        datetime
+    }
+}

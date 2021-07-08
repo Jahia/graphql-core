@@ -1,0 +1,9 @@
+query($path: String!, $upToPath: String!) {
+    jcr(workspace: EDIT) {
+        nodeByPath(path: $path) {
+            ancestors(upToPath: $upToPath) {
+                name
+            }
+        }
+    }
+}
