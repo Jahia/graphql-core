@@ -12,6 +12,9 @@ describe('Test admin users endpont', () => {
         GQL_USERS_NO_FILTER = require(`graphql-tag/loader!../../../fixtures/admin/usersNoFilter.graphql`)
         LDAP_CONFIG = require('../../../fixtures/admin/addLDAPConfigurationFile.json')
         cy.runProvisioningScript(JSON.stringify(LDAP_CONFIG))
+
+        // eslint-disable-next-line cypress/no-unnecessary-waiting
+        cy.wait(2000)
     })
 
     it('gets all users without any filtering', () => {
