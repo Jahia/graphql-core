@@ -100,8 +100,7 @@ public class GqlUserAdmin {
     @GraphQLField
     @GraphQLDescription("Get users list")
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
-    public DXPaginatedData<GqlUser> getUsers(@GraphQLName("site") @GraphQLDescription("Return only users which belong to this site") String site,
-                                             @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+    public DXPaginatedData<GqlUser> getUsers(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
                                              @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
                                              @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields according to specified criteria") FieldGroupingInput fieldGrouping,
                                              DataFetchingEnvironment environment) {
