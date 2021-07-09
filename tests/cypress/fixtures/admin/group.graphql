@@ -1,6 +1,6 @@
 query($groupName: String!, $site: String){
       admin {
-          userAdmin {
+          userGroup {
               group(groupName: $groupName, site: $site) {
                   members {
                       nodes {
