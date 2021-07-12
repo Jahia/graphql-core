@@ -45,7 +45,7 @@ package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
 import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
-import graphql.servlet.config.InstrumentationProvider;
+import graphql.kickstart.execution.config.InstrumentationProvider;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.osgi.service.component.annotations.*;
 
