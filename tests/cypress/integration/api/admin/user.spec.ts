@@ -127,8 +127,8 @@ describe('Test admin user endpoint', () => {
                 variables: { groupName: 'site-administrators', site: 'digitall' },
             },
         ).should((response: any) => {
-            expect(response.data.admin.userAdmin).to.exist
-            expect(response.data.admin.userAdmin.group.members.nodes.map((n) => n.name)).to.contains('bill')
+            expect(response.data.admin.userGroup).to.exist
+            expect(response.data.admin.userGroup.group.members.nodes.map((n) => n.name)).to.contains('bill')
         })
     })
 })

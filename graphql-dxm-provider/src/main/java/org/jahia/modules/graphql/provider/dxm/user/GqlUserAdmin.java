@@ -54,11 +54,8 @@ import org.jahia.modules.graphql.provider.dxm.predicate.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
-import org.jahia.services.content.decorator.JCRGroupNode;
 import org.jahia.services.content.decorator.JCRUserNode;
-import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUserManagerService;
-import pl.touk.throwing.ThrowingPredicate;
 
 import javax.inject.Inject;
 import java.util.stream.Stream;
@@ -71,10 +68,6 @@ public class GqlUserAdmin {
     @GraphQLOsgiService
     private JahiaUserManagerService userManagerService;
 
-    @Inject
-    @GraphQLOsgiService
-    private JahiaGroupManagerService groupManagerService;
-
     @GraphQLField
     @GraphQLDescription("Get a user")
     public GqlUser getUser(@GraphQLName("username") @GraphQLDescription("User name") @GraphQLNonNull String userName,
@@ -84,17 +77,6 @@ public class GqlUserAdmin {
             return null;
         }
         return new GqlUser(jcrUserNode.getJahiaUser());
-    }
-
-    @GraphQLField
-    @GraphQLDescription("Get a group")
-    public GqlGroup getGroup(@GraphQLName("groupName") @GraphQLDescription("Group name") @GraphQLNonNull String groupName,
-                             @GraphQLName("site") @GraphQLDescription("Site where the group is defined") String site) {
-        JCRGroupNode jcrGroupNode = groupManagerService.lookupGroup(site, groupName);
-        if (jcrGroupNode == null) {
-            return null;
-        }
-        return new GqlGroup(jcrGroupNode.getJahiaGroup());
     }
 
     @GraphQLField
