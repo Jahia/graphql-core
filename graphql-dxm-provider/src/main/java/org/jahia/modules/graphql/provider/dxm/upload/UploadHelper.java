@@ -44,7 +44,7 @@
 package org.jahia.modules.graphql.provider.dxm.upload;
 
 import graphql.schema.DataFetchingEnvironment;
-import graphql.servlet.GraphQLContext;
+import graphql.servlet.context.GraphQLServletContext;
 import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.settings.SettingsBean;
@@ -66,7 +66,7 @@ public class UploadHelper {
      * @throws FileSizeLimitExceededException  if the file exceeds currently set limit
      */
     public static boolean isValidFileUpload(String name, DataFetchingEnvironment environment) throws FileSizeLimitExceededException {
-        GraphQLContext context = environment.getContext();
+        GraphQLServletContext context = environment.getContext();
         if (context.getParts().isEmpty()) {
             return false;
         }
@@ -100,7 +100,7 @@ public class UploadHelper {
      * @return The FileItem matching the specified name
      */
     public static Part getFileUpload(String name, DataFetchingEnvironment environment) {
-        GraphQLContext context = environment.getContext();
+        GraphQLServletContext context = environment.getContext();
         if (context.getParts().isEmpty()) {
             throw new GqlJcrWrongInputException("Must use multipart request");
         }
@@ -119,7 +119,7 @@ public class UploadHelper {
      * @return file upload Part that matches filename, or null if no Part exists or
      * if there are more than one part that has the same filename
      */
-    private static Part getPartForFilename(GraphQLContext context, String filename) {
+    private static Part getPartForFilename(GraphQLServletContext context, String filename) {
         List<Part> parts = context.getFileParts()
                 .stream()
                 .filter(part -> filename.equals(UploadHelper.getFileName(part)) )
