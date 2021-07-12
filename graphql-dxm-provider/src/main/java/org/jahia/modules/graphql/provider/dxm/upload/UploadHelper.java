@@ -45,12 +45,13 @@ package org.jahia.modules.graphql.provider.dxm.upload;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.servlet.GraphQLContext;
-import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.settings.SettingsBean;
 
+import javax.servlet.http.Part;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Get FileItem from multipart request.
@@ -66,22 +67,22 @@ public class UploadHelper {
      */
     public static boolean isValidFileUpload(String name, DataFetchingEnvironment environment) throws FileSizeLimitExceededException {
         GraphQLContext context = environment.getContext();
-        if (!context.getFiles().isPresent()) {
+        if (context.getParts().isEmpty()) {
             return false;
         }
 
-        List<FileItem> f = context.getFiles().get().get(name);
-        if (f == null || f.size() != 1) {
+        Part part = UploadHelper.getPartForFilename(context, name);
+        if (part == null) {
             return false;
         }
 
-        long uploadSize = f.get(0).getSize();
+        long uploadSize = part.getSize();
         long maxUploadSize = SettingsBean.getInstance().getJahiaFileUploadMaxSize();
         if (uploadSize > maxUploadSize) {
             throw new FileSizeLimitExceededException(
                     String.format(
                             "The field %s exceeds its maximum permitted size of %s bytes.",
-                            f.get(0).getName(),
+                            UploadHelper.getFileName(part),
                             maxUploadSize
                     ),
                     uploadSize,
@@ -98,15 +99,45 @@ public class UploadHelper {
      * @param environment The DataFetchingEnvironment
      * @return The FileItem matching the specified name
      */
-    public static FileItem getFileUpload(String name, DataFetchingEnvironment environment) {
+    public static Part getFileUpload(String name, DataFetchingEnvironment environment) {
         GraphQLContext context = environment.getContext();
-        if (!context.getFiles().isPresent()) {
+        if (context.getParts().isEmpty()) {
             throw new GqlJcrWrongInputException("Must use multipart request");
         }
-        List<FileItem> f = context.getFiles().get().get(name);
-        if (f == null || f.size() != 1) {
+
+        Part part = getPartForFilename(context, name);
+        if (part == null) {
             throw new GqlJcrWrongInputException("Must send file as multipart request for " + name);
         }
-        return f.get(0);
+        return part;
+    }
+
+    /**
+     *
+     * @param context
+     * @param filename
+     * @return file upload Part that matches filename, or null if no Part exists or
+     * if there are more than one part that has the same filename
+     */
+    private static Part getPartForFilename(GraphQLContext context, String filename) {
+        List<Part> parts = context.getFileParts()
+                .stream()
+                .filter(part -> filename.equals(UploadHelper.getFileName(part)) )
+                .collect(Collectors.toList());
+
+        return (parts.isEmpty() || parts.size() > 1) ?
+                null : parts.get(0);
+    }
+
+    // https://docs.oracle.com/javaee/6/tutorial/doc/glraq.html
+    private static String getFileName(final Part part) {
+        final String partHeader = part.getHeader("content-disposition");
+        for (String content : partHeader.split(";")) {
+            if (content.trim().startsWith("filename")) {
+                return content.substring(
+                        content.indexOf('=') + 1).trim().replace("\"", "");
+            }
+        }
+        return null;
     }
 }

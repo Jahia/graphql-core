@@ -44,7 +44,6 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.schema.DataFetchingEnvironment;
-import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadBase;
 import org.apache.commons.io.FileUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
@@ -60,6 +59,7 @@ import org.jahia.utils.EncryptionUtils;
 import org.springframework.core.io.FileSystemResource;
 
 import javax.jcr.*;
+import javax.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
@@ -173,21 +173,22 @@ public class GqlJcrMutationSupport {
      */
     public static void importFileUpload(String partName, JCRNodeWrapper node, DataFetchingEnvironment environment) throws BaseGqlClientException {
         try {
-            FileItem fileItem = UploadHelper.getFileUpload(partName, environment);
+            Part part = UploadHelper.getFileUpload(partName, environment);
             ImportExportBaseService importExportBaseService = ImportExportBaseService.getInstance();
-            switch (fileItem.getContentType()) {
+            switch (part.getContentType()) {
                 case "application/x-zip-compressed":
                 case "application/zip":
                     File fileToImport = File.createTempFile("import", ".zip");
                     try {
-                        fileItem.write(fileToImport);
+                        FileUtils.copyInputStreamToFile(part.getInputStream(), fileToImport);
                         importExportBaseService.importZip(node.getPath(), new FileSystemResource(fileToImport), DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME);
                     } finally {
                         FileUtils.deleteQuietly(fileToImport);
                     }
                     break;
                 case "text/xml":
-                    importExportBaseService.importXML(node.getPath(), fileItem.getInputStream(), DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME);
+                    importExportBaseService.importXML(node.getPath(), part.getInputStream(),
+                            DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME);
                     break;
                 default:
                     throw new GqlJcrWrongInputException("Wrong file type");
