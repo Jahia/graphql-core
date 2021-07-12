@@ -54,11 +54,12 @@ import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.SelectionSet;
 import graphql.schema.*;
-import graphql.servlet.GraphQLContext;
+import graphql.servlet.context.GraphQLServletContext;
 import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -170,24 +171,20 @@ public class FieldEvaluator {
         return new FieldEvaluator(type, fieldFinder, variables, environment);
     }
 
-    @SuppressWarnings("unchecked")
     private static Map<String, Object> getVariables(DataFetchingEnvironment environment) {
-        GraphQLContext context = environment.getContext();
-        Map<String, Object> variables = new LinkedHashMap<>();
-        if (context.getHttpServletRequest().isPresent()) {
-            variables = (Map<String, Object>) context.getHttpServletRequest().get().getAttribute(GRAPHQL_VARIABLES);
-        }
-        return variables;
+        GraphQLServletContext context = environment.getContext();
+        HttpServletRequest request = context.getHttpServletRequest();
+        return (request != null) ?
+                (Map<String, Object>) request.getAttribute(GRAPHQL_VARIABLES) :
+                new LinkedHashMap<>();
     }
 
-    @SuppressWarnings("unchecked")
     private static Map<String, FragmentDefinition> getFragmentDefinitions(DataFetchingEnvironment environment) {
-        GraphQLContext context = environment.getContext();
-        Map<String, FragmentDefinition> fragments = new LinkedHashMap<>();
-        if (context.getHttpServletRequest().isPresent()) {
-            fragments = (Map<String, FragmentDefinition>) context.getHttpServletRequest().get().getAttribute(FRAGMENTS_BY_NAME);
-        }
-        return fragments;
+        GraphQLServletContext context = environment.getContext();
+        HttpServletRequest request = context.getHttpServletRequest();
+        return (request != null) ?
+                (Map<String, FragmentDefinition>) request.getAttribute(FRAGMENTS_BY_NAME) :
+                new LinkedHashMap<>();
     }
 
     private static Field getField(Map<String, List<Field>> fields, String name) {
