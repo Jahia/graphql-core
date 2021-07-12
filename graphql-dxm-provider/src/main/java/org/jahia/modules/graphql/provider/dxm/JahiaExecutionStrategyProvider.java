@@ -45,7 +45,7 @@ package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.execution.ExecutionStrategy;
 import graphql.execution.SubscriptionExecutionStrategy;
-import graphql.servlet.config.ExecutionStrategyProvider;
+import graphql.kickstart.execution.config.ExecutionStrategyProvider;
 import org.osgi.service.component.annotations.Component;
 
 @Component(immediate = true)
