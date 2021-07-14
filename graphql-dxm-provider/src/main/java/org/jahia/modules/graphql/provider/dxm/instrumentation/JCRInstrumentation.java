@@ -87,7 +87,7 @@ public class JCRInstrumentation extends SimpleInstrumentation {
 
         executionContext = super.instrumentExecutionContext(executionContext, parameters);
 
-        Optional<HttpServletRequest> request = ((GraphQLContext) executionContext.getContext()).getRequest();
+        Optional<HttpServletRequest> request = ((GraphQLContext) executionContext.getContext()).getHttpServletRequest();
         if (!request.isPresent()) {
             // Only the case with integration tests.
             return executionContext;

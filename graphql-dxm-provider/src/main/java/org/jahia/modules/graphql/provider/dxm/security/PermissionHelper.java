@@ -58,7 +58,7 @@ public class PermissionHelper {
     }
 
     public static boolean hasPermission(JCRNodeWrapper node, DataFetchingEnvironment environment) {
-        if (((GraphQLContext)environment.getContext()).getRequest().isPresent()) {
+        if (((GraphQLContext)environment.getContext()).getHttpServletRequest().isPresent()) {
             PermissionService permissionService = BundleUtils.getOsgiService(PermissionService.class, null);
             if (permissionService == null) {
                 throw new DataFetchingException("Could not find permission service to validate security access. Blocking access to data.");

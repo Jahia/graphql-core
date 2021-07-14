@@ -174,8 +174,8 @@ public class FieldEvaluator {
     private static Map<String, Object> getVariables(DataFetchingEnvironment environment) {
         GraphQLContext context = environment.getContext();
         Map<String, Object> variables = new LinkedHashMap<>();
-        if (context.getRequest().isPresent()) {
-            variables = (Map<String, Object>) context.getRequest().get().getAttribute(GRAPHQL_VARIABLES);
+        if (context.getHttpServletRequest().isPresent()) {
+            variables = (Map<String, Object>) context.getHttpServletRequest().get().getAttribute(GRAPHQL_VARIABLES);
         }
         return variables;
     }
@@ -184,8 +184,8 @@ public class FieldEvaluator {
     private static Map<String, FragmentDefinition> getFragmentDefinitions(DataFetchingEnvironment environment) {
         GraphQLContext context = environment.getContext();
         Map<String, FragmentDefinition> fragments = new LinkedHashMap<>();
-        if (context.getRequest().isPresent()) {
-            fragments = (Map<String, FragmentDefinition>) context.getRequest().get().getAttribute(FRAGMENTS_BY_NAME);
+        if (context.getHttpServletRequest().isPresent()) {
+            fragments = (Map<String, FragmentDefinition>) context.getHttpServletRequest().get().getAttribute(FRAGMENTS_BY_NAME);
         }
         return fragments;
     }

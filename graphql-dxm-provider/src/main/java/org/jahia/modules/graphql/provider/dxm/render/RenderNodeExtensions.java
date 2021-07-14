@@ -87,8 +87,8 @@ public class RenderNodeExtensions {
     @GraphQLField
     @GraphQLDescription("Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned.")
     public GqlJcrNode getDisplayableNode(DataFetchingEnvironment environment) {
-        Optional<HttpServletRequest> httpServletRequest = ((GraphQLContext) environment.getContext()).getRequest();
-        Optional<HttpServletResponse> httpServletResponse = ((GraphQLContext) environment.getContext()).getResponse();
+        Optional<HttpServletRequest> httpServletRequest = ((GraphQLContext) environment.getContext()).getHttpServletRequest();
+        Optional<HttpServletResponse> httpServletResponse = ((GraphQLContext) environment.getContext()).getHttpServletResponse();
         if (!httpServletRequest.isPresent() || !httpServletResponse.isPresent()) {
             return null;
         }
@@ -156,8 +156,8 @@ public class RenderNodeExtensions {
                 }
             }
 
-            Optional<HttpServletRequest> httpServletRequest = ((GraphQLContext) environment.getContext()).getRequest();
-            Optional<HttpServletResponse> httpServletResponse = ((GraphQLContext) environment.getContext()).getResponse();
+            Optional<HttpServletRequest> httpServletRequest = ((GraphQLContext) environment.getContext()).getHttpServletRequest();
+            Optional<HttpServletResponse> httpServletResponse = ((GraphQLContext) environment.getContext()).getHttpServletResponse();
             if (!httpServletRequest.isPresent() || !httpServletResponse.isPresent()) {
                 throw new RuntimeException("No HttpRequest or HttpResponse");
             }
