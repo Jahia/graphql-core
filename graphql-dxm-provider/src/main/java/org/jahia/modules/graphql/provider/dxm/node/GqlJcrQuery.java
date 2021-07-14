@@ -47,10 +47,7 @@ import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.LocaleUtils;
-import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
-import org.jahia.modules.graphql.provider.dxm.DXGraphQLError;
-import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.GqlConstraintHandler;
+import org.jahia.modules.graphql.provider.dxm.*;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldGroupingInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
@@ -183,8 +180,7 @@ public class GqlJcrQuery {
             try {
                 nodes.add(getGqlNodeById(uuid));
             } catch (RepositoryException e) {
-                environment.getExecutionContext().addError(new DXGraphQLError(new DataFetchingException(e), environment.getExecutionStepInfo().getPath().toList(), Collections.singletonList(environment.getExecutionStepInfo().getField().getSourceLocation())));
-
+                throw new DataFetchingException(e);
             }
         }
         return nodes;
@@ -207,7 +203,7 @@ public class GqlJcrQuery {
             try {
                 nodes.add(getGqlNodeByPath(path));
             } catch (RepositoryException e) {
-                environment.getExecutionContext().addError(new DXGraphQLError(new DataFetchingException(e), environment.getExecutionStepInfo().getPath().toList(), Collections.singletonList(environment.getExecutionStepInfo().getField().getSourceLocation())));
+                throw new DataFetchingException(e);
             }
         }
         return nodes;
