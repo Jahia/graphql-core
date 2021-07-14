@@ -47,6 +47,7 @@ import graphql.ExceptionWhileDataFetching;
 import graphql.GraphQLError;
 import graphql.execution.DataFetcherExceptionHandler;
 import graphql.execution.DataFetcherExceptionHandlerParameters;
+import graphql.execution.DataFetcherExceptionHandlerResult;
 import graphql.execution.ExecutionPath;
 import graphql.language.SourceLocation;
 import org.slf4j.Logger;
@@ -62,13 +63,11 @@ import java.util.Collections;
 public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(JahiaDataFetchingExceptionHandler.class);
 
-    @Override
     public void accept(DataFetcherExceptionHandlerParameters handlerParameters) {
         Throwable exception = handlerParameters.getException();
 
         ExecutionPath path = handlerParameters.getPath();
-        GraphQLError error = transformException(exception, path, handlerParameters.getField().getSourceLocation());
-        handlerParameters.getExecutionContext().addError(error, path);
+        GraphQLError error = transformException(exception, path, handlerParameters.getField().getSingleField().getSourceLocation());
 
         if (!(error instanceof DXGraphQLError)) {
             log.warn(error.getMessage(), exception);
@@ -86,5 +85,22 @@ public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHa
         } else {
             return new ExceptionWhileDataFetching(path, exception, sourceLocation);
         }
+    }
+
+    @Override public DataFetcherExceptionHandlerResult onException(
+            DataFetcherExceptionHandlerParameters handlerParameters) {
+        Throwable exception = handlerParameters.getException();
+
+        ExecutionPath path = handlerParameters.getPath();
+        GraphQLError error = transformException(exception, path, handlerParameters.getField().getSingleField().getSourceLocation());
+
+        if (!(error instanceof DXGraphQLError)) {
+            log.warn(error.getMessage(), exception);
+        }
+
+        return DataFetcherExceptionHandlerResult
+                .newResult()
+                .error(error)
+                .build();
     }
 }
