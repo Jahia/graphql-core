@@ -47,26 +47,34 @@ package org.jahia.modules.graphql.provider.dxm.site;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedType;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 
+import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 @GraphQLName("JCRSite")
 @GraphQLDescription("GraphQL representation of a site node")
-@SpecializedType("jnt:virtualsite")
+@SpecializedType(Constants.JAHIANT_VIRTUALSITE)
 public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode {
 
     private JCRSiteNode siteNode;
 
-    public GqlJcrSite(JCRNodeWrapper node) {
+    public GqlJcrSite(JCRNodeWrapper node) throws RepositoryException {
         super(node);
-        this.siteNode = (JCRSiteNode) node;
+
+        if (node instanceof JCRSiteNode) {
+            this.siteNode = (JCRSiteNode) node;
+        } else if (node.isNodeType(Constants.JAHIANT_VIRTUALSITE)) {
+            // Workaround when site node is instanceof JCRNodeWrapperImpl
+            this.siteNode = node.getResolveSite();
+        }
     }
 
     @GraphQLField
