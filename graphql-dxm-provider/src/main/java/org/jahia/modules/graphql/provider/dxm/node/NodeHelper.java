@@ -165,8 +165,9 @@ public class NodeHelper {
             if (!property.isMultiple())
                 return (property.getString().equals(propertyValue));
             for (JCRValueWrapper value : property.getValues()) {
-                if (value.getString().equals(propertyValue))
+                if (value.getString().equals(propertyValue)) {
                     return true;
+                }
             }
             return false;
         } catch (RepositoryException e) {
