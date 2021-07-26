@@ -450,8 +450,9 @@ jobs:
               nvm alias default v12
               echo "Sending slack message"
               jahia-reporter slack \
-                --webhook=$SLACK_WEBHOOK_QA_NOTIFICATIONS \
-                --webhookAll=$SLACK_WEBHOOK_QA_NOTIFICATIONS_ALL \
+                --channelId=$SLACK_CHANNEL_ID_QA_NOTIFICATIONS \
+                --channelAllId=$SLACK_CHANNEL_ID_QA_NOTIFICATIONS_ALL \
+                --token=$SLACK_CLIENT_TOKEN \
                 --skipSuccessful \
                 --sourcePath="artifacts/results/reports" \
                 --sourceType="xml" \
