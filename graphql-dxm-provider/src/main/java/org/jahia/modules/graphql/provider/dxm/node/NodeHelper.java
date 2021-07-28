@@ -49,8 +49,10 @@ import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.utils.LanguageCodeConverters;
 import pl.touk.throwing.ThrowingFunction;
 import pl.touk.throwing.ThrowingPredicate;
@@ -160,7 +162,15 @@ public class NodeHelper {
             if (!node.hasProperty(propertyName)) {
                 return false;
             }
-            return (node.getProperty(propertyName).getString().equals(propertyValue));
+            final JCRPropertyWrapper property = node.getProperty(propertyName);
+            if (!property.isMultiple())
+                return (property.getString().equals(propertyValue));
+            for (JCRValueWrapper value : property.getValues()) {
+                if (value.getString().equals(propertyValue)) {
+                    return true;
+                }
+            }
+            return false;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
