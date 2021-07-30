@@ -46,7 +46,7 @@ package org.jahia.modules.graphql.provider.dxm.render;
 
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
-import graphql.servlet.context.GraphQLServletContext;
+import graphql.kickstart.servlet.context.GraphQLServletContext;
 import org.jahia.bin.Render;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;

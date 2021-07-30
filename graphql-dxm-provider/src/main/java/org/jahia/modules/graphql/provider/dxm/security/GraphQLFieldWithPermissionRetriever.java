@@ -27,9 +27,9 @@ public class GraphQLFieldWithPermissionRetriever extends GraphQLFieldRetriever {
     }
 
     @Override
-    public GraphQLFieldDefinition getField(Method method, ProcessingElementsContainer container) throws GraphQLAnnotationsException {
+    public GraphQLFieldDefinition getField(String parentName, Method method, ProcessingElementsContainer container) throws GraphQLAnnotationsException {
         GraphQLRequiresPermission ann = method.getAnnotation(GraphQLRequiresPermission.class);
-        GraphQLFieldDefinition definition = graphQLFieldRetriever.getField(method, container);
+        GraphQLFieldDefinition definition = graphQLFieldRetriever.getField(parentName, method, container);
         if (ann != null) {
             String key = container.getProcessing().peek() + "." + definition.getName();
             logger.debug("Adding permission : {} = {}", key, ann.value());
@@ -39,9 +39,9 @@ public class GraphQLFieldWithPermissionRetriever extends GraphQLFieldRetriever {
     }
 
     @Override
-    public GraphQLFieldDefinition getField(Field field, ProcessingElementsContainer container) throws GraphQLAnnotationsException {
+    public GraphQLFieldDefinition getField(String parentName, Field field, ProcessingElementsContainer container) throws GraphQLAnnotationsException {
         GraphQLRequiresPermission ann = field.getAnnotation(GraphQLRequiresPermission.class);
-        GraphQLFieldDefinition definition = graphQLFieldRetriever.getField(field, container);
+        GraphQLFieldDefinition definition = graphQLFieldRetriever.getField(parentName, field, container);
         if (ann != null) {
             String key = container.getProcessing().peek() + "." + definition.getName();
             logger.debug("Adding permission : {} = {}", key, ann.value());
@@ -51,12 +51,12 @@ public class GraphQLFieldWithPermissionRetriever extends GraphQLFieldRetriever {
     }
 
     @Override
-    public GraphQLInputObjectField getInputField(Method method, ProcessingElementsContainer container) throws GraphQLAnnotationsException {
-        return graphQLFieldRetriever.getInputField(method, container);
+    public GraphQLInputObjectField getInputField(Method method, ProcessingElementsContainer container, String parentName) throws GraphQLAnnotationsException {
+        return graphQLFieldRetriever.getInputField(method, container, parentName);
     }
 
     @Override
-    public GraphQLInputObjectField getInputField(Field field, ProcessingElementsContainer container) throws GraphQLAnnotationsException {
-        return graphQLFieldRetriever.getInputField(field, container);
+    public GraphQLInputObjectField getInputField(Field field, ProcessingElementsContainer container, String parentName) throws GraphQLAnnotationsException {
+        return graphQLFieldRetriever.getInputField(field, container, parentName);
     }
 }

@@ -77,6 +77,12 @@
         <jahia-module-signature>MCwCFBcjFkCyiSxf9LM8Zqox6+L5CrJ3AhRHAP0Tnka4B+4h2SH06EVSCh2J9w==</jahia-module-signature>
         <mockito.version>2.21.0</mockito.version>
         <powermock.version>2.0.7</powermock.version>
+
+
+        <graphql-java.version>13.0</graphql-java.version>
+        <graphql-java-annotations.version>7.2.1</graphql-java-annotations.version>
+        <graphql-java-servlet.version>9.1.0</graphql-java-servlet.version>
+
     </properties>
 
     <dependencies>
@@ -89,6 +95,12 @@
         <dependency>
             <groupId>com.graphql-java-kickstart</groupId>
             <artifactId>graphql-java-servlet</artifactId>
+            <version>${graphql-java-servlet.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.graphql-java-kickstart</groupId>
+            <artifactId>graphql-java-kickstart</artifactId>
             <version>${graphql-java-servlet.version}</version>
             <scope>provided</scope>
         </dependency>

@@ -51,7 +51,7 @@ import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.SelectionSet;
 import graphql.schema.*;
-import graphql.servlet.context.GraphQLServletContext;
+import graphql.kickstart.servlet.context.GraphQLServletContext;
 import org.dataloader.DataLoaderRegistry;
 import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
 import org.slf4j.Logger;
@@ -201,7 +201,7 @@ public class FieldEvaluator {
         if (type instanceof GraphQLObjectType) {
             return (GraphQLObjectType) type;
         } else if (type instanceof GraphQLInterfaceType) {
-            return ((GraphQLInterfaceType) type).getTypeResolver().getType(new TypeResolutionEnvironment(object, null, null, null, null, null));
+            return null; // ((GraphQLInterfaceType) type).getTypeResolver().getType(new TypeResolutionEnvironment(object, null, null, null, null, null));
         } else {
             return null;
         }
@@ -266,7 +266,7 @@ public class FieldEvaluator {
         Object value = null;
         try {
             DataFetchingEnvironment fieldEnv = fieldEnvBuilder.build();
-            value = fieldDefinition.getDataFetcher().get(fieldEnv);
+            return "todo"; //value = fieldDefinition.getDataFetcher().get(fieldEnv);
         } catch (Exception e) {
             value = e.getMessage();
         }

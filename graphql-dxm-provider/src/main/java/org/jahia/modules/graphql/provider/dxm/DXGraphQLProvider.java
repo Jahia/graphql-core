@@ -45,6 +45,7 @@ package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import graphql.annotations.processor.GraphQLAnnotationsComponent;
 import graphql.annotations.processor.ProcessingElementsContainer;
 import graphql.annotations.processor.retrievers.*;
@@ -52,7 +53,7 @@ import graphql.annotations.processor.searchAlgorithms.SearchAlgorithm;
 import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.schema.*;
-import graphql.servlet.osgi.*;
+import graphql.kickstart.servlet.osgi.*;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
@@ -72,7 +73,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component(service = GraphQLProvider.class, immediate = true)
-public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
+public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
@@ -99,6 +100,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private GraphQLObjectType queryType;
     private GraphQLObjectType mutationType;
     private GraphQLObjectType subscriptionType;
+    private GraphQLCodeRegistry codeRegistry;
 
     private DXRelay relay;
 
@@ -214,11 +216,13 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             sdlSchemaService.addExtensions(extensionsProvider);
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
-                extensionsHandler.registerTypeExtension(aClass, container);
-                if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
-                    logger.debug("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
-                } else {
-                    logger.debug("Registered type extension {}", aClass);
+                if (aClass.isAnnotationPresent(GraphQLTypeExtension.class)) {
+                    extensionsHandler.registerTypeExtension(aClass, container);
+                    if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
+                        logger.debug("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
+                    } else {
+                        logger.debug("Registered type extension {}", aClass);
+                    }
                 }
             }
             for (Class<? extends GqlJcrNode> aClass : extensionsProvider.getSpecializedTypes()) {
@@ -234,11 +238,13 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         queryType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Query.class, container);
         mutationType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Mutation.class, container);
         subscriptionType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Subscription.class, container);
-
+        codeRegistry = container.getCodeRegistryBuilder().build();
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
-                extensionsHandler.registerTypeExtension(aClass, container);
-                logger.debug("Registered type extension {}", aClass);
+                if (aClass.isAnnotationPresent(GraphQLTypeExtension.class)) {
+                    extensionsHandler.registerTypeExtension(aClass, container);
+                    logger.debug("Registered type extension {}", aClass);
+                }
             }
         }
 
@@ -275,6 +281,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     @Override
     public Collection<GraphQLFieldDefinition> getSubscriptions() {
         return subscriptionType.getFieldDefinitions();
+    }
+
+    @Override
+    public GraphQLCodeRegistry getCodeRegistry() {
+        return codeRegistry;
     }
 
     public Class<? extends DXConnection<?>> getConnectionType(String connectionName) {

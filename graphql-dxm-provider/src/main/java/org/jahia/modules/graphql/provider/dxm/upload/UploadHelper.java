@@ -44,7 +44,7 @@
 package org.jahia.modules.graphql.provider.dxm.upload;
 
 import graphql.schema.DataFetchingEnvironment;
-import graphql.servlet.context.GraphQLServletContext;
+import graphql.kickstart.servlet.context.GraphQLServletContext;
 import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.settings.SettingsBean;
