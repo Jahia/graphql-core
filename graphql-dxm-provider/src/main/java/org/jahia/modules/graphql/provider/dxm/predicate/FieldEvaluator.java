@@ -47,12 +47,11 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import graphql.TypeResolutionEnvironment;
 import graphql.execution.*;
+import graphql.kickstart.servlet.context.GraphQLServletContext;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.SelectionSet;
 import graphql.schema.*;
-import graphql.kickstart.servlet.context.GraphQLServletContext;
-import org.dataloader.DataLoaderRegistry;
 import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -201,7 +200,8 @@ public class FieldEvaluator {
         if (type instanceof GraphQLObjectType) {
             return (GraphQLObjectType) type;
         } else if (type instanceof GraphQLInterfaceType) {
-            return null; // ((GraphQLInterfaceType) type).getTypeResolver().getType(new TypeResolutionEnvironment(object, null, null, null, null, null));
+            TypeResolver typeResolver = environment.getGraphQLSchema().getCodeRegistry().getTypeResolver((GraphQLInterfaceType) type);
+            return typeResolver.getType(new TypeResolutionEnvironment(object, null, null, null, null, null));
         } else {
             return null;
         }
@@ -266,7 +266,7 @@ public class FieldEvaluator {
         Object value = null;
         try {
             DataFetchingEnvironment fieldEnv = fieldEnvBuilder.build();
-            return "todo"; //value = fieldDefinition.getDataFetcher().get(fieldEnv);
+            value = environment.getGraphQLSchema().getCodeRegistry().getDataFetcher(objectType, fieldDefinition).get(fieldEnv);
         } catch (Exception e) {
             value = e.getMessage();
         }
