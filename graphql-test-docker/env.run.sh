@@ -42,7 +42,7 @@ echo " == Using JAHIA_FULL_VERSION: ${JAHIA_FULL_VERSION}"
 
 # Extract the Jahia version from the full label
 # It is needed to get the right jahia-test-module version
-JAHIA_VERSION=$(echo ${JAHIA_FULL_VERSION} | sed -r 's/"[a-zA-Z ]*([0-9\.]*) \[*.*\]*[[:space:]]*- .*"/\1/g')
+JAHIA_VERSION=$(echo ${JAHIA_FULL_VERSION} | sed -r 's/"[a-zA-Z ]*([0-9\.]*)[[:space:]]*.*"/\1/g')
 echo " == Using JAHIA_VERSION: ${JAHIA_VERSION}"
 
 # Add the credentials to a temporary manifest for downloading files
