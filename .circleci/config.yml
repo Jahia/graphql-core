@@ -740,6 +740,7 @@ workflows:
           JAHIA_PASSWORD_TOOLS: "root"
           JAHIA_USERNAME: "root"
           JAHIA_PASSWORD: "root"
+          BUILD_TESTSIMAGE: true
           name: Nightly-Jahia-Latest-Snapshot
           context: QA_ENVIRONMENT
           requires:
@@ -753,6 +754,7 @@ workflows:
           JAHIA_PASSWORD_TOOLS: "root"
           JAHIA_USERNAME: "root"
           JAHIA_PASSWORD: "root"
+          BUILD_TESTSIMAGE: true
           name: Nightly-Jahia-Latest-Release
           context: QA_ENVIRONMENT
           requires:
