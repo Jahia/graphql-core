@@ -4,7 +4,6 @@ services:
         image: '${JAHIA_IMAGE}'
         container_name: jahia
         restart: 'no'
-        mem_limit: 4gb
         networks:
             - stack
         depends_on:
@@ -14,14 +13,13 @@ services:
         extra_hosts:
             - jahia:127.0.0.1
         environment:
-            SUPER_USER_PASSWORD: root
+            SUPER_USER_PASSWORD: ${SUPER_USER_PASSWORD}
 
     maven:
         image: '${TESTS_IMAGE}'
         # https://github.com/cypress-io/cypress/issues/350
         ipc: host
         container_name: maven-tests
-        mem_limit: 4gb
         networks:
             - stack
         depends_on:
