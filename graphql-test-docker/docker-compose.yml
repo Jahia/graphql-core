@@ -1,33 +1,43 @@
 version: '3.3'
 services:
-  jahia:
-    image: "${JAHIA_IMAGE}"
-    container_name: jahia
-    environment:
-      - SUPER_USER_PASSWORD=root
-    ports:
-      - "8080:8080"
-    extra_hosts:
-      - jahia:127.0.0.1
-    networks:
-      - stack      
-  # Maven container
+    jahia:
+        image: '${JAHIA_IMAGE}'
+        container_name: jahia
+        restart: 'no'
+        mem_limit: 4gb
+        networks:
+            - stack
+        depends_on:
+            - mariadb
+        ports:
+            - 8080:8080
+        extra_hosts:
+            - jahia:127.0.0.1
+        environment:
+            SUPER_USER_PASSWORD: root
+
   maven:
-    image: "${TESTS_IMAGE}"
-    container_name: e2e-tests
-    depends_on:
-      - jahia
-    environment:
-      - MANIFEST=${MANIFEST}
-      - JAHIA_USERNAME=${JAHIA_USERNAME}
-      - JAHIA_PASSWORD=${JAHIA_PASSWORD}
-      - JAHIA_USERNAME_TOOLS=${JAHIA_USERNAME_TOOLS}
-      - JAHIA_PASSWORD_TOOLS=${JAHIA_PASSWORD_TOOLS}
-      - JAHIA_URL=${JAHIA_URL}
-      - NEXUS_USERNAME=${NEXUS_USERNAME}
-      - NEXUS_PASSWORD=${NEXUS_PASSWORD}
-      - NEXUS_INTERNAL_URL=${NEXUS_INTERNAL_URL}
-    networks:
-      - stack
+        image: '${TESTS_IMAGE}'
+        # https://github.com/cypress-io/cypress/issues/350
+        ipc: host
+        container_name: maven-tests
+        mem_limit: 4gb
+        networks:
+            - stack
+        depends_on:
+            - jahia
+        environment:
+            # Uses variable substitution: https://docs.docker.com/compose/compose-file/compose-file-v3/#variable-substitution
+            MANIFEST: ${MANIFEST:-provisioning-manifest-snapshot.yml}
+            JAHIA_USERNAME: ${JAHIA_USERNAME}
+            JAHIA_PASSWORD: ${JAHIA_PASSWORD}
+            JAHIA_USERNAME_TOOLS: ${JAHIA_USERNAME_TOOLS}
+            JAHIA_PASSWORD_TOOLS: ${JAHIA_PASSWORD_TOOLS}
+            JAHIA_URL: ${JAHIA_URL}
+            NEXUS_USERNAME: ${NEXUS_USERNAME}
+            NEXUS_PASSWORD: ${NEXUS_PASSWORD}
+            SUPER_USER_PASSWORD: ${SUPER_USER_PASSWORD}
+
+
 networks:
-  stack: 
+    stack:
