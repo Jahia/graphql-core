@@ -16,7 +16,7 @@ services:
         environment:
             SUPER_USER_PASSWORD: root
 
-  maven:
+    maven:
         image: '${TESTS_IMAGE}'
         # https://github.com/cypress-io/cypress/issues/350
         ipc: host
