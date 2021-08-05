@@ -393,8 +393,8 @@ jobs:
             TEST_URL: http://jahia:8080/
             JAHIA_USERNAME: root
             JAHIA_PASSWORD: root
-            JAHIA_USERNAME_TOOLS=root
-            JAHIA_PASSWORD_TOOLS=root
+            JAHIA_USERNAME_TOOLS: root
+            JAHIA_PASSWORD_TOOLS: root
       - run:
           name: Export jahia logs
           when: always
