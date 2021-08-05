@@ -156,6 +156,8 @@ jobs:
   - type: module
     id: jahia-test-module
     filepath: /tmp/jahia-test-module-JAHIA_VERSION.jar
+  - type: shell
+    cmd: sleep 10
   - type: asset
     fetch: http
     username: NEXUS_USERNAME
