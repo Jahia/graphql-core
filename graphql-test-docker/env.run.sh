@@ -27,6 +27,14 @@ echo " SUPER_USER_PASSWORD: ${SUPER_USER_PASSWORD}"
 echo " TIMEZONE: ${TIMEZONE}"
 echo " WORKSPACE_EDIT: ${WORKSPACE_EDIT}"
 
+if [[ ${JAHIA_URL} =~ .*/$ ]]; then
+  JAHIA_URL=$(echo ${JAHIA_URL} | sed 's/.$//')
+fi
+echo " == Using JAHIA_URL: ${JAHIA_URL}"
+TEST_URL="${JAHIA_URL}/cms"
+
+echo " == Using TEST_URL: ${TEST_URL}"
+
 echo " == Content of the tests folder"
 ls -lah
 
