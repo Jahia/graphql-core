@@ -49,6 +49,7 @@ RUN sudo adduser --disabled-password jahians
 RUN sudo chown -R jahians:jahians /tmp
 RUN sudo chmod -R 775 /tmp
 USER jahians
+RUN mkdir -p /tmp/run-artifacts /tmp/results
 
 RUN mvn dependency:go-offline
 

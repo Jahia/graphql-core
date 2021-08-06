@@ -52,27 +52,27 @@ if [[ "${JAHIA_CLUSTER_ENABLED}" == "true" ]]; then
     sleep 60
 fi
 
-mkdir -p ./run-artifacts
+mkdir -p /tmp/run-artifacts
 
 # Add the credentials to a temporary manifest for downloading files
 # Execute jobs listed in the manifest
 # If the file doesn't exist, we assume it is a URL and we download it locally
 if [[ -e ${MANIFEST} ]]; then
-  cp ${MANIFEST} ./run-artifacts
+  cp ${MANIFEST} /tmp/run-artifacts
 else
   echo "Downloading: ${MANIFEST}"
-  curl ${MANIFEST} --output ./run-artifacts/curl-manifest
+  curl ${MANIFEST} --output /tmp/run-artifacts/curl-manifest
   MANIFEST="curl-manifest"
 fi
-sed -i -e "s/NEXUS_USERNAME/$(echo ${NEXUS_USERNAME} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')/g" ./run-artifacts/${MANIFEST}
-sed -i -e "s/NEXUS_PASSWORD/$(echo ${NEXUS_PASSWORD} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')/g" ./run-artifacts/${MANIFEST}
-sed -i "" -e "s/JAHIA_VERSION/${JAHIA_VERSION}/g" ./run-artifacts/${MANIFEST}
+sed -i -e "s/NEXUS_USERNAME/$(echo ${NEXUS_USERNAME} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')/g" /tmp/run-artifacts/${MANIFEST}
+sed -i -e "s/NEXUS_PASSWORD/$(echo ${NEXUS_PASSWORD} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')/g" /tmp/run-artifacts/${MANIFEST}
+sed -i "" -e "s/JAHIA_VERSION/${JAHIA_VERSION}/g" /tmp/run-artifacts/${MANIFEST}
 
 echo "$(date +'%d %B %Y - %k:%M') == Executing manifest: ${MANIFEST} =="
-curl -u root:${SUPER_USER_PASSWORD} -X POST ${JAHIA_URL}/modules/api/provisioning --form script="@./run-artifacts/${MANIFEST};type=text/yaml"
+curl -u root:${SUPER_USER_PASSWORD} -X POST ${JAHIA_URL}/modules/api/provisioning --form script="@/tmp/run-artifacts/${MANIFEST};type=text/yaml"
 if [[ $? -eq 1 ]]; then
   echo "PROVISIONING FAILURE - EXITING SCRIPT, NOT RUNNING THE TESTS"
-  echo "failure" > ./results/test_failure
+  echo "failure" > /tmp/results/test_failure
   exit 1
 fi
 
@@ -151,7 +151,7 @@ if [[ $INSTALLED_MODULE_VERSION == "UNKNOWN" ]]; then
   echo "$(date +'%d %B %Y - %k:%M') ERROR: Unable to detect module: ${MODULE_ID} on the remote system "
   echo "$(date +'%d %B %Y - %k:%M') ERROR: The Script will exit"
   echo "$(date +'%d %B %Y - %k:%M') ERROR: Tests will NOT run"
-  echo "failure" > ./results/test_failure
+  echo "failure" > /tmp/results/test_failure
   exit 1
 fi
 
@@ -163,13 +163,13 @@ echo "$(date +'%d %B %Y - %k:%M') == Run tests =="
 mvn -fae -Pmodule-integration-tests -Djahia.test.url=${TEST_URL} clean verify
 if [[ $? -eq 0 ]]; then
   echo "$(date +'%d %B %Y - %k:%M') == Full execution successful =="
-  echo "success" > ./results/test_success
+  echo "success" > /tmp/results/test_success
   cp /tmp/target/surefire-reports/* /tmp/results/reports/
   cp /tmp/target/site/surefire-report.html /tmp/results/reports/
   exit 0
 else
   echo "$(date +'%d %B %Y - %k:%M') == One or more failed tests =="
-  echo "failure" > ./results/test_failure
+  echo "failure" > /tmp/results/test_failure
   cp /tmp/target/surefire-reports/* /tmp/results/reports/
   cp /tmp/target/site/surefire-report.html /tmp/results/reports/
   exit 1
