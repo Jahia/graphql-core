@@ -597,7 +597,6 @@ workflows:
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           JAHIA_USERNAME_TOOLS: "root"
           JAHIA_PASSWORD_TOOLS: "root"
-          SUPER_USER_PASSWORD: "root"
           JAHIA_USERNAME: "root"
           JAHIA_PASSWORD: "root"
           MANIFEST: warmup-manifest-build.yml
@@ -741,7 +740,6 @@ workflows:
           TESTRAIL_MILESTONE: Jahia-Latest-Snapshot
           JAHIA_USERNAME_TOOLS: "root"
           JAHIA_PASSWORD_TOOLS: "root"
-          SUPER_USER_PASSWORD: "root"
           JAHIA_USERNAME: "root"
           JAHIA_PASSWORD: "root"
           BUILD_TESTSIMAGE: true
@@ -756,7 +754,6 @@ workflows:
           TESTRAIL_MILESTONE: Jahia-Latest-Release
           JAHIA_USERNAME_TOOLS: "root"
           JAHIA_PASSWORD_TOOLS: "root"
-          SUPER_USER_PASSWORD: "root"
           JAHIA_USERNAME: "root"
           JAHIA_PASSWORD: "root"
           BUILD_TESTSIMAGE: true
