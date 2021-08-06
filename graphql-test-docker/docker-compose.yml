@@ -6,8 +6,6 @@ services:
         restart: 'no'
         networks:
             - stack
-        depends_on:
-            - mariadb
         ports:
             - 8080:8080
         extra_hosts:
