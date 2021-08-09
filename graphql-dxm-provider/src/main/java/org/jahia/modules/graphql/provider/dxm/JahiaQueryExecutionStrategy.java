@@ -3,7 +3,6 @@ package org.jahia.modules.graphql.provider.dxm;
 import graphql.GraphQLError;
 import graphql.execution.*;
 import graphql.language.SourceLocation;
-import org.hibernate.annotations.Fetch;
 
 public class JahiaQueryExecutionStrategy extends AsyncExecutionStrategy {
 
@@ -11,8 +10,10 @@ public class JahiaQueryExecutionStrategy extends AsyncExecutionStrategy {
         super(exceptionHandler);
     }
 
-    protected FieldValueInfo completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, Object fetchedValue) {
-        FieldValueInfo result = super.completeField(executionContext, parameters, (FetchedValue) fetchedValue);
+    @Override
+    protected FieldValueInfo completeField(ExecutionContext executionContext,
+            ExecutionStrategyParameters parameters, FetchedValue fetchedValue) {
+        FieldValueInfo result = super.completeField(executionContext, parameters, fetchedValue);
 
         if (fetchedValue instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
             // we only complete field if there were no errors on execution

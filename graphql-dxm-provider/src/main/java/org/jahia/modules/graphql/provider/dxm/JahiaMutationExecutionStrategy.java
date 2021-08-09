@@ -78,4 +78,26 @@ public class JahiaMutationExecutionStrategy extends AsyncSerialExecutionStrategy
         return super.execute(executionContext, parameters);
     }
 
+    /**
+     * Extend the standard behavior to complete any GqlJcrMutation field via persisting any changes made to JCR during its execution.
+     */
+    @Override
+    protected FieldValueInfo completeField(ExecutionContext executionContext,
+            ExecutionStrategyParameters parameters, FetchedValue fetchedValue) {
+        FieldValueInfo result = super.completeField(executionContext, parameters, fetchedValue);
+
+        if (fetchedValue instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
+            // we only complete field if there were no errors on execution
+            try {
+                ((DXGraphQLFieldCompleter) fetchedValue).completeField();
+            } catch (Exception e) {
+                SourceLocation sourceLocation = parameters.getField().getSingleField().getSourceLocation();
+                GraphQLError error = JahiaDataFetchingExceptionHandler.transformException(e, parameters.getPath(), sourceLocation);
+                executionContext.addError(error, parameters.getPath());
+            }
+        }
+
+        return result;
+    }
+
 }
