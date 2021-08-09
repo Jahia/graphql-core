@@ -85,11 +85,11 @@ public class JahiaMutationExecutionStrategy extends AsyncSerialExecutionStrategy
     protected FieldValueInfo completeField(ExecutionContext executionContext,
             ExecutionStrategyParameters parameters, FetchedValue fetchedValue) {
         FieldValueInfo result = super.completeField(executionContext, parameters, fetchedValue);
-
-        if (fetchedValue instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
+        Object value = fetchedValue.getFetchedValue();
+        if (value instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
             // we only complete field if there were no errors on execution
             try {
-                ((DXGraphQLFieldCompleter) fetchedValue).completeField();
+                ((DXGraphQLFieldCompleter) value).completeField();
             } catch (Exception e) {
                 SourceLocation sourceLocation = parameters.getField().getSingleField().getSourceLocation();
                 GraphQLError error = JahiaDataFetchingExceptionHandler.transformException(e, parameters.getPath(), sourceLocation);
