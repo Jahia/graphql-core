@@ -234,8 +234,15 @@ public class FieldEvaluator {
             logger.warn("Cannot inject fields ",e);
         }
 
-        DataFetchingEnvironmentImpl.Builder fieldEnvBuilder = newDataFetchingEnvironment(environment);
-
+        DataFetchingEnvironmentImpl.Builder fieldEnvBuilder = newDataFetchingEnvironment()
+                .source(source)
+                .parentType(objectType)
+                .context(environment.getContext())
+                .root(environment.getRoot())
+                .executionId(environment.getExecutionId())
+                .fragmentsByName(environment.getFragmentsByName())
+                .graphQLSchema(environment.getGraphQLSchema())
+                .executionStepInfo(environment.getExecutionStepInfo());
 
         // Try to find field in selection set to reuse alias/arguments
         Field field = fieldFinder.find(objectType, fieldName);
