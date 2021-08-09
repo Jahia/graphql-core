@@ -46,7 +46,7 @@ package org.jahia.modules.graphql.provider.dxm.render;
 
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
-import graphql.servlet.GraphQLContext;
+import graphql.kickstart.servlet.context.GraphQLServletContext;
 import org.jahia.bin.Render;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
@@ -87,13 +87,16 @@ public class RenderNodeExtensions {
     @GraphQLField
     @GraphQLDescription("Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned.")
     public GqlJcrNode getDisplayableNode(DataFetchingEnvironment environment) {
-        Optional<HttpServletRequest> httpServletRequest = ((GraphQLContext) environment.getContext()).getRequest();
-        Optional<HttpServletResponse> httpServletResponse = ((GraphQLContext) environment.getContext()).getResponse();
-        if (!httpServletRequest.isPresent() || !httpServletResponse.isPresent()) {
+        GraphQLServletContext gqlContext = environment.getContext();
+        HttpServletRequest httpServletRequest = gqlContext.getHttpServletRequest();
+        HttpServletResponse httpServletResponse = gqlContext.getHttpServletResponse();
+
+        if (httpServletRequest == null || httpServletResponse == null) {
             return null;
         }
-        RenderContext context = new RenderContext(httpServletRequest.get(),
-                httpServletResponse.get(),
+
+        RenderContext context = new RenderContext(httpServletRequest,
+                httpServletResponse,
                 JCRSessionFactory.getInstance().getCurrentUser());
         JCRNodeWrapper node = JCRContentUtils.findDisplayableNode(((GqlJcrNode) environment.getSource()).getNode(), context);
         if (node != null) {
@@ -156,17 +159,16 @@ public class RenderNodeExtensions {
                 }
             }
 
-            Optional<HttpServletRequest> httpServletRequest = ((GraphQLContext) environment.getContext()).getRequest();
-            Optional<HttpServletResponse> httpServletResponse = ((GraphQLContext) environment.getContext()).getResponse();
-            if (!httpServletRequest.isPresent() || !httpServletResponse.isPresent()) {
+            GraphQLServletContext gqlContext = environment.getContext();
+            HttpServletRequest request = gqlContext.getHttpServletRequest();
+            HttpServletResponse response = gqlContext.getHttpServletResponse();
+            if (request == null || response == null) {
                 throw new RuntimeException("No HttpRequest or HttpResponse");
             }
-            HttpServletRequest request = httpServletRequest.get();
+
             if (request instanceof HttpServletRequestWrapper) {
                 request = (HttpServletRequest) ((HttpServletRequestWrapper) request).getRequest();
             }
-
-            HttpServletResponse response = httpServletResponse.get();
 
             if (requestAttributes != null && requestAttributes.size() > 0) {
                 for (RenderRequestAttributeInput requestAttribute : requestAttributes) {

@@ -46,25 +46,23 @@ package org.jahia.modules.graphql.provider.dxm.predicate;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import graphql.TypeResolutionEnvironment;
-import graphql.execution.ExecutionStepInfo;
-import graphql.execution.FieldCollector;
-import graphql.execution.FieldCollectorParameters;
-import graphql.execution.ValuesResolver;
+import graphql.execution.*;
+import graphql.kickstart.servlet.context.GraphQLServletContext;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.SelectionSet;
 import graphql.schema.*;
-import graphql.servlet.GraphQLContext;
 import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static graphql.schema.DataFetchingEnvironmentBuilder.newDataFetchingEnvironment;
+import static graphql.schema.DataFetchingEnvironmentImpl.newDataFetchingEnvironment;
 import static org.jahia.modules.graphql.provider.dxm.instrumentation.JCRInstrumentation.FRAGMENTS_BY_NAME;
 import static org.jahia.modules.graphql.provider.dxm.instrumentation.JCRInstrumentation.GRAPHQL_VARIABLES;
 
@@ -148,17 +146,18 @@ public class FieldEvaluator {
                     .build();
 
             // Extract selection set on "{ nodes }" or "{ edges { node } }"
-            Map<String, List<Field>> fields = null;
+            Map<String, MergedField> fields = null;
             if (environment.getSelectionSet() != null) {
-                fields = environment.getSelectionSet().get();
+                MergedSelectionSet merged = environment.getSelectionSet().get();
+                fields = merged.getSubFields();
                 if (fields.containsKey("nodes")) {
                     // First look in { nodes } selection set
-                    List<Field> nodeFields = fields.get("nodes");
+                    MergedField nodeFields = fields.get("nodes");
                     return getField(fieldCollector.collectFields(parameters, nodeFields), name);
                 } else if (fields.containsKey("edges")) {
                     // If no "nodes" was found, try to look into { edges { node } } selection set
-                    List<Field> edgeFields = fields.get("edges");
-                    fields = fieldCollector.collectFields(parameters, edgeFields);
+                    MergedField edgeFields = fields.get("edges");
+                    fields = fieldCollector.collectFields(parameters, edgeFields).getSubFields();
                     if (fields.containsKey("node")) {
                         return getField(fieldCollector.collectFields(parameters, fields.get("node")), name);
                     }
@@ -170,29 +169,26 @@ public class FieldEvaluator {
         return new FieldEvaluator(type, fieldFinder, variables, environment);
     }
 
-    @SuppressWarnings("unchecked")
     private static Map<String, Object> getVariables(DataFetchingEnvironment environment) {
-        GraphQLContext context = environment.getContext();
-        Map<String, Object> variables = new LinkedHashMap<>();
-        if (context.getRequest().isPresent()) {
-            variables = (Map<String, Object>) context.getRequest().get().getAttribute(GRAPHQL_VARIABLES);
-        }
-        return variables;
+        GraphQLServletContext context = environment.getContext();
+        HttpServletRequest request = context.getHttpServletRequest();
+        return (request != null) ?
+                (Map<String, Object>) request.getAttribute(GRAPHQL_VARIABLES) :
+                new LinkedHashMap<>();
     }
 
-    @SuppressWarnings("unchecked")
     private static Map<String, FragmentDefinition> getFragmentDefinitions(DataFetchingEnvironment environment) {
-        GraphQLContext context = environment.getContext();
-        Map<String, FragmentDefinition> fragments = new LinkedHashMap<>();
-        if (context.getRequest().isPresent()) {
-            fragments = (Map<String, FragmentDefinition>) context.getRequest().get().getAttribute(FRAGMENTS_BY_NAME);
-        }
-        return fragments;
+        GraphQLServletContext context = environment.getContext();
+        HttpServletRequest request = context.getHttpServletRequest();
+        return (request != null) ?
+                (Map<String, FragmentDefinition>) request.getAttribute(FRAGMENTS_BY_NAME) :
+                new LinkedHashMap<>();
     }
 
-    private static Field getField(Map<String, List<Field>> fields, String name) {
+    private static Field getField(MergedSelectionSet mergedSet, String name) {
+        Map<String, MergedField> fields = mergedSet.getSubFields();
         if (fields != null && fields.containsKey(name)) {
-            return fields.get(name).get(0);
+            return fields.get(name).getSingleField();
         }
         return null;
     }
@@ -204,7 +200,8 @@ public class FieldEvaluator {
         if (type instanceof GraphQLObjectType) {
             return (GraphQLObjectType) type;
         } else if (type instanceof GraphQLInterfaceType) {
-            return ((GraphQLInterfaceType) type).getTypeResolver().getType(new TypeResolutionEnvironment(object, null, null, null, null, null));
+            TypeResolver typeResolver = environment.getGraphQLSchema().getCodeRegistry().getTypeResolver((GraphQLInterfaceType) type);
+            return typeResolver.getType(new TypeResolutionEnvironment(object, null, null, null, null, null));
         } else {
             return null;
         }
@@ -237,15 +234,8 @@ public class FieldEvaluator {
             logger.warn("Cannot inject fields ",e);
         }
 
-        DataFetchingEnvironmentBuilder fieldEnv = newDataFetchingEnvironment()
-                .source(source)
-                .parentType(objectType)
-                .context(environment.getContext())
-                .root(environment.getRoot())
-                .executionId(environment.getExecutionId())
-                .fragmentsByName(environment.getFragmentsByName())
-                .graphQLSchema(environment.getGraphQLSchema())
-                .executionContext(environment.getExecutionContext());
+        DataFetchingEnvironmentImpl.Builder fieldEnvBuilder = newDataFetchingEnvironment(environment);
+
 
         // Try to find field in selection set to reuse alias/arguments
         Field field = fieldFinder.find(objectType, fieldName);
@@ -255,7 +245,7 @@ public class FieldEvaluator {
             if (fieldDefinition != null) {
                 ValuesResolver valuesResolver = new ValuesResolver();
                 Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), variables);
-                fieldEnv.arguments(argumentValues);
+                fieldEnvBuilder.arguments(argumentValues);
             }
         } else {
             // Otherwise, directly look in field definitions
@@ -266,16 +256,17 @@ public class FieldEvaluator {
             // Definition not present on current type (can be a field in a non-matching fragment), returns null
             return null;
         }
-        fieldEnv.fieldDefinition(fieldDefinition);
-        fieldEnv.fieldType(fieldDefinition.getType());
-        fieldEnv.executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
+        fieldEnvBuilder.fieldDefinition(fieldDefinition);
+        fieldEnvBuilder.fieldType(fieldDefinition.getType());
+        fieldEnvBuilder.executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
                 .fieldDefinition(fieldDefinition)
                 .type(fieldDefinition.getType())
                 .build());
 
         Object value = null;
         try {
-            value = fieldDefinition.getDataFetcher().get(fieldEnv.build());
+            DataFetchingEnvironment fieldEnv = fieldEnvBuilder.build();
+            value = environment.getGraphQLSchema().getCodeRegistry().getDataFetcher(objectType, fieldDefinition).get(fieldEnv);
         } catch (Exception e) {
             value = e.getMessage();
         }

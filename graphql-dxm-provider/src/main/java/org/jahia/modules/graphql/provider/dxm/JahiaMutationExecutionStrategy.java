@@ -52,6 +52,7 @@ import org.jahia.settings.SettingsBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.transform.Source;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 
@@ -81,15 +82,16 @@ public class JahiaMutationExecutionStrategy extends AsyncSerialExecutionStrategy
      * Extend the standard behavior to complete any GqlJcrMutation field via persisting any changes made to JCR during its execution.
      */
     @Override
-    protected FieldValueInfo completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, Object fetchedValue) {
+    protected FieldValueInfo completeField(ExecutionContext executionContext,
+            ExecutionStrategyParameters parameters, FetchedValue fetchedValue) {
         FieldValueInfo result = super.completeField(executionContext, parameters, fetchedValue);
-
-        if (fetchedValue instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
+        Object value = fetchedValue.getFetchedValue();
+        if (value instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
             // we only complete field if there were no errors on execution
             try {
-                ((DXGraphQLFieldCompleter) fetchedValue).completeField();
+                ((DXGraphQLFieldCompleter) value).completeField();
             } catch (Exception e) {
-                SourceLocation sourceLocation = (parameters.getField() != null && !parameters.getField().isEmpty()) ? parameters.getField().get(0).getSourceLocation() : null;
+                SourceLocation sourceLocation = parameters.getField().getSingleField().getSourceLocation();
                 GraphQLError error = JahiaDataFetchingExceptionHandler.transformException(e, parameters.getPath(), sourceLocation);
                 executionContext.addError(error, parameters.getPath());
             }
@@ -97,4 +99,5 @@ public class JahiaMutationExecutionStrategy extends AsyncSerialExecutionStrategy
 
         return result;
     }
+
 }

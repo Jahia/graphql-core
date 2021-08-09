@@ -27,9 +27,14 @@ public class GraphQLFieldWithPermissionRetriever extends GraphQLFieldRetriever {
     }
 
     @Override
-    public GraphQLFieldDefinition getField(Method method, ProcessingElementsContainer container) throws GraphQLAnnotationsException {
+    public GraphQLFieldDefinition getField(String parentName, Method method, ProcessingElementsContainer container) throws GraphQLAnnotationsException {
         GraphQLRequiresPermission ann = method.getAnnotation(GraphQLRequiresPermission.class);
-        GraphQLFieldDefinition definition = graphQLFieldRetriever.getField(method, container);
+
+        // TODO: This is a hack (not related to permissions) to fix the way the OutputObjectBuilder is handling the extensions on interfaces.
+        // The parentname is the name of the interface, where it should be the name of the type.
+        // This result in fieldRetriever not correctly registering the dataFetcher in the codeRegistry.
+        String realParentName = container.getProcessing().peek();
+        GraphQLFieldDefinition definition = graphQLFieldRetriever.getField(realParentName, method, container);
         if (ann != null) {
             String key = container.getProcessing().peek() + "." + definition.getName();
             logger.debug("Adding permission : {} = {}", key, ann.value());
@@ -39,9 +44,9 @@ public class GraphQLFieldWithPermissionRetriever extends GraphQLFieldRetriever {
     }
 
     @Override
-    public GraphQLFieldDefinition getField(Field field, ProcessingElementsContainer container) throws GraphQLAnnotationsException {
+    public GraphQLFieldDefinition getField(String parentName, Field field, ProcessingElementsContainer container) throws GraphQLAnnotationsException {
         GraphQLRequiresPermission ann = field.getAnnotation(GraphQLRequiresPermission.class);
-        GraphQLFieldDefinition definition = graphQLFieldRetriever.getField(field, container);
+        GraphQLFieldDefinition definition = graphQLFieldRetriever.getField(parentName, field, container);
         if (ann != null) {
             String key = container.getProcessing().peek() + "." + definition.getName();
             logger.debug("Adding permission : {} = {}", key, ann.value());
@@ -51,12 +56,12 @@ public class GraphQLFieldWithPermissionRetriever extends GraphQLFieldRetriever {
     }
 
     @Override
-    public GraphQLInputObjectField getInputField(Method method, ProcessingElementsContainer container) throws GraphQLAnnotationsException {
-        return graphQLFieldRetriever.getInputField(method, container);
+    public GraphQLInputObjectField getInputField(Method method, ProcessingElementsContainer container, String parentName) throws GraphQLAnnotationsException {
+        return graphQLFieldRetriever.getInputField(method, container, parentName);
     }
 
     @Override
-    public GraphQLInputObjectField getInputField(Field field, ProcessingElementsContainer container) throws GraphQLAnnotationsException {
-        return graphQLFieldRetriever.getInputField(field, container);
+    public GraphQLInputObjectField getInputField(Field field, ProcessingElementsContainer container, String parentName) throws GraphQLAnnotationsException {
+        return graphQLFieldRetriever.getInputField(field, container, parentName);
     }
 }

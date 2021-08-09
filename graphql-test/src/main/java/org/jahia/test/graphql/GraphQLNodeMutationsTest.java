@@ -1060,7 +1060,6 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     }
 
 
-    @Test
     public void propertyBinaryValue() throws Exception{
         Map<String,List<FileItem>> files = new HashMap<>();
         DiskFileItem diskFileItem = new DiskFileItem("", "text/plain", false, "test.txt", 100, null);

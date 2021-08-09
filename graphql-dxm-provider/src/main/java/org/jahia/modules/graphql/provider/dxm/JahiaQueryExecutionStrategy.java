@@ -11,15 +11,17 @@ public class JahiaQueryExecutionStrategy extends AsyncExecutionStrategy {
     }
 
     @Override
-    protected FieldValueInfo completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, Object fetchedValue) {
+    protected FieldValueInfo completeField(ExecutionContext executionContext,
+            ExecutionStrategyParameters parameters, FetchedValue fetchedValue) {
         FieldValueInfo result = super.completeField(executionContext, parameters, fetchedValue);
 
-        if (fetchedValue instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
+        Object value = fetchedValue.getFetchedValue();
+        if (value instanceof DXGraphQLFieldCompleter && executionContext.getErrors().isEmpty()) {
             // we only complete field if there were no errors on execution
             try {
-                ((DXGraphQLFieldCompleter) fetchedValue).completeField();
+                ((DXGraphQLFieldCompleter) value).completeField();
             } catch (Exception e) {
-                SourceLocation sourceLocation = (parameters.getField() != null && !parameters.getField().isEmpty()) ? parameters.getField().get(0).getSourceLocation() : null;
+                SourceLocation sourceLocation = parameters.getField().getSingleField().getSourceLocation();
                 GraphQLError error = JahiaDataFetchingExceptionHandler.transformException(e, parameters.getPath(), sourceLocation);
                 executionContext.addError(error, parameters.getPath());
             }
