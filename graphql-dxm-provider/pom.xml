@@ -70,6 +70,7 @@
             org.jahia.modules.graphql.provider.dxm.sdl,
             org.jahia.modules.graphql.provider.dxm.security,
             org.jahia.modules.graphql.provider.dxm.user,
+            org.jahia.modules.graphql.provider.dxm.util,
             org.jahia.modules.graphql.provider.dxm.osgi.annotations
         </export-package>
         <jahia.modules.importPackage>!org.jahia.modules.graphql.provider.dxm.sdl,!org.jahia.modules.graphql.provider.dxm.sdl.extension,!org.jahia.modules.graphql.provider.dxm.osgi.annotations</jahia.modules.importPackage>
