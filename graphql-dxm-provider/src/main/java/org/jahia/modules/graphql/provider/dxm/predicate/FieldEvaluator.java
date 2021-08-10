@@ -47,12 +47,12 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import graphql.TypeResolutionEnvironment;
 import graphql.execution.*;
-import graphql.kickstart.servlet.context.GraphQLServletContext;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.SelectionSet;
 import graphql.schema.*;
 import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -170,16 +170,14 @@ public class FieldEvaluator {
     }
 
     private static Map<String, Object> getVariables(DataFetchingEnvironment environment) {
-        GraphQLServletContext context = environment.getContext();
-        HttpServletRequest request = context.getHttpServletRequest();
+        HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getContext());
         return (request != null) ?
                 (Map<String, Object>) request.getAttribute(GRAPHQL_VARIABLES) :
                 new LinkedHashMap<>();
     }
 
     private static Map<String, FragmentDefinition> getFragmentDefinitions(DataFetchingEnvironment environment) {
-        GraphQLServletContext context = environment.getContext();
-        HttpServletRequest request = context.getHttpServletRequest();
+        HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getContext());
         return (request != null) ?
                 (Map<String, FragmentDefinition>) request.getAttribute(FRAGMENTS_BY_NAME) :
                 new LinkedHashMap<>();

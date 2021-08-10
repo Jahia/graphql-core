@@ -48,10 +48,10 @@ import graphql.execution.instrumentation.SimpleInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
 import graphql.schema.DataFetcher;
-import graphql.kickstart.servlet.context.GraphQLServletContext;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -85,7 +85,7 @@ public class JCRInstrumentation extends SimpleInstrumentation {
     public ExecutionContext instrumentExecutionContext(ExecutionContext executionContext, InstrumentationExecutionParameters parameters) {
 
         executionContext = super.instrumentExecutionContext(executionContext, parameters);
-        HttpServletRequest servletRequest = ((GraphQLServletContext) executionContext.getContext()).getHttpServletRequest();
+        HttpServletRequest servletRequest = ContextUtil.getHttpServletRequest(executionContext.getContext());
 
         // Null only in the case with integration tests.
         if (servletRequest != null) {

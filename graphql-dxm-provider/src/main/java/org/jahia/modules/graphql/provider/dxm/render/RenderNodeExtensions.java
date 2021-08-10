@@ -52,6 +52,7 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -88,8 +89,9 @@ public class RenderNodeExtensions {
     @GraphQLDescription("Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned.")
     public GqlJcrNode getDisplayableNode(DataFetchingEnvironment environment) {
         GraphQLServletContext gqlContext = environment.getContext();
-        HttpServletRequest httpServletRequest = gqlContext.getHttpServletRequest();
-        HttpServletResponse httpServletResponse = gqlContext.getHttpServletResponse();
+
+        HttpServletRequest httpServletRequest = ContextUtil.getHttpServletRequest(environment.getContext());
+        HttpServletResponse httpServletResponse = ContextUtil.getHttpServletResponse(environment.getContext());
 
         if (httpServletRequest == null || httpServletResponse == null) {
             return null;
@@ -159,9 +161,8 @@ public class RenderNodeExtensions {
                 }
             }
 
-            GraphQLServletContext gqlContext = environment.getContext();
-            HttpServletRequest request = gqlContext.getHttpServletRequest();
-            HttpServletResponse response = gqlContext.getHttpServletResponse();
+            HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getContext());
+            HttpServletResponse response = ContextUtil.getHttpServletResponse(environment.getContext());
             if (request == null || response == null) {
                 throw new RuntimeException("No HttpRequest or HttpResponse");
             }

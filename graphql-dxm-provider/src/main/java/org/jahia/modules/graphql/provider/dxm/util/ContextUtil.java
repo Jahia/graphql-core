@@ -41,35 +41,44 @@
  *     If you are unsure which license is appropriate for your use,
  *     please contact the sales department at sales@jahia.com.
  */
-package org.jahia.modules.graphql.provider.dxm.security;
+package org.jahia.modules.graphql.provider.dxm.util;
 
-import graphql.schema.DataFetchingEnvironment;
-import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
-import org.jahia.modules.securityfilter.PermissionService;
-import org.jahia.osgi.BundleUtils;
-import org.jahia.services.content.JCRNodeWrapper;
+import graphql.kickstart.servlet.context.GraphQLServletContext;
 
-import javax.jcr.RepositoryException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-public class PermissionHelper {
+/**
+ * Simple utility class to
+ */
+public class ContextUtil {
 
-    private PermissionHelper() {
+    private ContextUtil() {
     }
 
-    public static boolean hasPermission(JCRNodeWrapper node, DataFetchingEnvironment environment) {
-        if (ContextUtil.getHttpServletRequest(environment.getContext()) != null) {
-            PermissionService permissionService = BundleUtils.getOsgiService(PermissionService.class, null);
-            if (permissionService == null) {
-                throw new DataFetchingException("Could not find permission service to validate security access. Blocking access to data.");
-            }
-            try {
-                return permissionService.hasPermission("graphql." + environment.getParentType().getName() + "." + environment.getFieldDefinition().getName(), node);
-            } catch (RepositoryException e) {
-                throw new DataFetchingException(e);
-            }
-        } else {
-            return true;
+    /**
+     * Get request if http context
+     * @param context context
+     * @return response
+     */
+    public static HttpServletRequest getHttpServletRequest(Object context) {
+        if (context instanceof GraphQLServletContext) {
+            return ((GraphQLServletContext) context).getHttpServletRequest();
         }
+
+        return null;
+    }
+
+    /**
+     * Get response if http context
+     * @param context context
+     * @return response
+     */
+    public static HttpServletResponse getHttpServletResponse(Object context) {
+        if (context instanceof GraphQLServletContext) {
+            return ((GraphQLServletContext) context).getHttpServletResponse();
+        }
+
+        return null;
     }
 }
