@@ -4,10 +4,13 @@ import graphql.annotations.connection.ConnectionFetcher;
 import graphql.relay.*;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLTypeUtil;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.relay.*;
+import org.jahia.modules.graphql.provider.dxm.util.GqlTypeUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,7 +37,9 @@ public class SDLPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T
         }
         List<Edge<T>> edges = buildEdges((DXPaginatedData<T>) paginatedData);
         PageInfo pageInfo = getPageInfo(edges, (DXPaginatedData<T>) paginatedData);
-        Class<? extends DXConnection<T>> connectionType = (Class<? extends DXConnection<T>>) DXGraphQLProvider.getInstance().getConnectionType(environment.getExecutionStepInfo().getFieldDefinition().getType().getName());
+        GraphQLType fieldType = environment.getExecutionStepInfo().getFieldDefinition().getType();
+        Class<? extends DXConnection<T>> connectionType =
+                (Class<? extends DXConnection<T>>) DXGraphQLProvider.getInstance().getConnectionType(GqlTypeUtil.getTypeName(fieldType));
         if (connectionType != null) {
             try {
                 return connectionType.getConstructor(List.class, PageInfo.class).newInstance(edges, pageInfo);
