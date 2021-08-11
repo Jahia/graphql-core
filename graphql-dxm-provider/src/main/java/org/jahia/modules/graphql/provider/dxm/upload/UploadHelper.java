@@ -47,6 +47,7 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.kickstart.servlet.context.GraphQLServletContext;
 import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
+import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 import org.jahia.settings.SettingsBean;
 
 import javax.servlet.http.Part;
@@ -82,7 +83,7 @@ public class UploadHelper {
             throw new FileSizeLimitExceededException(
                     String.format(
                             "The field %s exceeds its maximum permitted size of %s bytes.",
-                            UploadHelper.getFileName(part),
+                            part.getName(),
                             maxUploadSize
                     ),
                     uploadSize,
@@ -100,6 +101,10 @@ public class UploadHelper {
      * @return The FileItem matching the specified name
      */
     public static Part getFileUpload(String name, DataFetchingEnvironment environment) {
+        if (!(environment.getContext() instanceof GraphQLServletContext)) {
+            throw new GqlJcrWrongInputException("Not a servlet context");
+        }
+
         GraphQLServletContext context = environment.getContext();
         if (context.getParts().isEmpty()) {
             throw new GqlJcrWrongInputException("Must use multipart request");
@@ -122,22 +127,11 @@ public class UploadHelper {
     private static Part getPartForFilename(GraphQLServletContext context, String filename) {
         List<Part> parts = context.getFileParts()
                 .stream()
-                .filter(part -> filename.equals(UploadHelper.getFileName(part)) )
+                .filter(part -> filename.equals(part.getName()))
                 .collect(Collectors.toList());
 
         return (parts.isEmpty() || parts.size() > 1) ?
                 null : parts.get(0);
     }
 
-    // https://docs.oracle.com/javaee/6/tutorial/doc/glraq.html
-    private static String getFileName(final Part part) {
-        final String partHeader = part.getHeader("content-disposition");
-        for (String content : partHeader.split(";")) {
-            if (content.trim().startsWith("filename")) {
-                return content.substring(
-                        content.indexOf('=') + 1).trim().replace("\"", "");
-            }
-        }
-        return null;
-    }
 }
