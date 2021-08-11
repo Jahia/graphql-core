@@ -38,6 +38,7 @@ import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionSt
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatusType;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLSchemaInfo;
 import org.jahia.modules.graphql.provider.dxm.sdl.registration.SDLRegistrationService;
+import org.jahia.modules.graphql.provider.dxm.util.GqlTypeUtil;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
@@ -134,7 +135,6 @@ public class SDLSchemaService {
             typeDefinitionRegistry.getDirectiveDefinitions().forEach((k, t) -> cleanedTypeRegistry.add(t));
             try {
                 graphQLSchema = schemaGenerator.makeExecutableSchema(
-                        SchemaGenerator.Options.defaultOptions().enforceSchemaDirectives(false),
                         cleanedTypeRegistry,
                         SDLRuntimeWiring.runtimeWiring()
                 );
@@ -214,8 +214,7 @@ public class SDLSchemaService {
                     if (connectionFieldNameToSDLType.containsKey(fieldDefinition.getName())) {
                         typeName = connectionFieldNameToSDLType.get(fieldDefinition.getName()).getConnectionName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
                     }
-
-                    GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
+                    GraphQLNamedOutputType node = (GraphQLNamedOutputType) GqlTypeUtil.unwrapType(fieldDefinition.getType());
                     GraphQLObjectType connectionType = ConnectionHelper.getOrCreateConnection(this, node, typeName);
                     FinderBaseDataFetcher typeFetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                     List<GraphQLArgument> args = relay.getConnectionFieldArguments();
@@ -245,7 +244,7 @@ public class SDLSchemaService {
         List<GraphQLType> types = new ArrayList<>();
         if (graphQLSchema != null) {
             List<String> reservedType = Arrays.asList("Query", "Mutation", "Subscription");
-            for (Map.Entry<String, GraphQLType> gqlTypeEntry : graphQLSchema.getTypeMap().entrySet()) {
+            for (Map.Entry<String, GraphQLNamedType> gqlTypeEntry : graphQLSchema.getTypeMap().entrySet()) {
                 if (!gqlTypeEntry.getKey().startsWith("__") && !reservedType.contains(gqlTypeEntry.getKey()) && !(gqlTypeEntry.getValue() instanceof GraphQLScalarType)) {
                     types.add(gqlTypeEntry.getValue());
                 }
@@ -303,7 +302,7 @@ public class SDLSchemaService {
             GraphQLArgument argument = ((GraphQLObjectType) baseType).getDirective(SDLConstants.MAPPING_DIRECTIVE).getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE);
 
             if (argument != null) {
-                final String finderName = defaultFinder.getName(baseType.getName());
+                final String finderName = defaultFinder.getName(GqlTypeUtil.getTypeName(baseType));
 
                 Finder finder = new Finder(finderName);
                 finder.setType(argument.getValue().toString());

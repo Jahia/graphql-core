@@ -17,6 +17,8 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLNamedOutputType;
+import graphql.schema.GraphQLTypeUtil;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
@@ -24,6 +26,7 @@ import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
+import org.jahia.modules.graphql.provider.dxm.util.GqlTypeUtil;
 import org.jahia.osgi.BundleUtils;
 
 import java.util.ArrayList;
@@ -89,7 +92,8 @@ public abstract class FinderListDataFetcher extends FinderBaseDataFetcher {
     protected Stream<GqlJcrNode> resolveCollection(Stream<GqlJcrNode> stream, DataFetchingEnvironment environment) {
         FieldSorterInput sorterInput = getFieldSorterInput(environment);
         if (sorterInput != null) {
-            if (environment.getFieldType().getName() != null && environment.getFieldType().getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
+            String fieldTypeName = GqlTypeUtil.getTypeName(environment.getFieldType());
+            if (fieldTypeName != null && fieldTypeName.endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
                 return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forConnection(environment)));
             }
             return stream.sorted(SorterHelper.getFieldComparator(sorterInput, FieldEvaluator.forList(environment)));
