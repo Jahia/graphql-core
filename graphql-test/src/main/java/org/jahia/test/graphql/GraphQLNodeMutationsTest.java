@@ -59,7 +59,9 @@ import org.junit.*;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
+import javax.servlet.http.Part;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -1060,16 +1062,59 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     }
 
 
+    public static Part toPart(FileItem fileItem) {
+        return new Part() {
+            @Override public InputStream getInputStream() throws IOException {
+                return fileItem.getInputStream();
+            }
+
+            @Override public String getContentType() {
+                return fileItem.getContentType();
+            }
+
+            @Override public String getName() {
+                return fileItem.getName();
+            }
+
+            @Override public long getSize() {
+                return fileItem.getSize();
+            }
+
+            @Override public void write(String s) throws IOException {
+                // auto-generated; do nothing
+            }
+
+            @Override public void delete() throws IOException {
+                fileItem.delete();
+            }
+
+            @Override public String getHeader(String s) {
+                return fileItem.getHeaders().getHeader(s);
+            }
+
+            @Override public Collection<String> getHeaders(String s) {
+                return null;
+            }
+
+            @Override public Collection<String> getHeaderNames() {
+                return null;
+            }
+        };
+    }
+
+    @Test
     public void propertyBinaryValue() throws Exception{
-        Map<String,List<FileItem>> files = new HashMap<>();
-        DiskFileItem diskFileItem = new DiskFileItem("", "text/plain", false, "test.txt", 100, null);
+        Map<String,List<Part>> files = new HashMap<>();
+        String fileName = "file.txt";
+        DiskFileItem diskFileItem = new DiskFileItem("", "text/plain", false, fileName, 100, null);
         OutputStream outputStream = diskFileItem.getOutputStream();
         IOUtils.write("test text", outputStream);
         outputStream.close();
-        files.put("test-binary", Collections.singletonList(diskFileItem));
+        files.put("test-binary", Collections.singletonList(toPart(diskFileItem)));
+
         JSONObject result = executeQueryWithFiles("mutation {\n" +
                 "  jcr {\n" +
-                "    addNode(parentPathOrId:\"/testFolder\", name:\"file.txt\", primaryNodeType:\"jnt:file\") {\n" +
+                "    addNode(parentPathOrId:\"/testFolder\", name:\""+ fileName + "\", primaryNodeType:\"jnt:file\") {\n" +
                 "      addChild(name:\"jcr:content\", primaryNodeType:\"nt:resource\") {\n" +
                 "        setData:mutateProperty(name:\"jcr:data\") {\n" +
                 "          setValue(value:\"test-binary\")\n" +
@@ -1085,7 +1130,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "      }\n" +
                 "    }\n" +
                 "  }\n" +
-                "}\n", files);
+                "}\n", fileName, files);
 
         String value = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getJSONObject("addChild").getJSONObject("node")
                 .getJSONObject("property").getString("value");
