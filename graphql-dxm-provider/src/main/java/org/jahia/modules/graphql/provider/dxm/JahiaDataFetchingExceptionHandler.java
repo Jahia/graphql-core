@@ -63,17 +63,6 @@ import java.util.Collections;
 public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(JahiaDataFetchingExceptionHandler.class);
 
-    public void accept(DataFetcherExceptionHandlerParameters handlerParameters) {
-        Throwable exception = handlerParameters.getException();
-
-        ExecutionPath path = handlerParameters.getPath();
-        GraphQLError error = transformException(exception, path, handlerParameters.getField().getSingleField().getSourceLocation());
-
-        if (!(error instanceof DXGraphQLError)) {
-            log.warn(error.getMessage(), exception);
-        }
-    }
-
     public static GraphQLError transformException(Throwable exception, ExecutionPath path, SourceLocation sourceLocation) {
         // Unwrap exception from MethodDataFetcher
         if (exception instanceof RuntimeException && exception.getCause() instanceof InvocationTargetException) {
@@ -87,8 +76,8 @@ public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHa
         }
     }
 
-    @Override public DataFetcherExceptionHandlerResult onException(
-            DataFetcherExceptionHandlerParameters handlerParameters) {
+    @Override
+    public DataFetcherExceptionHandlerResult onException(DataFetcherExceptionHandlerParameters handlerParameters) {
         Throwable exception = handlerParameters.getException();
 
         ExecutionPath path = handlerParameters.getPath();
