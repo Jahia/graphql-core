@@ -64,6 +64,10 @@ else
   curl ${MANIFEST} --output /tmp/run-artifacts/curl-manifest
   MANIFEST="curl-manifest"
 fi
+
+echo " == Content of the run-artifacts folder"
+ls -lah /tmp/run-artifacts
+
 sed -i -e "s/NEXUS_USERNAME/$(echo ${NEXUS_USERNAME} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')/g" /tmp/run-artifacts/${MANIFEST}
 sed -i -e "s/NEXUS_PASSWORD/$(echo ${NEXUS_PASSWORD} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')/g" /tmp/run-artifacts/${MANIFEST}
 sed -i "" -e "s/JAHIA_VERSION/${JAHIA_VERSION}/g" /tmp/run-artifacts/${MANIFEST}

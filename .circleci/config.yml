@@ -381,7 +381,7 @@ jobs:
             export DOCKER_CLIENT_TIMEOUT=120
             export COMPOSE_HTTP_TIMEOUT=120
             docker-compose -f docker-compose.yml up maven
-            docker cp e2e-tests:/tmp/results ./artifacts/results
+            docker cp maven-tests:/tmp/results ./artifacts/results
           no_output_timeout: 2h
           environment:
             MANIFEST: << parameters.MANIFEST >>
@@ -402,7 +402,7 @@ jobs:
             set -e
             cd << pipeline.parameters.TESTSJAVA_PATH >>
             docker logs jahia > ./artifacts/results/jahia.log
-            docker logs e2e-tests > ./artifacts/results/tests.log
+            docker logs maven-tests > ./artifacts/results/tests.log
       # This fetches data about the running Jahia (jahia versions, module version, ...)
       # This is useful as an artifact but also used by the slack and zencrepes reporters to
       # Populate the data they're sending
