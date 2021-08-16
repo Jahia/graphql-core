@@ -38,6 +38,10 @@
 
     <properties>
         <jahia.nexus.staging.repository.id>64277f72646358</jahia.nexus.staging.repository.id>
+
+        <graphql-java.version>16.2</graphql-java.version>
+        <graphql-java-annotations.version>8.5</graphql-java-annotations.version>
+        <graphql-java-servlet.version>11.1.0</graphql-java-servlet.version>
     </properties>
 
     <repositories>
@@ -62,7 +66,7 @@
     </modules>
 
     <build>
-        <plugins>
+       <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

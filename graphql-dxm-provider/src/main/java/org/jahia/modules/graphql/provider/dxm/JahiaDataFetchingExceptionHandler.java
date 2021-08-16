@@ -20,19 +20,15 @@ import graphql.GraphQLError;
 import graphql.execution.DataFetcherExceptionHandler;
 import graphql.execution.DataFetcherExceptionHandlerParameters;
 import graphql.execution.DataFetcherExceptionHandlerResult;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 import graphql.language.SourceLocation;
 import graphql.schema.DataFetchingEnvironment;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.RepositoryException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Custom DataFetchingExceptionHandler
@@ -40,12 +36,11 @@ import java.util.stream.Collectors;
 public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(JahiaDataFetchingExceptionHandler.class);
 
-    @NotNull
     public static GraphQLError transformException(Throwable exception, DataFetchingEnvironment environment) {
         return transformException(exception, environment.getExecutionStepInfo().getPath(), environment.getField().getSourceLocation());
     }
 
-    public static GraphQLError transformException(Throwable exception, ExecutionPath path, SourceLocation sourceLocation) {
+    public static GraphQLError transformException(Throwable exception, ResultPath path, SourceLocation sourceLocation) {
         // Unwrap exception from MethodDataFetcher
         exception = unwrapException(exception);
         if (exception instanceof BaseGqlClientException) {
@@ -68,11 +63,8 @@ public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHa
         exception = unwrapException(exception);
 
         DataFetcherExceptionHandlerResult.Builder builder = DataFetcherExceptionHandlerResult.newResult();
-        ExecutionPath path = handlerParameters.getPath();
-        SourceLocation sourceLocation = handlerParameters.getField().getSingleField().getSourceLocation();
-
-        GraphQLError error = transformException(exception, path, sourceLocation);
-        builder.error(error);
+        ResultPath path = handlerParameters.getPath();
+        GraphQLError error = transformException(exception, path, handlerParameters.getField().getSingleField().getSourceLocation());
 
         if (!(error instanceof DXGraphQLError)) {
             log.warn(error.getMessage(), exception);

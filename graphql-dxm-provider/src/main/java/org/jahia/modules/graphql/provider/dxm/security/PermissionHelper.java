@@ -16,17 +16,12 @@
 package org.jahia.modules.graphql.provider.dxm.security;
 
 import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLTypeUtil;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
-<<<<<<< HEAD
-import org.jahia.services.securityfilter.PermissionService;
-=======
 import org.jahia.modules.graphql.provider.dxm.util.GqlTypeUtil;
-import org.jahia.modules.securityfilter.PermissionService;
->>>>>>> b73b1cce (TECH-468: Upgrade to graphql-java v15; Refactor GraphQLType.getName())
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.securityfilter.PermissionService;
 
 import javax.jcr.RepositoryException;
 

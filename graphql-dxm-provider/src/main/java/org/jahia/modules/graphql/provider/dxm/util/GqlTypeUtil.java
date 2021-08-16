@@ -35,8 +35,8 @@ public class GqlTypeUtil {
         return GraphQLTypeUtil.simplePrint(rawType);
     }
 
-    public static GraphQLNamedOutputType unwrapType(GraphQLType type) {
-        return (GraphQLNamedOutputType) GraphQLTypeUtil.unwrapType(type).pop();
+    public static GraphQLNamedType unwrapType(GraphQLType type) {
+        return (GraphQLNamedType) GraphQLTypeUtil.unwrapType(type).pop();
     }
 
 
