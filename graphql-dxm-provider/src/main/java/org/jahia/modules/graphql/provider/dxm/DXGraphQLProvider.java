@@ -52,14 +52,18 @@ import graphql.annotations.processor.retrievers.*;
 import graphql.annotations.processor.searchAlgorithms.SearchAlgorithm;
 import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
-import graphql.schema.*;
 import graphql.kickstart.servlet.osgi.*;
+import graphql.schema.*;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
-import org.jahia.modules.graphql.provider.dxm.security.GraphQLFieldWithPermissionRetriever;
+import org.jahia.modules.graphql.provider.dxm.security.JahiaGraphQLFieldRetriever;
+import org.jahia.modules.securityfilter.PermissionService;
+import org.jahia.modules.securityfilter.ScopeDefinition;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.usermanager.JahiaUser;
 import org.osgi.service.component.annotations.*;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -71,6 +75,9 @@ import java.lang.reflect.ParameterizedType;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 
 @Component(service = GraphQLProvider.class, immediate = true)
 public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
@@ -106,6 +113,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     private Map<String, Class<? extends DXConnection<?>>> connectionTypes = new HashMap<>();
     private SDLSchemaService sdlSchemaService;
+
+    private PermissionService permissionService;
+
+    private Executor executor;
+    private ExecutorService pool;
 
     public static DXGraphQLProvider getInstance() {
         return instance;
@@ -160,6 +172,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         this.sdlSchemaService = sdlSchemaService;
     }
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
+    public void setPermissionService(PermissionService permissionService) {
+        this.permissionService = permissionService;
+    }
+
     public ProcessingElementsContainer getContainer() {
         return container;
     }
@@ -182,7 +199,24 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     public void activate() {
         instance = this;
 
-        GraphQLFieldWithPermissionRetriever graphQLFieldWithPermissionsRetriever = new GraphQLFieldWithPermissionRetriever(dxGraphQLConfig, graphQLFieldRetriever);
+        // Initialize thread pool
+        pool = new ForkJoinPool(50);
+        executor = command -> {
+            JahiaUser user = JCRSessionFactory.getInstance().getCurrentUser();
+            Collection<ScopeDefinition> scopes = permissionService.getCurrentScopes();
+            pool.execute(() -> {
+                JCRSessionFactory.getInstance().setCurrentUser(user);
+                permissionService.setCurrentScopes(scopes);
+                try {
+                    command.run();
+                } finally {
+                    JCRSessionFactory.getInstance().setCurrentUser(null);
+                    permissionService.resetScopes();
+                }
+            });
+        };
+
+        JahiaGraphQLFieldRetriever graphQLFieldWithPermissionsRetriever = new JahiaGraphQLFieldRetriever(dxGraphQLConfig, graphQLFieldRetriever, executor);
 
         graphQLTypeRetriever.setGraphQLObjectInfoRetriever(graphQLObjectInfoRetriever);
         graphQLTypeRetriever.setGraphQLInterfaceRetriever(graphQLInterfaceRetriever);
@@ -254,6 +288,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         specializedTypesHandler.initializeTypes();
 
         PropertyDataFetcher.clearReflectionCache();
+    }
+
+    @Deactivate
+    public void deactivate() {
+        pool.shutdown();
     }
 
     @Override
