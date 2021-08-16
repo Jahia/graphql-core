@@ -30,10 +30,6 @@ echo " WORKSPACE_EDIT: ${WORKSPACE_EDIT}"
 if [[ ${JAHIA_URL} =~ .*/$ ]]; then
   JAHIA_URL=$(echo ${JAHIA_URL} | sed 's/.$//')
 fi
-echo " == Using JAHIA_URL: ${JAHIA_URL}"
-TEST_URL="${JAHIA_URL}/cms"
-
-echo " == Using TEST_URL: ${TEST_URL}"
 
 echo " == Content of the tests folder"
 ls -lah
@@ -164,7 +160,7 @@ mkdir /tmp/results/reports
 
 echo "$(date +'%d %B %Y - %k:%M') == Run tests =="
 # The additional settings is useful when you have to get dependencies from internal repositories
-mvn -fae -Pmodule-integration-tests -Djahia.test.url=${TEST_URL} clean verify
+mvn -fae -Pmodule-integration-tests -Djahia.test.url=${JAHIA_URL}/cms clean verify
 if [[ $? -eq 0 ]]; then
   echo "$(date +'%d %B %Y - %k:%M') == Full execution successful =="
   echo "success" > /tmp/results/test_success

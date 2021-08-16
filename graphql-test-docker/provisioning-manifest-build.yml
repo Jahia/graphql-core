@@ -15,7 +15,7 @@
   - 'mvn:org.jahia.modules/dx-base-demo-templates/3.1.0'
   - 'mvn:org.jahia.modules/dx-base-demo-components/2.1.0'
   - 'mvn:org.jahia.modules/digitall/2.0.0'
-  - 'mvn:org.jahia.test/jahia-test-module/JAHIA_VERSION-SNAPSHOT'
+  - 'mvn:org.jahia.test/jahia-test-module/JAHIA_VERSION'
   autoStart: true
   uninstallPreviousVersion: true
 
