@@ -70,7 +70,7 @@ public class CustomGraphQLServletContext implements GraphQLServletContext {
         return context.getSubject();
     }
 
-    @Override public Optional<DataLoaderRegistry> getDataLoaderRegistry() {
+    @Override public DataLoaderRegistry getDataLoaderRegistry() {
         return context.getDataLoaderRegistry();
     }
 }

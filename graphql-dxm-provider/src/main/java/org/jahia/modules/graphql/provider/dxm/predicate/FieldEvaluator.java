@@ -110,9 +110,9 @@ public class FieldEvaluator {
 
         // Extract selection set
         FieldFinder fieldFinder = (objectType, name) -> {
-            if (environment.getSelectionSet() != null) {
-                return getField(environment.getSelectionSet().get(), name);
-            }
+//            if (environment.getSelectionSet() != null) {
+//                return getField(environment.getSelectionSet().get(), name);
+//            }
             return null;
         };
 
@@ -147,22 +147,22 @@ public class FieldEvaluator {
 
             // Extract selection set on "{ nodes }" or "{ edges { node } }"
             Map<String, MergedField> fields = null;
-            if (environment.getSelectionSet() != null) {
-                MergedSelectionSet merged = environment.getSelectionSet().get();
-                fields = merged.getSubFields();
-                if (fields.containsKey("nodes")) {
-                    // First look in { nodes } selection set
-                    MergedField nodeFields = fields.get("nodes");
-                    return getField(fieldCollector.collectFields(parameters, nodeFields), name);
-                } else if (fields.containsKey("edges")) {
-                    // If no "nodes" was found, try to look into { edges { node } } selection set
-                    MergedField edgeFields = fields.get("edges");
-                    fields = fieldCollector.collectFields(parameters, edgeFields).getSubFields();
-                    if (fields.containsKey("node")) {
-                        return getField(fieldCollector.collectFields(parameters, fields.get("node")), name);
-                    }
-                }
-            }
+//            if (environment.getSelectionSet() != null) {
+//                MergedSelectionSet merged = environment.getSelectionSet().get();
+//                fields = merged.getSubFields();
+//                if (fields.containsKey("nodes")) {
+//                    // First look in { nodes } selection set
+//                    MergedField nodeFields = fields.get("nodes");
+//                    return getField(fieldCollector.collectFields(parameters, nodeFields), name);
+//                } else if (fields.containsKey("edges")) {
+//                    // If no "nodes" was found, try to look into { edges { node } } selection set
+//                    MergedField edgeFields = fields.get("edges");
+//                    fields = fieldCollector.collectFields(parameters, edgeFields).getSubFields();
+//                    if (fields.containsKey("node")) {
+//                        return getField(fieldCollector.collectFields(parameters, fields.get("node")), name);
+//                    }
+//                }
+//            }
             return null;
         };
 

@@ -218,33 +218,38 @@ public class SDLTypeChecker {
 
     private static void checkMissingChildrenOrProps(ExtendedNodeType[] allTypes, List<FieldDefinition> fields, List<String> missingChildren, List<String> missingProps) {
         fields.stream().filter(field -> {
-            Directive fieldDirective = field.getDirective(SDLConstants.MAPPING_DIRECTIVE);
-            return fieldDirective != null && fieldDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY) != null;
+            List<Directive> fieldDirectives = field.getDirectives(SDLConstants.MAPPING_DIRECTIVE);
+            return fieldDirectives.stream().allMatch(fd -> fd != null && fd.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY) != null);
         }).forEach(field -> {
-            Directive fieldDirective = field.getDirective(SDLConstants.MAPPING_DIRECTIVE);
-            String jcrPropertyName = ((StringValue) fieldDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue()).getValue();
-            if (!SDLConstants.PATH.equalsIgnoreCase(jcrPropertyName)
-                    && !SDLConstants.IDENTIFIER.equalsIgnoreCase(jcrPropertyName)
-                    && !SDLConstants.URL.equalsIgnoreCase(jcrPropertyName)
-                    && !SDLConstants.MAPPING_DIRECTIVE_FAKE_PROPERTY.equalsIgnoreCase(jcrPropertyName)) {
-                String propertyName = StringUtils.substringBefore(jcrPropertyName, ".");
-                if (!hasChildren(allTypes, propertyName) && !hasProperty(allTypes, propertyName)) {
-                    missingChildren.add(jcrPropertyName);
+            List<Directive> fieldDirectives = field.getDirectives(SDLConstants.MAPPING_DIRECTIVE);
+            for (Directive fieldDirective: fieldDirectives) {
+                String jcrPropertyName = ((StringValue) fieldDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue()).getValue();
+                if (!SDLConstants.PATH.equalsIgnoreCase(jcrPropertyName)
+                        && !SDLConstants.IDENTIFIER.equalsIgnoreCase(jcrPropertyName)
+                        && !SDLConstants.URL.equalsIgnoreCase(jcrPropertyName)
+                        && !SDLConstants.MAPPING_DIRECTIVE_FAKE_PROPERTY.equalsIgnoreCase(jcrPropertyName)) {
+                    String propertyName = StringUtils.substringBefore(jcrPropertyName, ".");
+                    if (!hasChildren(allTypes, propertyName) && !hasProperty(allTypes, propertyName)) {
+                        missingChildren.add(jcrPropertyName);
+                    }
                 }
             }
+
         });
     }
 
     private static SDLDefinitionStatus checkForInvalidFetcherDirective(SDLSchemaService sdlSchemaService, ObjectTypeDefinition objectTypeDefinition, FieldDefinition fieldDefinition) {
-        Directive fetcherDirective = fieldDefinition.getDirective(SDLConstants.FETCHER_DIRECTIVE);
-        if (fetcherDirective != null) {
-            Argument fetcherName = fetcherDirective.getArgument(SDLConstants.FETCHER_DIRECTIVE_NAME);
-            if (fetcherName == null) {
-                //Fetcher name argument does not exist, add to report status
-                return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_FETCHER_ARGUMENT, SDLConstants.FETCHER_DIRECTIVE_NAME, fieldDefinition.getName());
+        List<Directive> fetcherDirectives = fieldDefinition.getDirectives(SDLConstants.FETCHER_DIRECTIVE);
+        if (fetcherDirectives != null) {
+            for (Directive fetcherDirective: fetcherDirectives) {
+                Argument fetcherName = fetcherDirective.getArgument(SDLConstants.FETCHER_DIRECTIVE_NAME);
+                if (fetcherName == null) {
+                    //Fetcher name argument does not exist, add to report status
+                    return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_FETCHER_ARGUMENT, SDLConstants.FETCHER_DIRECTIVE_NAME, fieldDefinition.getName());
 
-            } else if (fetcherName.getValue() != null && !sdlSchemaService.getPropertyFetcherExtensions().containsKey(((StringValue)fetcherName.getValue()).getValue())) {
-                return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_FETCHER, ((StringValue)fetcherName.getValue()).getValue());
+                } else if (fetcherName.getValue() != null && !sdlSchemaService.getPropertyFetcherExtensions().containsKey(((StringValue)fetcherName.getValue()).getValue())) {
+                    return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.MISSING_FETCHER, ((StringValue)fetcherName.getValue()).getValue());
+                }
             }
         }
         return new SDLDefinitionStatus(objectTypeDefinition.getName(), SDLDefinitionStatusType.OK);

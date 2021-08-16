@@ -284,6 +284,14 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     }
 
     @Override
+    public Collection<GraphQLFieldDefinition> getFields() {
+        /*
+         * FIXME: part of interface for both mutation and subscription
+         */
+        return null;
+    }
+
+    @Override
     public GraphQLCodeRegistry getCodeRegistry() {
         return codeRegistry;
     }

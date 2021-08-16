@@ -48,7 +48,7 @@ import graphql.GraphQLError;
 import graphql.execution.DataFetcherExceptionHandler;
 import graphql.execution.DataFetcherExceptionHandlerParameters;
 import graphql.execution.DataFetcherExceptionHandlerResult;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 import graphql.language.SourceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +63,7 @@ import java.util.Collections;
 public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(JahiaDataFetchingExceptionHandler.class);
 
-    public static GraphQLError transformException(Throwable exception, ExecutionPath path, SourceLocation sourceLocation) {
+    public static GraphQLError transformException(Throwable exception, ResultPath path, SourceLocation sourceLocation) {
         // Unwrap exception from MethodDataFetcher
         if (exception instanceof RuntimeException && exception.getCause() instanceof InvocationTargetException) {
             exception = ((InvocationTargetException) exception.getCause()).getTargetException();
@@ -80,7 +80,7 @@ public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHa
     public DataFetcherExceptionHandlerResult onException(DataFetcherExceptionHandlerParameters handlerParameters) {
         Throwable exception = handlerParameters.getException();
 
-        ExecutionPath path = handlerParameters.getPath();
+        ResultPath path = handlerParameters.getPath();
         GraphQLError error = transformException(exception, path, handlerParameters.getField().getSingleField().getSourceLocation());
 
         if (!(error instanceof DXGraphQLError)) {

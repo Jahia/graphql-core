@@ -116,10 +116,10 @@ public class GraphQLTestSupport extends JahiaTestCase {
 
     protected static JSONObject executeQueryWithFiles(String query, String fileName, Map<String, List<Part>> files) throws JSONException {
         try {
-            servlet.setContextProvider(getCustomContextProvider(files));
+            servlet.setContextBuilder(getCustomContextBuilder(files));
             return executeQuery(query);
         } finally {
-            servlet.unsetContextProvider(null);
+            servlet.unsetContextBuilder(null);
         }
     }
 
@@ -189,7 +189,7 @@ public class GraphQLTestSupport extends JahiaTestCase {
         return new JSONObject(result);
     }
 
-    private static GraphQLServletContextBuilder getCustomContextProvider(Map<String,List<Part>> files) {
+    private static GraphQLServletContextBuilder getCustomContextBuilder(Map<String,List<Part>> files) {
         return new GraphQLServletContextBuilder() {
             @Override public GraphQLContext build(HttpServletRequest request, HttpServletResponse response) {
                 GraphQLServletContext context = DefaultGraphQLServletContext
