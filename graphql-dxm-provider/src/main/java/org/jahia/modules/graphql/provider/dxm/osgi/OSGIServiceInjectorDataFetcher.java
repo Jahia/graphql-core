@@ -7,12 +7,16 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.osgi.BundleUtils;
+import pl.touk.throwing.ThrowingConsumer;
+import pl.touk.throwing.ThrowingFunction;
 
 import javax.inject.Inject;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 /**
  * This custom data fetcher is used to detect if the returned data class need some OSGI Service injection
@@ -30,11 +34,20 @@ public class OSGIServiceInjectorDataFetcher<T> implements DataFetcher<T> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public T get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
         T data = originalDataFetcher.get(dataFetchingEnvironment);
 
+        if (data instanceof CompletableFuture<?>) {
+            return (T) ((CompletableFuture<Object>) data).thenApply((Function<Object, Object>) ThrowingFunction.unchecked(this::inject));
+        } else {
+            return inject(data);
+        }
+    }
+
+    private T inject(T data) throws IllegalAccessException, InvocationTargetException {
         if (data instanceof Collection) {
-            for (Object item : ((Collection)data)) {
+            for (Object item : ((Collection) data)) {
                 handleMethodInjection(item);
             }
         } else if (data != null) {
