@@ -36,6 +36,8 @@ import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.services.securityfilter.ScopeDefinition;
 import org.jahia.services.usermanager.JahiaUser;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +51,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 @Component(service = GraphQLProvider.class, immediate = true)
-public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider, GraphQLSubscriptionProvider {
+public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
@@ -67,6 +69,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private DXGraphQLConfig dxGraphQLConfig;
 
     private ProcessingElementsContainer container;
+
+    private BundleContext bundleContext;
 
     private static Map<String, URL> sdlResources = new ConcurrentHashMap<>();
 
@@ -87,6 +91,9 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     private Executor executor;
     private ExecutorService pool;
+
+    private ServiceRegistration<GraphQLMutationProvider> mutationProviderServiceRegistration;
+    private ServiceRegistration<GraphQLSubscriptionProvider> subscriptionProviderServiceRegistration;
 
     public static DXGraphQLProvider getInstance() {
         return instance;
@@ -169,11 +176,13 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     }
 
     @Activate
-    public void activate() {
+    public void activate(BundleContext bundleContext) {
         if (logger.isDebugEnabled()) {
             logger.debug("Activating GraphQL API schema with extensions {}", extensionsProviders.stream().map(dxGraphQLExtensionsProvider -> dxGraphQLExtensionsProvider.getClass().getSimpleName()).collect(Collectors.joining(",")));
         }
+
         instance = this;
+        this.bundleContext = bundleContext;
 
         // Initialize thread pool
         pool = new ForkJoinPool(50);
@@ -282,10 +291,15 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         specializedTypesHandler.initializeTypes();
 
         PropertyDataFetcher.clearReflectionCache();
+
+        mutationProviderServiceRegistration = bundleContext.registerService(GraphQLMutationProvider.class, new MutationProvider(), new Hashtable<>());
+        subscriptionProviderServiceRegistration = bundleContext.registerService(GraphQLSubscriptionProvider.class, new SubscriptionProvider(), new Hashtable<>());
     }
 
     @Deactivate
     public void deactivate() {
+        mutationProviderServiceRegistration.unregister();
+        subscriptionProviderServiceRegistration.unregister();
         pool.shutdown();
     }
 
@@ -304,24 +318,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         List<GraphQLFieldDefinition> defs = new ArrayList<>(queryType.getFieldDefinitions());
         defs.addAll(sdlSchemaService.getSDLQueries());
         return defs;
-    }
-
-    @Override
-    public Collection<GraphQLFieldDefinition> getMutations() {
-        return mutationType.getFieldDefinitions();
-    }
-
-    @Override
-    public Collection<GraphQLFieldDefinition> getSubscriptions() {
-        return subscriptionType.getFieldDefinitions();
-    }
-
-    @Override
-    public Collection<GraphQLFieldDefinition> getFields() {
-        /*
-         * FIXME: part of interface for both mutation and subscription
-         */
-        return null;
     }
 
     @Override
@@ -369,5 +365,17 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     public void unsetUnboxingTypeFunction(TypeFunction unboxingTypeFunction) {
         this.defaultTypeFunction = null;
+    }
+
+    class SubscriptionProvider implements GraphQLSubscriptionProvider {
+        public Collection<GraphQLFieldDefinition> getSubscriptions() {
+            return subscriptionType.getFieldDefinitions();
+        }
+    }
+
+    class MutationProvider implements GraphQLMutationProvider {
+        public Collection<GraphQLFieldDefinition> getMutations() {
+            return mutationType.getFieldDefinitions();
+        }
     }
 }
