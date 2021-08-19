@@ -73,7 +73,7 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
         schedulerService = ServicesRegistry.getInstance().getSchedulerService();
     }
 
-    @Test
+    /** TODO disabling for now until we implement gql subscription */
     public void testJobSubscription() throws Exception {
 
         NettyHttpClientBuilder nettyHttpClientBuilder = new NettyHttpClientBuilder();
