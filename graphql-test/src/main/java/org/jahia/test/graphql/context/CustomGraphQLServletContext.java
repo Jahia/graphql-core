@@ -33,6 +33,7 @@ import javax.servlet.http.Part;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Custom GraphQL context to inject file upload for testing
@@ -40,22 +41,20 @@ import java.util.Optional;
 public class CustomGraphQLServletContext implements GraphQLServletContext {
 
     GraphQLServletContext context;
-    Map<String, List<Part>> files;
+    List<Part> files;
 
-    public CustomGraphQLServletContext(GraphQLServletContext context, Map<String, List<Part>> files) {
+    public CustomGraphQLServletContext(GraphQLServletContext context, List<Part> files) {
         this.context = context;
         this.files = files;
     }
 
     @Override public List<Part> getFileParts() {
-        for (String s: files.keySet()) {
-            return files.get(s);
-        }
-        return null;
+        return files;
     }
 
     @Override public Map<String, List<Part>> getParts() {
-        return files;
+        // based from DefaultGraphQLServletContext implementation
+        return files.stream().collect(Collectors.groupingBy(Part::getName));
     }
 
     @Override public HttpServletRequest getHttpServletRequest() {
