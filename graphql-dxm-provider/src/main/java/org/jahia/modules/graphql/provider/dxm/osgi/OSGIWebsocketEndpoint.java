@@ -14,7 +14,7 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 @Component(immediate = true, service = Endpoint.class)
-@ServerEndpoint(value="/graphqlws")
+@ServerEndpoint(value="/graphqlws", subprotocols = {"graphql-ws"})
 public class OSGIWebsocketEndpoint extends Endpoint {
     private GraphQLWebsocketServlet delegate;
 
