@@ -3,7 +3,7 @@
 
 <c:set var="modulePath" value="${pageContext.request.contextPath}/modules/graphql-dxm-provider"/>
 <c:set var="graphQlEndpoint" value="${pageContext.request.contextPath}/modules/graphql"/>
-<c:set var="graphQlWsEndpoint" value="ws://${pageContext.request.serverName}:${pageContext.request.serverPort}${pageContext.request.contextPath}/modules/graphqlws"/>
+<c:set var="graphQlWsEndpoint" value="ws://${pageContext.request.serverName}:${pageContext.request.serverPort}${pageContext.request.contextPath}/modules/graphql"/>
 
 <!doctype html>
 <html>

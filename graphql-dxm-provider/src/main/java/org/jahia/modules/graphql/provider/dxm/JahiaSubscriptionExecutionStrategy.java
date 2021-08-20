@@ -43,36 +43,32 @@
  */
 package org.jahia.modules.graphql.provider.dxm;
 
-import graphql.execution.ExecutionStrategy;
-import graphql.execution.SubscriptionExecutionStrategy;
-import graphql.kickstart.execution.config.ExecutionStrategyProvider;
-import org.osgi.service.component.annotations.Component;
+import graphql.ExecutionResult;
+import graphql.GraphQLError;
+import graphql.execution.*;
+import graphql.kickstart.servlet.context.DefaultGraphQLWebSocketContext;
+import graphql.language.SourceLocation;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.usermanager.JahiaUser;
 
-@Component(immediate = true)
-public class JahiaExecutionStrategyProvider implements ExecutionStrategyProvider {
+import javax.servlet.http.HttpSession;
+import java.util.concurrent.CompletableFuture;
 
-    private final ExecutionStrategy queryStrategy;
-    private final ExecutionStrategy mutationStrategy;
-    private final ExecutionStrategy subscriptionExecutionStrategy;
+public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStrategy {
 
-    public JahiaExecutionStrategyProvider() {
-        queryStrategy = new JahiaQueryExecutionStrategy(new JahiaDataFetchingExceptionHandler());
-        mutationStrategy = new JahiaMutationExecutionStrategy(new JahiaDataFetchingExceptionHandler());
-        subscriptionExecutionStrategy = new JahiaSubscriptionExecutionStrategy(new JahiaDataFetchingExceptionHandler());
+    public JahiaSubscriptionExecutionStrategy(DataFetcherExceptionHandler exceptionHandler) {
+        super(exceptionHandler);
     }
 
     @Override
-    public ExecutionStrategy getQueryExecutionStrategy() {
-        return queryStrategy;
-    }
-
-    @Override
-    public ExecutionStrategy getMutationExecutionStrategy() {
-        return mutationStrategy;
-    }
-
-    @Override
-    public ExecutionStrategy getSubscriptionExecutionStrategy() {
-        return subscriptionExecutionStrategy;
+    public CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, ExecutionStrategyParameters parameters) throws NonNullableFieldWasNullException {
+        try {
+            DefaultGraphQLWebSocketContext context = (DefaultGraphQLWebSocketContext) executionContext.getContext();
+            HttpSession httpSession = (HttpSession) context.getSession().getUserProperties().get(HttpSession.class.getName());
+            JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) httpSession.getAttribute("org.jahia.usermanager.jahiauser"));
+            return super.execute(executionContext, parameters);
+        } finally {
+            JCRSessionFactory.getInstance().setCurrentUser(null);
+        }
     }
 }
