@@ -358,8 +358,6 @@ jobs:
             JAHIA_HOST: jahia
             JAHIA_PORT: 8080
             TEST_URL: http://jahia:8080/
-            JAHIA_USERNAME: root
-            JAHIA_PASSWORD: root
       - run:
           # We want to build the test image from scratch with any code change (since that code change could be in the tests themselves)
           name: Build << pipeline.parameters.TESTSJAVA_IMAGE >> image
@@ -391,10 +389,6 @@ jobs:
             JAHIA_HOST: jahia
             JAHIA_PORT: 8080
             TEST_URL: http://jahia:8080/
-            JAHIA_USERNAME: root
-            JAHIA_PASSWORD: root
-            JAHIA_USERNAME_TOOLS: root
-            JAHIA_PASSWORD_TOOLS: root
       - run:
           name: Export jahia logs
           when: always
@@ -595,10 +589,6 @@ workflows:
           #Using Aliases here (8 is the latest of the 8 tree, 8.1 is the latest of the tree, ...)
           JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
-          JAHIA_USERNAME_TOOLS: "root"
-          JAHIA_PASSWORD_TOOLS: "root"
-          JAHIA_USERNAME: "root"
-          JAHIA_PASSWORD: "root"
           MANIFEST: provisioning-manifest-build.yml
           TESTRAIL_MILESTONE: Jahia-Latest
           SKIP_TESTRAIL: "true"
@@ -738,10 +728,6 @@ workflows:
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           MANIFEST: provisioning-manifest-snapshot.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Snapshot
-          JAHIA_USERNAME_TOOLS: "root"
-          JAHIA_PASSWORD_TOOLS: "root"
-          JAHIA_USERNAME: "root"
-          JAHIA_PASSWORD: "root"
           BUILD_TESTSIMAGE: true
           name: Nightly-Jahia-Latest-Snapshot
           context: QA_ENVIRONMENT
@@ -752,10 +738,6 @@ workflows:
           RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
           MANIFEST: provisioning-manifest-release.yml
           TESTRAIL_MILESTONE: Jahia-Latest-Release
-          JAHIA_USERNAME_TOOLS: "root"
-          JAHIA_PASSWORD_TOOLS: "root"
-          JAHIA_USERNAME: "root"
-          JAHIA_PASSWORD: "root"
           BUILD_TESTSIMAGE: true
           name: Nightly-Jahia-Latest-Release
           context: QA_ENVIRONMENT
