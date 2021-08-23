@@ -49,13 +49,14 @@ if [[ "${JAHIA_CLUSTER_ENABLED}" == "true" ]]; then
 fi
 
 echo " == Get the Jahia version =="
-JAHIA_FULL_VERSION=$(curl --location --request POST ${JAHIA_URL}/modules/graphql --header 'Authorization: Basic cm9vdDpyb290' --header "Origin: ${JAHIA_URL}" --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
+JAHIA_AUTH=$(echo -n '${JAHIA_USERNAME}:${JAHIA_PASSWORD}' | base64)
+JAHIA_FULL_VERSION=$(curl --location --request POST ${JAHIA_URL}/modules/graphql --header 'Authorization: Basic ${JAHIA_AUTH}' --header "Origin: ${JAHIA_URL}" --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
 
 echo " == Using JAHIA_FULL_VERSION: ${JAHIA_FULL_VERSION}"
 
 # Extract the Jahia version from the full label
 # It is needed to get the right jahia-test-module version
-JAHIA_VERSION=$(echo ${JAHIA_FULL_VERSION} | sed -r 's/"[a-zA-Z ]*([0-9\.]*) (\[*.*\]*[[:space:]]*- )?.*"/\1/g')
+JAHIA_VERSION=$(echo ${JAHIA_FULL_VERSION} | sed -r 's/"[a-zA-Z ]*([0-9\.]*)( \[*.*\]*[[:space:]]*- )?.*"/\1/g')
 echo " == Using JAHIA_VERSION: ${JAHIA_VERSION}"
 
 mkdir -p /tmp/run-artifacts
