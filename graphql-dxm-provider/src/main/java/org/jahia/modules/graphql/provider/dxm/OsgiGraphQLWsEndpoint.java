@@ -54,6 +54,8 @@ import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpSession;
@@ -68,6 +70,7 @@ import java.util.Map;
 @Component(immediate = true, service = Endpoint.class)
 @ServerEndpoint(value="/graphql", subprotocols = {"graphql-ws"}, configurator = OsgiGraphQLWsEndpoint.Configurator.class)
 public class OsgiGraphQLWsEndpoint extends Endpoint {
+    private Logger logger = LoggerFactory.getLogger(OsgiGraphQLWsEndpoint.class);
     private GraphQLWebsocketServlet delegate;
     private WebSocketSubscriptionProtocolFactory subscriptionProtocolFactory;
 
@@ -81,7 +84,7 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
             delegate = new GraphQLWebsocketServlet(queryInvoker.toGraphQLInvoker(), invocationInputFactory, graphQLObjectMapper);
             subscriptionProtocolFactory = new ApolloWebSocketSubscriptionProtocolFactory(graphQLObjectMapper, invocationInputFactory, queryInvoker.toGraphQLInvoker());
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Cannot get schema from GQL servlet", e);
         }
     }
 
@@ -95,8 +98,8 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     @Override
     public void onOpen(Session session, EndpointConfig endpointConfig) {
         Map<String, Object> userProperties = endpointConfig.getUserProperties();
-        // todo : is it the correct way to inject the SubscriptionProtocolFactory .. ?
         userProperties.put(SubscriptionProtocolFactory.class.getName(), subscriptionProtocolFactory);
+
         HttpSession httpSession = (HttpSession) userProperties.get(HttpSession.class.getName());
         JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) httpSession.getAttribute("org.jahia.usermanager.jahiauser"));
         try {
