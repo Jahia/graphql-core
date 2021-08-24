@@ -114,7 +114,7 @@ public class GraphQLTestSupport extends JahiaTestCase {
         return executeQuery(query, new MockHttpServletRequest());
     }
 
-    protected static JSONObject executeQueryWithFiles(String query, String fileName, Map<String, List<Part>> files) throws JSONException {
+    protected static JSONObject executeQueryWithFiles(String query, List<Part> files) throws JSONException {
         try {
             servlet.setContextProvider(getCustomContextProvider(files));
             return executeQuery(query);
@@ -135,6 +135,7 @@ public class GraphQLTestSupport extends JahiaTestCase {
         req.addFile(file);
         req.setContentType("multipart/form-data; boundary=" + boundary);
         req.setContent(createFileContent(data, boundary, MediaType.TEXT_PLAIN_VALUE, fileName));
+
         return req;
     }
 
@@ -189,7 +190,7 @@ public class GraphQLTestSupport extends JahiaTestCase {
         return new JSONObject(result);
     }
 
-    private static GraphQLServletContextBuilder getCustomContextProvider(Map<String,List<Part>> files) {
+    private static GraphQLServletContextBuilder getCustomContextProvider(List<Part> files) {
         return new GraphQLServletContextBuilder() {
             @Override public GraphQLContext build(HttpServletRequest request, HttpServletResponse response) {
                 GraphQLServletContext context = DefaultGraphQLServletContext

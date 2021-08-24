@@ -47,7 +47,6 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.kickstart.servlet.context.GraphQLServletContext;
 import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
-import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 import org.jahia.settings.SettingsBean;
 
 import javax.servlet.http.Part;
@@ -72,7 +71,7 @@ public class UploadHelper {
             return false;
         }
 
-        Part part = UploadHelper.getPartForFilename(context, name);
+        Part part = UploadHelper.getPartForName(context, name);
         if (part == null) {
             return false;
         }
@@ -110,7 +109,7 @@ public class UploadHelper {
             throw new GqlJcrWrongInputException("Must use multipart request");
         }
 
-        Part part = getPartForFilename(context, name);
+        Part part = getPartForName(context, name);
         if (part == null) {
             throw new GqlJcrWrongInputException("Must send file as multipart request for " + name);
         }
@@ -118,16 +117,13 @@ public class UploadHelper {
     }
 
     /**
-     *
-     * @param context
-     * @param filename
-     * @return file upload Part that matches filename, or null if no Part exists or
-     * if there are more than one part that has the same filename
+     * @return File upload Part that matches name from context file parts,
+     * or null if no Part exists or if there are more than one part that has the same filename
      */
-    private static Part getPartForFilename(GraphQLServletContext context, String filename) {
+    private static Part getPartForName(GraphQLServletContext context, String name) {
         List<Part> parts = context.getFileParts()
                 .stream()
-                .filter(part -> filename.equals(part.getName()))
+                .filter(part -> name.equals(part.getName()))
                 .collect(Collectors.toList());
 
         return (parts.isEmpty() || parts.size() > 1) ?
