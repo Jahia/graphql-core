@@ -46,7 +46,7 @@ package org.jahia.modules.graphql.provider.dxm.security;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
-import org.jahia.modules.securityfilter.PermissionService;
+import org.jahia.bundles.securityfilter.PermissionService;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 
