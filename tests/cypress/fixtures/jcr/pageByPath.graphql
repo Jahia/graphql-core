@@ -2,11 +2,8 @@ query($path: String!) {
   jcr(workspace: EDIT) {
     nodeByPath(path: $path) {
       name
-      published: property(name: "j:published") {
+      isHomePage: property(name: "j:isHomePage") {
         booleanValue
-      }
-      height: property(name: "j:height") {
-        longValue
       }
     }
   }
