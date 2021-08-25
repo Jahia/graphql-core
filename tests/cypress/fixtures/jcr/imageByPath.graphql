@@ -1,0 +1,13 @@
+query($path: String!) {
+  jcr(workspace: EDIT) {
+    nodeByPath(path: $path) {
+      name
+      published: property(name: "j:published") {
+        booleanValue
+      }
+      height: property(name: "j:height") {
+        longValue
+      }
+    }
+  }
+}
