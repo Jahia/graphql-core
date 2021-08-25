@@ -43,10 +43,7 @@
  */
 package org.jahia.test.graphql;
 
-import com.king.platform.net.http.HttpClient;
-import com.king.platform.net.http.WebSocketClient;
-import com.king.platform.net.http.WebSocketConnection;
-import com.king.platform.net.http.WebSocketMessageListener;
+import com.king.platform.net.http.*;
 import com.king.platform.net.http.netty.NettyHttpClientBuilder;
 import org.jahia.bin.Jahia;
 import org.jahia.registries.ServicesRegistry;
@@ -101,11 +98,13 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
         String url = (getBaseServerURL() + Jahia.getContextPath() + "/modules/graphql").replaceFirst("http", "ws");
         WebSocketClient webSocketClient = httpClient.createWebSocket(url)
                 .idleTimeoutMillis(10000)
+                .totalRequestTimeoutMillis(10000)
                 .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString("root:root1234".getBytes()))
                 .addHeader("Origin", getBaseServerURL())
                 .build().build();
         webSocketClient.addListener(new MyWebSocketMessageListener(testJob, jobDatas));
         webSocketClient.connect().get();
+
         JSONObject message = new JSONObject();
         message.put("id", "1");
         message.put("type", "start");
@@ -114,7 +113,9 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
         payload.put("operationName", "backgroundJobSubscription");
         payload.put("query", subscription);
         message.put("payload", payload);
-        webSocketClient.sendTextMessage(message.toString());
+        webSocketClient.sendTextMessage(message.toString()).get();
+
+        schedulerService.scheduleJobNow(testJob);
 
         webSocketClient.awaitClose();
 
@@ -128,12 +129,12 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
 
         Assert.assertEquals("FINISHED", jobDatas.get(1).getString("jobState"));
         Assert.assertEquals("SUCCESSFUL", jobDatas.get(1).getString("jobStatus"));
-        Assert.assertTrue(jobDatas.get(1).getLong("duration") >= 2000);
-        Assert.assertTrue(jobDatas.get(1).getLong("jobLongProperty") >= 2000);
+        Assert.assertTrue(jobDatas.get(1).getLong("duration") >= 500);
+        Assert.assertTrue(jobDatas.get(1).getLong("jobLongProperty") >= 500);
         Assert.assertEquals("bar", jobDatas.get(0).getString("foo"));
     }
 
-    private static class MyWebSocketMessageListener implements WebSocketMessageListener {
+    private static class MyWebSocketMessageListener implements WebSocketMessageListenerAdapter {
         private final JobDetail testJob;
         private final List<JSONObject> jobDatas;
         private WebSocketConnection connection;
@@ -144,14 +145,14 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
         }
 
         @Override
-        public void onBinaryMessage(byte[] message) {
-
+        public void onConnect(WebSocketConnection connection) {
+            this.connection = connection;
         }
 
         @Override
         public void onTextMessage(String message) {
             try {
-                JSONObject jobData = new JSONObject(message).getJSONObject("data").getJSONObject("backgroundJobSubscription");
+                JSONObject jobData = new JSONObject(message).getJSONObject("payload").getJSONObject("data").getJSONObject("backgroundJobSubscription");
                 if (jobData.getString("name").equals(testJob.getName())) {
                     jobDatas.add(jobData);
                     if (jobData.getString("jobState").equals("FINISHED")) {
@@ -161,31 +162,6 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
             } catch (JSONException e) {
                 Assert.fail(e.getMessage());
             }
-        }
-
-        @Override
-        public void onConnect(WebSocketConnection connection) {
-            try {
-                this.connection = connection;
-                schedulerService.scheduleJobNow(testJob);
-            } catch (SchedulerException e) {
-                Assert.fail(e.getMessage());
-            }
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-
-        }
-
-        @Override
-        public void onDisconnect() {
-
-        }
-
-        @Override
-        public void onCloseFrame(int code, String reason) {
-
         }
     }
 }

@@ -54,7 +54,7 @@ public class TestJob extends BackgroundJob {
     @Override
     public void executeJahiaJob(JobExecutionContext jobExecutionContext) throws Exception {
         // fake doing something
-        Thread.sleep(2000);
+        Thread.sleep(500);
     }
 
     public static JobDetail createTestJob() {
