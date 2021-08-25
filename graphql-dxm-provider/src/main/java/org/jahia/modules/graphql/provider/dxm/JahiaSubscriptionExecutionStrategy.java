@@ -44,10 +44,8 @@
 package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.ExecutionResult;
-import graphql.GraphQLError;
 import graphql.execution.*;
 import graphql.kickstart.servlet.context.DefaultGraphQLWebSocketContext;
-import graphql.language.SourceLocation;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
 
@@ -67,6 +65,18 @@ public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStr
             HttpSession httpSession = (HttpSession) context.getSession().getUserProperties().get(HttpSession.class.getName());
             JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) httpSession.getAttribute("org.jahia.usermanager.jahiauser"));
             return super.execute(executionContext, parameters);
+        } finally {
+            JCRSessionFactory.getInstance().setCurrentUser(null);
+        }
+    }
+
+    @Override
+    protected FieldValueInfo completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, FetchedValue fetchedValue) {
+        try {
+            DefaultGraphQLWebSocketContext context = (DefaultGraphQLWebSocketContext) executionContext.getContext();
+            HttpSession httpSession = (HttpSession) context.getSession().getUserProperties().get(HttpSession.class.getName());
+            JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) httpSession.getAttribute("org.jahia.usermanager.jahiauser"));
+            return super.completeField(executionContext, parameters, fetchedValue);
         } finally {
             JCRSessionFactory.getInstance().setCurrentUser(null);
         }

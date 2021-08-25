@@ -48,9 +48,7 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.registries.ServicesRegistry;
-import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.scheduler.SchedulerService;
-import org.jahia.services.usermanager.JahiaUser;
 import org.reactivestreams.Publisher;
 
 import java.util.List;
@@ -78,12 +76,10 @@ public class GqlJobSubscriptionExtension {
                 (jobStatusesFilter == null || jobStatusesFilter.contains(gqlBackgroundJob.getJobStatus())) &&
                 (jobStatesFilter == null || jobStatesFilter.contains(gqlBackgroundJob.getJobState()));
 
-        JahiaUser currentUser = JCRSessionFactory.getInstance().getCurrentUser();
-
-        return Flowable.create(obs-> {
+        return Flowable.create(obs -> {
             SchedulerService schedulerService = ServicesRegistry.getInstance().getSchedulerService();
             String name = UUID.randomUUID().toString();
-            GqlJobListener jobListener = new GqlJobListener(name, obs, jobFilter, currentUser);
+            GqlJobListener jobListener = new GqlJobListener(name, obs, jobFilter);
 
             if (ramScheduler) {
                 schedulerService.addJobListener(jobListener, true);
@@ -93,7 +89,7 @@ public class GqlJobSubscriptionExtension {
                 schedulerService.addJobListener(jobListener, false);
             }
 
-            obs.setCancellable(()-> {
+            obs.setCancellable(() -> {
                 if (ramScheduler) {
                     schedulerService.removeJobListener(name, true);
                 }
