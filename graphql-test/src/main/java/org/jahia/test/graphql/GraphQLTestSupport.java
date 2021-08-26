@@ -52,6 +52,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.jahia.api.Constants;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.test.JahiaTestCase;
 import org.jahia.test.graphql.context.CustomGraphQLServletContext;
 import org.json.JSONArray;
@@ -152,14 +153,12 @@ public class GraphQLTestSupport extends JahiaTestCase {
         req.addHeader("Origin", "http://localhost:8080");
 
         MockHttpServletResponse res = new MockHttpServletResponse();
-        Object service = BundleUtils.getOsgiService("org.jahia.modules.securityfilter.PermissionService");
+
+        PermissionService service = BundleUtils.getOsgiService(PermissionService.class, null);
         if (service != null) {
-            try {
-                service.getClass().getMethod("initScopes", HttpServletRequest.class).invoke(service, req);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                // Ignore
-            }
+            service.initScopes(req);
         }
+
         req.setContentType("application/json");
         StringWriter writer = new StringWriter();
         new JSONObject(Collections.singletonMap("query", query)).write(writer);
