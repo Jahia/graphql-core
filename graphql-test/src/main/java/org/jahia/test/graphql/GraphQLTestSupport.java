@@ -154,9 +154,9 @@ public class GraphQLTestSupport extends JahiaTestCase {
 
         MockHttpServletResponse res = new MockHttpServletResponse();
 
-        PermissionService permissionService = BundleUtils.getOsgiService(PermissionService.class, null);
-        if (permissionService != null) {
-            permissionService.initScopes(req);
+        PermissionService service = BundleUtils.getOsgiService(PermissionService.class, null);
+        if (service != null) {
+            service.initScopes(req);
         }
 
         req.setContentType("application/json");
