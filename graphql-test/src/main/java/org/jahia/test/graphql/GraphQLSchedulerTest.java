@@ -96,6 +96,8 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
                                 "}";
 
         // try authenticating first before connecting to websocket
+
+
         httpClient.createGet(getBaseServerURL() + Jahia.getContextPath() + "/jahia")
                 .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString("root:root1234".getBytes()))
                 .addHeader("Origin", getBaseServerURL())
@@ -105,8 +107,6 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
         WebSocketClient webSocketClient = httpClient.createWebSocket(url)
                 .idleTimeoutMillis(10000)
                 .totalRequestTimeoutMillis(10000)
-                .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString("root:root1234".getBytes()))
-                .addHeader("Origin", getBaseServerURL())
                 .build().build();
         webSocketClient.addListener(new MyWebSocketMessageListener(testJob, jobDatas));
         webSocketClient.connect().get();
