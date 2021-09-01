@@ -43,8 +43,7 @@
  */
 package org.jahia.test.graphql;
 
-import com.king.platform.net.http.HttpClient;
-import com.king.platform.net.http.SseClient;
+import com.king.platform.net.http.*;
 import com.king.platform.net.http.netty.NettyHttpClientBuilder;
 import org.jahia.bin.Jahia;
 import org.jahia.registries.ServicesRegistry;
@@ -58,7 +57,6 @@ import org.junit.Test;
 import org.quartz.JobDetail;
 import org.quartz.SchedulerException;
 
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -97,47 +95,30 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
                                     "}\n" +
                                 "}";
 
-
-
-        String url = getBaseServerURL() + Jahia.getContextPath() + "/modules/graphql?query=" + URLEncoder.encode(subscription, "UTF-8");
-        SseClient sseClient = httpClient.createSSE(url)
+        String url = (getBaseServerURL() + Jahia.getContextPath() + "/modules/graphql").replaceFirst("http", "ws");
+        WebSocketClient webSocketClient = httpClient.createWebSocket(url)
+                .idleTimeoutMillis(10000)
+                .totalRequestTimeoutMillis(10000)
                 .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString("root:root1234".getBytes()))
                 .addHeader("Origin", getBaseServerURL())
-                .idleTimeoutMillis(0)
-                .totalRequestTimeoutMillis(80000)
-                .keepAlive(true)
-                .build()
-                .execute();
+                .build().build();
+        webSocketClient.addListener(new MyWebSocketMessageListener(testJob, jobDatas));
+        webSocketClient.connect().get();
 
-        sseClient.onConnect(() -> {
-            try {
-                schedulerService.scheduleJobNow(testJob);
-            } catch (SchedulerException e) {
-                Assert.fail(e.getMessage());
-            }
-        });
+        JSONObject message = new JSONObject();
+        message.put("id", "1");
+        message.put("type", "start");
+        JSONObject payload = new JSONObject();
+        payload.put("variables", new JSONObject());
+        payload.put("operationName", "backgroundJobSubscription");
+        payload.put("query", subscription);
+        message.put("payload", payload);
+        webSocketClient.sendTextMessage(message.toString()).get();
 
-        sseClient.onEvent((lastSentId, event, data) -> {
-            try {
-                JSONObject jobData = new JSONObject(data).getJSONObject("data").getJSONObject("backgroundJobSubscription");
-                if (jobData.getString("name").equals(testJob.getName())) {
-                    jobDatas.add(jobData);
-                    if (jobData.getString("jobState").equals("FINISHED")) {
-                        sseClient.close();
-                    }
-                }
-            } catch (JSONException e) {
-                Assert.fail(e.getMessage());
-            }
-        });
+        schedulerService.scheduleJobNow(testJob);
 
-        sseClient.onError(throwable -> {
-            sseClient.close();
-            Assert.fail(throwable.getMessage());
-        });
+        webSocketClient.awaitClose();
 
-        // wait for SSE client to close by himself
-        sseClient.awaitClose();
         Assert.assertEquals(2, jobDatas.size());
 
         Assert.assertEquals("STARTED", jobDatas.get(0).getString("jobState"));
@@ -148,8 +129,39 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
 
         Assert.assertEquals("FINISHED", jobDatas.get(1).getString("jobState"));
         Assert.assertEquals("SUCCESSFUL", jobDatas.get(1).getString("jobStatus"));
-        Assert.assertTrue(jobDatas.get(1).getLong("duration") >= 2000);
-        Assert.assertTrue(jobDatas.get(1).getLong("jobLongProperty") >= 2000);
+        Assert.assertTrue(jobDatas.get(1).getLong("duration") >= 500);
+        Assert.assertTrue(jobDatas.get(1).getLong("jobLongProperty") >= 500);
         Assert.assertEquals("bar", jobDatas.get(0).getString("foo"));
+    }
+
+    private static class MyWebSocketMessageListener implements WebSocketMessageListenerAdapter {
+        private final JobDetail testJob;
+        private final List<JSONObject> jobDatas;
+        private WebSocketConnection connection;
+
+        public MyWebSocketMessageListener(JobDetail testJob, List<JSONObject> jobDatas) {
+            this.testJob = testJob;
+            this.jobDatas = jobDatas;
+        }
+
+        @Override
+        public void onConnect(WebSocketConnection connection) {
+            this.connection = connection;
+        }
+
+        @Override
+        public void onTextMessage(String message) {
+            try {
+                JSONObject jobData = new JSONObject(message).getJSONObject("payload").getJSONObject("data").getJSONObject("backgroundJobSubscription");
+                if (jobData.getString("name").equals(testJob.getName())) {
+                    jobDatas.add(jobData);
+                    if (jobData.getString("jobState").equals("FINISHED")) {
+                        connection.sendCloseFrame();
+                    }
+                }
+            } catch (JSONException e) {
+                Assert.fail(e.getMessage());
+            }
+        }
     }
 }

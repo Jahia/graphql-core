@@ -43,32 +43,41 @@
  */
 package org.jahia.test.graphql;
 
-import graphql.servlet.GraphQLContext;
-import graphql.servlet.OsgiGraphQLServlet;
-import org.apache.commons.fileupload.FileItem;
+import graphql.kickstart.execution.context.GraphQLContext;
+import graphql.kickstart.servlet.OsgiGraphQLHttpServlet;
+import graphql.kickstart.servlet.context.DefaultGraphQLServletContext;
+import graphql.kickstart.servlet.context.GraphQLServletContext;
+import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
+import org.apache.commons.lang3.ArrayUtils;
 import org.jahia.api.Constants;
 import org.jahia.osgi.BundleUtils;
-import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.test.JahiaTestCase;
+import org.jahia.test.graphql.context.CustomGraphQLServletContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONWriter;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.mock.web.MockMultipartHttpServletRequest;
 
 import javax.jcr.RepositoryException;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
+import javax.websocket.Session;
+import javax.websocket.server.HandshakeRequest;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -76,10 +85,11 @@ public class GraphQLTestSupport extends JahiaTestCase {
 
     private static final Logger logger = LoggerFactory.getLogger(GraphQLTestSupport.class);
 
-    private static OsgiGraphQLServlet servlet;
+    private static OsgiGraphQLHttpServlet servlet;
 
     protected static void init() {
-        servlet = (OsgiGraphQLServlet) BundleUtils.getOsgiService(Servlet.class, "(component.name=graphql.servlet.OsgiGraphQLServlet)");
+        https://github.com/Jahia/jahia-private/pull/998
+        servlet = (OsgiGraphQLHttpServlet) BundleUtils.getOsgiService(Servlet.class, "(component.name=graphql.kickstart.servlet.OsgiGraphQLHttpServlet)");
     }
 
     protected static void removeTestNodes() throws RepositoryException {
@@ -102,19 +112,53 @@ public class GraphQLTestSupport extends JahiaTestCase {
     }
 
     protected static JSONObject executeQuery(String query) throws JSONException {
-        MockHttpServletRequest req = new MockHttpServletRequest("POST", "http://localhost:8080/modules/graphql");
+        return executeQuery(query, new MockHttpServletRequest());
+    }
+
+    protected static JSONObject executeQueryWithFiles(String query, List<Part> files) throws JSONException {
+        try {
+            servlet.setContextProvider(getCustomContextProvider(files));
+            return executeQuery(query);
+        } finally {
+            servlet.unsetContextProvider(null);
+        }
+    }
+
+    /*
+     * Creating a multipart request with a file attachment WIP
+     * https://stackoverflow.com/a/30541653
+     */
+    private MockMultipartHttpServletRequest buildMultipartRequest(String fileName) {
+        byte[] data = "test text".getBytes();
+        final String boundary = "myBoundary";
+        MockMultipartFile file = new MockMultipartFile("test-binary", fileName, MediaType.TEXT_PLAIN_VALUE, data);
+        MockMultipartHttpServletRequest req = new MockMultipartHttpServletRequest();
+        req.addFile(file);
+        req.setContentType("multipart/form-data; boundary=" + boundary);
+        req.setContent(createFileContent(data, boundary, MediaType.TEXT_PLAIN_VALUE, fileName));
+
+        return req;
+    }
+
+    private static byte[] createFileContent(byte[] data, String boundary, String contentType, String fileName) {
+        String start = "--" + boundary + "\r\n Content-Disposition: form-data; name=\"file\"; filename=\""+fileName+"\"\r\n"
+                + "Content-type: "+contentType+"\r\n\r\n";;
+        String end = "\r\n--" + boundary + "--";
+        return ArrayUtils.addAll(start.getBytes(), ArrayUtils.addAll(data, end.getBytes()));
+    }
+
+    protected static JSONObject executeQuery(String query, MockHttpServletRequest req) throws JSONException {
+        req.setMethod("POST");
+        req.setRequestURI("http://localhost:8080/modules/graphql");
         req.addHeader("Origin", "http://localhost:8080");
 
         MockHttpServletResponse res = new MockHttpServletResponse();
 
-        Object service = BundleUtils.getOsgiService("org.jahia.modules.securityfilter.PermissionService");
+        PermissionService service = BundleUtils.getOsgiService(PermissionService.class, null);
         if (service != null) {
-            try {
-                service.getClass().getMethod("initScopes", HttpServletRequest.class).invoke(service, req);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                // Ignore
-            }
+            service.initScopes(req);
         }
+
         req.setContentType("application/json");
         StringWriter writer = new StringWriter();
         new JSONObject(Collections.singletonMap("query", query)).write(writer);
@@ -145,17 +189,16 @@ public class GraphQLTestSupport extends JahiaTestCase {
         return new JSONObject(result);
     }
 
-    protected static JSONObject executeQueryWithFiles(String query, Map<String, List<FileItem>> files) throws JSONException {
-        try {
-            servlet.setContextProvider((req, resp) -> {
-                GraphQLContext context = new GraphQLContext(req,resp);
-                context.setFiles(Optional.of(files));
-                return context;
-            });
-            return executeQuery(query);
-        } finally {
-            servlet.unsetContextProvider(null);
-        }
+    private static GraphQLServletContextBuilder getCustomContextProvider(List<Part> files) {
+        return new GraphQLServletContextBuilder() {
+            @Override public GraphQLContext build(HttpServletRequest request, HttpServletResponse response) {
+                GraphQLServletContext context = DefaultGraphQLServletContext
+                        .createServletContext().with(request).with(response).build();
+                return new CustomGraphQLServletContext(context, files);
+            }
+            @Override public GraphQLContext build(Session session, HandshakeRequest handshakeRequest) { return null; }
+            @Override public GraphQLContext build() { return null; }
+        };
     }
 
     protected static Map<String, JSONObject> toItemByKeyMap(String key, JSONArray items) throws JSONException {

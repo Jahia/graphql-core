@@ -48,13 +48,12 @@ import graphql.execution.instrumentation.SimpleInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
 import graphql.schema.DataFetcher;
-import graphql.servlet.GraphQLContext;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Optional;
 
 /**
  * JCR instrumentation implementation
@@ -86,16 +85,14 @@ public class JCRInstrumentation extends SimpleInstrumentation {
     public ExecutionContext instrumentExecutionContext(ExecutionContext executionContext, InstrumentationExecutionParameters parameters) {
 
         executionContext = super.instrumentExecutionContext(executionContext, parameters);
+        HttpServletRequest servletRequest = ContextUtil.getHttpServletRequest(executionContext.getContext());
 
-        Optional<HttpServletRequest> request = ((GraphQLContext) executionContext.getContext()).getRequest();
-        if (!request.isPresent()) {
-            // Only the case with integration tests.
-            return executionContext;
+        // Null only in the case with integration tests.
+        if (servletRequest != null) {
+            servletRequest.setAttribute(GRAPHQL_VARIABLES, executionContext.getVariables());
+            servletRequest.setAttribute(FRAGMENTS_BY_NAME, executionContext.getFragmentsByName());
         }
 
-        HttpServletRequest servletRequest = request.get();
-        servletRequest.setAttribute(GRAPHQL_VARIABLES, executionContext.getVariables());
-        servletRequest.setAttribute(FRAGMENTS_BY_NAME, executionContext.getFragmentsByName());
         return executionContext;
     }
 }

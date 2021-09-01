@@ -45,20 +45,25 @@ package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import graphql.annotations.processor.GraphQLAnnotationsComponent;
 import graphql.annotations.processor.ProcessingElementsContainer;
 import graphql.annotations.processor.retrievers.*;
 import graphql.annotations.processor.searchAlgorithms.SearchAlgorithm;
 import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
+import graphql.kickstart.servlet.osgi.*;
 import graphql.schema.*;
-import graphql.servlet.*;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
-import org.jahia.modules.graphql.provider.dxm.security.GraphQLFieldWithPermissionRetriever;
+import org.jahia.modules.graphql.provider.dxm.security.JahiaGraphQLFieldRetriever;
+import org.jahia.services.securityfilter.PermissionService;
+import org.jahia.services.securityfilter.ScopeDefinition;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.usermanager.JahiaUser;
 import org.osgi.service.component.annotations.*;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -70,9 +75,12 @@ import java.lang.reflect.ParameterizedType;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 
 @Component(service = GraphQLProvider.class, immediate = true)
-public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
+public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
@@ -99,11 +107,17 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private GraphQLObjectType queryType;
     private GraphQLObjectType mutationType;
     private GraphQLObjectType subscriptionType;
+    private GraphQLCodeRegistry codeRegistry;
 
     private DXRelay relay;
 
     private Map<String, Class<? extends DXConnection<?>>> connectionTypes = new HashMap<>();
     private SDLSchemaService sdlSchemaService;
+
+    private PermissionService permissionService;
+
+    private Executor executor;
+    private ExecutorService pool;
 
     public static DXGraphQLProvider getInstance() {
         return instance;
@@ -158,6 +172,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         this.sdlSchemaService = sdlSchemaService;
     }
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
+    public void setPermissionService(PermissionService permissionService) {
+        this.permissionService = permissionService;
+    }
+
     public ProcessingElementsContainer getContainer() {
         return container;
     }
@@ -180,7 +199,24 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     public void activate() {
         instance = this;
 
-        GraphQLFieldWithPermissionRetriever graphQLFieldWithPermissionsRetriever = new GraphQLFieldWithPermissionRetriever(dxGraphQLConfig, graphQLFieldRetriever);
+        // Initialize thread pool
+        pool = new ForkJoinPool(50);
+        executor = command -> {
+            JahiaUser user = JCRSessionFactory.getInstance().getCurrentUser();
+            Collection<ScopeDefinition> scopes = permissionService.getCurrentScopes();
+            pool.execute(() -> {
+                JCRSessionFactory.getInstance().setCurrentUser(user);
+                permissionService.setCurrentScopes(scopes);
+                try {
+                    command.run();
+                } finally {
+                    JCRSessionFactory.getInstance().setCurrentUser(null);
+                    permissionService.resetScopes();
+                }
+            });
+        };
+
+        JahiaGraphQLFieldRetriever graphQLFieldWithPermissionsRetriever = new JahiaGraphQLFieldRetriever(dxGraphQLConfig, graphQLFieldRetriever, executor);
 
         graphQLTypeRetriever.setGraphQLObjectInfoRetriever(graphQLObjectInfoRetriever);
         graphQLTypeRetriever.setGraphQLInterfaceRetriever(graphQLInterfaceRetriever);
@@ -214,11 +250,13 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             sdlSchemaService.addExtensions(extensionsProvider);
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
-                extensionsHandler.registerTypeExtension(aClass, container);
-                if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
-                    logger.debug("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
-                } else {
-                    logger.debug("Registered type extension {}", aClass);
+                if (aClass.isAnnotationPresent(GraphQLTypeExtension.class)) {
+                    extensionsHandler.registerTypeExtension(aClass, container);
+                    if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
+                        logger.debug("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
+                    } else {
+                        logger.debug("Registered type extension {}", aClass);
+                    }
                 }
             }
             for (Class<? extends GqlJcrNode> aClass : extensionsProvider.getSpecializedTypes()) {
@@ -234,11 +272,13 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         queryType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Query.class, container);
         mutationType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Mutation.class, container);
         subscriptionType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Subscription.class, container);
-
+        codeRegistry = container.getCodeRegistryBuilder().build();
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
-                extensionsHandler.registerTypeExtension(aClass, container);
-                logger.debug("Registered type extension {}", aClass);
+                if (aClass.isAnnotationPresent(GraphQLTypeExtension.class)) {
+                    extensionsHandler.registerTypeExtension(aClass, container);
+                    logger.debug("Registered type extension {}", aClass);
+                }
             }
         }
 
@@ -248,6 +288,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         specializedTypesHandler.initializeTypes();
 
         PropertyDataFetcher.clearReflectionCache();
+    }
+
+    @Deactivate
+    public void deactivate() {
+        pool.shutdown();
     }
 
     @Override
@@ -275,6 +320,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     @Override
     public Collection<GraphQLFieldDefinition> getSubscriptions() {
         return subscriptionType.getFieldDefinitions();
+    }
+
+    @Override
+    public GraphQLCodeRegistry getCodeRegistry() {
+        return codeRegistry;
     }
 
     public Class<? extends DXConnection<?>> getConnectionType(String connectionName) {

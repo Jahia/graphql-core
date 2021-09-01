@@ -70,6 +70,7 @@
             org.jahia.modules.graphql.provider.dxm.sdl,
             org.jahia.modules.graphql.provider.dxm.security,
             org.jahia.modules.graphql.provider.dxm.user,
+            org.jahia.modules.graphql.provider.dxm.util,
             org.jahia.modules.graphql.provider.dxm.osgi.annotations
         </export-package>
         <jahia.modules.importPackage>!org.jahia.modules.graphql.provider.dxm.sdl,!org.jahia.modules.graphql.provider.dxm.sdl.extension,!org.jahia.modules.graphql.provider.dxm.osgi.annotations</jahia.modules.importPackage>
@@ -87,8 +88,14 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.graphql-java</groupId>
+            <groupId>com.graphql-java-kickstart</groupId>
             <artifactId>graphql-java-servlet</artifactId>
+            <version>${graphql-java-servlet.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.graphql-java-kickstart</groupId>
+            <artifactId>graphql-java-kickstart</artifactId>
             <version>${graphql-java-servlet.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -96,12 +103,6 @@
             <groupId>io.github.graphql-java</groupId>
             <artifactId>graphql-java-annotations</artifactId>
             <version>${graphql-java-annotations.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jahia.modules</groupId>
-            <artifactId>security-filter</artifactId>
-            <version>2.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

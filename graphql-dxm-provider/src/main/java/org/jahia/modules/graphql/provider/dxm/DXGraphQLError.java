@@ -43,9 +43,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import graphql.ErrorClassification;
 import graphql.ErrorType;
 import graphql.GraphQLError;
 import graphql.language.SourceLocation;
@@ -84,23 +82,36 @@ public class DXGraphQLError implements GraphQLError {
     }
 
     @Override
-    @JsonIgnore
-    public ErrorType getErrorType() {
-        return errorType;
-    }
-
-    @JsonProperty("errorType")
-    public String getRealErrorType() {
+    public ErrorClassification getErrorType() {
         if (errorType != null) {
-            return errorType.toString();
+            return errorType;
         } else {
-            return exception.getClass().getSimpleName();
+            return new SimpleClassification(exception.getClass().getSimpleName());
         }
     }
 
     @Override
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     public Map<String, Object> getExtensions() {
         return exception.getExtensions();
+    }
+
+    @Override
+    public Map<String, Object> toSpecification() {
+        Map<String, Object> result = GraphQLError.super.toSpecification();
+        result.put("errorType", getErrorType().toSpecification(this));
+        return result;
+    }
+
+    private class SimpleClassification implements ErrorClassification {
+        private String value;
+
+        public SimpleClassification(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public Object toSpecification(GraphQLError error) {
+            return value;
+        }
     }
 }

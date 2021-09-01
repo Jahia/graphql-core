@@ -47,10 +47,7 @@ import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.LocaleUtils;
-import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
-import org.jahia.modules.graphql.provider.dxm.DXGraphQLError;
-import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.GqlConstraintHandler;
+import org.jahia.modules.graphql.provider.dxm.*;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldGroupingInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
@@ -179,14 +176,19 @@ public class GqlJcrQuery {
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their UUIDs")
     public Collection<GqlJcrNode> getNodesById(@GraphQLName("uuids") @GraphQLNonNull @GraphQLDescription("The UUIDs of the nodes") Collection<@GraphQLNonNull String> uuids, DataFetchingEnvironment environment) {
         List<GqlJcrNode> nodes = new ArrayList<>(uuids.size());
+        List<DataFetchingException> errors = new ArrayList<>();
         for (String uuid : uuids) {
             try {
                 nodes.add(getGqlNodeById(uuid));
-            } catch (RepositoryException e) {
-                environment.getExecutionContext().addError(new DXGraphQLError(new DataFetchingException(e), environment.getExecutionStepInfo().getPath().toList(), Collections.singletonList(environment.getExecutionStepInfo().getField().getSourceLocation())));
-
+            } catch (RepositoryException re) {
+                errors.add(new DataFetchingException(re));
             }
         }
+
+        if (!errors.isEmpty()) {
+            throw new AggregateDataFetchingException(errors);
+        }
+
         return nodes;
     }
 
@@ -203,13 +205,19 @@ public class GqlJcrQuery {
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their paths")
     public Collection<GqlJcrNode> getNodesByPath(@GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("The paths of the nodes") Collection<@GraphQLNonNull String> paths, DataFetchingEnvironment environment) {
         List<GqlJcrNode> nodes = new ArrayList<>(paths.size());
+        List<DataFetchingException> errors = new ArrayList<>();
         for (String path : paths) {
             try {
                 nodes.add(getGqlNodeByPath(path));
-            } catch (RepositoryException e) {
-                environment.getExecutionContext().addError(new DXGraphQLError(new DataFetchingException(e), environment.getExecutionStepInfo().getPath().toList(), Collections.singletonList(environment.getExecutionStepInfo().getField().getSourceLocation())));
+            } catch (RepositoryException re) {
+                errors.add(new DataFetchingException(re));
             }
         }
+
+        if (!errors.isEmpty()) {
+            throw new AggregateDataFetchingException(errors);
+        }
+
         return nodes;
     }
 

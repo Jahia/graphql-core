@@ -3,23 +3,25 @@
 
 <c:set var="modulePath" value="${pageContext.request.contextPath}/modules/graphql-dxm-provider"/>
 <c:set var="graphQlEndpoint" value="${pageContext.request.contextPath}/modules/graphql"/>
+<c:set var="graphQlWsEndpoint" value="ws://${pageContext.request.serverName}:${pageContext.request.serverPort}${pageContext.request.contextPath}/modules/graphql"/>
 
 <!doctype html>
 <html>
     <head>
         <meta charset="UTF-8"/>
         <title>GraphQL Playground</title>
-        <link rel="stylesheet" href="${modulePath}/css/graphql-playground.css" type="text/css"/>
+        <link rel="stylesheet" href="${modulePath}/css/graphql-playground-react.css" type="text/css"/>
     </head>
     <body>
         <div id="graphql-playground">
             <p class="loading">Loading <span class="title">GraphQL Playground</span></p>
         </div>
-        <script src="${modulePath}/javascript/graphql-playground-1.7.23.js"></script>
+        <script src="${modulePath}/javascript/graphql-playground-react-1.7.27.js"></script>
         <script>
             window.addEventListener('load', function() {
                 GraphQLPlayground.init(document.getElementById('graphql-playground'), {
                     endpoint: '${graphQlEndpoint}',
+                    subscriptionEndpoint: '${graphQlWsEndpoint}',
                     settings: {
                         'request.credentials': 'same-origin'
                     },

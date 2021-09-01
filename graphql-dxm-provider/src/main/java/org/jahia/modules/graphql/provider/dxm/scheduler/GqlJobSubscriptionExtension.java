@@ -52,7 +52,6 @@ import org.jahia.services.scheduler.SchedulerService;
 import org.reactivestreams.Publisher;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -77,7 +76,7 @@ public class GqlJobSubscriptionExtension {
                 (jobStatusesFilter == null || jobStatusesFilter.contains(gqlBackgroundJob.getJobStatus())) &&
                 (jobStatesFilter == null || jobStatesFilter.contains(gqlBackgroundJob.getJobState()));
 
-        return Flowable.create(obs-> {
+        return Flowable.create(obs -> {
             SchedulerService schedulerService = ServicesRegistry.getInstance().getSchedulerService();
             String name = UUID.randomUUID().toString();
             GqlJobListener jobListener = new GqlJobListener(name, obs, jobFilter);
@@ -90,7 +89,7 @@ public class GqlJobSubscriptionExtension {
                 schedulerService.addJobListener(jobListener, false);
             }
 
-            obs.setCancellable(()-> {
+            obs.setCancellable(() -> {
                 if (ramScheduler) {
                     schedulerService.removeJobListener(name, true);
                 }

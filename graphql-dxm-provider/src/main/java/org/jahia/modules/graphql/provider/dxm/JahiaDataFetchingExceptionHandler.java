@@ -47,6 +47,7 @@ import graphql.ExceptionWhileDataFetching;
 import graphql.GraphQLError;
 import graphql.execution.DataFetcherExceptionHandler;
 import graphql.execution.DataFetcherExceptionHandlerParameters;
+import graphql.execution.DataFetcherExceptionHandlerResult;
 import graphql.execution.ExecutionPath;
 import graphql.language.SourceLocation;
 import org.slf4j.Logger;
@@ -55,6 +56,8 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Custom DataFetchingExceptionHandler
@@ -62,29 +65,50 @@ import java.util.Collections;
 public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(JahiaDataFetchingExceptionHandler.class);
 
-    @Override
-    public void accept(DataFetcherExceptionHandlerParameters handlerParameters) {
-        Throwable exception = handlerParameters.getException();
-
-        ExecutionPath path = handlerParameters.getPath();
-        GraphQLError error = transformException(exception, path, handlerParameters.getField().getSourceLocation());
-        handlerParameters.getExecutionContext().addError(error, path);
-
-        if (!(error instanceof DXGraphQLError)) {
-            log.warn(error.getMessage(), exception);
-        }
-    }
-
     public static GraphQLError transformException(Throwable exception, ExecutionPath path, SourceLocation sourceLocation) {
         // Unwrap exception from MethodDataFetcher
-        if (exception instanceof RuntimeException && exception.getCause() instanceof InvocationTargetException) {
-            exception = ((InvocationTargetException) exception.getCause()).getTargetException();
-        }
-
+        exception = unwrapException(exception);
         if (exception instanceof BaseGqlClientException) {
             return new DXGraphQLError((BaseGqlClientException) exception, path.toList(), sourceLocation != null ? Collections.singletonList(sourceLocation) : new ArrayList<>());
         } else {
             return new ExceptionWhileDataFetching(path, exception, sourceLocation);
         }
+    }
+
+    private static Throwable unwrapException(Throwable exception) {
+        if (exception instanceof RuntimeException && exception.getCause() instanceof InvocationTargetException) {
+            return ((InvocationTargetException) exception.getCause()).getTargetException();
+        }
+        return exception;
+    }
+
+    @Override
+    public DataFetcherExceptionHandlerResult onException(DataFetcherExceptionHandlerParameters handlerParameters) {
+        Throwable exception = handlerParameters.getException();
+        exception = unwrapException(exception);
+
+        DataFetcherExceptionHandlerResult.Builder builder = DataFetcherExceptionHandlerResult.newResult();
+        ExecutionPath path = handlerParameters.getPath();
+        SourceLocation sourceLocation = handlerParameters.getField().getSingleField().getSourceLocation();
+
+        if (exception instanceof AggregateDataFetchingException) {
+            List<DataFetchingException> errors = ((AggregateDataFetchingException) exception).getErrors();
+            if (errors != null && !errors.isEmpty()) {
+                List<GraphQLError> graphQLErrors = errors.stream()
+                        .map(e -> transformException(e, path, sourceLocation))
+                        .collect(Collectors.toList());
+                builder.errors(graphQLErrors);
+            }
+
+        } else {
+            GraphQLError error = transformException(exception, path, sourceLocation);
+            builder.error(error);
+
+            if (!(error instanceof DXGraphQLError)) {
+                log.warn(error.getMessage(), exception);
+            }
+        }
+
+        return builder.build();
     }
 }

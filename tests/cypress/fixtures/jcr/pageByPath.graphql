@@ -1,0 +1,10 @@
+query($path: String!) {
+  jcr(workspace: EDIT) {
+    nodeByPath(path: $path) {
+      name
+      isHomePage: property(name: "j:isHomePage") {
+        booleanValue
+      }
+    }
+  }
+}

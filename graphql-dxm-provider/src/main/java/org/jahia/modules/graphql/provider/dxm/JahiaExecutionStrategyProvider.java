@@ -45,7 +45,7 @@ package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.execution.ExecutionStrategy;
 import graphql.execution.SubscriptionExecutionStrategy;
-import graphql.servlet.ExecutionStrategyProvider;
+import graphql.kickstart.execution.config.ExecutionStrategyProvider;
 import org.osgi.service.component.annotations.Component;
 
 @Component(immediate = true)
@@ -58,7 +58,7 @@ public class JahiaExecutionStrategyProvider implements ExecutionStrategyProvider
     public JahiaExecutionStrategyProvider() {
         queryStrategy = new JahiaQueryExecutionStrategy(new JahiaDataFetchingExceptionHandler());
         mutationStrategy = new JahiaMutationExecutionStrategy(new JahiaDataFetchingExceptionHandler());
-        subscriptionExecutionStrategy = new SubscriptionExecutionStrategy(new JahiaDataFetchingExceptionHandler());
+        subscriptionExecutionStrategy = new JahiaSubscriptionExecutionStrategy(new JahiaDataFetchingExceptionHandler());
     }
 
     @Override

@@ -410,6 +410,45 @@ public class GqlJcrProperty {
     }
 
     /**
+     * @return The value of the JCR property as a Boolean in case the property is single-valued, null otherwise
+     */
+    @GraphQLField
+    @GraphQLName("booleanValue")
+    @GraphQLDescription("The value of the JCR property as a Boolean in case the property is single-valued, null otherwise")
+    public Boolean getBooleanValue() {
+        try {
+            if (property.isMultiple()) {
+                return null;
+            }
+            return property.getValue().getBoolean();
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+    }
+
+    /**
+     * @return The values of the JCR property as Booleans in case the property is multiple-valued, null otherwise
+     */
+    @GraphQLField
+    @GraphQLName("booleanValues")
+    @GraphQLDescription("The values of the JCR property as Booleans in case the property is multiple-valued, null otherwise")
+    public List<Boolean> getBooleanValues() {
+        try {
+            if (!property.isMultiple()) {
+                return null;
+            }
+            JCRValueWrapper[] values = property.getValues();
+            List<Boolean> result = new ArrayList<>(values.length);
+            for (JCRValueWrapper value : values) {
+                result.add(value.getBoolean());
+            }
+            return result;
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+    }
+
+    /**
      * @return GraphQL representations of the nodes this property references in case the property is multiple-valued, null otherwise
      * @throws GqlJcrUnresolvedNodeReferenceException In case either the type (must be REFEENCE, WEAKREFERENCE or STRING) or any of the actual values of the property do not allow to resolve the node reference
      */

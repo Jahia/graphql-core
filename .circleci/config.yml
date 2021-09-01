@@ -733,16 +733,17 @@ workflows:
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/initialize
-      - integration_testsjava:
-          JAHIA_IMAGE: jahia/jahia-ee:8
-          RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
-          MANIFEST: provisioning-manifest-release.yml
-          TESTRAIL_MILESTONE: Jahia-Latest-Release
-          BUILD_TESTSIMAGE: true
-          name: Nightly-Jahia-Latest-Release
-          context: QA_ENVIRONMENT
-          requires:
-            - jahia-modules-orb/initialize
+# TODO Add jahia stable release image (jahia/jahia-ee:8) after 8.1 release
+#      - integration_testsjava:
+#          JAHIA_IMAGE: jahia/jahia-ee:8
+#          RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
+#          MANIFEST: provisioning-manifest-release.yml
+#          TESTRAIL_MILESTONE: Jahia-Latest-Release
+#          BUILD_TESTSIMAGE: true
+#          name: Nightly-Jahia-Latest-Release
+#          context: QA_ENVIRONMENT
+#          requires:
+#            - jahia-modules-orb/initialize
       - jahia-modules-orb/integration-tests:
           name: Nightly-<< matrix.jahia_image >>
           context: QA_ENVIRONMENT
@@ -750,7 +751,8 @@ workflows:
             - jahia-modules-orb/initialize
           matrix:
             parameters:
-              jahia_image: ["jahia/jahia-ee:8", "jahia/jahia-ee-dev:8-SNAPSHOT"]
+              # TODO Add jahia stable release image (jahia/jahia-ee:8) after 8.1 release
+              jahia_image: ["jahia/jahia-ee-dev:8-SNAPSHOT"]
               tests_manifest: ["provisioning-manifest-snapshot.yml"]
               module_id: ["<< pipeline.parameters.MODULE_ID >>"]
               testrail_project: ["<< pipeline.parameters.TESTRAIL_PROJECTNAME >>"]
