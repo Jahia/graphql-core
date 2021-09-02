@@ -54,6 +54,7 @@ import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
+import org.jahia.modules.graphql.provider.dxm.security.GraphQLAsync;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.query.QueryWrapper;
@@ -100,4 +101,16 @@ public class QueryExtensions {
         return PaginationHelper.paginate(stream, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
     }
 
+    @GraphQLField
+    public static String longField(@GraphQLName("arg") String arg) throws InterruptedException {
+        Thread.sleep(500);
+        return "test " + Thread.currentThread().getName() + " : " + arg;
+    }
+
+    @GraphQLField
+    @GraphQLAsync
+    public static String asyncLongField(@GraphQLName("arg") String arg) throws InterruptedException  {
+        Thread.sleep(500);
+        return "test " + Thread.currentThread().getName() + " : " + arg;
+    }
 }
