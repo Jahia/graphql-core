@@ -55,7 +55,8 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.quartz.JobDetail;
-import org.quartz.SchedulerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Base64;
@@ -65,6 +66,8 @@ import java.util.List;
 public class GraphQLSchedulerTest extends GraphQLTestSupport {
 
     private static SchedulerService schedulerService;
+
+    static Logger logger = LoggerFactory.getLogger(GraphQLSchedulerTest.class);
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
@@ -114,8 +117,11 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
         payload.put("query", subscription);
         message.put("payload", payload);
         webSocketClient.sendTextMessage(message.toString()).get();
+        // adding a sleep just in case started payload is being called after scheduling job
+        Thread.sleep(1000);
 
         schedulerService.scheduleJobNow(testJob);
+        Thread.sleep(1000);
 
         webSocketClient.awaitClose();
 
@@ -154,6 +160,7 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
             try {
                 JSONObject jobData = new JSONObject(message).getJSONObject("payload").getJSONObject("data").getJSONObject("backgroundJobSubscription");
                 if (jobData.getString("name").equals(testJob.getName())) {
+                    logger.info("Adding job data: {}", jobData.toString());
                     jobDatas.add(jobData);
                     if (jobData.getString("jobState").equals("FINISHED")) {
                         connection.sendCloseFrame();
