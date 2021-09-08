@@ -50,6 +50,8 @@ import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.scheduler.SchedulerService;
 import org.reactivestreams.Publisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.UUID;
@@ -58,6 +60,8 @@ import java.util.function.Supplier;
 
 @GraphQLTypeExtension(DXGraphQLProvider.Subscription.class)
 public class GqlJobSubscriptionExtension {
+
+    static Logger logger = LoggerFactory.getLogger(GqlJobSubscriptionExtension.class);
 
     @GraphQLField
     @GraphQLDescription("Subscription on background jobs")
@@ -82,10 +86,12 @@ public class GqlJobSubscriptionExtension {
             GqlJobListener jobListener = new GqlJobListener(name, obs, jobFilter);
 
             if (ramScheduler) {
+                logger.info("Adding job listener {} for RAM scheduler", name);
                 schedulerService.addJobListener(jobListener, true);
             }
 
             if (scheduler) {
+                logger.info("Adding job listener {}", name);
                 schedulerService.addJobListener(jobListener, false);
             }
 
