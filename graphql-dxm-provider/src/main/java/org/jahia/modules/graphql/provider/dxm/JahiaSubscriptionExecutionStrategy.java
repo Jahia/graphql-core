@@ -46,6 +46,7 @@ package org.jahia.modules.graphql.provider.dxm;
 import graphql.ExecutionResult;
 import graphql.execution.*;
 import graphql.kickstart.servlet.context.DefaultGraphQLWebSocketContext;
+import org.jahia.bin.filters.jcr.JcrSessionFilter;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
 
@@ -66,7 +67,7 @@ public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStr
             JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) httpSession.getAttribute("org.jahia.usermanager.jahiauser"));
             return super.execute(executionContext, parameters);
         } finally {
-            JCRSessionFactory.getInstance().setCurrentUser(null);
+            JcrSessionFilter.endRequest();
         }
     }
 
@@ -78,7 +79,7 @@ public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStr
             JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) httpSession.getAttribute("org.jahia.usermanager.jahiauser"));
             return super.completeField(executionContext, parameters, fetchedValue);
         } finally {
-            JCRSessionFactory.getInstance().setCurrentUser(null);
+            JcrSessionFilter.endRequest();
         }
     }
 }
