@@ -54,6 +54,7 @@ import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.kickstart.servlet.osgi.*;
 import graphql.schema.*;
+import org.jahia.bin.filters.jcr.JcrSessionFilter;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
@@ -210,7 +211,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
                 try {
                     command.run();
                 } finally {
-                    JCRSessionFactory.getInstance().setCurrentUser(null);
+                    JcrSessionFilter.endRequest();
                     permissionService.resetScopes();
                 }
             });
