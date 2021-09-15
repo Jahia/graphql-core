@@ -73,7 +73,39 @@
             org.jahia.modules.graphql.provider.dxm.util,
             org.jahia.modules.graphql.provider.dxm.osgi.annotations
         </export-package>
-        <jahia.modules.importPackage>!org.jahia.modules.graphql.provider.dxm.sdl,!org.jahia.modules.graphql.provider.dxm.sdl.extension,!org.jahia.modules.graphql.provider.dxm.osgi.annotations</jahia.modules.importPackage>
+        <import-package>
+            graphql;version="[13.0,14)",
+            graphql.annotations.annotationTypes;version="[7.2,9)",
+            graphql.annotations.connection;version="[7.2,8)",
+            graphql.annotations.processor;version="[7.2,8)",
+            graphql.annotations.processor.exceptions;version="[7.2,8)",
+            graphql.annotations.processor.graphQLProcessors;version="[7.2,8)",
+            graphql.annotations.processor.retrievers;version="[7.2,8)",
+            graphql.annotations.processor.searchAlgorithms;version="[7.2,8)",
+            graphql.annotations.processor.typeFunctions;version="[7.2,8)",
+            graphql.execution;version="[13.0,14)",
+            graphql.execution.instrumentation;version="[13.0,14)",
+            graphql.execution.instrumentation.parameters;version="[13.0,14)",
+            graphql.kickstart.execution;version="[9.1,10)",
+            graphql.kickstart.execution.config;version="[9.1,10)",
+            graphql.kickstart.execution.subscriptions;version="[9.1,10)",
+            graphql.kickstart.servlet;version="[9.1,10)",
+            graphql.kickstart.servlet.apollo;version="[9.1,10)",
+            graphql.kickstart.servlet.context;version="[9.1,10)",
+            graphql.kickstart.servlet.input;version="[9.1,10)",
+            graphql.kickstart.servlet.osgi;version="[9.1,10)",
+            graphql.kickstart.servlet.subscriptions;version="[9.1,10)",
+            graphql.language;version="[13.0,14)",
+            graphql.relay;version="[13.0,14)",
+            graphql.schema;version="[13.0,14)",
+            graphql.schema.idl;version="[13.0,14)",
+            org.jahia.modules.external.modules.osgi;version="[4.0,5)",
+            !org.jahia.modules.graphql.provider.dxm.osgi.annotations
+            org.jahia.modules.graphql.provider.dxm.relay,
+            !org.jahia.modules.graphql.provider.dxm.sdl,
+            !org.jahia.modules.graphql.provider.dxm.sdl.extension,
+            org.jahia.modules.graphql.provider.dxm.util,
+        </import-package>
         <jahia-module-type>system</jahia-module-type>
         <jahia-module-signature>MCwCFBcjFkCyiSxf9LM8Zqox6+L5CrJ3AhRHAP0Tnka4B+4h2SH06EVSCh2J9w==</jahia-module-signature>
         <mockito.version>2.21.0</mockito.version>
