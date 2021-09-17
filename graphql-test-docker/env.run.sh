@@ -49,7 +49,7 @@ if [[ "${JAHIA_CLUSTER_ENABLED}" == "true" ]]; then
 fi
 
 echo " == Get the Jahia version =="
-JAHIA_AUTH=$(openssl enc -base64 -A <<< "${JAHIA_USERNAME}:${JAHIA_PASSWORD}")
+JAHIA_AUTH=$(openssl enc -base64 -A <<< ${JAHIA_USERNAME}:${JAHIA_PASSWORD})
 echo "JAHIA_AUTH: ${JAHIA_AUTH}"
 JAHIA_FULL_VERSION=$(curl --location --request POST ${JAHIA_URL}/modules/graphql --header 'Authorization: Basic ${JAHIA_AUTH}' --header "Origin: ${JAHIA_URL}" --header 'Content-Type: application/json' --data-raw '{"query":"{ admin { version } }","variables":{}}' | jq '.data.admin.version')
 
