@@ -98,7 +98,7 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
                                     "}\n" +
                                 "}";
 
-        String url = (getBaseServerURL() + Jahia.getContextPath() + "/modules/graphql").replaceFirst("http", "ws");
+        String url = (getBaseServerURL() + Jahia.getContextPath() + "/modules/graphqlws").replaceFirst("http", "ws");
         WebSocketClient webSocketClient = httpClient.createWebSocket(url)
                 .idleTimeoutMillis(10000)
                 .totalRequestTimeoutMillis(10000)

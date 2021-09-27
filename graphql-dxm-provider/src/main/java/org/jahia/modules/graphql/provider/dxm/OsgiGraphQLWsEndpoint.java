@@ -68,7 +68,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 
 @Component(immediate = true, service = Endpoint.class)
-@ServerEndpoint(value="/graphql", subprotocols = {"graphql-ws"}, configurator = OsgiGraphQLWsEndpoint.Configurator.class)
+@ServerEndpoint(value="/graphqlws", subprotocols = {"graphql-ws"}, configurator = OsgiGraphQLWsEndpoint.Configurator.class)
 public class OsgiGraphQLWsEndpoint extends Endpoint {
     private Logger logger = LoggerFactory.getLogger(OsgiGraphQLWsEndpoint.class);
     private GraphQLWebsocketServlet delegate;
