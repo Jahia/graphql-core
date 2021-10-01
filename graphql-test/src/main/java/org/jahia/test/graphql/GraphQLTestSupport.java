@@ -149,6 +149,7 @@ public class GraphQLTestSupport extends JahiaTestCase {
 
     protected static JSONObject executeQuery(String query, MockHttpServletRequest req) throws JSONException {
         req.setMethod("POST");
+        req.setServerPort(8080);
         req.setRequestURI("http://localhost:8080/modules/graphql");
         req.addHeader("Origin", "http://localhost:8080");
 
