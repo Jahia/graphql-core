@@ -14,11 +14,15 @@ type NewsSDL @mapping(node:"jnt:news", ignoreDefaultQueries: true) {
 }
 
 type Images @mapping(node: "jmix:image", ignoreDefaultQueries: true) {
+    """This is height"""
     height: Int @mapping(property: "j:height")
 }
 
 extend type Query {
+    """This is newsByChecked"""
     newsByChecked: [NewsSDL]
+    """This is myNewsByDate"""
     myNewsByDate: [NewsSDL]
+    """This is myImagesByHeight"""
     myImagesByHeight: [Images]
 }
