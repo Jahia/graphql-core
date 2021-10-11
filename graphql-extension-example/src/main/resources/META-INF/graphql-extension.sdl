@@ -13,6 +13,7 @@ type NewsSDL @mapping(node:"jnt:news", ignoreDefaultQueries: true) {
     date: Date @mapping(property: "date")
 }
 
+"""This is images"""
 type Images @mapping(node: "jmix:image", ignoreDefaultQueries: true) {
     """This is height"""
     height: Int @mapping(property: "j:height")
