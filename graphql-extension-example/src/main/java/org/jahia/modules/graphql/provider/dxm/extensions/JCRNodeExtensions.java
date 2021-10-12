@@ -44,6 +44,7 @@
 package org.jahia.modules.graphql.provider.dxm.extensions;
 
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
@@ -59,7 +60,7 @@ public class JCRNodeExtensions {
     }
 
     @GraphQLField
-    public String testExtension(@GraphQLName("arg") String arg) {
+    public String testExtension(@GraphQLName("arg") @GraphQLDescription("Sample extension argument") String arg) {
         return "test " + node.getName() + " - " + arg;
     }
 }
