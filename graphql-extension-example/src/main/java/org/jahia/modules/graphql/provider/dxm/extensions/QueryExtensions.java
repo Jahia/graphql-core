@@ -44,6 +44,7 @@
 package org.jahia.modules.graphql.provider.dxm.extensions;
 
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
@@ -71,23 +72,27 @@ import java.util.stream.StreamSupport;
 public class QueryExtensions {
 
     @GraphQLField
-    public static String testExtension(@GraphQLName("arg") String arg) {
+    @GraphQLDescription("Sample extension")
+    public static String testExtension(@GraphQLName("arg") @GraphQLDescription("Sample extension argument") String arg) {
         return "test " + arg;
     }
 
     @GraphQLField
-    public static GqlNews getNewsById(@GraphQLName("id") String id) throws RepositoryException {
+    @GraphQLDescription("Sample newsById query extension")
+    public static GqlNews getNewsById(@GraphQLName("id") @GraphQLDescription("id argument") String id) throws RepositoryException {
         return new GqlNews(JCRSessionFactory.getInstance().getCurrentUserSession().getNodeByIdentifier(id));
     }
 
     @GraphQLField
-    public static GqlNews getNewsByPath(@GraphQLName("path") String path) throws RepositoryException {
+    @GraphQLDescription("Sample newsByPath query extension")
+    public static GqlNews getNewsByPath(@GraphQLName("path") @GraphQLDescription("path argument") String path) throws RepositoryException {
         return new GqlNews(JCRSessionFactory.getInstance().getCurrentUserSession().getNode(path));
     }
 
     @GraphQLField
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
-    public static DXPaginatedData<GqlNews> getNewsByDate(@GraphQLName("afterDate") String after, @GraphQLName("beforeDate") String before, DataFetchingEnvironment environment) throws RepositoryException  {
+    @GraphQLDescription("Sample newsByDate query extension")
+    public static DXPaginatedData<GqlNews> getNewsByDate(@GraphQLName("afterDate") @GraphQLDescription("Sample afterDate argument") String after, @GraphQLName("beforeDate") @GraphQLDescription("Sample beforeDate argument") String before, DataFetchingEnvironment environment) throws RepositoryException  {
         QueryWrapper query = JCRSessionFactory.getInstance().getCurrentUserSession().getWorkspace().getQueryManager().createQuery("select * from [jnt:news] where [date]>'"
                 + ISO8601.format(ISO8601.parse(after))
                 + "' and [date]<'"
@@ -102,14 +107,16 @@ public class QueryExtensions {
     }
 
     @GraphQLField
-    public static String longField(@GraphQLName("arg") String arg) throws InterruptedException {
+    @GraphQLDescription("Sample extension long field")
+    public static String longField(@GraphQLName("arg") @GraphQLDescription("Sample long extension argument") String arg) throws InterruptedException {
         Thread.sleep(500);
         return "test " + Thread.currentThread().getName() + " : " + arg;
     }
 
     @GraphQLField
     @GraphQLAsync
-    public static String asyncLongField(@GraphQLName("arg") String arg) throws InterruptedException  {
+    @GraphQLDescription("Sample extension async long field")
+    public static String asyncLongField(@GraphQLName("arg") @GraphQLDescription("Sample asyncLong extension argument") String arg) throws InterruptedException  {
         Thread.sleep(500);
         return "test " + Thread.currentThread().getName() + " : " + arg;
     }
