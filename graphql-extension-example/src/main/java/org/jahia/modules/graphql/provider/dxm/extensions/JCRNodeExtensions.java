@@ -60,6 +60,7 @@ public class JCRNodeExtensions {
     }
 
     @GraphQLField
+    @GraphQLDescription("Sample extension") 
     public String testExtension(@GraphQLName("arg") @GraphQLDescription("Sample extension argument") String arg) {
         return "test " + node.getName() + " - " + arg;
     }
