@@ -50,6 +50,7 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
 import org.jahia.services.content.JCRNodeWrapper;
 
+@GraphQLDescription("Sample GQLNews type")
 public class GqlNews  {
 
     private  GqlJcrNodeImpl node;
@@ -59,26 +60,31 @@ public class GqlNews  {
     }
 
     @GraphQLField
+    @GraphQLDescription("News uuid field")
     public String getUuid() {
         return node.getUuid();
     }
 
     @GraphQLField
-    public String getDescription(@GraphQLName("language") @GraphQLNonNull String language) {
+    @GraphQLDescription("News description field")
+    public String getDescription(@GraphQLName("language") @GraphQLDescription("News language argument") @GraphQLNonNull String language) {
         return node.getProperty("desc",language).getValue();
     }
 
     @GraphQLField
-    public String getTitle(@GraphQLName("language") @GraphQLNonNull String language) {
+    @GraphQLDescription("News title field")
+    public String getTitle(@GraphQLName("language") @GraphQLDescription("News language argument") @GraphQLNonNull String language) {
         return node.getProperty("jcr:title",language).getValue();
     }
 
     @GraphQLField
+    @GraphQLDescription("News file field")
     public GqlJcrNode getFile() {
         return node.getProperty("date", null).getRefNode();
     }
 
     @GraphQLField
+    @GraphQLDescription("News date field")
     public String getDate() {
         return node.getProperty("date", null).getValue();
     }
