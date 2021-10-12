@@ -107,8 +107,7 @@ public class FinderFetchersFactory {
                     return "Weakreference";
                 }
             } catch (NoSuchNodeTypeException e) {
-                e.printStackTrace();
-                logger.error("Node type is not found due to {}", e.getMessage());
+                logger.error("Node type is not found due to", e);
             }
         }
         return graphQLType.getFieldDefinition(definitionPropertyName).getType().getName();
