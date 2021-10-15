@@ -605,7 +605,7 @@ workflows:
       - docker-publish:
           context: QA_ENVIRONMENT
           requires:
-            - Int. Tests - Jahia Latest - Built modules
+            - jahia-modules-orb/build
           filters:
             tags:
               only: /.*/
