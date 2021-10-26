@@ -8,7 +8,10 @@
     "noEmit": false,
     "isolatedModules": false,
     "types": [
-      "cypress"
-    ]
+      "cypress",
+      "node",
+      "@jahia/cypress"
+    ],
+    "lib": [ "es2015" ]    
   }
 }

@@ -20,7 +20,7 @@ declare global {
 
             apolloMutate(apollo: ApolloClient<any>, options: MutationOptions): Chainable<any>
 
-            runProvisioningScript(body: string, type?: string): Chainable<Response>
+            runProvisioning(body: string, type?: string): Chainable<Response<any>>
         }
     }
 }
