@@ -3,7 +3,7 @@ import { apollo } from '../../../support/apollo'
 import gql from 'graphql-tag'
 
 describe('admin.configuration', () => {
-    let createConfig: string
+    let createConfig
 
     before('load graphql file and create test dataset', () => {
         createConfig = require('../../../fixtures/admin/createConfig.json')
