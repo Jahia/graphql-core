@@ -126,7 +126,7 @@
                 <configuration>
                     <instructions>
                         <Import-Package>${jahia.plugin.projectPackageImport},javax.jcr,*</Import-Package>
-                        <Jahia-Signature>MCwCFADdRtoyxa8BiIlEhb2pg5S6oU3zAhRDPssi2Xz2xO20H2m2juhVEIiUrA==</Jahia-Signature>
+                        <Jahia-Signature>MCwCFGxpNFw1clKvh4k/nch2tZB6MvzlAhQ1GgG33rozMEotcnbp2UVnUWxIQw==</Jahia-Signature>
                         <Require-Capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</Require-Capability>
                     </instructions>
                 </configuration>
