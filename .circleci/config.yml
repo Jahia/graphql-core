@@ -617,7 +617,7 @@ workflows:
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/build
-          jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
+          jahia_image: jahia/jahia-discovery-dev:8-SNAPSHOT
           tests_manifest: provisioning-manifest-build.yml
           module_id: << pipeline.parameters.MODULE_ID >>
           testrail_project: << pipeline.parameters.TESTRAIL_PROJECTNAME >>
