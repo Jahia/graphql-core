@@ -613,7 +613,7 @@ workflows:
             branches:
               only:
                 - << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
-      - jahia-modules-orb/integration-tests:
+      - jahia-modules-orb/integration-tests-machine:
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/build
