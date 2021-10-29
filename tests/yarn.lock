@@ -1218,10 +1218,10 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.3.tgz#e45e384e4b8ec16bce2fd903af78450f6bf7ec98"
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
 
-"@jahia/cypress@^1.0.5":
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/@jahia/cypress/-/cypress-1.0.5.tgz#998b316a0e70afd1b5260e830826226786965af8"
-  integrity sha512-CQEb/KwKmHDRkd3TCgVrbnsV2j7x35GO0ToU5Z8G4jZlTo4w7Sxl5Ob/cGtpd3H0AFM9tvTLfhcs795k9pmsJg==
+"@jahia/cypress@^1.0.6":
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/@jahia/cypress/-/cypress-1.0.6.tgz#334898405d5564a53aa4b47e1c0e2cd9b7da89d1"
+  integrity sha512-fXxJJENMlmNnki3DtNykVyTWsUlTRx7fU7CV++QSCcidnmHC4Tj6gO0Z6Xl4rMHVxD2xb/yhyYq4YXtz/gn+Bg==
   dependencies:
     "@apollo/client" "^3.4.9"
     cypress-terminal-report "^3.3.2"

@@ -1,29 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import gql from 'graphql-tag'
-import { apollo } from '../../../support/apollo'
-import { DocumentNode } from 'graphql'
 
 describe('Test admin user endpoint', () => {
-    let GQL_USER: DocumentNode
-    let GQL_USER_GROUPMEMBERSHIP_FILTER: DocumentNode
-    let GQL_USER_GROUPMEMBERSHIP_BASIC: DocumentNode
-    let GQL_GROUP: DocumentNode
-
-    before('load graphql file', function () {
-        GQL_USER = require(`graphql-tag/loader!../../../fixtures/admin/user.graphql`)
-        GQL_GROUP = require(`graphql-tag/loader!../../../fixtures/admin/group.graphql`)
-        GQL_USER_GROUPMEMBERSHIP_FILTER = require(`graphql-tag/loader!../../../fixtures/admin/userGroupMembershipFilter.graphql`)
-        GQL_USER_GROUPMEMBERSHIP_BASIC = require(`graphql-tag/loader!../../../fixtures/admin/userGroupMembershipBasic.graphql`)
-    })
-
     it('gets a user', () => {
-        cy.apolloQuery(
-            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
-            {
-                query: GQL_USER,
-                variables: { username: 'irina' },
-            },
-        ).should((response: any) => {
+        cy.apollo({
+            queryFile:'admin/user.graphql',
+            variables: { username: 'irina', group:'' }
+        }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user.name).to.equal('irina')
             expect(response.data.admin.userAdmin.user.username).to.equal('irina')
@@ -37,40 +19,31 @@ describe('Test admin user endpoint', () => {
     })
 
     it('gets a non existing user', () => {
-        cy.apolloQuery(
-            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
-            {
-                query: GQL_USER,
-                variables: { username: 'noob' },
-            },
-        ).should((response: any) => {
+        cy.apollo({
+            queryFile:'admin/user.graphql',
+            variables: { username: 'noob', group:'' },
+        }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user).to.be.null
         })
     })
 
     it('gets a user name', () => {
-        cy.apolloQuery(
-            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
-            {
-                query: GQL_USER,
-                variables: { username: 'bill' },
-            },
-        ).should((response: any) => {
+        cy.apollo({
+            queryFile:'admin/user.graphql',
+            variables: { username: 'bill', group:'' },
+        }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user.username).to.equal('bill')
             expect(response.data.admin.userAdmin.user.displayName).to.equal('Bill Galileo')
         })
     })
 
-    it('tests membership', () => {
-        cy.apolloQuery(
-            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
-            {
-                query: GQL_USER,
-                variables: { username: 'bill', group: 'site-administrators', site1: 'digitall', site2: 'systemsite' },
-            },
-        ).should((response: any) => {
+    it('gets a user name', () => {
+        cy.apollo({
+            queryFile:'admin/user.graphql',
+            variables: { username: 'bill', group: 'site-administrators', site1: 'digitall', site2: 'systemsite' }
+        }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user.yes).to.equal(true)
             expect(response.data.admin.userAdmin.user.no).to.equal(false)
@@ -78,13 +51,10 @@ describe('Test admin user endpoint', () => {
     })
 
     it('tests membership list', () => {
-        cy.apolloQuery(
-            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
-            {
-                query: GQL_USER_GROUPMEMBERSHIP_BASIC,
-                variables: { username: 'bill', site: 'digitall' },
-            },
-        ).should((response: any) => {
+        cy.apollo({
+            queryFile: 'admin/userGroupMembershipBasic.graphql',
+            variables: {username: 'bill', site: 'digitall'}
+        }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user.groupMembership.pageInfo.totalCount).to.be.greaterThan(2)
             expect(response.data.admin.userAdmin.user.groupMembership.nodes.map((n) => n.name)).to.contains(
@@ -94,39 +64,30 @@ describe('Test admin user endpoint', () => {
     })
 
     it('tests membership list for a site', () => {
-        cy.apolloQuery(
-            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
-            {
-                query: GQL_USER_GROUPMEMBERSHIP_BASIC,
-                variables: { username: 'bill', site: 'digitall' },
-            },
-        ).should((response: any) => {
+        cy.apollo({
+            queryFile: 'admin/userGroupMembershipBasic.graphql',
+            variables: {username: 'bill', site: 'digitall'}
+        }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user.groupMembership.pageInfo.totalCount).to.equal(3)
         })
     })
 
     it('tests membership list with filter', () => {
-        cy.apolloQuery(
-            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
-            {
-                query: GQL_USER_GROUPMEMBERSHIP_FILTER,
-                variables: { username: 'bill', field: 'site.name', value: 'digitall' },
-            },
-        ).should((response: any) => {
+        cy.apollo({
+            queryFile: 'admin/userGroupMembershipFilter.graphql',
+            variables: { username: 'bill', field: 'site.name', value: 'digitall' },
+        }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user.groupMembership.pageInfo.totalCount).to.equal(3)
         })
     })
 
     it('tests members list', () => {
-        cy.apolloQuery(
-            apollo(Cypress.config().baseUrl, { username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') }),
-            {
-                query: GQL_GROUP,
-                variables: { groupName: 'site-administrators', site: 'digitall' },
-            },
-        ).should((response: any) => {
+        cy.apollo({
+            queryFile: 'admin/group.graphql',
+            variables: { groupName: 'site-administrators', site: 'digitall' },
+        }).should((response: any) => {
             expect(response.data.admin.userGroup).to.exist
             expect(response.data.admin.userGroup.group.members.nodes.map((n) => n.name)).to.contains('bill')
         })
