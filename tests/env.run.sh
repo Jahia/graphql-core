@@ -9,6 +9,8 @@ START_TIME=$SECONDS
 
 echo " == Using MANIFEST: ${MANIFEST}"
 echo " == Using JAHIA_URL= ${JAHIA_URL}"
+echo " == Using Node version: $(node -v)"
+echo " == Using yarn version: $(yarn -v)"
 
 echo " == Waiting for Jahia to startup"
 while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' ${JAHIA_URL}/cms/login)" != "200" ]];
