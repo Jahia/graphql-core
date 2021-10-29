@@ -77,6 +77,9 @@ if [[ $INSTALLED_MODULE_VERSION == "UNKNOWN" ]]; then
   exit 1
 fi
 
+echo "$(date +'%d %B %Y - %k:%M') == Run yarn =="
+yarn
+
 echo "$(date +'%d %B %Y - %k:%M') == Run tests =="
 yarn e2e:ci
 while :; do :; done & kill -STOP $! && wait $!
