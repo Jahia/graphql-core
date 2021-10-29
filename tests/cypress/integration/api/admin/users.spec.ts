@@ -3,6 +3,9 @@
 describe('Test admin users endpont', () => {
     before('load graphql file', () => {
         cy.runProvisioningScript({fileName:'admin/addLDAPConfigurationFile.json'})
+
+        // eslint-disable-next-line cypress/no-unnecessary-waiting
+        cy.wait(2000)
     })
 
     it('gets all users without any filtering', () => {
