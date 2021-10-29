@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   docker: circleci/docker@0.5.20
-  jahia-modules-orb: jahia/jahia-modules-orb@0.4.0
+  jahia-modules-orb: jahia/jahia-modules-orb@0.5.10
 
 
 # Parameters are available across the entire config file and can be used with this syntax: << pipeline.parameters.THE_PARAMETER >>
@@ -556,7 +556,8 @@ workflows:
   on-code-change:
     unless: << pipeline.parameters.IS_RELEASE >>
     jobs:
-      - jahia-modules-orb/initialize
+      - jahia-modules-orb/initialize:
+          base_image: cimg/openjdk:8.0.292-node
       - jahia-modules-orb/update-signature:
           context: QA_ENVIRONMENT
           requires:
@@ -612,11 +613,11 @@ workflows:
             branches:
               only:
                 - << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
-      - jahia-modules-orb/integration-tests:
+      - jahia-modules-orb/integration-tests-machine:
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/build
-          jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
+          jahia_image: jahia/jahia-discovery-dev:8-SNAPSHOT
           tests_manifest: provisioning-manifest-build.yml
           module_id: << pipeline.parameters.MODULE_ID >>
           testrail_project: << pipeline.parameters.TESTRAIL_PROJECTNAME >>
