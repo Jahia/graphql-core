@@ -4,7 +4,6 @@
   "description": "cypress",
   "devDependencies": {
     "@apollo/client": "^3.4.16",
-    "@bahmutov/add-typescript-to-cypress": "^2.1.2",
     "@cypress/code-coverage": "^3.9.11",
     "@cypress/webpack-preprocessor": "^5.9.1",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
