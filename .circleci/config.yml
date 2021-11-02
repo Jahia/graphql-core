@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   docker: circleci/docker@0.5.20
-  jahia-modules-orb: jahia/jahia-modules-orb@0.5.10
+  jahia-modules-orb: jahia/jahia-modules-orb@0.6.2
 
 
 # Parameters are available across the entire config file and can be used with this syntax: << pipeline.parameters.THE_PARAMETER >>
@@ -556,8 +556,7 @@ workflows:
   on-code-change:
     unless: << pipeline.parameters.IS_RELEASE >>
     jobs:
-      - jahia-modules-orb/initialize:
-          base_image: cimg/openjdk:8.0.292-node
+      - jahia-modules-orb/initialize
       - jahia-modules-orb/update-signature:
           context: QA_ENVIRONMENT
           requires:
