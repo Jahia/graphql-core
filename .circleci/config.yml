@@ -557,7 +557,6 @@ workflows:
     unless: << pipeline.parameters.IS_RELEASE >>
     jobs:
       - jahia-modules-orb/initialize:
-          base_image: cimg/openjdk:8.0.292-node
       - jahia-modules-orb/update-signature:
           context: QA_ENVIRONMENT
           requires:
