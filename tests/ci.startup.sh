@@ -11,7 +11,7 @@ echo " TESTS_IMAGE: ${TESTS_IMAGE}"
 echo " JAHIA_IMAGE: ${JAHIA_IMAGE}"
 echo " LDAP_TAG: ${LDAP_TAG}"
 
-docker-compose pull
+docker-compose pull jahia dockerldap
 docker-compose up -d --renew-anon-volumes --remove-orphans --force-recreate jahia dockerldap
 
 if [[ $1 != "notests" ]]; then
