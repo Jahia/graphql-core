@@ -1,0 +1,12 @@
+query($path:String!, $upToPath:String) {
+    jcr {
+        nodeByPath(path: $path) {
+            parent {
+                name
+            }
+            ancestors(upToPath: $upToPath) {
+                name
+            }
+        }
+    }
+}
