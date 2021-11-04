@@ -39,13 +39,14 @@ sed -i "" -e "s/JAHIA_VERSION/${JAHIA_VERSION}/g" ./run-artifacts/${MANIFEST}
 
 echo "$(date +'%d %B %Y - %k:%M') == Executing manifest: ${MANIFEST} =="
 curl -u root:${SUPER_USER_PASSWORD} -X POST ${JAHIA_URL}/modules/api/provisioning --form script="@./run-artifacts/${MANIFEST};type=text/yaml"
+echo
 if [[ $? -eq 1 ]]; then
   echo "PROVISIONING FAILURE - EXITING SCRIPT, NOT RUNNING THE TESTS"
   echo "failure" > ./results/test_failure
   exit 1
 fi
 
-if [[ -d artifacts/ ]]; then
+if [[ -d artifacts/ && $MANIFEST == *"build"* ]]; then
   # If we're building the module (and manifest name contains build), then we'll end up pushing that module individually
   # The artifacts folder is created by the build stage, when running in snapshot the docker container is not going to contain that folder
   cd artifacts/
@@ -56,6 +57,7 @@ if [[ -d artifacts/ ]]; then
   do
     echo "$(date +'%d %B %Y - %k:%M') [MODULE_INSTALL] == Submitting module from: $file =="
     curl -u root:${SUPER_USER_PASSWORD} -X POST ${JAHIA_URL}/modules/api/provisioning --form script='[{"installAndStartBundle":"'"$file"'", "forceUpdate":true}]' --form file=@$file
+    echo
     echo "$(date +'%d %B %Y - %k:%M') [MODULE_INSTALL] == Module submitted =="
   done
   cd ..
