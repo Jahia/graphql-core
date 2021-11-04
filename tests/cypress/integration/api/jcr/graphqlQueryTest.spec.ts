@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import gql from 'graphql-tag'
+import { validateError } from './validateErrors';
 
 describe('GraphQL Query Test', () => {
 
@@ -94,12 +95,6 @@ describe('GraphQL Query Test', () => {
             variables: { query, queryLanguage },
             errorPolicy
         })
-    }
-
-    function validateError(result, errorMessage) {
-        expect(Array.isArray(result.errors)).to.be.true;
-        expect(result.errors.length).to.be.equal(1);
-        expect(result.errors.map(e => e.message)).to.include(errorMessage);
     }
 
 })
