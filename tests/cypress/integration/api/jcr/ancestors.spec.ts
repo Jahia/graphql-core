@@ -1,6 +1,6 @@
 import gql from "graphql-tag";
 import {validateNode} from "./validateNode";
-import {validateErrors} from "./validateErrors";
+import {validateError} from "./validateErrors";
 
 describe('Ancestors graphql test', () => {
 
@@ -73,7 +73,7 @@ describe('Ancestors graphql test', () => {
             variables: {path: '/testList/testSubList/testSubSubList', upToPath: ''},
             errorPolicy: 'all'
         }).should(result => {
-            validateErrors(result, [`'' is not a valid node path`]);
+            validateError(result, `'' is not a valid node path`);
         })
     })
 
@@ -83,7 +83,7 @@ describe('Ancestors graphql test', () => {
             variables: {path: '/testList/testSubList/testSubSubList', upToPath: '/nonExistingPath'},
             errorPolicy: 'all'
         }).should(result => {
-            validateErrors(result, [`'/nonExistingPath' does not reference an ancestor node of '/testList/testSubList/testSubSubList'`]);
+            validateError(result, `'/nonExistingPath' does not reference an ancestor node of '/testList/testSubList/testSubSubList'`);
         })
     })
 
@@ -93,7 +93,7 @@ describe('Ancestors graphql test', () => {
             variables: {path: '/testList/testSubList/testSubSubList', upToPath: '/testList/testSubList/testSubSubList'},
             errorPolicy: 'all'
         }).should(result => {
-            validateErrors(result, [`'/testList/testSubList/testSubSubList' does not reference an ancestor node of '/testList/testSubList/testSubSubList'`]);
+            validateError(result, `'/testList/testSubList/testSubSubList' does not reference an ancestor node of '/testList/testSubList/testSubSubList'`);
         })
     })
 })
