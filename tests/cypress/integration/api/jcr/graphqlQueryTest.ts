@@ -1,0 +1,105 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import gql from 'graphql-tag'
+
+describe('GraphQL Query Test', () => {
+
+    /* Setup */
+
+    before('Create query test nodes', () => {
+        cy.apollo({
+            mutation: gql`mutation {
+                jcr {
+                    addNode(parentPathOrId: "/", name: "testList", primaryNodeType: "jnt:contentList") {
+                        subList1: addChild(name: "testSubList1", primaryNodeType: "jnt:contentList") {
+                            uuid
+                        }
+                        subList2: addChild(name: "testSubList2", primaryNodeType: "jnt:contentList") {
+                            uuid
+                        }
+                        subList3: addChild(name: "testSubList3", primaryNodeType: "jnt:contentList") {
+                            uuid
+                        }
+                        subList4: addChild(name: "testSubList4", primaryNodeType: "jnt:contentList") {
+                            subList4_1: addChild(name: "testSubList4_1", primaryNodeType: "jnt:contentList") {
+                                uuid
+                            }
+                            subList4_2: addChild(name: "testSubList4_2", primaryNodeType: "jnt:contentList") {
+                                uuid
+                            }
+                            subList4_3: addChild(name: "testSubList4_3", primaryNodeType: "jnt:contentList") {
+                                uuid
+                            }
+                            uuid
+                        }
+                        uuid
+                    }
+                }
+            }`
+        });
+    })
+
+    after('Remove query test nodes', () => {
+        cy.apollo({
+            mutationFile: 'jcr/deleteNode.graphql',
+            variables: { pathOrId: '/testList' }
+        });
+    })
+
+    /* Tests */
+
+    it('Should retrieve nodes by SQL2 query', () => {
+        let query = "select * from [jnt:contentList] where isdescendantnode('/testList')";
+        let queryLang = "SQL2";
+        testQuery(query, queryLang, 7);
+    })
+
+    it('Should retrieve nodes by Xpath query', () => {
+        let query = "/jcr:root/testList//element(*, jnt:contentList)";
+        let queryLang = "XPATH";
+        testQuery(query, queryLang, 7);
+    })
+
+    it('Should get error not retrieve nodes by wrong query', () => {
+        let query = "slct from [jnt:contentList]";
+        let queryLang = "SQL2";
+        runQuery(query, queryLang, "all").should((result: any) => {
+            validateError(result, "javax.jcr.query.InvalidQueryException: Query:\nslct(*)from [jnt:contentList]; expected: SELECT");
+        });
+    })
+
+    /* Helper methods */
+
+    function testQuery(query, queryLang, expectedNodeLength) {
+        runQuery(query, queryLang).should((result: any) => {
+            const nodes = result?.data?.jcr?.nodesByQuery?.edges;
+            expect(nodes.length).to.equal(expectedNodeLength);
+        });
+    }
+
+    function runQuery(query, queryLanguage, errorPolicy=undefined) {
+        return cy.apollo({
+            query: gql`
+                query($query: String!, $queryLanguage: QueryLanguage!) {
+                    jcr {
+                        nodesByQuery(query: $query, queryLanguage: $queryLanguage) {
+                            edges {
+                                node {
+                                    path
+                                }
+                            }
+                        }
+                    }
+                }
+            `,
+            variables: { query, queryLanguage },
+            errorPolicy
+        })
+    }
+
+    function validateError(result, errorMessage) {
+        expect(Array.isArray(result.errors)).to.be.true;
+        expect(result.errors.length).to.be.equal(1);
+        expect(result.errors.map(e => e.message)).to.include(errorMessage);
+    }
+
+})
