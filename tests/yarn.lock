@@ -919,10 +919,10 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.3.tgz#e45e384e4b8ec16bce2fd903af78450f6bf7ec98"
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
 
-"@jahia/cypress@^1.0.7":
-  version "1.0.7"
-  resolved "https://registry.yarnpkg.com/@jahia/cypress/-/cypress-1.0.7.tgz#8cfca515c54a1366389cd78635940c4f26aa78da"
-  integrity sha512-QUQUcO/dG4NqZk1n9OvojiRCcck4kTZ+l0aYGAP01M74oPG50J+XfUy6m5bLTOkzBW+G12Ke++Jqgqg7kaprSw==
+"@jahia/cypress@^1.0.8":
+  version "1.0.8"
+  resolved "https://registry.yarnpkg.com/@jahia/cypress/-/cypress-1.0.8.tgz#570582285fcd245e306e16449cc7e041e658a4dd"
+  integrity sha512-Sk5hQKBdJP1ojfKCgl8mDN18eKwt/o0supDzWgHnlPIp51vUXXeSzY+AXK4IkFTShP1Op1j8YRZF9hxSbrvsyg==
   dependencies:
     "@apollo/client" "^3.4.9"
     cypress-terminal-report "^3.3.2"
