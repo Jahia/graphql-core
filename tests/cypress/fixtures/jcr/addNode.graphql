@@ -1,11 +1,15 @@
-mutation($parentPathOrId: String!, $nodeName: String!, $nodeType: String!, $properties: [InputJCRProperty],) {
+mutation($parentPathOrId: String!, $nodeName: String!, $nodeType: String!, $children: [InputJCRNode] = [],
+    $properties: [InputJCRProperty]) {
     jcr(workspace: EDIT) {
         addNode(
-          parentPathOrId: $parentPathOrId,
-          name: $nodeName,
-          primaryNodeType: $nodeType,
-          properties: $properties,
+            parentPathOrId: $parentPathOrId,
+            name: $nodeName,
+            primaryNodeType: $nodeType,
+            properties: $properties,
         ) {
+            addChildrenBatch(nodes: $children){
+                uuid
+            }
             uuid
         }
     }
