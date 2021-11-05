@@ -19,7 +19,7 @@ describe('Test GraphQL Field Sorter', () => {
         
     })
 
-    it('Should sort display name', () => {
+    it('Should sort display name ASC with case', () => {
         cy.apollo({
             queryFile: 'sortingList.graphql',
             variables: {
@@ -33,7 +33,10 @@ describe('Test GraphQL Field Sorter', () => {
             expect(sortedList1[0]).to.have.property('displayName',"abonjour")
             expect(sortedList1[1]).to.have.property('displayName',"ZHello")
         })
+
+    })
         
+    it('Should sort display name ASC ignoring case', () => {
         cy.apollo({
             queryFile: 'sortingList.graphql',
             variables: {
@@ -47,7 +50,10 @@ describe('Test GraphQL Field Sorter', () => {
             expect(sortedList1[0]).to.have.property('displayName',"ZHello")
             expect(sortedList1[1]).to.have.property('displayName',"abonjour")
         })
+
+    })
         
+    it('Should sort display name DESC with case', () => {    
         cy.apollo({
             queryFile: 'sortingList.graphql',
             variables: {
@@ -62,6 +68,9 @@ describe('Test GraphQL Field Sorter', () => {
             expect(sortedList1[1]).to.have.property('displayName',"abonjour")
         })
 
+    })
+
+    it('Should sort display name DESC ignoring case', () => {
         cy.apollo({
             queryFile: 'sortingList.graphql',
             variables: {
