@@ -1,0 +1,10 @@
+query($sortType: SortType, $ignoreCase: Boolean) {
+    jcr (workspace:EDIT) {
+        nodesByCriteria(criteria: {paths: "/testList", nodeType: "jnt:content", language:"en"}, fieldSorter:
+                {fieldName: "displayName", sortType: $sortType, ignoreCase: $ignoreCase}) {
+                      nodes {
+                        displayName(language:"en")
+                      }
+                }
+    }
+}
