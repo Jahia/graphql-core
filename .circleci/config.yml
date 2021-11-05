@@ -585,27 +585,27 @@ workflows:
               only:
                 - << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
       # Verifies that the new code works with the latest released version of Jahia
-      - integration_testsjava:
-          name: 'Int. Tests - Jahia Latest - Built modules'
-          requires:
-            - jahia-modules-orb/build
-          context: QA_ENVIRONMENT
-          #Using Aliases here (8 is the latest of the 8 tree, 8.1 is the latest of the tree, ...)
-          JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
-          RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
-          JAHIA_USERNAME_TOOLS: "root"
-          JAHIA_PASSWORD_TOOLS: "root"
-          JAHIA_USERNAME: "root"
-          JAHIA_PASSWORD: "root"
-          MANIFEST: warmup-manifest-build.yml
-          TESTRAIL_MILESTONE: Jahia-Latest
-          SKIP_TESTRAIL: "true"
-          SKIP_ARTIFACTS: false
-          BUILD_TESTSIMAGE: true
+#      - integration_testsjava:
+#          name: 'Int. Tests - Jahia Latest - Built modules'
+#          requires:
+#            - jahia-modules-orb/build
+#          context: QA_ENVIRONMENT
+#          #Using Aliases here (8 is the latest of the 8 tree, 8.1 is the latest of the tree, ...)
+#          JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
+#          RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
+#          JAHIA_USERNAME_TOOLS: "root"
+#          JAHIA_PASSWORD_TOOLS: "root"
+#          JAHIA_USERNAME: "root"
+#          JAHIA_PASSWORD: "root"
+#          MANIFEST: warmup-manifest-build.yml
+#          TESTRAIL_MILESTONE: Jahia-Latest
+#          SKIP_TESTRAIL: "true"
+#          SKIP_ARTIFACTS: false
+#          BUILD_TESTSIMAGE: true
       - docker-publish:
           context: QA_ENVIRONMENT
           requires:
-            - Int. Tests - Jahia Latest - Built modules
+            - jahia-modules-orb/build
           filters:
             tags:
               only: /.*/
