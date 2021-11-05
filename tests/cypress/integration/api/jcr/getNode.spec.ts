@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import gql from "graphql-tag";
+import {validateErrors} from "./validateErrors";
+import {validateError} from "./validateErrors";
+import {validateNode} from "./validateNode";
 
 describe('Test page properties', () => {
     let nodeUuid: string
@@ -11,30 +14,20 @@ describe('Test page properties', () => {
 
     before('load graphql file and create nodes', () => {
         cy.apollo({
-            mutation: gql`mutation {
-                jcr {
-                    addNode(parentPathOrId: "/", name: "testList", primaryNodeType: "jnt:contentList", properties: [
-                        {
-                            name: "jcr:title",
-                            value: "${nodeTitleEn}",
-                            language: "en",
-                        }
-                        {
-                            name: "jcr:title",
-                            value: "${nodeTitleFr}",
-                            language: "fr",
-                        }
-                    ]) {
-                        child1:addChild(name: "testSubList1", primaryNodeType: "jnt:contentList") {
-                            uuid
-                        }
-                        child2:addChild(name: "testSubList2", primaryNodeType: "jnt:contentList") {
-                            uuid
-                        }
-                        uuid
-                    }
-                }
-            }`
+            mutationFile: 'jcr/addNode.graphql',
+            variables: {
+                parentPathOrId: '/',
+                nodeName: 'testList',
+                nodeType: 'jnt:contentList',
+                properties: [
+                    {name: "jcr:title", value: "${nodeTitleEn}", language: "en"},
+                    {name: "jcr:title", value: "${nodeTitleFr}", language: "fr"}
+                ],
+                children: [
+                    {name: "testSubList1", primaryNodeType: "jnt:contentList"},
+                    {name: "testSubList2", primaryNodeType: "jnt:contentList"},
+                ],
+            }
         }).then((response: any) => {
             nodeUuid = response.data.jcr.addNode.uuid
             subNodeUuid1 = response.data.jcr.addNode.child1.uuid
@@ -99,7 +92,7 @@ describe('Test page properties', () => {
                     }
                 }`
         }).should(result => {
-            //validateError(result, `javax.jcr.PathNotFoundException: /testList/wrongPath`)
+            validateError(result, `Error: javax.jcr.PathNotFoundException: /testList/wrongPath`)
         })
     })
 
@@ -114,7 +107,7 @@ describe('Test page properties', () => {
                     }
                 }`
         }).should(result => {
-           // validateError(result, `javax.jcr.PathNotFoundException: /testList/testSubList2`)
+            validateError(result, `javax.jcr.PathNotFoundException: /testList/testSubList2`)
         })
     })
 
@@ -131,8 +124,8 @@ describe('Test page properties', () => {
         }).should(result => {
             const nodes = result?.data?.jcr?.nodesByPath
             expect(nodes).to.have.length(2)
-          //  validateNode(nodes[0], "testSubList2")
-          //  validateNode(nodes[1], "testSubList1")
+            validateNode(nodes[0], "testSubList2")
+            validateNode(nodes[1], "testSubList1")
         })
     })
 
@@ -147,7 +140,7 @@ describe('Test page properties', () => {
                     }
                 }`
         }).should(result => {
-         //   validateError(result, `javax.jcr.PathNotFoundException: /testList/wrongPath`)
+            validateError(result, `javax.jcr.PathNotFoundException: /testList/wrongPath`)
         })
     })
 
@@ -162,7 +155,7 @@ describe('Test page properties', () => {
                     }
                 }`
         }).should(result => {
-          //  validateErrors(result, ["javax.jcr.PathNotFoundException: /testList/testSubList2","javax.jcr.PathNotFoundException: /testList/testSubList1"])
+            validateErrors(result, ["javax.jcr.PathNotFoundException: /testList/testSubList2","javax.jcr.PathNotFoundException: /testList/testSubList1"])
         })
     })
 
@@ -177,8 +170,8 @@ describe('Test page properties', () => {
                     }
                 }`
         }).should(result => {
-            const nodes = result?.data?.jcr?.nodeById
-        //    validateNode(node, "testSubList2")
+            const node = result?.data?.jcr?.nodeById
+            validateNode(node, "testSubList2")
         })
     })
 
@@ -193,7 +186,7 @@ describe('Test page properties', () => {
                     }
                 }`
         }).should(result => {
-        //    validateError(result, `javax.jcr.ItemNotFoundException: badId`)
+            validateError(result, `javax.jcr.ItemNotFoundException: badId`)
         })
     })
 
@@ -208,7 +201,7 @@ describe('Test page properties', () => {
                     }
                 }`
         }).should(result => {
-        //    validateError(result, `javax.jcr.ItemNotFoundException: ${subNodeUuid2}`)
+            validateError(result, `javax.jcr.ItemNotFoundException: ${subNodeUuid2}`)
         })
     })
 
@@ -225,8 +218,8 @@ describe('Test page properties', () => {
         }).should(result => {
             const nodes = result?.data?.jcr?.nodesById
             expect(nodes).to.have.length(2)
-        //    validateNode(nodes[0], "testSubList2")
-         //   validateNode(nodes[1], "testSubList1")
+            validateNode(nodes[0], "testSubList2")
+            validateNode(nodes[1], "testSubList1")
         })
     })
 
@@ -241,7 +234,7 @@ describe('Test page properties', () => {
                     }
                 }`
         }).should(result => {
-         //   validateError(result, `javax.jcr.ItemNotFoundException: wrongId`)
+            validateError(result, `javax.jcr.ItemNotFoundException: wrongId`)
         })
     })
 
@@ -256,7 +249,7 @@ describe('Test page properties', () => {
                     }
                 }`
         }).should(result => {
-         //   validateErrors(result, [`javax.jcr.ItemNotFoundException: ${subNodeUuid2}`, `javax.jcr.ItemNotFoundException:  ${subNodeUuid1}`])
+            validateErrors(result, [`javax.jcr.ItemNotFoundException: ${subNodeUuid2}`, `javax.jcr.ItemNotFoundException:  ${subNodeUuid1}`])
         })
     })
 
