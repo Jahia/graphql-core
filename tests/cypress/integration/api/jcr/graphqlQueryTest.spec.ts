@@ -8,35 +8,26 @@ describe('GraphQL Query Test', () => {
 
     before('Create query test nodes', () => {
         cy.apollo({
-            mutation: gql`mutation {
-                jcr {
-                    addNode(parentPathOrId: "/", name: "testList", primaryNodeType: "jnt:contentList") {
-                        subList1: addChild(name: "testSubList1", primaryNodeType: "jnt:contentList") {
-                            uuid
-                        }
-                        subList2: addChild(name: "testSubList2", primaryNodeType: "jnt:contentList") {
-                            uuid
-                        }
-                        subList3: addChild(name: "testSubList3", primaryNodeType: "jnt:contentList") {
-                            uuid
-                        }
-                        subList4: addChild(name: "testSubList4", primaryNodeType: "jnt:contentList") {
-                            subList4_1: addChild(name: "testSubList4_1", primaryNodeType: "jnt:contentList") {
-                                uuid
-                            }
-                            subList4_2: addChild(name: "testSubList4_2", primaryNodeType: "jnt:contentList") {
-                                uuid
-                            }
-                            subList4_3: addChild(name: "testSubList4_3", primaryNodeType: "jnt:contentList") {
-                                uuid
-                            }
-                            uuid
-                        }
-                        uuid
+            mutationFile: 'jcr/addNode.graphql',
+            variables: {
+                parentPathOrId: '/',
+                nodeName: 'testList',
+                nodeType: 'jnt:contentList',
+                children: [
+                    {name: "testSubList1", primaryNodeType: "jnt:contentList"},
+                    {name: "testSubList2", primaryNodeType: "jnt:contentList"},
+                    {name: "testSubList3", primaryNodeType: "jnt:contentList"},
+                    {name: "testSubList4", primaryNodeType: "jnt:contentList",
+                        children: [
+                            {name: "testSubList4_1", primaryNodeType: "jnt:contentList"},
+                            {name: "testSubList4_2", primaryNodeType: "jnt:contentList"},
+                            {name: "testSubList4_3", primaryNodeType: "jnt:contentList"}
+                        ]
                     }
-                }
-            }`
-        });
+                ]
+            }
+        })
+
     })
 
     after('Remove query test nodes', () => {
