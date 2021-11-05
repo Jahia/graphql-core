@@ -7,8 +7,8 @@ import {validateNode} from "./validateNode";
 
 describe('Test page properties', () => {
     let nodeUuid: string
-    let nodeTitleFr: string = "text FR";
-    let nodeTitleEn: string = "text EN";
+    const nodeTitleFr = "text FR";
+    const nodeTitleEn = "text EN";
     let subNodeUuid1: string
     let subNodeUuid2: string
 
@@ -20,8 +20,8 @@ describe('Test page properties', () => {
                 nodeName: 'testList',
                 nodeType: 'jnt:contentList',
                 properties: [
-                    {name: "jcr:title", value: "${nodeTitleEn}", language: "en"},
-                    {name: "jcr:title", value: "${nodeTitleFr}", language: "fr"}
+                    {name: "jcr:title", value: nodeTitleEn, language: "en"},
+                    {name: "jcr:title", value: nodeTitleFr, language: "fr"}
                 ],
                 children: [
                     {name: "testSubList1", primaryNodeType: "jnt:contentList"},
@@ -30,8 +30,8 @@ describe('Test page properties', () => {
             }
         }).then((response: any) => {
             nodeUuid = response.data.jcr.addNode.uuid
-            subNodeUuid1 = response.data.jcr.addNode.child1.uuid
-            subNodeUuid2 = response.data.jcr.addNode.child2.uuid
+            subNodeUuid1 = response.data.jcr.addNode.addChildrenBatch[0].uuid
+            subNodeUuid2 = response.data.jcr.addNode.addChildrenBatch[1].uuid
         })
     })
 
@@ -90,9 +90,10 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`
+                }`,
+            errorPolicy: 'all'
         }).should(result => {
-            validateError(result, `Error: javax.jcr.PathNotFoundException: /testList/wrongPath`)
+            validateError(result, `javax.jcr.PathNotFoundException: /testList/wrongPath`)
         })
     })
 
@@ -105,7 +106,8 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`
+                }`,
+            errorPolicy: 'all'
         }).should(result => {
             validateError(result, `javax.jcr.PathNotFoundException: /testList/testSubList2`)
         })
@@ -138,7 +140,8 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`
+                }`,
+            errorPolicy: 'all'
         }).should(result => {
             validateError(result, `javax.jcr.PathNotFoundException: /testList/wrongPath`)
         })
@@ -153,7 +156,8 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`
+                }`,
+            errorPolicy: 'all'
         }).should(result => {
             validateErrors(result, ["javax.jcr.PathNotFoundException: /testList/testSubList2","javax.jcr.PathNotFoundException: /testList/testSubList1"])
         })
@@ -184,7 +188,8 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`
+                }`,
+            errorPolicy: 'all'
         }).should(result => {
             validateError(result, `javax.jcr.ItemNotFoundException: badId`)
         })
@@ -199,7 +204,8 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`
+                }`,
+            errorPolicy: 'all'
         }).should(result => {
             validateError(result, `javax.jcr.ItemNotFoundException: ${subNodeUuid2}`)
         })
@@ -232,7 +238,8 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`
+                }`,
+            errorPolicy: 'all'
         }).should(result => {
             validateError(result, `javax.jcr.ItemNotFoundException: wrongId`)
         })
@@ -247,9 +254,10 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`
+                }`,
+            errorPolicy: 'all'
         }).should(result => {
-            validateErrors(result, [`javax.jcr.ItemNotFoundException: ${subNodeUuid2}`, `javax.jcr.ItemNotFoundException:  ${subNodeUuid1}`])
+            validateErrors(result, [`javax.jcr.ItemNotFoundException: ${subNodeUuid2}`, `javax.jcr.ItemNotFoundException: ${subNodeUuid1}`])
         })
     })
 
