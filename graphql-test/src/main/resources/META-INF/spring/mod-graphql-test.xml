@@ -12,7 +12,6 @@
                 <value>org.jahia.test.graphql.GraphQLAncestorsTest</value>
                 <value>org.jahia.test.graphql.GraphQLDescendantsTest</value>
                 <value>org.jahia.test.graphql.GraphQLReferencesTest</value>
-                <value>org.jahia.test.graphql.GraphQLQueryTest</value>
                 <value>org.jahia.test.graphql.GraphQLCriteriaTest</value>
                 <value>org.jahia.test.graphql.GraphQLNodeTypesTest</value>
                 <value>org.jahia.test.graphql.GraphQLConnectionsTest</value>
