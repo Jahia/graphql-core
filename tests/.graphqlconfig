@@ -6,7 +6,9 @@
       "Default GraphQL Endpoint": {
         "url": "http://localhost:8080/modules/graphql",
         "headers": {
-          "user-agent": "JS GraphQL"
+          "user-agent": "JS GraphQL",
+          "authorization": "Basic: cm9vdDpyb290MTIzNA==",
+          "Origin": "localhost"
         },
         "introspect": false
       }
