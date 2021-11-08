@@ -30,7 +30,7 @@ parameters:
     default: "master" # main or master ? set the branch for the main release
   JAHIA_IMAGE:
     type: string
-    default: "jahia/jahia-ee-dev:8-SNAPSHOT"
+    default: "jahia/jahia-discovery-dev:8-SNAPSHOT"
   RELEASE_ID:
     type: string
     default: ""
@@ -64,497 +64,19 @@ parameters:
   SSH_KEY_FINGERPRINT:
     type: string
     default: "de:83:a2:6f:fe:89:6c:6c:34:58:55:f1:82:76:51:11"
-
-  # Pipeline parameters below are used for the legacy framework
   AUDITCI_LEVEL:
     type: string
-    default: 'moderate'
-  TESTSJAVA_PATH:
-    type: string
-    default: 'graphql-test-docker/'
-  TESTSJAVA_IMAGE:
-    type: string
-    default: 'jahia/graphql-core'
-
-references:
-  workdir: &workdir
-    working_directory: ~/source
-
-  persist-workspace: &persist-workspace
-    persist_to_workspace:
-      root: ~/source
-      paths:
-        - .
-
-  attach-workspace: &attach-workspace
-    attach_workspace:
-      at: .
-
-commands:
-  generate_cachekey_seed:
-    description: Generate Cache Key Seeds
-    steps:
-      - run:
-          name: Generate Cache Key Seeds
-          command: |
-            find . -name 'pom.xml' | sort | xargs cat > ~/source/maven_cache_seed
-            if [[ ! -z "$CIRCLE_PULL_REQUEST" ]]; then
-              echo "true" > ~/source/is_pr
-            else
-              echo "false" > ~/source/is_pr
-            fi
-
-jobs:
-  # We're saving the artifacts that are then used later on to execute the tests
-  # The artifacts are also stored and made available through circleci UI if further investigations are necessary
-  release:
-    <<: *workdir
-    docker: # run the steps with Docker
-      - image: cimg/openjdk:8.0.275-node
-    resource_class: xlarge
-    steps:
-      - checkout
-      - generate_cachekey_seed
-      - restore_cache:
-          keys:
-            - v1-maven-dependencies-{{ checksum "maven_cache_seed" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-maven-dependencies-
-      - add_ssh_keys:
-          fingerprints:
-            - <<pipeline.parameters.SSH_KEY_FINGERPRINT>>
-      - run:
-          name: Getting latest changes from the remote branch
-          command: |
-            git fetch --all
-            git pull origin $CIRCLE_BRANCH --quiet
-      - run:
-          name: Delete github tag <<pipeline.parameters.RELEASE_VERSION>>
-          command: |
-            mkdir -p ~/.ssh
-            ssh-keyscan github.com >> ~/.ssh/known_hosts
-            git config user.email "jahia-ci@jahia.com"
-            git config user.name "Jahia CI"
-            git tag --delete <<pipeline.parameters.RELEASE_VERSION>>
-            git push --delete origin <<pipeline.parameters.RELEASE_VERSION>>
-      - run:
-          name: Release prepare version for <<pipeline.parameters.RELEASE_VERSION>>
-          command: |
-            FINAL_RELEASE_VERSION=$(echo <<pipeline.parameters.RELEASE_VERSION>> | cut -d'-' -f 1)
-            MAJOR_VERSION=`echo $FINAL_RELEASE_VERSION | cut -d. -f1`
-            MINOR_VERSION=`echo $FINAL_RELEASE_VERSION | cut -d. -f2`
-            REVISION=`echo $FINAL_RELEASE_VERSION | cut -d. -f3`
-            if [[ "<<pipeline.parameters.PRIMARY_RELEASE_BRANCH>>" == "master"  || "<<pipeline.parameters.PRIMARY_RELEASE_BRANCH>>" == "main"  ||  "<<pipeline.parameters.PRIMARY_RELEASE_BRANCH>>" =~ ^[0-9]_x$ ]]; then
-             NEXT_MINOR_VERSION=`expr $MINOR_VERSION + 1`
-             NEXT_DEVELOPMENT_VERSION="$MAJOR_VERSION.$NEXT_MINOR_VERSION.0"-SNAPSHOT
-            else
-              NEXT_REVISION=`expr $REVISION + 1`
-              NEXT_DEVELOPMENT_VERSION="$MAJOR_VERSION.$MINOR_VERSION.$NEXT_REVISION"-SNAPSHOT
-            fi
-            mvn -s .circleci/.circleci.settings.xml -B -Dtag=$FINAL_RELEASE_VERSION release:prepare -DreleaseVersion=$FINAL_RELEASE_VERSION -DdevelopmentVersion="$NEXT_DEVELOPMENT_VERSION"
-      - save_cache:
-          # need to match rollback cache key on restore
-          key: v1-rollback-<<pipeline.parameters.RELEASE_ID>>
-          paths:
-            - pom.xml.releaseBackup
-            - release.properties
-      - run:
-          name: Update github release for id << pipeline.parameters.RELEASE_ID >>
-          command: |
-            curl -X PATCH \
-            -H "Accept:application/vnd.github.v3+json" \
-            -d "{\"tag_name\":\"<<pipeline.parameters.RELEASE_VERSION>>\", \"prerelease\": false, \"draft\": false}" -u \
-            jahia-ci:$GITHUB_API_TOKEN https://api.github.com/repos/<<pipeline.parameters.GITHUB_SLUG>>/releases/<< pipeline.parameters.RELEASE_ID >>
-            curl \
-            -H "Content-Type: $(file -b --mime-type CHANGELOG.md)" \
-            -u jahia-ci:$GITHUB_API_TOKEN  \
-            --data-binary @CHANGELOG.md \
-            "https://uploads.github.com/repos/<<pipeline.parameters.GITHUB_SLUG>>/releases/<< pipeline.parameters.RELEASE_ID >>/assets?name=$(basename CHANGELOG.md)"
-      - run:
-          name: Perform release
-          command: |
-            mvn -s .circleci/.circleci.settings.xml release:perform -Prelease-to-staging-repository -DscmCommentPrefix="[skip ci] [maven-release-plugin]"
-      - run:
-          name: Copy artifacts
-          command: |
-            mkdir /tmp/artifacts/
-            cp /home/circleci/source/target/checkout/graphql-dxm-provider/target/*.jar /tmp/artifacts/
-      - store_artifacts:
-          path: /tmp/artifacts/
-  build:
-    <<: *workdir
-    docker:
-      - image: cimg/openjdk:8.0.275
-    resource_class: large
-    steps:
-      - *attach-workspace
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-      - run: mvn -s .circleci/.circleci.settings.xml clean install
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: v1-dependencies-{{ checksum "pom.xml" }}
-      # Environment provisioning is sometimes dependent upon dependencies build during mvn clean install
-      # This step copies those dependencies and make them available for further actions,
-      # such as being used to provision a running Jahia with a set of freshly built artifacts
-      - run: mvn -s .circleci/.circleci.settings.xml dependency:copy-dependencies
-      - run:
-          name: Prepare artifacts
-          command: |
-            mkdir /tmp/artifacts/
-            cp /home/circleci/source/graphql-dxm-provider/target/*.jar /tmp/artifacts/
-            cp /home/circleci/source/graphql-extension-example/target/*.jar /tmp/artifacts/
-            cp /home/circleci/source/graphql-test/target/*.jar /tmp/artifacts/
-      - run:
-          name: Copy test report
-          command: |
-            mkdir /tmp/artifacts/test-results/
-            cp /home/circleci/source/graphql-dxm-provider/target/surefire-reports/*.xml /tmp/artifacts/test-results/ || :
-      - run:
-          name: Copy test report details
-          command: |
-            mkdir /tmp/artifacts/surefire-reports/
-            cp /home/circleci/source/graphql-dxm-provider/target/surefire-reports/*.txt /tmp/artifacts/surefire-reports/ || :
-            mkdir /tmp/artifacts/surefire-reports/testng-junit-results/
-            cp /home/circleci/source/graphql-dxm-provider/target/surefire-reports/testng-junit-results/* /tmp/artifacts/surefire-reports/testng-junit-results/ || :
-            mkdir /tmp/artifacts/surefire-reports/testng-junit-results/junitreports/
-            cp /home/circleci/source/graphql-dxm-provider/target/surefire-reports/testng-junit-results/junitreports/* /tmp/artifacts/surefire-reports/testng-junit-results/junitreports/ || :
-      - store_artifacts:
-          path: /tmp/artifacts/
-      - store_test_results:
-          path: /tmp/artifacts/test-results/
-      - *persist-workspace
-    environment:
-      MAVEN_OPTS: -Xmx2G
-
-  # This job publish the artifact to nexus by calling the deploy command
-  # It is only executed when merging into master (after successful PR execution)
-  publish:
-    <<: *workdir
-    docker:
-      - image: cimg/openjdk:8.0.275
-    resource_class: large
-    steps:
-      - *attach-workspace
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-      - run: mvn -s .circleci/.circleci.settings.xml clean install deploy
-
-  # This job runs the integration tests
-  # It is fully containerized.
-  # Node that we might want to migrate it to Docker executor down the road
-  # It is aimed at being called by matrix jobs (in the workflow section)
-  integration_testsjava:
-    <<: *workdir
-    machine: true
-    # Available types: medium, large, xlarge, 2xlarge https://circleci.com/docs/2.0/configuration-reference/#machine-executor-linux
-    resource_class: xlarge
-    parameters:
-      TESTRAIL_MILESTONE:
-        type: string
-        default: Default
-      JAHIA_IMAGE:
-        type: string
-      MANIFEST:
-        type: string
-      JAHIA_URL:
-        type: string
-        default: http://jahia:8080
-      JAHIA_USERNAME:
-        type: string
-        default: root
-      JAHIA_PASSWORD:
-        type: string
-        default: root
-      JAHIA_USERNAME_TOOLS:
-        type: string
-        default: jahia
-      JAHIA_PASSWORD_TOOLS:
-        type: string
-        default: password
-      # Why this is not a boolean, see: https://discuss.circleci.com/t/run-job-within-workflow-conditionally/34125/2
-      SKIP_TESTRAIL:
-        type: string
-        default: ""
-      SKIP_ARTIFACTS:
-        type: boolean
-        default: true
-      RUN_TESTSIMAGE:
-        type: string
-        default: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
-      BUILD_TESTSIMAGE:
-        type: boolean
-        default: false
-    steps:
-      - *attach-workspace
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-      - run:
-          name: Prepare artifacts
-            # This command copy the source subfolders and the various build artifacts into the /graphql-test-docker/ folder
-            # The POM files will be used by the Maven test call
-            # The artifacts will be used by jahia-cli to provision Jahia for testing
-          command: |
-            if [ ! -d << pipeline.parameters.TESTSJAVA_PATH >>artifacts ]; then
-              mkdir -p << pipeline.parameters.TESTSJAVA_PATH >>artifacts
-              mkdir << pipeline.parameters.TESTSJAVA_PATH >>artifacts/reports
-            fi
-            cp pom.xml << pipeline.parameters.TESTSJAVA_PATH >>pom.xml
-            if [ ! -d << pipeline.parameters.TESTSJAVA_PATH >>graphql-dxm-provider ]; then
-                mkdir << pipeline.parameters.TESTSJAVA_PATH >>graphql-dxm-provider
-            fi
-            if [ ! -d << pipeline.parameters.TESTSJAVA_PATH >>graphql-extension-example ]; then
-                mkdir << pipeline.parameters.TESTSJAVA_PATH >>graphql-extension-example
-            fi
-            if [ ! -d << pipeline.parameters.TESTSJAVA_PATH >>graphql-test ]; then
-                mkdir << pipeline.parameters.TESTSJAVA_PATH >>graphql-test
-            fi
-            cp -R /home/circleci/source/graphql-dxm-provider/* << pipeline.parameters.TESTSJAVA_PATH >>graphql-dxm-provider/
-            cp -R /home/circleci/source/graphql-extension-example/* << pipeline.parameters.TESTSJAVA_PATH >>graphql-extension-example/
-            cp -R /home/circleci/source/graphql-test/* << pipeline.parameters.TESTSJAVA_PATH >>graphql-test/
-            if [ << parameters.SKIP_ARTIFACTS >> == false ]; then
-              sudo cp /home/circleci/source/graphql-dxm-provider/target/*.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/
-              sudo cp << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-dxm-provider*SNAPSHOT.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-dxm-provider-SNAPSHOT.jar
-              sudo cp /home/circleci/source/graphql-extension-example/target/*.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/
-              sudo cp << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-extension-example*SNAPSHOT.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-extension-example-SNAPSHOT.jar
-              sudo cp /home/circleci/source/graphql-test/target/*.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/
-              sudo cp << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-test*SNAPSHOT.jar << pipeline.parameters.TESTSJAVA_PATH >>artifacts/graphql-test-SNAPSHOT.jar
-            fi
-      - run:
-          name: Docker login
-          # This is needed to fetch private docker images (such as Jahia snapshot)
-          command: |
-            echo "$DOCKERHUB_LOGIN"
-            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_LOGIN" --password-stdin
-      - run:
-          name: Spin-up dockerized jahia
-          # At that point we're only sprinning up Jahia and its runtime dependencies,
-          # We are not starting the tests yet since we first want to build the test container (or run from a previously built container)
-          # Copying the main folder content into the tests folder is there to have
-          #   the POM files usable by the tests executed by Maven at this level
-          # Checking the presence of the .env file is there because it's needed by the tests, but to not break ci/cd if variables
-          #   are added to the compose file but not to the environment variables in circleci config.yml
-          command: |
-            set -e
-            cd << pipeline.parameters.TESTSJAVA_PATH >>
-            if [[ ! -e .env ]]; then
-              mv .env.example .env
-            fi
-            docker-compose -f docker-compose.yml up -d jahia
-          no_output_timeout: 2h
-          environment:
-            MANIFEST: << parameters.MANIFEST >>
-            JAHIA_IMAGE: << parameters.JAHIA_IMAGE >>
-            TESTSJAVA_IMAGE: << parameters.RUN_TESTSIMAGE >>
-            JAHIA_URL: << parameters.JAHIA_URL >>
-            JAHIA_HOST: jahia
-            JAHIA_PORT: 8080
-            TEST_URL: http://jahia:8080/
-            JAHIA_USERNAME: root
-            JAHIA_PASSWORD: root
-      - run:
-          # We want to build the test image from scratch with any code change (since that code change could be in the tests themselves)
-          name: Build << pipeline.parameters.TESTSJAVA_IMAGE >> image
-          command: |
-            if [ << parameters.BUILD_TESTSIMAGE >> == true ]; then
-              cd << pipeline.parameters.TESTSJAVA_PATH >>
-              docker build -t << pipeline.parameters.TESTSJAVA_IMAGE >> .
-              docker save -o tests_image.tar << pipeline.parameters.TESTSJAVA_IMAGE >>
-            fi
-      - run:
-          name: Execute tests
-          # Running the tests, note that the reports are copied at the end of execution
-          # We don't need (nor want) this actual step to fail
-          # Failure is determined by counting the number of failed tests in the output report
-          # Note: the timeout env vars are added to address this: https://github.com/docker/compose/issues/3927
-          command: |
-            set -e
-            cd << pipeline.parameters.TESTSJAVA_PATH >>
-            export DOCKER_CLIENT_TIMEOUT=120
-            export COMPOSE_HTTP_TIMEOUT=120
-            docker-compose -f docker-compose.yml up maven
-            docker cp e2e-tests:/tmp/results ./artifacts/results
-          no_output_timeout: 2h
-          environment:
-            MANIFEST: << parameters.MANIFEST >>
-            JAHIA_IMAGE: << parameters.JAHIA_IMAGE >>
-            TESTSJAVA_IMAGE: << parameters.RUN_TESTSIMAGE >>
-            JAHIA_URL: << parameters.JAHIA_URL >>
-            JAHIA_HOST: jahia
-            JAHIA_PORT: 8080
-            TEST_URL: http://jahia:8080/
-            JAHIA_USERNAME: root
-            JAHIA_PASSWORD: root
-      - run:
-          name: Export jahia logs
-          when: always
-          command: |
-            set -e
-            cd << pipeline.parameters.TESTSJAVA_PATH >>
-            docker logs jahia > ./artifacts/results/jahia.log
-            docker logs e2e-tests > ./artifacts/results/tests.log
-      # This fetches data about the running Jahia (jahia versions, module version, ...)
-      # This is useful as an artifact but also used by the slack and zencrepes reporters to
-      # Populate the data they're sending
-      - run:
-          name: Fetch module dependencies
-          when: always
-          command: |
-            set +e
-            cd << pipeline.parameters.TESTSJAVA_PATH >>
-            export NVM_DIR="/opt/circleci/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm install v12
-            nvm alias default v12
-            npm install -g jahia-reporter
-            echo "Fetching modules"
-            jahia-reporter utils:modules \
-              --moduleId="<< pipeline.parameters.MODULE_ID >>" \
-              --dependencies="graphql-dxm-provider" \
-              --filepath="artifacts/results/installed-jahia-modules.json"
-      # This is not needed since cypress is going to terminat on failure with exit code 1
-      - run:
-          name: Analyze Test results
-          when: always
-          # This looks at the report and fail the job if one of the test has failed
-          command: |
-            cd << pipeline.parameters.TESTSJAVA_PATH >>
-            if [[ ! -e ./artifacts/results/test_success ]]; then
-              echo "More than one failure found, sending exit signal"
-              exit 1
-            fi
-      - store_test_results:
-          path: << pipeline.parameters.TESTSJAVA_PATH >>artifacts/results/reports
-      - store_artifacts:
-          path: << pipeline.parameters.TESTSJAVA_PATH >>artifacts/results
-      # Once all is executed, results are submitted to external platforms
-      # Testrail report and Slack (failure only) notifications are sent during scheduled executions or merged into the main branch
-      # jahia-reporter can be executed either in docker or through node directly.
-      - run:
-          name: Publish results to testrail
-          when: always
-          command: |
-            set +e
-            if [ "<< parameters.SKIP_TESTRAIL >>" != "true" ] || [ "$CIRCLE_BRANCH" = "<< pipeline.parameters.PRIMARY_RELEASE_BRANCH >>" ]; then
-              cd << pipeline.parameters.TESTSJAVA_PATH >>
-              export NVM_DIR="/opt/circleci/.nvm"
-              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-              nvm alias default v12
-              echo "Sending slack message"
-              jahia-reporter slack \
-                --channelId=$SLACK_CHANNEL_ID_QA_NOTIFICATIONS \
-                --channelAllId=$SLACK_CHANNEL_ID_QA_NOTIFICATIONS_ALL \
-                --token=$SLACK_CLIENT_TOKEN \
-                --skipSuccessful \
-                --sourcePath="artifacts/results/reports" \
-                --sourceType="xml" \
-                --moduleFilepath="artifacts/results/installed-jahia-modules.json" \
-                --msgAuthor="CircleCI ($CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME)" \
-                --runUrl=$CIRCLE_BUILD_URL
-              echo "Sending Zencrepes matrix"
-              jahia-reporter zencrepes \
-                --webhook="https://zencrepes.jahia.com/zqueue/testing/webhook" \
-                --webhookSecret=$ZENCREPES_WEBHOOK_SECRET \
-                --sourcePath="artifacts/results/reports" \
-                --sourceType="xml" \
-                --moduleFilepath="artifacts/results/installed-jahia-modules.json" \
-                --name="<< pipeline.parameters.MODULE_ID >>" \
-                --runUrl=$CIRCLE_BUILD_URL
-              echo "Sending testrail report"
-              jahia-reporter testrail \
-                --testrailUsername=$TESTRAIL_USERNAME \
-                --testrailPassword=$TESTRAIL_PASSWORD \
-                --sourcePath="artifacts/results/reports" \
-                --sourceType="xml" \
-                --projectName="<< pipeline.parameters.TESTRAIL_PROJECTNAME >>" \
-                --milestone="<< parameters.TESTRAIL_MILESTONE >>" \
-                --defaultRunDescription="This test was executed on circleci, $CIRCLE_BUILD_URL"
-            fi
-      - *persist-workspace
-
-  # We also want the test image to be versioned and published to Docker Hub whenever a new tag is created
-  # This would allow us to re-use a test image whenever we want to test with an earlier version of the module
-  docker-publish:
-    <<: *workdir
-    docker:
-      - image: cimg/openjdk:8.0.275-browsers
-    steps:
-      - *attach-workspace
-      - setup_remote_docker:
-          docker_layer_caching: true
-      - run:
-          name: Push << pipeline.parameters.TESTSJAVA_IMAGE >> image to docker hub
-          command: |
-            cd << pipeline.parameters.TESTSJAVA_PATH >>
-            docker load -i tests_image.tar
-            if [ "$CIRCLE_BRANCH" = "<< pipeline.parameters.PRIMARY_RELEASE_BRANCH >>" ]; then
-                IMAGE_TAG=latest
-            else
-                IMAGE_TAG=${CIRCLE_TAG/''}
-            fi
-            echo "Image tag is: $IMAGE_TAG"
-            docker tag << pipeline.parameters.TESTSJAVA_IMAGE >>:latest << pipeline.parameters.TESTSJAVA_IMAGE >>:$IMAGE_TAG
-            docker login -u $DOCKERHUB_LOGIN -p $DOCKERHUB_PASSWORD
-            echo "Tagged the image"
-            docker push << pipeline.parameters.TESTSJAVA_IMAGE >>:$IMAGE_TAG
-            echo "Pushed tag"
-
-  sonar:
-    <<: *workdir
-    docker: # run the steps with Docker
-      - image: cimg/openjdk:11.0.9
-    resource_class: medium
-    steps:
-      - *attach-workspace
-      - checkout
-      - restore_cache:
-          keys:
-            - sonar-dependencies-{{ checksum "pom.xml" }}
-            # Fallback if no exact match found
-            - sonar-dependencies-
-      # We're executing different actions depending fi the job was triggered by a PR or if it was triggered on branch
-      # If the branch was not triggered by a PR, the CIRCLE_PULL_REQUEST variable will be empty
-      - run:
-          name: Sonar Release branch analysis
-          command: |
-            if [[ ! -z "$CIRCLE_PULL_REQUEST" ]]; then
-              # echo "Git custom command to fix circle-ci checkout for sonar analysis"
-              git fetch --all
-              git branch -D << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
-              git rev-parse origin/<< pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
-              echo "Executing a PR based analysis"
-              mvn -s .circleci/.circleci.settings.xml sonar:sonar \
-                  -Dsonar.projectKey=<< pipeline.parameters.MODULE_ID >> \
-                  -Dsonar.pullrequest.branch=$CIRCLE_BRANCH \
-                  -Dsonar.pullrequest.key=${CIRCLE_PULL_REQUEST##*/} \
-                  -Dsonar.pullrequest.base=<< pipeline.parameters.PRIMARY_RELEASE_BRANCH >> \
-                  -Dsonar.pullrequest.github.repository=<< pipeline.parameters.GITHUB_SLUG >>
-            elif [[ "$CIRCLE_BRANCH" == << pipeline.parameters.PRIMARY_RELEASE_BRANCH >> ]]; then
-              echo "Executing an analysis on the main branch"
-              mvn -s .circleci/.circleci.settings.xml sonar:sonar -Dsonar.projectKey=<< pipeline.parameters.MODULE_ID >>
-            else
-              echo "Executing an analysis on branch: $CIRCLE_BRANCH"
-              mvn -s .circleci/.circleci.settings.xml sonar:sonar -Dsonar.branch.name=$CIRCLE_BRANCH
-            fi
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: sonar-dependencies-{{ checksum "pom.xml" }}
+    default: 'critical'
 
 workflows:
-  version: 2
   # On code change is executed each time new code is pushed to a branch
   # Current project configuration in circleci only builds on PR + main, so effectively this is only being executed
   on-code-change:
-    unless: << pipeline.parameters.IS_RELEASE >>
+      or:
+        - << pipeline.parameters.IS_RELEASE >>
+        - << pipeline.parameters.IS_ROLLBACK >>
+        - << pipeline.parameters.UPDATE_SIGNATURE >>
+        - << pipeline.parameters.IS_MANUAL_TESTRUN >>
     jobs:
       - jahia-modules-orb/initialize
       - jahia-modules-orb/update-signature:
@@ -564,6 +86,10 @@ workflows:
           pre-steps:
             - jahia-modules-orb/update-signature-prestep
           ssh_key_fingerprints:  << pipeline.parameters.SSH_KEY_FINGERPRINT >>
+      - jahia-modules-orb/static-analysis:
+          requires:
+            - jahia-modules-orb/initialize
+          auditci_level: << pipeline.parameters.AUDITCI_LEVEL >>
       - jahia-modules-orb/build:
           context: QA_ENVIRONMENT
           requires:
@@ -584,39 +110,11 @@ workflows:
             branches:
               only:
                 - << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
-      # Verifies that the new code works with the latest released version of Jahia
-#      - integration_testsjava:
-#          name: 'Int. Tests - Jahia Latest - Built modules'
-#          requires:
-#            - jahia-modules-orb/build
-#          context: QA_ENVIRONMENT
-#          #Using Aliases here (8 is the latest of the 8 tree, 8.1 is the latest of the tree, ...)
-#          JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
-#          RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
-#          JAHIA_USERNAME_TOOLS: "root"
-#          JAHIA_PASSWORD_TOOLS: "root"
-#          JAHIA_USERNAME: "root"
-#          JAHIA_PASSWORD: "root"
-#          MANIFEST: warmup-manifest-build.yml
-#          TESTRAIL_MILESTONE: Jahia-Latest
-#          SKIP_TESTRAIL: "true"
-#          SKIP_ARTIFACTS: false
-#          BUILD_TESTSIMAGE: true
-      - docker-publish:
-          context: QA_ENVIRONMENT
-          requires:
-            - jahia-modules-orb/build
-          filters:
-            tags:
-              only: /.*/
-            branches:
-              only:
-                - << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
       - jahia-modules-orb/integration-tests-machine:
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/build
-          jahia_image: jahia/jahia-discovery-dev:8-SNAPSHOT
+          jahia_image: << pipeline.parameters.JAHIA_IMAGE >>
           tests_manifest: provisioning-manifest-build.yml
           module_id: << pipeline.parameters.MODULE_ID >>
           testrail_project: << pipeline.parameters.TESTRAIL_PROJECTNAME >>
@@ -639,10 +137,16 @@ workflows:
           requires:
             - jahia-modules-orb/initialize
           ssh_key_fingerprints: << pipeline.parameters.SSH_KEY_FINGERPRINT >>
-      - release:
+      - jahia-modules-orb/release:
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/generate-changelog
+          module_id: << pipeline.parameters.MODULE_ID >>
+          github_slug: << pipeline.parameters.GITHUB_SLUG >>
+          release_id: << pipeline.parameters.RELEASE_ID >>
+          release_version: << pipeline.parameters.RELEASE_VERSION >>
+          primary_release_branch: << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
+          ssh_key_fingerprints:  << pipeline.parameters.SSH_KEY_FINGERPRINT >>
       - jahia-modules-orb/update-signature:
           context: QA_ENVIRONMENT
           requires:
@@ -703,20 +207,15 @@ workflows:
     when: << pipeline.parameters.IS_MANUAL_TESTRUN >>
     jobs:
       - jahia-modules-orb/initialize
-      - jahia-modules-orb/integration-tests:
+      - jahia-modules-orb/integration-tests-machine:
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/initialize
           jahia_image: << pipeline.parameters.JAHIA_IMAGE >>
-          tests_manifest: << pipeline.parameters.TESTS_MANIFEST >>
+          tests_manifest: provisioning-manifest-build.yml
           module_id: << pipeline.parameters.MODULE_ID >>
           testrail_project: << pipeline.parameters.TESTRAIL_PROJECTNAME >>
           testrail_milestone: << pipeline.parameters.TESTRAIL_MILESTONE >>
-          should_skip_artifacts: << pipeline.parameters.SHOULD_SKIP_ARTIFACTS >>
-          should_skip_testrail: << pipeline.parameters.SHOULD_SKIP_TESTRAIL >>
-          should_skip_notifications: << pipeline.parameters.SHOULD_SKIP_NOTIFICATIONS >>
-          should_skip_zencrepes: << pipeline.parameters.SHOULD_SKIP_ZENCREPES >>
-
 
   # The objective of nightly runs is to ensure the codebase still passes tests:
   # - With the latest releases version of Jahia
@@ -731,47 +230,15 @@ workflows:
                 - << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
     jobs:
       - jahia-modules-orb/initialize
-      - integration_testsjava:
-          JAHIA_IMAGE: jahia/jahia-ee-dev:8-SNAPSHOT
-          RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
-          MANIFEST: warmup-manifest-snapshot.yml
-          TESTRAIL_MILESTONE: Jahia-Latest-Snapshot
-          JAHIA_USERNAME_TOOLS: "root"
-          JAHIA_PASSWORD_TOOLS: "root"
-          JAHIA_USERNAME: "root"
-          JAHIA_PASSWORD: "root"
-          name: Nightly-Jahia-Latest-Snapshot
-          context: QA_ENVIRONMENT
-          requires:
-            - jahia-modules-orb/initialize
-# TODO Add jahia stable release image (jahia/jahia-ee:8) after 8.1 release
-#      - integration_testsjava:
-#          JAHIA_IMAGE: jahia/jahia-ee:8
-#          RUN_TESTSIMAGE: << pipeline.parameters.TESTSJAVA_IMAGE >>:latest
-#          MANIFEST: warmup-manifest-release.yml
-#          TESTRAIL_MILESTONE: Jahia-Latest-Release
-#          JAHIA_USERNAME_TOOLS: "root"
-#          JAHIA_PASSWORD_TOOLS: "root"
-#          JAHIA_USERNAME: "root"
-#          JAHIA_PASSWORD: "root"
-#          name: Nightly-Jahia-Latest-Release
-#          context: QA_ENVIRONMENT
-#          requires:
-#            - jahia-modules-orb/initialize
-      - jahia-modules-orb/integration-tests:
+      - jahia-modules-orb/integration-tests-machine:
           name: Nightly-<< matrix.jahia_image >>
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/initialize
           matrix:
             parameters:
-              # TODO Add jahia stable release image (jahia/jahia-ee:8) after 8.1 release
-              jahia_image: ["jahia/jahia-ee-dev:8-SNAPSHOT"]
+              jahia_image: ["jahia/jahia-discovery:8", "<< pipeline.parameters.JAHIA_IMAGE >>"]
               tests_manifest: ["provisioning-manifest-snapshot.yml"]
               module_id: ["<< pipeline.parameters.MODULE_ID >>"]
               testrail_project: ["<< pipeline.parameters.TESTRAIL_PROJECTNAME >>"]
               testrail_milestone: ["<< matrix.jahia_image >>"]
-              should_skip_artifacts: [true]
-              should_skip_testrail: [false]
-              should_skip_notifications: [false]
-              should_skip_zencrepes: [false]
