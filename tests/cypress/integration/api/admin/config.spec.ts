@@ -2,10 +2,8 @@
 import gql from 'graphql-tag'
 
 describe('admin.configuration', () => {
-    let createConfig
-
     before('load graphql file and create test dataset', () => {
-        cy.runProvisioningScript({fileName:'admin/createConfig.json'})
+        cy.runProvisioningScript({ fileName: 'admin/createConfig.json' })
     })
 
     function readConfig(variables) {
@@ -28,7 +26,9 @@ describe('admin.configuration', () => {
                                         values
                                         objects {
                                             keys
-                                            value(name: $objectListValue) @include(if: ${Boolean(variables.objectListValue)})
+                                            value(name: $objectListValue) @include(if: ${Boolean(
+                                                variables.objectListValue,
+                                            )})
                                         }
                                     }
 
@@ -38,7 +38,7 @@ describe('admin.configuration', () => {
                     }
                 }
             `,
-            variables
+            variables,
         })
     }
 
@@ -55,9 +55,7 @@ describe('admin.configuration', () => {
                                         variables.objectValueKey,
                                     )})
                                     mutateList(name:$objectList) @include(if: ${Boolean(variables.objectList)}) {
-                                        addValue(value: $addListValue) @include(if: ${Boolean(
-                                            variables.addListValue,
-                                        )})
+                                        addValue(value: $addListValue) @include(if: ${Boolean(variables.addListValue)})
                                         addObject @include(if: ${Boolean(variables.addListObjectValue)}) {
                                             value(name: $addListObjectValueKey, value: $addListObjectValue)
                                         }
@@ -68,12 +66,12 @@ describe('admin.configuration', () => {
                     }
                 }
             `,
-            variables
+            variables,
         })
     }
 
     it('Get flat properties from config', () => {
-        readConfig({configPid: 'org.jahia.test.config', flat: true}).should((response: any) => {
+        readConfig({ configPid: 'org.jahia.test.config', flat: true }).should((response: any) => {
             expect(response.data.admin.jahia.configuration.flatKeys).to.include.members(['object.listObjects[0].A'])
             expect(
                 response.data.admin.jahia.configuration.flatProperties
@@ -84,7 +82,7 @@ describe('admin.configuration', () => {
     })
 
     it('Get properties from structured navigation', () => {
-        readConfig({configPid: 'org.jahia.test.config', value: 'value', object: 'object', objectValue: 'A'}).should(
+        readConfig({ configPid: 'org.jahia.test.config', value: 'value', object: 'object', objectValue: 'A' }).should(
             (response: any) => {
                 expect(response.data.admin.jahia.configuration.keys).to.include.members(['list', 'value', 'object'])
                 expect(response.data.admin.jahia.configuration.value).to.eq('test')
@@ -95,7 +93,7 @@ describe('admin.configuration', () => {
     })
 
     it('Get list of values', () => {
-        readConfig({configPid: 'org.jahia.test.config', object: 'object', objectList: 'list'}).should(
+        readConfig({ configPid: 'org.jahia.test.config', object: 'object', objectList: 'list' }).should(
             (response: any) => {
                 expect(response.data.admin.jahia.configuration.object.list.values).to.include.members([
                     'testObjectList0',
@@ -132,22 +130,22 @@ describe('admin.configuration', () => {
                         }
                     }
                 }
-            `
+            `,
         })
 
-        readConfig({configPid: 'org.jahia.test.config', value: 'value'}).should((response: any) => {
+        readConfig({ configPid: 'org.jahia.test.config', value: 'value' }).should((response: any) => {
             expect(response.data.admin.jahia.configuration.value).to.eq('updatedValue')
         })
 
-        readConfig({configPid: 'org.jahia.test.config', value: 'newValue'}).should((response: any) => {
+        readConfig({ configPid: 'org.jahia.test.config', value: 'newValue' }).should((response: any) => {
             expect(response.data.admin.jahia.configuration.value).to.eq('newValue')
         })
     })
 
     it('creates a config', () => {
-        editConfig({configPid: 'org.jahia.test.config.new', valueKey: 'value', value: 'test-new-prop'})
+        editConfig({ configPid: 'org.jahia.test.config.new', valueKey: 'value', value: 'test-new-prop' })
 
-        readConfig({configPid: 'org.jahia.test.config.new', value: 'value'}).should((response: any) => {
+        readConfig({ configPid: 'org.jahia.test.config.new', value: 'value' }).should((response: any) => {
             expect(response.data.admin.jahia.configuration.value).to.eq('test-new-prop')
         })
     })
@@ -166,12 +164,12 @@ describe('admin.configuration', () => {
             value: 'test-new-prop-2',
         })
 
-        readConfig({configPid: 'org.jahia.test.config.new', configIdentifier: 'conf1', value: 'value'}).should(
+        readConfig({ configPid: 'org.jahia.test.config.new', configIdentifier: 'conf1', value: 'value' }).should(
             (response: any) => {
                 expect(response.data.admin.jahia.configuration.value).to.eq('test-new-prop-1')
             },
         )
-        readConfig({configPid: 'org.jahia.test.config.new', configIdentifier: 'conf2', value: 'value'}).should(
+        readConfig({ configPid: 'org.jahia.test.config.new', configIdentifier: 'conf2', value: 'value' }).should(
             (response: any) => {
                 expect(response.data.admin.jahia.configuration.value).to.eq('test-new-prop-2')
             },

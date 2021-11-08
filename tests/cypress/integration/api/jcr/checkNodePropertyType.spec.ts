@@ -15,16 +15,16 @@ describe('Test page properties', () => {
                         type: 'BOOLEAN',
                         value: false,
                         language: 'en',
-                    }
-                ]
-            }
+                    },
+                ],
+            },
         })
     })
 
     it('Get a page by path and verify isHomePage has a boolean value', () => {
         cy.apollo({
             queryFile: 'jcr/pageByPath.graphql',
-            variables: { path: '/sites/systemsite/home/testPage' }
+            variables: { path: '/sites/systemsite/home/testPage' },
         }).should((response: any) => {
             expect(response.data.jcr.nodeByPath).to.exist
             expect(response.data.jcr.nodeByPath.name).to.equal('testPage')
@@ -37,7 +37,7 @@ describe('Test page properties', () => {
             mutationFile: 'jcr/deleteNode.graphql',
             variables: {
                 pathOrId: '/sites/systemsite/home/testPage',
-            }
-        });
+            },
+        })
     })
 })
