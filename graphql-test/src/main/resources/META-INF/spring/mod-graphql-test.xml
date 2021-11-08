@@ -7,9 +7,7 @@
     <bean class="org.jahia.test.bin.TestBean">
         <property name="testCases">
             <list>
-                <value>org.jahia.test.graphql.GraphQLNodeRetrievalTest</value>
                 <value>org.jahia.test.graphql.GraphQLPropertiesTest</value>
-                <value>org.jahia.test.graphql.GraphQLAncestorsTest</value>
                 <value>org.jahia.test.graphql.GraphQLDescendantsTest</value>
                 <value>org.jahia.test.graphql.GraphQLReferencesTest</value>
                 <value>org.jahia.test.graphql.GraphQLCriteriaTest</value>
@@ -25,7 +23,6 @@
                 <value>org.jahia.test.graphql.GraphQLi18nTest</value>
                 <value>org.jahia.test.graphql.GraphQLFieldSorterTest</value>
                 <value>org.jahia.test.graphql.GraphQLOrderingTest</value>
-                <value>org.jahia.test.graphql.GraphQLFieldGroupingTest</value>
                 <value>org.jahia.test.graphql.GraphQLRenderTest</value>
                 <value>org.jahia.test.graphql.GraphQLZipMutationTest</value>
                 <value>org.jahia.test.graphql.GraphQLRenderTest</value>
