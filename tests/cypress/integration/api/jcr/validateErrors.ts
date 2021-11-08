@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ApolloQueryResult, FetchResult } from '@apollo/client'
 
 export function validateError(

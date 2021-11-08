@@ -2,8 +2,6 @@
 import gql from 'graphql-tag'
 
 describe('admin.configuration', () => {
-    let createConfig
-
     before('load graphql file and create test dataset', () => {
         cy.runProvisioningScript({ fileName: 'admin/createConfig.json' })
     })
