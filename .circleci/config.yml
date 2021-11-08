@@ -72,6 +72,7 @@ workflows:
   # On code change is executed each time new code is pushed to a branch
   # Current project configuration in circleci only builds on PR + main, so effectively this is only being executed
   on-code-change:
+    unless:
       or:
         - << pipeline.parameters.IS_RELEASE >>
         - << pipeline.parameters.IS_ROLLBACK >>
