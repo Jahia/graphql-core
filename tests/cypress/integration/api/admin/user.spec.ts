@@ -3,8 +3,8 @@
 describe('Test admin user endpoint', () => {
     it('gets a user', () => {
         cy.apollo({
-            queryFile:'admin/user.graphql',
-            variables: { username: 'irina', group:'' }
+            queryFile: 'admin/user.graphql',
+            variables: { username: 'irina', group: '' },
         }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user.name).to.equal('irina')
@@ -20,8 +20,8 @@ describe('Test admin user endpoint', () => {
 
     it('gets a non existing user', () => {
         cy.apollo({
-            queryFile:'admin/user.graphql',
-            variables: { username: 'noob', group:'' },
+            queryFile: 'admin/user.graphql',
+            variables: { username: 'noob', group: '' },
         }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user).to.be.null
@@ -30,8 +30,8 @@ describe('Test admin user endpoint', () => {
 
     it('gets a user name', () => {
         cy.apollo({
-            queryFile:'admin/user.graphql',
-            variables: { username: 'bill', group:'' },
+            queryFile: 'admin/user.graphql',
+            variables: { username: 'bill', group: '' },
         }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user.username).to.equal('bill')
@@ -41,8 +41,8 @@ describe('Test admin user endpoint', () => {
 
     it('gets a user name', () => {
         cy.apollo({
-            queryFile:'admin/user.graphql',
-            variables: { username: 'bill', group: 'site-administrators', site1: 'digitall', site2: 'systemsite' }
+            queryFile: 'admin/user.graphql',
+            variables: { username: 'bill', group: 'site-administrators', site1: 'digitall', site2: 'systemsite' },
         }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user.yes).to.equal(true)
@@ -53,7 +53,7 @@ describe('Test admin user endpoint', () => {
     it('tests membership list', () => {
         cy.apollo({
             queryFile: 'admin/userGroupMembershipBasic.graphql',
-            variables: {username: 'bill', site: 'digitall'}
+            variables: { username: 'bill', site: 'digitall' },
         }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user.groupMembership.pageInfo.totalCount).to.be.greaterThan(2)
@@ -66,7 +66,7 @@ describe('Test admin user endpoint', () => {
     it('tests membership list for a site', () => {
         cy.apollo({
             queryFile: 'admin/userGroupMembershipBasic.graphql',
-            variables: {username: 'bill', site: 'digitall'}
+            variables: { username: 'bill', site: 'digitall' },
         }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.user.groupMembership.pageInfo.totalCount).to.equal(3)

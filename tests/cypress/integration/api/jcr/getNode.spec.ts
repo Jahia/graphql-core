@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import gql from "graphql-tag";
-import {validateErrors} from "./validateErrors";
-import {validateError} from "./validateErrors";
-import {validateNode} from "./validateNode";
+import gql from 'graphql-tag'
+import { validateErrors } from './validateErrors'
+import { validateError } from './validateErrors'
+import { validateNode } from './validateNode'
 
 describe('Test page properties', () => {
     let nodeUuid: string
-    const nodeTitleFr = "text FR";
-    const nodeTitleEn = "text EN";
+    const nodeTitleFr = 'text FR'
+    const nodeTitleEn = 'text EN'
     let subNodeUuid1: string
     let subNodeUuid2: string
 
@@ -20,14 +20,14 @@ describe('Test page properties', () => {
                 nodeName: 'testList',
                 nodeType: 'jnt:contentList',
                 properties: [
-                    {name: "jcr:title", value: nodeTitleEn, language: "en"},
-                    {name: "jcr:title", value: nodeTitleFr, language: "fr"}
+                    { name: 'jcr:title', value: nodeTitleEn, language: 'en' },
+                    { name: 'jcr:title', value: nodeTitleFr, language: 'fr' },
                 ],
                 children: [
-                    {name: "testSubList1", primaryNodeType: "jnt:contentList"},
-                    {name: "testSubList2", primaryNodeType: "jnt:contentList"},
+                    { name: 'testSubList1', primaryNodeType: 'jnt:contentList' },
+                    { name: 'testSubList2', primaryNodeType: 'jnt:contentList' },
                 ],
-            }
+            },
         }).then((response: any) => {
             nodeUuid = response.data.jcr.addNode.uuid
             subNodeUuid1 = response.data.jcr.addNode.addChildrenBatch[0].uuid
@@ -45,24 +45,25 @@ describe('Test page properties', () => {
                             path
                             uuid
                             displayName
-                            titleen:property(name: "jcr:title", language:"en") {
+                            titleen: property(name: "jcr:title", language: "en") {
                                 value
                             }
-                            titlefr:property(name: "jcr:title", language:"fr") {
+                            titlefr: property(name: "jcr:title", language: "fr") {
                                 value
                             }
                         }
                     }
-                }`
-            }).should((response: any) => {
-                expect(response.data.jcr.nodeByPath).to.exist
-                expect(response.data.jcr.nodeByPath.name).to.equal('testList')
-                expect(response.data.jcr.nodeByPath.path).to.equal('/testList')
-                expect(response.data.jcr.nodeByPath.uuid).to.equal(nodeUuid)
-                expect(response.data.jcr.nodeByPath.displayName).to.equal('testList')
-                expect(response.data.jcr.nodeByPath.titlefr.value).to.equal(nodeTitleFr)
-                expect(response.data.jcr.nodeByPath.titleen.value).to.equal(nodeTitleEn)
-            })
+                }
+            `,
+        }).should((response: any) => {
+            expect(response.data.jcr.nodeByPath).to.exist
+            expect(response.data.jcr.nodeByPath.name).to.equal('testList')
+            expect(response.data.jcr.nodeByPath.path).to.equal('/testList')
+            expect(response.data.jcr.nodeByPath.uuid).to.equal(nodeUuid)
+            expect(response.data.jcr.nodeByPath.displayName).to.equal('testList')
+            expect(response.data.jcr.nodeByPath.titlefr.value).to.equal(nodeTitleFr)
+            expect(response.data.jcr.nodeByPath.titleen.value).to.equal(nodeTitleEn)
+        })
     })
 
     it('Get child node by path', () => {
@@ -74,7 +75,8 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`
+                }
+            `,
         }).should((response: any) => {
             expect(response.data.jcr.nodeByPath).to.exist
             expect(response.data.jcr.nodeByPath.name).to.equal('testSubList2')
@@ -90,9 +92,10 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`,
-            errorPolicy: 'all'
-        }).should(result => {
+                }
+            `,
+            errorPolicy: 'all',
+        }).should((result) => {
             validateError(result, `javax.jcr.PathNotFoundException: /testList/wrongPath`)
         })
     })
@@ -101,14 +104,15 @@ describe('Test page properties', () => {
         cy.apollo({
             query: gql`
                 query {
-                    jcr (workspace: LIVE) {
+                    jcr(workspace: LIVE) {
                         nodeByPath(path: "/testList/testSubList2") {
                             name
                         }
                     }
-                }`,
-            errorPolicy: 'all'
-        }).should(result => {
+                }
+            `,
+            errorPolicy: 'all',
+        }).should((result) => {
             validateError(result, `javax.jcr.PathNotFoundException: /testList/testSubList2`)
         })
     })
@@ -122,12 +126,13 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`
-        }).should(result => {
+                }
+            `,
+        }).should((result) => {
             const nodes = result?.data?.jcr?.nodesByPath
             expect(nodes).to.have.length(2)
-            validateNode(nodes[0], "testSubList2")
-            validateNode(nodes[1], "testSubList1")
+            validateNode(nodes[0], 'testSubList2')
+            validateNode(nodes[1], 'testSubList1')
         })
     })
 
@@ -140,9 +145,10 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`,
-            errorPolicy: 'all'
-        }).should(result => {
+                }
+            `,
+            errorPolicy: 'all',
+        }).should((result) => {
             validateError(result, `javax.jcr.PathNotFoundException: /testList/wrongPath`)
         })
     })
@@ -151,15 +157,19 @@ describe('Test page properties', () => {
         cy.apollo({
             query: gql`
                 query {
-                    jcr (workspace: LIVE) {
+                    jcr(workspace: LIVE) {
                         nodesByPath(paths: ["/testList/testSubList2", "/testList/testSubList1"]) {
                             name
                         }
                     }
-                }`,
-            errorPolicy: 'all'
-        }).should(result => {
-            validateErrors(result, ["javax.jcr.PathNotFoundException: /testList/testSubList2","javax.jcr.PathNotFoundException: /testList/testSubList1"])
+                }
+            `,
+            errorPolicy: 'all',
+        }).should((result) => {
+            validateErrors(result, [
+                'javax.jcr.PathNotFoundException: /testList/testSubList2',
+                'javax.jcr.PathNotFoundException: /testList/testSubList1',
+            ])
         })
     })
 
@@ -172,10 +182,10 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`
-        }).should(result => {
+                }`,
+        }).should((result) => {
             const node = result?.data?.jcr?.nodeById
-            validateNode(node, "testSubList2")
+            validateNode(node, 'testSubList2')
         })
     })
 
@@ -188,9 +198,10 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`,
-            errorPolicy: 'all'
-        }).should(result => {
+                }
+            `,
+            errorPolicy: 'all',
+        }).should((result) => {
             validateError(result, `javax.jcr.ItemNotFoundException: badId`)
         })
     })
@@ -205,8 +216,8 @@ describe('Test page properties', () => {
                         }
                     }
                 }`,
-            errorPolicy: 'all'
-        }).should(result => {
+            errorPolicy: 'all',
+        }).should((result) => {
             validateError(result, `javax.jcr.ItemNotFoundException: ${subNodeUuid2}`)
         })
     })
@@ -220,12 +231,12 @@ describe('Test page properties', () => {
                             name
                         }
                     }
-                }`
-        }).should(result => {
+                }`,
+        }).should((result) => {
             const nodes = result?.data?.jcr?.nodesById
             expect(nodes).to.have.length(2)
-            validateNode(nodes[0], "testSubList2")
-            validateNode(nodes[1], "testSubList1")
+            validateNode(nodes[0], 'testSubList2')
+            validateNode(nodes[1], 'testSubList1')
         })
     })
 
@@ -239,8 +250,8 @@ describe('Test page properties', () => {
                         }
                     }
                 }`,
-            errorPolicy: 'all'
-        }).should(result => {
+            errorPolicy: 'all',
+        }).should((result) => {
             validateError(result, `javax.jcr.ItemNotFoundException: wrongId`)
         })
     })
@@ -255,9 +266,12 @@ describe('Test page properties', () => {
                         }
                     }
                 }`,
-            errorPolicy: 'all'
-        }).should(result => {
-            validateErrors(result, [`javax.jcr.ItemNotFoundException: ${subNodeUuid2}`, `javax.jcr.ItemNotFoundException: ${subNodeUuid1}`])
+            errorPolicy: 'all',
+        }).should((result) => {
+            validateErrors(result, [
+                `javax.jcr.ItemNotFoundException: ${subNodeUuid2}`,
+                `javax.jcr.ItemNotFoundException: ${subNodeUuid1}`,
+            ])
         })
     })
 
@@ -266,7 +280,7 @@ describe('Test page properties', () => {
             mutationFile: 'jcr/deleteNode.graphql',
             variables: {
                 pathOrId: '/testList',
-            }
+            },
         })
     })
 })

@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {isValid} from 'date-fns'
+import { isValid } from 'date-fns'
 
 describe('admin.datetime - Jahia Server time', () => {
-
     it('Get Jahia server current time (as root)', () => {
-        cy.apollo({queryFile: 'admin/datetime.graphql'}).should((response: any) => {
+        cy.apollo({ queryFile: 'admin/datetime.graphql' }).should((response: any) => {
             cy.log(`Date on the server is: ${response.data.admin.datetime}`)
             expect(isValid(new Date(response.data.admin.datetime))).to.be.true
         })
@@ -12,8 +11,10 @@ describe('admin.datetime - Jahia Server time', () => {
 
     // Note: Should we allow guest to query server time ?
     it('Get Jahia server current time (as guest)', () => {
-        cy.apolloClient({username:'guest', password: 'I-DO-NOT-EXIST'}).apollo({queryFile: 'admin/datetime.graphql', errorPolicy:'all'}).should((response: any) => {
-            expect(response.errors).to.be.not.empty
-        })
+        cy.apolloClient({ username: 'guest', password: 'I-DO-NOT-EXIST' })
+            .apollo({ queryFile: 'admin/datetime.graphql', errorPolicy: 'all' })
+            .should((response: any) => {
+                expect(response.errors).to.be.not.empty
+            })
     })
 })

@@ -2,7 +2,7 @@
 
 describe('Test admin users endpont', () => {
     before('load graphql file', () => {
-        cy.runProvisioningScript({fileName:'admin/addLDAPConfigurationFile.json'})
+        cy.runProvisioningScript({ fileName: 'admin/addLDAPConfigurationFile.json' })
 
         // eslint-disable-next-line cypress/no-unnecessary-waiting
         cy.wait(2000)
@@ -10,7 +10,7 @@ describe('Test admin users endpont', () => {
 
     it('gets all users without any filtering', () => {
         cy.apollo({
-            queryFile: 'admin/usersNoFilter.graphql'
+            queryFile: 'admin/usersNoFilter.graphql',
         }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.users.pageInfo.nodesCount).to.equal(108)
@@ -20,7 +20,7 @@ describe('Test admin users endpont', () => {
     it('gets users based on the name', () => {
         cy.apollo({
             queryFile: 'admin/users.graphql',
-            variables: {limit: 5, offset: 0, field: 'username', value: 'jay'}
+            variables: { limit: 5, offset: 0, field: 'username', value: 'jay' },
         }).should((response: any) => {
             expect(response.data.admin.userAdmin).to.exist
             expect(response.data.admin.userAdmin.users.pageInfo.nodesCount).to.equal(1)
