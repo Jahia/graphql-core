@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   docker: circleci/docker@0.5.20
-  jahia-modules-orb: jahia/jahia-modules-orb@0.6.2
+  jahia-modules-orb: jahia/jahia-modules-orb@0.6.5
 
 
 # Parameters are available across the entire config file and can be used with this syntax: << pipeline.parameters.THE_PARAMETER >>
@@ -208,15 +208,19 @@ workflows:
     when: << pipeline.parameters.IS_MANUAL_TESTRUN >>
     jobs:
       - jahia-modules-orb/initialize
-      - jahia-modules-orb/integration-tests-machine:
+      - jahia-modules-orb/integration-tests:
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/initialize
           jahia_image: << pipeline.parameters.JAHIA_IMAGE >>
-          tests_manifest: provisioning-manifest-build.yml
+          tests_manifest: << pipeline.parameters.TESTS_MANIFEST >>
           module_id: << pipeline.parameters.MODULE_ID >>
           testrail_project: << pipeline.parameters.TESTRAIL_PROJECTNAME >>
           testrail_milestone: << pipeline.parameters.TESTRAIL_MILESTONE >>
+          should_skip_artifacts: << pipeline.parameters.SHOULD_SKIP_ARTIFACTS >>
+          should_skip_testrail: << pipeline.parameters.SHOULD_SKIP_TESTRAIL >>
+          should_skip_notifications: << pipeline.parameters.SHOULD_SKIP_NOTIFICATIONS >>
+          should_skip_zencrepes: << pipeline.parameters.SHOULD_SKIP_ZENCREPES >>
 
   # The objective of nightly runs is to ensure the codebase still passes tests:
   # - With the latest releases version of Jahia
@@ -231,15 +235,19 @@ workflows:
                 - << pipeline.parameters.PRIMARY_RELEASE_BRANCH >>
     jobs:
       - jahia-modules-orb/initialize
-      - jahia-modules-orb/integration-tests-machine:
+      - jahia-modules-orb/integration-tests:
           name: Nightly-<< matrix.jahia_image >>
           context: QA_ENVIRONMENT
           requires:
             - jahia-modules-orb/initialize
           matrix:
             parameters:
-              jahia_image: ["jahia/jahia-discovery:8", "<< pipeline.parameters.JAHIA_IMAGE >>"]
+              jahia_image: ["jahia/jahia-discovery:8", "jahia/jahia-discovery-dev:8-SNAPSHOT"]
               tests_manifest: ["provisioning-manifest-snapshot.yml"]
               module_id: ["<< pipeline.parameters.MODULE_ID >>"]
               testrail_project: ["<< pipeline.parameters.TESTRAIL_PROJECTNAME >>"]
               testrail_milestone: ["<< matrix.jahia_image >>"]
+              should_skip_artifacts: [true]
+              should_skip_testrail: [false]
+              should_skip_notifications: [false]
+              should_skip_zencrepes: [false]
