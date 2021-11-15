@@ -5,7 +5,7 @@ import { validateErrors } from './validateErrors'
 import { validateError } from './validateErrors'
 import { validateNode } from './validateNode'
 
-describe('Test page properties', () => {
+describe('Get node graphql test', () => {
     let nodeUuid: string
     const nodeTitleFr = 'text FR'
     const nodeTitleEn = 'text EN'
