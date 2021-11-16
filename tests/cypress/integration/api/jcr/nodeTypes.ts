@@ -51,7 +51,7 @@ describe('Node types graphql test', () => {
                     }
                 }
             `,
-        }).should((response: any) => {
+        }).should((response) => {
             expect(response.data.jcr.nodeByPath).to.exist
 
             const primaryNodeType = response?.data?.jcr?.nodeByPath.primaryNodeType
@@ -87,7 +87,7 @@ describe('Node types graphql test', () => {
                     }
                 }
             `,
-        }).should((response: any) => {
+        }).should((response) => {
             expect(response.data.jcr.nodeByPath).to.exist
 
             const node = response?.data?.jcr?.nodeByPath
