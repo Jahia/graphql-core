@@ -1,19 +1,18 @@
 import gql from 'graphql-tag'
-import {validateError} from './validateErrors'
+import { validateError } from './validateErrors'
 
 describe('Node types graphql test', () => {
-    let nodeUuid: string
-    const nodeTitleFr = 'text FR'
-    const nodeTitleEn = 'text EN'
-    let subNodeUuid1: string
-    let subNodeUuid2: string
-
     before('Create nodes', () => {
         cy.apollo({
             mutation: gql`
                 mutation {
                     jcr {
-                        addNode(parentPathOrId: "/", name: "testList", primaryNodeType: "jnt:contentList", mixins: ["jmix:renderable"]) {
+                        addNode(
+                            parentPathOrId: "/"
+                            name: "testList"
+                            primaryNodeType: "jnt:contentList"
+                            mixins: ["jmix:renderable"]
+                        ) {
                             addChild(name: "testSubList", primaryNodeType: "jnt:contentList") {
                                 addChild(name: "testSubSubList", primaryNodeType: "jnt:contentList") {
                                     uuid
@@ -44,7 +43,7 @@ describe('Node types graphql test', () => {
                             allowedChildNodeTypes(includeSubTypes: false) {
                                 name
                             }
-                            mixinTypes{
+                            mixinTypes {
                                 name
                                 mixin
                             }
@@ -79,11 +78,11 @@ describe('Node types graphql test', () => {
                 query {
                     jcr {
                         nodeByPath(path: "/testList") {
-                            test1: isNodeType(type: {types: ["jnt:contentList"]})
-                            test2: isNodeType(type: {types: ["jmix:renderable"]})
-                            test3: isNodeType(type: {types: ["jnt:content", "jnt:virtualsite"], multi: ALL})
-                            test4: isNodeType(type: {types: ["jnt:content", "jnt:virtualsite"], multi: ANY})
-                            test5: isNodeType(type: {types: ["wrongInput"], multi: ANY})
+                            test1: isNodeType(type: { types: ["jnt:contentList"] })
+                            test2: isNodeType(type: { types: ["jmix:renderable"] })
+                            test3: isNodeType(type: { types: ["jnt:content", "jnt:virtualsite"], multi: ALL })
+                            test4: isNodeType(type: { types: ["jnt:content", "jnt:virtualsite"], multi: ANY })
+                            test5: isNodeType(type: { types: ["wrongInput"], multi: ANY })
                         }
                     }
                 }
@@ -236,17 +235,17 @@ describe('Node types graphql test', () => {
         }).should((response) => {
             expect(response.data.jcr.nodeTypesByNames).to.exist
             const nodes = response.data.jcr.nodeTypesByNames
-            let names:String[] = [];
-            let displayNames:String[] = [];
-            for(let n = 0; n < nodes.length; n++) {
-                names[n] = nodes[n].name;
-                displayNames[n] = nodes[n].displayName;
+            const names: string[] = []
+            const displayNames: string[] = []
+            for (let n = 0; n < nodes.length; n++) {
+                names[n] = nodes[n].name
+                displayNames[n] = nodes[n].displayName
             }
             expect(nodes).to.have.length(2)
-            expect(names).to.contain("jmix:editorialContent")
-            expect(displayNames).to.contain("Editorial content")
-            expect(names).to.contain("jmix:siteContent")
-            expect(displayNames).to.contain("siteContent")
+            expect(names).to.contain('jmix:editorialContent')
+            expect(displayNames).to.contain('Editorial content')
+            expect(names).to.contain('jmix:siteContent')
+            expect(displayNames).to.contain('siteContent')
         })
     })
 
@@ -260,7 +259,8 @@ describe('Node types graphql test', () => {
                             displayName(language: "en")
                         }
                     }
-                }`,
+                }
+            `,
             errorPolicy: 'all',
         }).should((result) => {
             validateError(result, `javax.jcr.nodetype.NoSuchNodeTypeException: Unknown type : jmix:wrong`)
@@ -272,7 +272,7 @@ describe('Node types graphql test', () => {
             query: gql`
                 query {
                     jcr {
-                        nodeTypes(filter:{ modules:["default"] }) {
+                        nodeTypes(filter: { modules: ["default"] }) {
                             nodes {
                                 name
                                 systemId
@@ -284,12 +284,12 @@ describe('Node types graphql test', () => {
         }).should((response) => {
             expect(response.data.jcr.nodeTypes).to.exist
             const nodes = response.data.jcr.nodeTypes.nodes
-            let names:String[] = [];
-            for(let n = 0; n < nodes.length; n++) {
-                names[n] = nodes[n].name;
+            const names: string[] = []
+            for (let n = 0; n < nodes.length; n++) {
+                names[n] = nodes[n].name
             }
-            expect(names).to.contain("jnt:text")
-            expect(names).to.not.contain("nt:base")
+            expect(names).to.contain('jnt:text')
+            expect(names).to.not.contain('nt:base')
         })
     })
 
@@ -298,14 +298,15 @@ describe('Node types graphql test', () => {
             query: gql`
                 query {
                     jcr {
-                        nodeTypes(filter:{ modules:["wrongModule"] }) {
+                        nodeTypes(filter: { modules: ["wrongModule"] }) {
                             nodes {
                                 name
                                 systemId
                             }
                         }
                     }
-                }`,
+                }
+            `,
         }).should((response) => {
             expect(response.data.jcr.nodeTypes.nodes).to.have.length(0)
         })
@@ -316,24 +317,25 @@ describe('Node types graphql test', () => {
             query: gql`
                 query {
                     jcr {
-                        nodeTypes(filter:{ includeNonMixins:false }) {
+                        nodeTypes(filter: { includeNonMixins: false }) {
                             nodes {
                                 name
                                 mixin
                             }
                         }
                     }
-                }`,
+                }
+            `,
         }).should((response) => {
             expect(response.data.jcr.nodeTypes).to.exist
             const nodes = response.data.jcr.nodeTypes.nodes
-            let names:String[] = [];
-            for(let n = 0; n < nodes.length; n++) {
-                names[n] = nodes[n].name;
+            const names: string[] = []
+            for (let n = 0; n < nodes.length; n++) {
+                names[n] = nodes[n].name
                 expect(nodes[n].mixin).to.equal(true)
             }
-            expect(names).to.contain("mix:created")
-            expect(names).to.not.contain("nt:base")
+            expect(names).to.contain('mix:created')
+            expect(names).to.not.contain('nt:base')
         })
     })
 
@@ -342,25 +344,33 @@ describe('Node types graphql test', () => {
             query: gql`
                 query {
                     jcr {
-                        nodeTypes(filter: {includeMixins: false, siteKey: "systemsite", includeTypes: ["jmix:editorialContent"], excludeTypes: ["jmix:studioOnly", "jmix:hiddenType"]}) {
+                        nodeTypes(
+                            filter: {
+                                includeMixins: false
+                                siteKey: "systemsite"
+                                includeTypes: ["jmix:editorialContent"]
+                                excludeTypes: ["jmix:studioOnly", "jmix:hiddenType"]
+                            }
+                        ) {
                             nodes {
                                 name
                             }
                         }
                     }
-                }`,
+                }
+            `,
         }).should((response) => {
             expect(response.data.jcr.nodeTypes).to.exist
             const nodes = response.data.jcr.nodeTypes.nodes
             expect(nodes).to.have.length.gt(0)
-            let n = 0;
+            let n = 0
             while (n < nodes.length) {
                 // TODO : Find a way to get a ExtendedNodeType
                 // ExtendedNodeType nt = nodeTypeRegistry.getNodeType(nodeType.getString("name"));
                 // Assert.assertTrue(nt.isNodeType("jmix:editorialContent"));
                 // Assert.assertFalse(nt.isNodeType("jmix:studioOnly"));
                 // Assert.assertFalse(nt.isNodeType("jmix:hiddenType"));
-                n++;
+                n++
             }
         })
     })
