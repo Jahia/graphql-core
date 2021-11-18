@@ -353,7 +353,9 @@ describe('Node types graphql test', () => {
                             }
                         ) {
                             nodes {
-                                name
+                                isEditorialContent:isNodeType(type: { types: ["jmix:editorialContent"] })
+                                isStudioOnly:isNodeType(type: { types: ["jmix:studioOnly"] })
+                                isHiddenType:isNodeType(type: { types: ["jmix:hiddenType"] })
                             }
                         }
                     }
@@ -365,11 +367,9 @@ describe('Node types graphql test', () => {
             expect(nodes).to.have.length.gt(0)
             let n = 0
             while (n < nodes.length) {
-                // TODO : Find a way to get a ExtendedNodeType
-                // ExtendedNodeType nt = nodeTypeRegistry.getNodeType(nodeType.getString("name"));
-                // Assert.assertTrue(nt.isNodeType("jmix:editorialContent"));
-                // Assert.assertFalse(nt.isNodeType("jmix:studioOnly"));
-                // Assert.assertFalse(nt.isNodeType("jmix:hiddenType"));
+                expect(nodes[n].isEditorialContent).to.equal(true)
+                expect(nodes[n].isStudioOnly).to.equal(false)
+                expect(nodes[n].isHiddenType).to.equal(false)
                 n++
             }
         })
