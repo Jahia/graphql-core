@@ -71,7 +71,8 @@
             org.jahia.modules.graphql.provider.dxm.security,
             org.jahia.modules.graphql.provider.dxm.user,
             org.jahia.modules.graphql.provider.dxm.util,
-            org.jahia.modules.graphql.provider.dxm.osgi.annotations
+            org.jahia.modules.graphql.provider.dxm.osgi.annotations,
+            org.jahia.modules.graphql.provider.dxm.upload
         </export-package>
         <import-package>
             graphql;version="[13.0,14)",
