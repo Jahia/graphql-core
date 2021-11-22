@@ -353,9 +353,9 @@ describe('Node types graphql test', () => {
                             }
                         ) {
                             nodes {
-                                isEditorialContent:isNodeType(type: { types: ["jmix:editorialContent"] })
-                                isStudioOnly:isNodeType(type: { types: ["jmix:studioOnly"] })
-                                isHiddenType:isNodeType(type: { types: ["jmix:hiddenType"] })
+                                isEditorialContent: isNodeType(type: { types: ["jmix:editorialContent"] })
+                                isStudioOnly: isNodeType(type: { types: ["jmix:studioOnly"] })
+                                isHiddenType: isNodeType(type: { types: ["jmix:hiddenType"] })
                             }
                         }
                     }
