@@ -2,7 +2,7 @@
 
 let remainingAttempts = 10
 
-function waitUntilTableLdapRegistered() {
+function waitUntilLdapRegistered() {
     cy.visit('/cms/adminframe/default/en/settings.manageUsers.html')
     const $items = Cypress.$('td:contains("Filibert Alfred")')
     if ($items.length) {
@@ -13,7 +13,7 @@ function waitUntilTableLdapRegistered() {
         cy.reload()
         // eslint-disable-next-line cypress/no-unnecessary-waiting
         cy.wait(1000).then(() => {
-            waitUntilTableLdapRegistered()
+            waitUntilLdapRegistered()
         })
     } else {
         throw Error('LDAP users not found.')
@@ -24,7 +24,7 @@ describe('Test admin users endpont', () => {
     before('load graphql file', () => {
         cy.runProvisioningScript({ fileName: 'admin/addLDAPConfigurationFile.json' })
         cy.login()
-        waitUntilTableLdapRegistered()
+        waitUntilLdapRegistered()
     })
 
     it('gets all users without any filtering', () => {
