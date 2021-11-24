@@ -1,11 +1,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+let remainingAttempts = 10
+
+function waitUntilTableLdapRegistered() {
+    cy.visit('/cms/adminframe/default/en/settings.manageUsers.html')
+    const $items = Cypress.$('td:contains("Filibert Alfred")')
+    if ($items.length) {
+        return $items
+    }
+
+    if (--remainingAttempts) {
+        cy.reload()
+        // eslint-disable-next-line cypress/no-unnecessary-waiting
+        cy.wait(1000).then(() => {
+            waitUntilTableLdapRegistered()
+        })
+    } else {
+        throw Error('LDAP users not found.')
+    }
+}
+
 describe('Test admin users endpont', () => {
     before('load graphql file', () => {
         cy.runProvisioningScript({ fileName: 'admin/addLDAPConfigurationFile.json' })
-
-        // eslint-disable-next-line cypress/no-unnecessary-waiting
-        cy.wait(2000)
+        cy.login()
+        waitUntilTableLdapRegistered()
     })
 
     it('gets all users without any filtering', () => {
