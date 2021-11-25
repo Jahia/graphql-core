@@ -98,10 +98,19 @@ public class FieldEvaluator {
      * @return A FieldEvaluator instance
      */
     public static FieldEvaluator forConnection(DataFetchingEnvironment environment) {
+        return forConnection(environment.getFieldType(), environment);
+    }
+
+    /**
+     * Build an environment for a Connection type field
+     *
+     * @param environment The DataFetchingEnvironment of the Connection field data fetcher
+     * @return A FieldEvaluator instance
+     */
+    public static FieldEvaluator forConnection(GraphQLOutputType fieldType, DataFetchingEnvironment environment) {
         Map<String, Object> variables = getVariables(environment);
 
         // Extract return type from connection
-        GraphQLOutputType fieldType = environment.getFieldType();
         if (fieldType instanceof GraphQLNonNull) {
             fieldType = (GraphQLOutputType) ((GraphQLNonNull) fieldType).getWrappedType();
         }

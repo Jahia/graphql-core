@@ -15,9 +15,15 @@
  */
 package org.jahia.modules.graphql.provider.dxm.relay;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.relay.DefaultConnection;
 import graphql.relay.Edge;
 import graphql.relay.PageInfo;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLOutputType;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,5 +35,12 @@ public class DXConnection<T> extends DefaultConnection<T> {
 
     public List<T> getNodes() {
         return getEdges().stream().map(Edge::getNode).collect(Collectors.toList());
+    }
+
+    @GraphQLField
+    @GraphQLName("fieldAggregation")
+    @GraphQLDescription("Get an aggregation by session data")
+    public DXFieldAggregation<T> getFieldAggregation(DataFetchingEnvironment environment) {
+        return new DXFieldAggregation<>(getEdges(), FieldEvaluator.forConnection((GraphQLOutputType) environment.getParentType(), environment));
     }
 }

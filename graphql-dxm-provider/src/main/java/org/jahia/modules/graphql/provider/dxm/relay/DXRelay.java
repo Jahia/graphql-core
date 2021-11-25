@@ -86,6 +86,10 @@ public class DXRelay extends Relay {
                         .name("pageInfo")
                         .description("details about this specific page")
                         .type(new GraphQLNonNull(pageInfoType)))
+                .field(newFieldDefinition()
+                        .name("fieldAggregation")
+                        .description("aggregation on all nodes")
+                        .type(new GraphQLNonNull(new GraphQLTypeReference("DXFieldAggregation"))))
                 .fields(connectionFields);
 
         if (connectionTypes.containsKey(name + "Connection")) {
