@@ -5,7 +5,7 @@ describe('Test admin users endpont', () => {
         cy.runProvisioningScript({ fileName: 'admin/addLDAPConfigurationFile.json' })
         cy.login()
         cy.visit('/cms/adminframe/default/en/settings.manageUsers.html')
-        cy.repeatUntil('td:contains("Filibert Alfred")', {attempts:10 })
+        cy.repeatUntil('td:contains("Filibert Alfred")', { attempts: 10 })
     })
 
     it('gets all users without any filtering', () => {
