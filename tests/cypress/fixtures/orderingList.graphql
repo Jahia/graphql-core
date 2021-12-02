@@ -1,0 +1,12 @@
+query($nodeType:String!, $orderType:OrderType, $property:String){
+    jcr(workspace:EDIT){
+        nodesByCriteria(criteria: {paths: "/testList", nodeType: $nodeType, ordering: {orderType:$orderType, property:$property}})
+        {
+            nodes{
+                primaryNodeType{
+                    name
+                }
+            }
+        }
+    }
+}
