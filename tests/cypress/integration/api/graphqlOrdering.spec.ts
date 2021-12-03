@@ -23,7 +23,7 @@ describe('Test graphql ordering', () => {
         })
     })
 
-    after('Delete', function () {
+    after('Delete list created in the before', function () {
         cy.apollo({
             mutationFile: 'jcr/deleteNode.graphql',
             variables: {
@@ -34,7 +34,7 @@ describe('Test graphql ordering', () => {
 
     it('Should order by nodeType', () => {
         cy.apollo({
-            queryFile: 'ordering.graphql',
+            queryFile: 'orderingList.graphql',
             variables: {
                 orderType: 'ASC',
                 nodeType: 'jnt:content',
@@ -49,7 +49,7 @@ describe('Test graphql ordering', () => {
         })
 
         cy.apollo({
-            queryFile: 'ordering.graphql',
+            queryFile: 'orderingList.graphql',
             variables: {
                 orderType: 'DESC',
                 nodeType: 'jnt:content',
