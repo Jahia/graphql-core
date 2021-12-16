@@ -51,6 +51,7 @@ import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeImpl;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedType;
+import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 
@@ -133,6 +134,13 @@ public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode {
         }
 
         return result;
+    }
+
+    @GraphQLField
+    @GraphQLName("homePage")
+    @GraphQLDescription("Returns the node of the home page")
+    public GqlJcrNode getHomePage() throws RepositoryException {
+        return SpecializedTypesHandler.getNode(siteNode.getHome());
     }
 
 }
