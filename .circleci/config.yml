@@ -151,13 +151,13 @@ workflows:
       - jahia-modules-orb/update-signature:
           context: QA_ENVIRONMENT
           requires:
-            - release
+            - jahia-modules-orb/release
           ssh_key_fingerprints: << pipeline.parameters.SSH_KEY_FINGERPRINT >>
       - wait-for-approval:
           type: approval
           context: QA_ENVIRONMENT
           requires:
-            - release
+            - jahia-modules-orb/release
       - jahia-modules-orb/release-publication:
           context: QA_ENVIRONMENT
           requires:
