@@ -189,6 +189,42 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
     }
 
     @Test
+    public void publishWithoutAllTree() throws Exception {
+        JSONObject result =  publishPage(false);
+
+        JSONObject mutationResult = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode");
+        Assert.assertTrue(mutationResult.getBoolean("publish"));
+
+        Assert.assertTrue(liveSession.nodeExists("/sites/" + siteName + "/test_page"));
+        Assert.assertFalse(liveSession.nodeExists("/sites/" + siteName + "/test_page/sub_page"));
+    }
+    @Test
+    public void publishAllTree() throws Exception {
+        JSONObject result =  publishPage(true);
+
+        JSONObject mutationResult = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode");
+        Assert.assertTrue(mutationResult.getBoolean("publish"));
+
+        Assert.assertTrue(liveSession.nodeExists("/sites/" + siteName + "/test_page"));
+        Assert.assertTrue(liveSession.nodeExists("/sites/" + siteName + "/test_page/sub_page"));
+    }
+
+    private JSONObject publishPage(Boolean includeSubTree) throws JSONException {
+        JSONObject result = executeQuery(""
+                + "mutation {"
+                + "    jcr {"
+                + "        mutateNode(pathOrId: \"/sites/" + siteName + "/test_page\") {"
+                + "            publish(languages: [\"en\"], includeSubTree: " + includeSubTree + ")"
+                + "        }"
+                + "    }"
+                + "}"
+        );
+
+        waitForPublicationToFinish();
+        return result;
+    }
+
+    @Test
     public void shouldUnpublishInAllLanguage() throws Exception {
         testUnpublish("[\"en\", \"fr\"]", true, true, false);
     }
@@ -244,6 +280,15 @@ public class GraphQLPublicationTest extends GraphQLTestSupport {
         subList.setProperty("jcr:title", "en_sub_title");
         JCRNodeWrapper subList2 = publicationTestListI18n.addNode("subList2", "jnt:contentList");
         subList2.setProperty("jcr:title", "en_sub2_title");
+
+        JCRNodeWrapper testPage = defaultSession.getNode("/sites/" + siteName).addNode("test_page", "jnt:page");
+        testPage.setProperty("jcr:title", "test_page");
+        testPage.setProperty("j:isHomePage", false);
+        testPage.setProperty("j:templateName", "default");
+        JCRNodeWrapper subPage = testPage.addNode("sub_page", "jnt:page");
+        subPage.setProperty("jcr:title", "sub_page");
+        subPage.setProperty("j:isHomePage", false);
+        subPage.setProperty("j:templateName", "default");
         defaultSession.save();
 
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.FRENCH, session -> {
