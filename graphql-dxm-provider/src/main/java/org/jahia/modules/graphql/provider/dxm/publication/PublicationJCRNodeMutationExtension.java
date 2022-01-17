@@ -88,12 +88,14 @@ public class PublicationJCRNodeMutationExtension extends PublicationJCRExtension
      *
      * @param languages Languages to publish the node in
      * @param publishSubNodes Publish all sub and related nodes. Default is true.
+     * @param publishAllSubTree Publish all sub tree including sub pages. Default is false.
      * @return Always true
      */
     @GraphQLField
     @GraphQLDescription("Publish the node in certain languages")
     public boolean publish(@GraphQLName("languages") @GraphQLDescription("Languages to publish the node in") Collection<String> languages,
-                           @GraphQLName("publishSubNodes") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) @GraphQLDescription("Publish all sub and related nodes. Default is true.") Boolean publishSubNodes) {
+                           @GraphQLName("publishSubNodes") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) @GraphQLDescription("Publish all sub and related nodes. Default is true.") Boolean publishSubNodes,
+            @GraphQLName("includeSubTree") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLDescription("Publish all sub tree including sub pages. Default is false.") Boolean publishAllSubTree) {
 
         ComplexPublicationService publicationService = BundleUtils.getOsgiService(ComplexPublicationService.class, null);
         SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
@@ -124,7 +126,7 @@ public class PublicationJCRNodeMutationExtension extends PublicationJCRExtension
                 throw new JahiaRuntimeException(e);
             }
         } else {
-            publicationService.publish(Collections.singleton(uuid), languages, session);
+            publicationService.publish(Collections.singleton(uuid), languages, session, publishAllSubTree);
         }
 
         return true;
