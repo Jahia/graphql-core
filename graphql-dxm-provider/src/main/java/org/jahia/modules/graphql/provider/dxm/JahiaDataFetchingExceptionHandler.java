@@ -50,9 +50,12 @@ import graphql.execution.DataFetcherExceptionHandlerParameters;
 import graphql.execution.DataFetcherExceptionHandlerResult;
 import graphql.execution.ExecutionPath;
 import graphql.language.SourceLocation;
+import graphql.schema.DataFetchingEnvironment;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.RepositoryException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -64,6 +67,11 @@ import java.util.stream.Collectors;
  */
 public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(JahiaDataFetchingExceptionHandler.class);
+
+    @NotNull
+    public static GraphQLError transformException(Throwable exception, DataFetchingEnvironment environment) {
+        return transformException(exception, environment.getExecutionStepInfo().getPath(), environment.getField().getSourceLocation());
+    }
 
     public static GraphQLError transformException(Throwable exception, ExecutionPath path, SourceLocation sourceLocation) {
         // Unwrap exception from MethodDataFetcher
