@@ -50,7 +50,6 @@ import graphql.annotations.processor.GraphQLAnnotationsComponent;
 import graphql.annotations.processor.ProcessingElementsContainer;
 import graphql.annotations.processor.retrievers.*;
 import graphql.annotations.processor.searchAlgorithms.SearchAlgorithm;
-import graphql.annotations.processor.typeFunctions.DefaultTypeFunction;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.kickstart.servlet.osgi.*;
 import graphql.schema.*;
@@ -61,18 +60,14 @@ import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
 import org.jahia.modules.graphql.provider.dxm.security.JahiaGraphQLFieldRetriever;
+import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.services.securityfilter.ScopeDefinition;
-import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
 import org.osgi.service.component.annotations.*;
-import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.AnnotatedParameterizedType;
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.ParameterizedType;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,7 +76,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
 @Component(service = GraphQLProvider.class, immediate = true)
-public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider, TypeFunction, GraphQLSubscriptionProvider {
+public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider, GraphQLSubscriptionProvider {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
@@ -230,7 +225,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         container = graphQLAnnotations.createContainer();
 
         specializedTypesHandler = new SpecializedTypesHandler(graphQLAnnotations, container);
-        ((DefaultTypeFunction) defaultTypeFunction).register(this);
+
+        ((UnboxingTypeFunction) unboxingTypeFunction).setDefaultTypeFunction(defaultTypeFunction);
 
         GraphQLExtensionsHandler extensionsHandler = graphQLAnnotations.getExtensionsHandler();
         extensionsHandler.setFieldRetriever(graphQLFieldWithPermissionsRetriever);
@@ -359,24 +355,15 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         this.defaultTypeFunction = null;
     }
 
-    @Override
-    public boolean canBuildType(Class<?> aClass, AnnotatedType annotatedType) {
-        return Publisher.class.isAssignableFrom(aClass);
+    private TypeFunction unboxingTypeFunction;
+
+    @Reference(target = "(type=unboxing)", policy = ReferencePolicy.DYNAMIC, policyOption = ReferencePolicyOption.GREEDY)
+    public void setUnboxingTypeFunction(TypeFunction unboxingTypeFunction) {
+        this.unboxingTypeFunction = unboxingTypeFunction;
     }
 
-    @Override
-    public GraphQLType buildType(boolean input, Class<?> aClass, AnnotatedType annotatedType, ProcessingElementsContainer container) {
-        if (!(annotatedType instanceof AnnotatedParameterizedType)) {
-            throw new IllegalArgumentException("List type parameter should be specified");
-        }
-        AnnotatedParameterizedType parameterizedType = (AnnotatedParameterizedType) annotatedType;
-        AnnotatedType arg = parameterizedType.getAnnotatedActualTypeArguments()[0];
-        Class<?> klass;
-        if (arg.getType() instanceof ParameterizedType) {
-            klass = (Class<?>) ((ParameterizedType) (arg.getType())).getRawType();
-        } else {
-            klass = (Class<?>) arg.getType();
-        }
-        return defaultTypeFunction.buildType(input, klass, arg, container);
+    public void unsetUnboxingTypeFunction(TypeFunction unboxingTypeFunction) {
+        this.defaultTypeFunction = null;
     }
+
 }

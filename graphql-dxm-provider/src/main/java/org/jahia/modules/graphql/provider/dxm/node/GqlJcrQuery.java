@@ -43,8 +43,11 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.GraphQLError;
 import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
+import graphql.execution.DataFetcherResult;
+import graphql.execution.ExecutionPath;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.LocaleUtils;
 import org.jahia.modules.graphql.provider.dxm.*;
@@ -55,6 +58,7 @@ import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.services.content.*;
 import org.jahia.services.query.QueryWrapper;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.touk.throwing.exception.WrappedException;
@@ -174,22 +178,19 @@ public class GqlJcrQuery {
     @GraphQLNonNull
     @GraphQLName("nodesById")
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their UUIDs")
-    public Collection<GqlJcrNode> getNodesById(@GraphQLName("uuids") @GraphQLNonNull @GraphQLDescription("The UUIDs of the nodes") Collection<@GraphQLNonNull String> uuids, DataFetchingEnvironment environment) {
+    public DataFetcherResult<Collection<GqlJcrNode>> getNodesById(@GraphQLName("uuids") @GraphQLNonNull @GraphQLDescription("The UUIDs of the nodes") Collection<@GraphQLNonNull String> uuids, DataFetchingEnvironment environment) {
         List<GqlJcrNode> nodes = new ArrayList<>(uuids.size());
-        List<DataFetchingException> errors = new ArrayList<>();
+        DataFetcherResult.Builder<Collection<GqlJcrNode>> result = DataFetcherResult.newResult();
+
         for (String uuid : uuids) {
             try {
                 nodes.add(getGqlNodeById(uuid));
             } catch (RepositoryException re) {
-                errors.add(new DataFetchingException(re));
+                result.error(JahiaDataFetchingExceptionHandler.transformException(new DataFetchingException(re),environment));
             }
         }
 
-        if (!errors.isEmpty()) {
-            throw new AggregateDataFetchingException(errors);
-        }
-
-        return nodes;
+        return result.data(nodes).build();
     }
 
     /**
@@ -203,23 +204,21 @@ public class GqlJcrQuery {
     @GraphQLNonNull
     @GraphQLName("nodesByPath")
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their paths")
-    public Collection<GqlJcrNode> getNodesByPath(@GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("The paths of the nodes") Collection<@GraphQLNonNull String> paths, DataFetchingEnvironment environment) {
+    public DataFetcherResult<Collection<GqlJcrNode>> getNodesByPath(@GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("The paths of the nodes") Collection<@GraphQLNonNull String> paths, DataFetchingEnvironment environment) {
         List<GqlJcrNode> nodes = new ArrayList<>(paths.size());
-        List<DataFetchingException> errors = new ArrayList<>();
+        DataFetcherResult.Builder<Collection<GqlJcrNode>> result = DataFetcherResult.newResult();
+
         for (String path : paths) {
             try {
                 nodes.add(getGqlNodeByPath(path));
             } catch (RepositoryException re) {
-                errors.add(new DataFetchingException(re));
+                result.error(JahiaDataFetchingExceptionHandler.transformException(new DataFetchingException(re),environment));
             }
         }
 
-        if (!errors.isEmpty()) {
-            throw new AggregateDataFetchingException(errors);
-        }
-
-        return nodes;
+        return result.data(nodes).build();
     }
+
 
     /**
      * Get GraphQL representations of nodes using a query language supported by JCR.
