@@ -99,22 +99,11 @@ public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHa
         ExecutionPath path = handlerParameters.getPath();
         SourceLocation sourceLocation = handlerParameters.getField().getSingleField().getSourceLocation();
 
-        if (exception instanceof AggregateDataFetchingException) {
-            List<DataFetchingException> errors = ((AggregateDataFetchingException) exception).getErrors();
-            if (errors != null && !errors.isEmpty()) {
-                List<GraphQLError> graphQLErrors = errors.stream()
-                        .map(e -> transformException(e, path, sourceLocation))
-                        .collect(Collectors.toList());
-                builder.errors(graphQLErrors);
-            }
+        GraphQLError error = transformException(exception, path, sourceLocation);
+        builder.error(error);
 
-        } else {
-            GraphQLError error = transformException(exception, path, sourceLocation);
-            builder.error(error);
-
-            if (!(error instanceof DXGraphQLError)) {
-                log.warn(error.getMessage(), exception);
-            }
+        if (!(error instanceof DXGraphQLError)) {
+            log.warn(error.getMessage(), exception);
         }
 
         return builder.build();
