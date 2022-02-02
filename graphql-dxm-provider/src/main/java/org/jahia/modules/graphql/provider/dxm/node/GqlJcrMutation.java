@@ -50,6 +50,7 @@ import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLFieldCompleter;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.*;
+import org.jahia.services.importexport.DocumentViewImportHandler;
 import org.jahia.services.query.QueryWrapper;
 
 import javax.jcr.RepositoryException;
@@ -57,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -267,6 +269,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
      * @param parentPathOrId the path or UUID of the parent node
      * @param file name of the request part that contains desired import file body
      * @param environment data fetching environment
+     * @param rootBehaviour Specify the behaviour in case of existing content
      * @return always true
      * @throws BaseGqlClientException in case of errors during import operation
      */
@@ -275,10 +278,19 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     public boolean importContent(
         @GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
         @GraphQLName("file") @GraphQLNonNull @GraphQLDescription("Name of the request part that contains desired import file body") String file,
+        @GraphQLName("rootBehaviour") @GraphQLDefaultValue(DefaultRootBehaviour.class) @GraphQLDescription("Specify the behaviour in case"
+                + " of existing content, possible values are in the DocumentViewImportHandler class") Integer rootBehaviour,
         DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
-        importFileUpload(file, getNodeFromPathOrId(getSession(), parentPathOrId), environment);
+        importFileUpload(file, getNodeFromPathOrId(getSession(), parentPathOrId), rootBehaviour,  environment);
         return true;
+    }
+
+    public static class DefaultRootBehaviour implements Supplier<Object> {
+        @Override
+        public Integer get() {
+            return DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME;
+        }
     }
 
     /**
