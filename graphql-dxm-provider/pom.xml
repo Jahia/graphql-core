@@ -110,7 +110,7 @@
         <jahia-module-type>system</jahia-module-type>
         <jahia-module-signature>MCwCFBpaLVEg99ONv0ZpcZb7qLoF2XW7AhQYiiJ1Qmhm5C4/sV+zPRCRSPp+Zg==</jahia-module-signature>
         <mockito.version>2.21.0</mockito.version>
-        <powermock.version>2.0.7</powermock.version>
+        <powermock.version>2.0.9</powermock.version>
     </properties>
 
     <dependencies>
