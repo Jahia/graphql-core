@@ -165,13 +165,26 @@ public class GqlJcrMutationSupport {
     }
 
     /**
-     * Import file upload content under a node.
+     * Import file upload content under a node. Rename the imported content if
+     * a content with the same name is already present under the node
      *
      * @param partName    Name of the request part that contains desired file upload
      * @param node        Parent node to import content under
      * @param environment Data fetching environment
      */
     public static void importFileUpload(String partName, JCRNodeWrapper node, DataFetchingEnvironment environment) throws BaseGqlClientException {
+        importFileUpload(partName, node, DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME, environment);
+    }
+
+    /**
+     * Import file upload content under a node.
+     *
+     * @param partName    Name of the request part that contains desired file upload
+     * @param node        Parent node to import content under
+     * @param rootBehaviour Specify the behaviour in case of existing content
+     * @param environment Data fetching environment
+     */
+    public static void importFileUpload(String partName, JCRNodeWrapper node, int rootBehaviour, DataFetchingEnvironment environment) throws BaseGqlClientException {
         try {
             Part part = UploadHelper.getFileUpload(partName, environment);
             ImportExportBaseService importExportBaseService = ImportExportBaseService.getInstance();
@@ -181,14 +194,14 @@ public class GqlJcrMutationSupport {
                     File fileToImport = File.createTempFile("import", ".zip");
                     try {
                         FileUtils.copyInputStreamToFile(part.getInputStream(), fileToImport);
-                        importExportBaseService.importZip(node.getPath(), new FileSystemResource(fileToImport), DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME);
+                        importExportBaseService.importZip(node.getPath(), new FileSystemResource(fileToImport), rootBehaviour);
                     } finally {
                         FileUtils.deleteQuietly(fileToImport);
                     }
                     break;
                 case "text/xml":
                     importExportBaseService.importXML(node.getPath(), part.getInputStream(),
-                            DocumentViewImportHandler.ROOT_BEHAVIOUR_RENAME);
+                            rootBehaviour);
                     break;
                 default:
                     throw new GqlJcrWrongInputException("Wrong file type");
