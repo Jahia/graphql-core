@@ -62,6 +62,7 @@ import org.jahia.services.content.nodetypes.ConstraintsHelper;
 import org.jahia.services.render.RenderContext;
 import org.jahia.services.render.RenderService;
 import org.jahia.services.render.Resource;
+import org.jahia.services.uicomponents.bean.editmode.EditConfiguration;
 import org.jahia.settings.SettingsBean;
 
 import javax.jcr.RepositoryException;
@@ -143,6 +144,8 @@ public class RenderNodeExtensions {
                                            @GraphQLName("templateType") @GraphQLDescription("Template type") String templateType,
                                            @GraphQLName("contextConfiguration") @GraphQLDescription("Rendering context configuration") String contextConfiguration,
                                            @GraphQLName("language") @GraphQLDescription("Language") String language,
+                                           @GraphQLName("mainResourcePath") @GraphQLDescription("Main resource path") String mainResourcePath,
+                                           @GraphQLName("isEditMode") @GraphQLDescription("Is edit mode") boolean isEditMode,
                                            @GraphQLName("requestAttributes") @GraphQLDescription("Additional request attributes") Collection<RenderRequestAttributeInput> requestAttributes, DataFetchingEnvironment environment) {
         try {
             RenderService renderService = (RenderService) SpringContextSingleton.getBean("RenderService");
@@ -182,7 +185,16 @@ public class RenderNodeExtensions {
             Resource r = new Resource(node, templateType, view, contextConfiguration);
 
             RenderContext renderContext = new RenderContext(request, response, JCRSessionFactory.getInstance().getCurrentUser());
-            renderContext.setMainResource(r);
+            if (mainResourcePath != null) {
+                JCRNodeWrapper mainNode = NodeHelper.getNodeInLanguage(node.getSession().getNode(mainResourcePath), language);
+                renderContext.setMainResource(new Resource(mainNode, templateType, view, contextConfiguration));
+            } else {
+                renderContext.setMainResource(r);
+            }
+            if (isEditMode) {
+                renderContext.setEditMode(isEditMode);
+                renderContext.setEditModeConfig((EditConfiguration) SpringContextSingleton.getBean("editmode-jahia-anthracite"));
+            }
 
             renderContext.setServletPath(Render.getRenderServletPath());
 
