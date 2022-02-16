@@ -145,7 +145,7 @@ public class RenderNodeExtensions {
                                            @GraphQLName("contextConfiguration") @GraphQLDescription("Rendering context configuration") String contextConfiguration,
                                            @GraphQLName("language") @GraphQLDescription("Language") String language,
                                            @GraphQLName("mainResourcePath") @GraphQLDescription("Main resource path") String mainResourcePath,
-                                           @GraphQLName("isEditMode") @GraphQLDescription("Is edit mode") boolean isEditMode,
+                                           @GraphQLName("isEditMode") @GraphQLDescription("Is edit mode") Boolean isEditMode,
                                            @GraphQLName("requestAttributes") @GraphQLDescription("Additional request attributes") Collection<RenderRequestAttributeInput> requestAttributes, DataFetchingEnvironment environment) {
         try {
             RenderService renderService = (RenderService) SpringContextSingleton.getBean("RenderService");
@@ -191,8 +191,8 @@ public class RenderNodeExtensions {
             } else {
                 renderContext.setMainResource(r);
             }
-            if (isEditMode) {
-                renderContext.setEditMode(isEditMode);
+            if (isEditMode != null && isEditMode) {
+                renderContext.setEditMode(true);
                 renderContext.setEditModeConfig((EditConfiguration) SpringContextSingleton.getBean("editmode-jahia-anthracite"));
             }
 
