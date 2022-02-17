@@ -46,6 +46,7 @@ package org.jahia.modules.graphql.provider.dxm;
 import graphql.ExecutionResult;
 import graphql.execution.*;
 import graphql.kickstart.servlet.context.DefaultGraphQLWebSocketContext;
+import org.jahia.api.Constants;
 import org.jahia.bin.filters.jcr.JcrSessionFilter;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
@@ -63,8 +64,8 @@ public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStr
     public CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, ExecutionStrategyParameters parameters) throws NonNullableFieldWasNullException {
         try {
             DefaultGraphQLWebSocketContext context = (DefaultGraphQLWebSocketContext) executionContext.getContext();
-            HttpSession httpSession = (HttpSession) context.getSession().getUserProperties().get(HttpSession.class.getName());
-            JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) httpSession.getAttribute("org.jahia.usermanager.jahiauser"));
+            JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) context.getSession().getUserProperties().get(Constants.SESSION_USER));
+
             return super.execute(executionContext, parameters);
         } finally {
             JcrSessionFilter.endRequest();
@@ -75,8 +76,8 @@ public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStr
     protected FieldValueInfo completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, FetchedValue fetchedValue) {
         try {
             DefaultGraphQLWebSocketContext context = (DefaultGraphQLWebSocketContext) executionContext.getContext();
-            HttpSession httpSession = (HttpSession) context.getSession().getUserProperties().get(HttpSession.class.getName());
-            JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) httpSession.getAttribute("org.jahia.usermanager.jahiauser"));
+            JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) context.getSession().getUserProperties().get(Constants.SESSION_USER));
+
             return super.completeField(executionContext, parameters, fetchedValue);
         } finally {
             JcrSessionFilter.endRequest();
