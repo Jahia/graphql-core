@@ -51,6 +51,7 @@ import graphql.kickstart.execution.subscriptions.apollo.OperationMessage;
 import graphql.kickstart.servlet.GraphQLWebsocketServlet;
 import graphql.kickstart.servlet.input.GraphQLInvocationInputFactory;
 import graphql.kickstart.servlet.subscriptions.WebSocketSubscriptionProtocolFactory;
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.util.BeanWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
@@ -61,7 +62,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpSession;
 import javax.websocket.*;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpoint;
@@ -125,9 +125,8 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     public void onOpen(Session session, EndpointConfig endpointConfig) {
         Map<String, Object> userProperties = endpointConfig.getUserProperties();
         userProperties.put(SubscriptionProtocolFactory.class.getName(), subscriptionProtocolFactory);
+        JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) userProperties.get(Constants.SESSION_USER));
 
-        HttpSession httpSession = (HttpSession) userProperties.get(HttpSession.class.getName());
-        JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) httpSession.getAttribute("org.jahia.usermanager.jahiauser"));
         try {
             delegate.onOpen(session, endpointConfig);
         } finally {
@@ -148,8 +147,7 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     public static class Configurator extends ServerEndpointConfig.Configurator {
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response) {
-            HttpSession httpSession = (HttpSession)request.getHttpSession();
-            sec.getUserProperties().put(HttpSession.class.getName(),httpSession);
+            sec.getUserProperties().put(Constants.SESSION_USER, JCRSessionFactory.getInstance().getCurrentUser());
         }
     }
 
