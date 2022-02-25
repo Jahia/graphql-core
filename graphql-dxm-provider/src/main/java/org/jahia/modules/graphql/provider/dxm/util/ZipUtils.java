@@ -1,25 +1,17 @@
 /*
- * ==========================================================================================
- * =                            JAHIA'S ENTERPRISE DISTRIBUTION                             =
- * ==========================================================================================
+ * Copyright (C) 2002-2022 Jahia Solutions Group SA. All rights reserved.
  *
- *                                  http://www.jahia.com
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * JAHIA'S ENTERPRISE DISTRIBUTIONS LICENSING - IMPORTANT INFORMATION
- * ==========================================================================================
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *     Copyright (C) 2002-2020 Jahia Solutions Group. All rights reserved.
- *
- *     This file is part of a Jahia's Enterprise Distribution.
- *
- *     Jahia's Enterprise Distributions must be used in accordance with the terms
- *     contained in the Jahia Solutions Group Terms &amp; Conditions as well as
- *     the Jahia Sustainable Enterprise License (JSEL).
- *
- *     For questions regarding licensing, support, production usage...
- *     please contact our team at sales@jahia.com or go to http://www.jahia.com/license.
- *
- * ==========================================================================================
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.jahia.modules.graphql.provider.dxm.util;
 
