@@ -143,7 +143,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     @Override
     @GraphQLName("displayName")
-    @GraphQLDescription("GraphQL representation of the parent JCR node")
+    @GraphQLDescription("The displayable name of the JCR node")
     public String getDisplayName(@GraphQLName("language") @GraphQLDescription("Language") String language) {
         try {
             JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node, language);
@@ -222,7 +222,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                    @GraphQLName("includesSelf") @GraphQLDescription("Include the current node itself in results") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includesSelf,
                                                    DataFetchingEnvironment environment) {
         try {
-            return NodeHelper.getPaginatedNodesList(node.getNodes(), names, typesFilter, propertiesFilter, fieldFilter, environment, fieldSorter, fieldGrouping);
+            return node.hasNodes() ? NodeHelper.getPaginatedNodesList(node.getNodes(), names, typesFilter, propertiesFilter, fieldFilter,
+                    environment,
+                    fieldSorter, fieldGrouping) : null;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
