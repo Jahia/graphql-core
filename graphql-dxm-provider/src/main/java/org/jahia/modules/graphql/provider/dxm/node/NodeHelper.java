@@ -156,12 +156,11 @@ public class NodeHelper {
      * @throws RepositoryException in case of JCR access errors
      */
     public static JCRNodeWrapper getNodeInLanguage(JCRNodeWrapper node, String language) throws RepositoryException {
-        Locale sessionLocale = node.getSession().getLocale();
-        if (language == null && sessionLocale == null) {
+        if (language == null) {
             return node;
         }
         String workspace = node.getSession().getWorkspace().getName();
-        Locale locale = language == null ? sessionLocale : LanguageCodeConverters.languageCodeToLocale(language);
+        Locale locale = LanguageCodeConverters.languageCodeToLocale(language);
         JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(workspace, locale);
         return session.getNodeByIdentifier(node.getIdentifier());
     }
