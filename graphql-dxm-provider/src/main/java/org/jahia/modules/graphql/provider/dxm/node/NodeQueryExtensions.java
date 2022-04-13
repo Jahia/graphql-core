@@ -61,14 +61,16 @@ public class NodeQueryExtensions {
 
     /**
      * Root for all JCR queries.
-     * @param workspace the JCR workspace name for the query 
+     * @param workspace the JCR workspace name for the query
+     * @param language to use in the session to get localized nodes
      * @return the root query object
      */
     @GraphQLField
     @GraphQLName("jcr")
     @GraphQLNonNull
     @GraphQLDescription("JCR Queries")
-    public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either EDIT, LIVE, or null to use EDIT by default") Workspace workspace) {
+    public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; "
+            + "either EDIT, LIVE, or null to use EDIT by default") Workspace workspace) {
         return new GqlJcrQuery(workspace != null ? workspace : Workspace.EDIT);
     }
 }

@@ -143,7 +143,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     @Override
     @GraphQLName("displayName")
-    @GraphQLDescription("GraphQL representation of the parent JCR node")
+    @GraphQLDescription("The displayable name of the JCR node")
     public String getDisplayName(@GraphQLName("language") @GraphQLDescription("Language") String language) {
         try {
             JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node, language);
@@ -203,6 +203,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                 return null;
             }
             return new GqlJcrProperty(node.getProperty(name), this);
+        } catch (ItemNotFoundException e) {
+            return null;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -214,6 +216,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the child nodes, according to parameters passed")
     public DXPaginatedData<GqlJcrNode> getChildren(@GraphQLName("names") @GraphQLDescription("Filter of child nodes by their names; null to avoid such filtering") Collection<String> names,
+                                                   @GraphQLName("validInLanguage") @GraphQLDescription("Language to use to get children") String validInLanguage,
                                                    @GraphQLName("typesFilter") @GraphQLDescription("Filter of child nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
                                                    @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter,
                                                    @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
@@ -222,7 +225,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                    @GraphQLName("includesSelf") @GraphQLDescription("Include the current node itself in results") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean includesSelf,
                                                    DataFetchingEnvironment environment) {
         try {
-            return NodeHelper.getPaginatedNodesList(node.getNodes(), names, typesFilter, propertiesFilter, fieldFilter, environment, fieldSorter, fieldGrouping);
+            return NodeHelper.getPaginatedNodesList(NodeHelper.getNodeInLanguage(node, validInLanguage).getNodes(), names, typesFilter, propertiesFilter, fieldFilter, environment, fieldSorter, fieldGrouping);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
@@ -251,6 +254,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLDescription("GraphQL representations of the descendant nodes, according to parameters passed")
     @GraphQLNonNull
     public DXPaginatedData<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
+                                                      @GraphQLName("validInLanguage") @GraphQLDescription("Language to use to get children") String validInLanguage,
                                                       @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter,
                                                       @GraphQLName("recursionTypesFilter") @GraphQLDescription("Filter out and stop recursion on nodes by their types; null to avoid such filtering") NodeTypesInput recursionTypesFilter,
                                                       @GraphQLName("recursionPropertiesFilter") @GraphQLDescription("Filter out and stop recursion on nodes by their property values; null to avoid such filtering") NodePropertiesInput recursionPropertiesFilter,
@@ -259,7 +263,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                       @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields according to specified criteria") FieldGroupingInput fieldGrouping,
                                                       DataFetchingEnvironment environment) {
         try {
-            JCRDescendantsNodeIterator it = new JCRDescendantsNodeIterator(node, NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, environment));
+            JCRDescendantsNodeIterator it = new JCRDescendantsNodeIterator(NodeHelper.getNodeInLanguage(node, validInLanguage), NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, environment));
             return NodeHelper.getPaginatedNodesList(it, null, typesFilter, propertiesFilter, fieldFilter, environment, fieldSorter, fieldGrouping);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);

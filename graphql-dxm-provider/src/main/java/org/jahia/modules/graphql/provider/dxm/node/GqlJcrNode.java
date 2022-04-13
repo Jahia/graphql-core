@@ -145,6 +145,7 @@ public interface GqlJcrNode {
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the child nodes, according to parameters passed")
     DXPaginatedData<GqlJcrNode> getChildren(@GraphQLName("names") @GraphQLDescription("Filter of child nodes by their names; null to avoid such filtering") Collection<String> names,
+                                            @GraphQLName("validInLanguage") @GraphQLDescription("Language to use to get children") String validInLanguage,
                                             @GraphQLName("typesFilter") @GraphQLDescription("Filter of child nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
                                             @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of child nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter,
                                             @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values")  FieldFiltersInput fieldFilter,
@@ -182,6 +183,7 @@ public interface GqlJcrNode {
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the descendant nodes, according to parameters passed")
     DXPaginatedData<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
+                                               @GraphQLName("validInLanguage") @GraphQLDescription("Language to use to get children") String validInLanguage,
                                                @GraphQLName("propertiesFilter") @GraphQLDescription("Filter of descendant nodes by their property values; null to avoid such filtering") NodePropertiesInput propertiesFilter,
                                                @GraphQLName("recursionTypesFilter") @GraphQLDescription("Filter out and stop recursion on nodes by their types; null to avoid such filtering") NodeTypesInput recursionTypesFilter,
                                                @GraphQLName("recursionPropertiesFilter") @GraphQLDescription("Filter out and stop recursion on nodes by their property values; null to avoid such filtering") NodePropertiesInput recursionPropertiesFilter,
@@ -263,7 +265,6 @@ public interface GqlJcrNode {
     @GraphQLDescription("Check if the given locales need translation, by comparing last modifications dates with already existing translations")
     List<String> getLanguagesToTranslate(@GraphQLName("languagesTranslated") @GraphQLDescription("List of known translated languages, will be used to compare modifications dates") List<String> languagesTranslated,
                                    @GraphQLName("languagesToCheck") @GraphQLDescription("List of languages potentially to be translated") List<String> languagesToCheck);
-
 
     /**
      * Get information on the operations that can be done on this node

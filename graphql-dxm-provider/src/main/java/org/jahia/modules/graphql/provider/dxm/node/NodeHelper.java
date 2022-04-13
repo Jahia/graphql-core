@@ -16,15 +16,13 @@
 package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.predicate.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRPropertyWrapper;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.JCRValueWrapper;
+import org.jahia.services.content.*;
+import org.jahia.services.visibility.VisibilityService;
 import org.jahia.utils.LanguageCodeConverters;
 import pl.touk.throwing.ThrowingFunction;
 import pl.touk.throwing.ThrowingPredicate;
@@ -156,13 +154,28 @@ public class NodeHelper {
      * @throws RepositoryException in case of JCR access errors
      */
     public static JCRNodeWrapper getNodeInLanguage(JCRNodeWrapper node, String language) throws RepositoryException {
+        String workspace = node.getSession().getWorkspace().getName();
         if (language == null) {
+            if (node.getLanguage() != null) {
+                JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
+                return session.getNodeByIdentifier(node.getIdentifier());
+            }
             return node;
         }
-        String workspace = node.getSession().getWorkspace().getName();
         Locale locale = LanguageCodeConverters.languageCodeToLocale(language);
         JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(workspace, locale);
         return session.getNodeByIdentifier(node.getIdentifier());
+    }
+
+    public static boolean checkNodeValidity(JCRNodeWrapper node) throws RepositoryException {
+        if (Constants.LIVE_WORKSPACE.equals(node.getSession().getWorkspace().getName()) &&
+                !JCRStoreService.getInstance().getNoValidityCheckTypes().contains(node.getPrimaryNodeTypeName())) {
+
+            return (!node.hasProperty("j:published") || node.getProperty("j:published").getBoolean()) &&
+                    VisibilityService.getInstance().matchesConditions(node);
+
+        }
+        return true;
     }
 
     static void collectDescendants(JCRNodeWrapper node, Predicate<JCRNodeWrapper> predicate, Predicate<JCRNodeWrapper> recursionPredicate, Consumer<JCRNodeWrapper> consumer) throws RepositoryException {
@@ -205,6 +218,7 @@ public class NodeHelper {
         @SuppressWarnings("unchecked") Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
             .filter(node-> PermissionHelper.hasPermission(node, environment))
             .filter(getNodesPredicate(names, typesFilter, propertiesFilter, environment))
+            .filter(ThrowingPredicate.unchecked(NodeHelper::checkNodeValidity))
             .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode))
             .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
 
@@ -217,9 +231,7 @@ public class NodeHelper {
         }
 
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
-        return PaginationHelper.paginate(stream, n -> {
-            return PaginationHelper.encodeCursor(n.getUuid());
-        }, arguments);
+        return PaginationHelper.paginate(stream, n -> PaginationHelper.encodeCursor(n.getUuid()), arguments);
     }
 
     private interface PropertyEvaluationAlgorithm {

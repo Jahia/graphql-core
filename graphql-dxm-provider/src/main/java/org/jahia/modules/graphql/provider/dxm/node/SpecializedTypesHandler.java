@@ -25,6 +25,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,9 +77,13 @@ public class SpecializedTypesHandler {
     }
 
     public static GqlJcrNode getNode(JCRNodeWrapper node, String type) throws RepositoryException {
+        node = NodeHelper.getNodeInLanguage(node, null);
+        if (!NodeHelper.checkNodeValidity(node)) {
+            throw new ItemNotFoundException(node.getIdentifier());
+        }
         if (getInstance().specializedTypesClass.containsKey(type)) {
             try {
-                return getInstance().specializedTypesClass.get(type).getConstructor(new Class[] {JCRNodeWrapper.class}).newInstance(node);
+                return getInstance().specializedTypesClass.get(type).getConstructor(JCRNodeWrapper.class).newInstance(node);
             } catch (ReflectiveOperationException e) {
                 throw new RuntimeException(e);
             }
