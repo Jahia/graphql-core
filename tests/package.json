@@ -49,7 +49,8 @@
   },
   "resolutions": {
     "*/**/elliptic": "6.5.4",
-    "**/glob-parent": "^5.1.2"
+    "**/glob-parent": "^5.1.2",
+    "*/**/minimist": "1.2.6"
   },
   "scripts": {
     "instrument": "nyc instrument --compact=false cypress instrumented",

@@ -1,74 +1,59 @@
 /*
- * ==========================================================================================
- * =                   JAHIA'S DUAL LICENSING - IMPORTANT INFORMATION                       =
- * ==========================================================================================
+ * Copyright (C) 2002-2022 Jahia Solutions Group SA. All rights reserved.
  *
- *                                 http://www.jahia.com
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *     Copyright (C) 2002-2020 Jahia Solutions Group SA. All rights reserved.
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *     THIS FILE IS AVAILABLE UNDER TWO DIFFERENT LICENSES:
- *     1/GPL OR 2/JSEL
- *
- *     1/ GPL
- *     ==================================================================================
- *
- *     IF YOU DECIDE TO CHOOSE THE GPL LICENSE, YOU MUST COMPLY WITH THE FOLLOWING TERMS:
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *     GNU General Public License for more details.
- *
- *     You should have received a copy of the GNU General Public License
- *     along with this program. If not, see <http://www.gnu.org/licenses/>.
- *
- *
- *     2/ JSEL - Commercial and Supported Versions of the program
- *     ===================================================================================
- *
- *     IF YOU DECIDE TO CHOOSE THE JSEL LICENSE, YOU MUST COMPLY WITH THE FOLLOWING TERMS:
- *
- *     Alternatively, commercial and supported versions of the program - also known as
- *     Enterprise Distributions - must be used in accordance with the terms and conditions
- *     contained in a separate written agreement between you and Jahia Solutions Group SA.
- *
- *     If you are unsure which license is appropriate for your use,
- *     please contact the sales department at sales@jahia.com.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.GraphQLError;
-import graphql.annotations.annotationTypes.*;
+import graphql.annotations.annotationTypes.GraphQLDefaultValue;
+import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.execution.DataFetcherResult;
-import graphql.execution.ExecutionPath;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.LocaleUtils;
-import org.jahia.modules.graphql.provider.dxm.*;
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.GqlConstraintHandler;
+import org.jahia.modules.graphql.provider.dxm.JahiaDataFetchingExceptionHandler;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldGroupingInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
-import org.jahia.services.content.*;
+import org.jahia.services.content.JCRContentUtils;
+import org.jahia.services.content.JCRNodeIteratorWrapper;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.QueryManagerWrapper;
 import org.jahia.services.query.QueryWrapper;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import pl.touk.throwing.exception.WrappedException;
 
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.query.Query;
-import javax.jcr.query.qom.*;
-import java.util.*;
+import javax.jcr.query.qom.Constraint;
+import javax.jcr.query.qom.Ordering;
+import javax.jcr.query.qom.QueryObjectModel;
+import javax.jcr.query.qom.QueryObjectModelFactory;
+import javax.jcr.query.qom.Selector;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
 import java.util.function.Supplier;
 
 import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLanguage.SQL2;
@@ -79,8 +64,6 @@ import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLangu
 @GraphQLName("JCRQuery")
 @GraphQLDescription("JCR Queries")
 public class GqlJcrQuery {
-
-    private static final Logger logger = LoggerFactory.getLogger(GqlJcrQuery.class);
 
     private NodeQueryExtensions.Workspace workspace;
 
@@ -97,18 +80,16 @@ public class GqlJcrQuery {
         /**
          * SQL2 query language.
          */
-        @GraphQLDescription("SQL2 query language")
-        SQL2(Query.JCR_SQL2),
+        @GraphQLDescription("SQL2 query language") SQL2(Query.JCR_SQL2),
 
         /**
          * XPath query language.
          */
-        @GraphQLDescription("XPath query language")
-        XPATH(Query.XPATH);
+        @GraphQLDescription("XPath query language") XPATH(Query.XPATH);
 
         private String jcrQueryLanguage;
 
-        private QueryLanguage(String jcrQueryLanguage) {
+        QueryLanguage(String jcrQueryLanguage) {
             this.jcrQueryLanguage = jcrQueryLanguage;
         }
 
@@ -135,15 +116,19 @@ public class GqlJcrQuery {
      * Get GraphQL representation of a node by its UUID.
      *
      * @param uuid The UUID of the node
+     * @param validInLanguage Check node validity in this language
      * @return GraphQL representation of the node
      * @throws BaseGqlClientException In case of issues fetching the node
      */
     @GraphQLField
     @GraphQLName("nodeById")
     @GraphQLDescription("Get GraphQL representation of a node by its UUID")
-    public GqlJcrNode getNodeById(@GraphQLName("uuid") @GraphQLNonNull @GraphQLDescription("The UUID of the node") String uuid) {
+    public GqlJcrNode getNodeById(
+            @GraphQLName("uuid") @GraphQLNonNull @GraphQLDescription("The UUID of the node") String uuid,
+            @GraphQLName("validInLanguage") @GraphQLDescription("Check node validity in this language") String validInLanguage
+    ) {
         try {
-            return getGqlNodeById(uuid);
+            return getGqlNodeById(uuid, validInLanguage);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -153,15 +138,18 @@ public class GqlJcrQuery {
      * Get GraphQL representation of a node by its path.
      *
      * @param path The path of the node
+     * @param validInLanguage Check node validity in this language
      * @return GraphQL representation of the node
      * @throws BaseGqlClientException In case of issues fetching the node
      */
     @GraphQLField
     @GraphQLName("nodeByPath")
     @GraphQLDescription("Get GraphQL representation of a node by its path")
-    public GqlJcrNode getNodeByPath(@GraphQLName("path") @GraphQLNonNull @GraphQLDescription("The path of the node") String path) {
+    public GqlJcrNode getNodeByPath(
+            @GraphQLName("path") @GraphQLNonNull @GraphQLDescription("The path of the node") String path,
+            @GraphQLName("validInLanguage") @GraphQLDescription("Check node validity in this language") String validInLanguage) {
         try {
-            return getGqlNodeByPath(path);
+            return getGqlNodeByPath(path, validInLanguage);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -171,6 +159,7 @@ public class GqlJcrQuery {
      * Get GraphQL representations of multiple nodes by their UUIDs.
      *
      * @param uuids The UUIDs of the nodes
+     * @param validInLanguage Check node validity in this language
      * @return GraphQL representations of the nodes
      * @throws BaseGqlClientException In case of issues fetching the nodes
      */
@@ -178,15 +167,18 @@ public class GqlJcrQuery {
     @GraphQLNonNull
     @GraphQLName("nodesById")
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their UUIDs")
-    public DataFetcherResult<Collection<GqlJcrNode>> getNodesById(@GraphQLName("uuids") @GraphQLNonNull @GraphQLDescription("The UUIDs of the nodes") Collection<@GraphQLNonNull String> uuids, DataFetchingEnvironment environment) {
+    public DataFetcherResult<Collection<GqlJcrNode>> getNodesById(
+            @GraphQLName("uuids") @GraphQLNonNull @GraphQLDescription("The UUIDs of the nodes") Collection<@GraphQLNonNull String> uuids,
+            @GraphQLName("validInLanguage") @GraphQLDescription("Check node validity in this language") String validInLanguage,
+            DataFetchingEnvironment environment) {
         List<GqlJcrNode> nodes = new ArrayList<>(uuids.size());
         DataFetcherResult.Builder<Collection<GqlJcrNode>> result = DataFetcherResult.newResult();
 
         for (String uuid : uuids) {
             try {
-                nodes.add(getGqlNodeById(uuid));
+                nodes.add(getGqlNodeById(uuid, validInLanguage));
             } catch (RepositoryException re) {
-                result.error(JahiaDataFetchingExceptionHandler.transformException(new DataFetchingException(re),environment));
+                result.error(JahiaDataFetchingExceptionHandler.transformException(new DataFetchingException(re), environment));
             }
         }
 
@@ -197,6 +189,7 @@ public class GqlJcrQuery {
      * Get GraphQL representations of multiple nodes by their paths.
      *
      * @param paths The paths of the nodes
+     * @param validInLanguage Check node validity in this language
      * @return GraphQL representations of the nodes
      * @throws BaseGqlClientException In case of issues fetching the nodes
      */
@@ -204,28 +197,30 @@ public class GqlJcrQuery {
     @GraphQLNonNull
     @GraphQLName("nodesByPath")
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their paths")
-    public DataFetcherResult<Collection<GqlJcrNode>> getNodesByPath(@GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("The paths of the nodes") Collection<@GraphQLNonNull String> paths, DataFetchingEnvironment environment) {
+    public DataFetcherResult<Collection<GqlJcrNode>> getNodesByPath(
+            @GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("The paths of the nodes") Collection<@GraphQLNonNull String> paths,
+            @GraphQLName("validInLanguage") @GraphQLDescription("Check node validity in this language") String validInLanguage,
+            DataFetchingEnvironment environment) {
         List<GqlJcrNode> nodes = new ArrayList<>(paths.size());
         DataFetcherResult.Builder<Collection<GqlJcrNode>> result = DataFetcherResult.newResult();
 
         for (String path : paths) {
             try {
-                nodes.add(getGqlNodeByPath(path));
+                nodes.add(getGqlNodeByPath(path, validInLanguage));
             } catch (RepositoryException re) {
-                result.error(JahiaDataFetchingExceptionHandler.transformException(new DataFetchingException(re),environment));
+                result.error(JahiaDataFetchingExceptionHandler.transformException(new DataFetchingException(re), environment));
             }
         }
 
         return result.data(nodes).build();
     }
 
-
     /**
      * Get GraphQL representations of nodes using a query language supported by JCR.
      *
      * @param query         The query string
      * @param queryLanguage The query language
-     * @param language      language to access node properties in
+     * @param language      Language to use for the query
      * @param fieldFilter   Filter by GraphQL field values
      * @param environment   the execution content instance
      * @return GraphQL representations of nodes selected according to the query supplied
@@ -238,12 +233,11 @@ public class GqlJcrQuery {
     public DXPaginatedData<GqlJcrNode> getNodesByQuery(
             @GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
             @GraphQLName("queryLanguage") @GraphQLDefaultValue(QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") QueryLanguage queryLanguage,
-            @GraphQLName("language") @GraphQLDescription("Language to access node properties in") String language,
+            @GraphQLName("language") @GraphQLDescription("Language to use for the query") String language,
             @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
-            @GraphQLName("fieldSorter") @GraphQLDescription("sort by GraphQL field values") FieldSorterInput fieldSorter,
+            @GraphQLName("fieldSorter") @GraphQLDescription("Sort by GraphQL field values") FieldSorterInput fieldSorter,
             @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields by criteria") FieldGroupingInput fieldGrouping,
-            DataFetchingEnvironment environment
-    ) {
+            DataFetchingEnvironment environment) {
         try {
             QueryManagerWrapper queryManager = getSession(language).getWorkspace().getQueryManager();
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
@@ -273,8 +267,7 @@ public class GqlJcrQuery {
             @GraphQLName("fieldFilter") @GraphQLDescription("Filter by GraphQL field values") FieldFiltersInput fieldFilter,
             @GraphQLName("fieldSorter") @GraphQLDescription("sort by GraphQL field values") FieldSorterInput fieldSorter,
             @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields by criteria") FieldGroupingInput fieldGrouping,
-            DataFetchingEnvironment environment
-    ) {
+            DataFetchingEnvironment environment) {
         try {
             Session session = getSession(criteria.getLanguage());
             QueryObjectModelFactory factory = session.getWorkspace().getQueryManager().getQOMFactory();
@@ -282,7 +275,8 @@ public class GqlJcrQuery {
             Selector source = factory.selector(criteria.getNodeType(), "node");
             Constraint constraintTree = handler.getConstraintTree(source.getSelectorName(), criteria);
             Ordering ordering = handler.getOrderingByProperty(source.getSelectorName(), criteria);
-            QueryObjectModel queryObjectModel = factory.createQuery(source, constraintTree, ordering == null ? null : new Ordering[]{ordering}, null);
+            QueryObjectModel queryObjectModel = factory
+                    .createQuery(source, constraintTree, ordering == null ? null : new Ordering[]{ordering}, null);
             NodeIterator it = queryObjectModel.execute().getNodes();
             return NodeHelper.getPaginatedNodesList(it, null, null, null, fieldFilter, environment, fieldSorter, fieldGrouping);
         } catch (WrappedException e) {
@@ -299,13 +293,12 @@ public class GqlJcrQuery {
         }
     }
 
-
-    private GqlJcrNode getGqlNodeByPath(String path) throws RepositoryException {
-        return SpecializedTypesHandler.getNode(getSession().getNode(JCRContentUtils.escapeNodePath(path)));
+    private GqlJcrNode getGqlNodeByPath(String path, String validInLanguage) throws RepositoryException {
+        return SpecializedTypesHandler.getNode(getSession(validInLanguage).getNode(JCRContentUtils.escapeNodePath(path)));
     }
 
-    private GqlJcrNode getGqlNodeById(String uuid) throws RepositoryException {
-        return SpecializedTypesHandler.getNode(getSession().getNodeByIdentifier(uuid));
+    private GqlJcrNode getGqlNodeById(String uuid, String validInLanguage) throws RepositoryException {
+        return SpecializedTypesHandler.getNode(getSession(validInLanguage).getNodeByIdentifier(uuid));
     }
 
     private JCRSessionWrapper getSession() throws RepositoryException {
@@ -327,5 +320,4 @@ public class GqlJcrQuery {
             return SQL2;
         }
     }
-
 }
