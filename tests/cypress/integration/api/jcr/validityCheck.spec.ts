@@ -62,18 +62,6 @@ describe('Node validity graphql test', () => {
                 }
             `,
         })
-        // Unpublish node
-        cy.apollo({
-            mutation: gql`
-                mutation {
-                    jcr {
-                        mutateNodes(pathsOrIds: ["/sites/systemsite/testValidity/unpublished"]) {
-                            unpublish(languages: ["en", "fr"])
-                        }
-                    }
-                }
-            `,
-        })
     })
     after('clean up test data', () => {
         cy.apollo({
@@ -88,6 +76,7 @@ describe('Node validity graphql test', () => {
             `,
         })
         cy.apollo({
+            errorPolicy: 'all',
             mutation: gql`
                 mutation {
                     jcr {
@@ -107,6 +96,21 @@ describe('Node validity graphql test', () => {
 
     invalidPath.forEach((path: string) =>
         it(`[nodeByPath] should not return a node ${path}`, function () {
+            if (path === '/sites/systemsite/testValidity/unpublished') {
+                // Unpublish node
+                cy.apollo({
+                    errorPolicy: 'all',
+                    mutation: gql`
+                        mutation {
+                            jcr {
+                                mutateNodes(pathsOrIds: ["/sites/systemsite/testValidity/unpublished"]) {
+                                    unpublish(languages: ["en", "fr"])
+                                }
+                            }
+                        }
+                    `,
+                })
+            }
             // getNodeByPath
             cy.apollo({
                 errorPolicy: 'all',
