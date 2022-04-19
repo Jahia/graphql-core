@@ -119,7 +119,7 @@ describe('Node validity graphql test', () => {
                         }
                     }
                 `,
-            }).should((response: any) => {
+            }).should((response) => {
                 expect(response.errors[0].message).to.contain('javax.jcr.PathNotFoundException')
             })
         }),
@@ -140,7 +140,7 @@ describe('Node validity graphql test', () => {
                     }
                 }
             `,
-        }).should((response: any) => {
+        }).should((response) => {
             const result = response.data.jcr.nodeByPath.children.nodes
             expect(result.length).to.equal(1)
             expect(result[0].path).to.equal('/sites/systemsite/testValidity/controlNode')
@@ -161,7 +161,7 @@ describe('Node validity graphql test', () => {
                     }
                 }
             `,
-        }).should((response: any) => {
+        }).should((response) => {
             const result = response.data.jcr.nodeByPath.children.nodes
             expect(result.length).to.equal(2)
             expect(result[0].path).to.equal('/sites/systemsite/testValidity/controlNode')
@@ -184,7 +184,7 @@ describe('Node validity graphql test', () => {
                     }
                 }
             `,
-        }).should((response: any) => {
+        }).should((response) => {
             const result = response.data.jcr.nodeByPath.descendants.nodes
             expect(result.length).to.equal(1)
             expect(result[0].path).to.equal('/sites/systemsite/testValidity/controlNode')
@@ -205,7 +205,7 @@ describe('Node validity graphql test', () => {
                     }
                 }
             `,
-        }).should((response: any) => {
+        }).should((response) => {
             const result = response.data.jcr.nodeByPath.descendants.nodes
             expect(result.length).to.equal(2)
             expect(result[0].path).to.equal('/sites/systemsite/testValidity/controlNode')
