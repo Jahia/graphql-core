@@ -1,0 +1,24 @@
+mutation {
+  jcr {
+    addNode(
+      parentPathOrId: "/sites/systemsite/"
+      name: "testValidity"
+      primaryNodeType: "jnt:page"
+      properties: [{ name: "j:templateName", value: "home" }, {name:"jcr:title", language: "en", value:"page title"}, {name:"jcr:title", language: "fr", value:"page title FR"}]
+    ) {
+      addChildrenBatch(
+        nodes: [
+          { name: "controlNode", primaryNodeType: "jnt:text" }
+          { name: "unpublished", primaryNodeType: "jnt:text" }
+          { name: "visibility", primaryNodeType: "jnt:text" }
+          { name: "with-inactive-language", primaryNodeType: "jnt:text" }
+        ]
+      ) {
+        uuid
+        node {
+          path
+        }
+      }
+    }
+  }
+}
