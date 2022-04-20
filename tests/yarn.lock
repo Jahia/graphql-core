@@ -919,13 +919,13 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.3.tgz#e45e384e4b8ec16bce2fd903af78450f6bf7ec98"
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
 
-"@jahia/cypress@^1.0.9":
-  version "1.0.9"
-  resolved "https://registry.yarnpkg.com/@jahia/cypress/-/cypress-1.0.9.tgz#85e30889521c3a90a943551de3be396b5f3c88ef"
-  integrity sha512-dMXkns0xNyw7hr9FrWAeU0AQ7Ngt/0NoIUV2rF/WJ7aAQBL8VGp5gF9VUFYMW0xirl/O18Wqi9lx9wXib10vUQ==
+"@jahia/cypress@^1.12.1":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@jahia/cypress/-/cypress-1.1.2.tgz#edde3d5e3bdd03e92081d5e6b7971cedf4a7a807"
+  integrity sha512-M8/lIXMDy655xgjeWNV8IEvPD3MHWsAteTeQR8zDtyaiPFDnkAsoM+Iybh6u193xZJcFpbyH6/Te8snb6iJdUQ==
   dependencies:
     "@apollo/client" "^3.4.9"
-    cypress-terminal-report "^3.3.2"
+    cypress-terminal-report "^3.4.2"
     graphql "^15.5.0"
     graphql-tag "^2.11.0"
 
@@ -2600,10 +2600,21 @@ cypress-multi-reporters@^1.5.0:
     debug "^4.1.1"
     lodash "^4.17.15"
 
-cypress-terminal-report@^3.3.2, cypress-terminal-report@^3.3.4:
+cypress-terminal-report@^3.3.4:
   version "3.3.4"
   resolved "https://registry.yarnpkg.com/cypress-terminal-report/-/cypress-terminal-report-3.3.4.tgz#b607fe890a5b3cb6111ffcc836ace6ff623dd19e"
   integrity sha512-vNkHaU9yK6J1MxN6/DgK7QnDxqPdzOiic3Cu7hLPh5sxcKjBh1nwOA+sQ8+kuiLaTWpfBWf417YUuxWJmNAqkw==
+  dependencies:
+    chalk "^3.0.0"
+    fs-extra "^9.0.1"
+    methods "^1.1.2"
+    semver "^7.3.5"
+    tv4 "^1.3.0"
+
+cypress-terminal-report@^3.4.2:
+  version "3.5.2"
+  resolved "https://registry.yarnpkg.com/cypress-terminal-report/-/cypress-terminal-report-3.5.2.tgz#fa4fbc6eca78d4f3db0a3dfc441fd1b98dcc110f"
+  integrity sha512-06y4xTOnztyUOIwk3B+YoAYrK5DSwgCMZhUieUdU3EDXjIb4BgRs/wqPYbfCrH/N5/Yb9aV2hjO95pjzEClwqQ==
   dependencies:
     chalk "^3.0.0"
     fs-extra "^9.0.1"
@@ -4900,10 +4911,10 @@ minimatch@^3.0.4:
   dependencies:
     brace-expansion "^1.1.7"
 
-minimist@^1.1.0, minimist@^1.1.1, minimist@^1.2.5:
-  version "1.2.5"
-  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.5.tgz#67d66014b66a6a8aaa0c083c5fd58df4e4e97602"
-  integrity sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==
+minimist@1.2.6, minimist@^1.1.0, minimist@^1.1.1, minimist@^1.2.5:
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
+  integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
 
 mixin-deep@^1.2.0:
   version "1.3.2"

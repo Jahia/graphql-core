@@ -3,65 +3,8 @@ import gql from 'graphql-tag'
 describe('Node validity graphql test', () => {
     before('create nodes with validity constrains', () => {
         // Setup data for testing
-        cy.apollo({
-            mutationFile: 'jcr/createNodesForValidity.graphql',
-        })
-
-        // With visibility constraint
-        cy.apollo({
-            mutation: gql`
-                mutation {
-                    jcr {
-                        mutateNodes(pathsOrIds: ["/sites/systemsite/testValidity/visibility"]) {
-                            addChild(name: "j:conditionalVisibility", primaryNodeType: "jnt:conditionalVisibility") {
-                                addChild(
-                                    name: "jnt:startEndDateCondition1650027997279"
-                                    primaryNodeType: "jnt:startEndDateCondition"
-                                    properties: [
-                                        { name: "start", value: "1980-03-29T15:06:00.000Z" }
-                                        { name: "end", value: "2020-03-31T15:06:00.000Z" }
-                                    ]
-                                ) {
-                                    uuid
-                                }
-                            }
-                        }
-                    }
-                }
-            `,
-        })
-        // Part of inactive language at node level
-        cy.apollo({
-            mutation: gql`
-                mutation {
-                    jcr {
-                        mutateNodes(pathsOrIds: ["/sites/systemsite/testValidity/with-inactive-language"]) {
-                            m1: mutateProperty(name: "j:invalidLanguages") {
-                                setValues(values: ["en"])
-                            }
-                            m2: mutateProperty(name: "text") {
-                                setValue(language: "fr", value: "text in french")
-                            }
-                            m3: mutateProperty(name: "text") {
-                                setValue(language: "en", value: "text in english")
-                            }
-                        }
-                    }
-                }
-            `,
-        })
-        // Publish everything
-        cy.apollo({
-            mutation: gql`
-                mutation {
-                    jcr {
-                        mutateNodes(pathsOrIds: ["/sites/systemsite/testValidity"]) {
-                            publish(languages: ["en", "fr"], publishSubNodes: true, includeSubTree: true)
-                        }
-                    }
-                }
-            `,
-        })
+        console.log('run groovy script')
+        cy.executeGroovy('groovy/prepareValidityTest.groovy', {})
     })
     after('clean up test data', () => {
         cy.apollo({
@@ -96,21 +39,6 @@ describe('Node validity graphql test', () => {
 
     invalidPath.forEach((path: string) =>
         it(`[nodeByPath] should not return a node ${path}`, function () {
-            if (path === '/sites/systemsite/testValidity/unpublished') {
-                // Unpublish node
-                cy.apollo({
-                    errorPolicy: 'all',
-                    mutation: gql`
-                        mutation {
-                            jcr {
-                                mutateNodes(pathsOrIds: ["/sites/systemsite/testValidity/unpublished"]) {
-                                    unpublish(languages: ["en", "fr"])
-                                }
-                            }
-                        }
-                    `,
-                })
-            }
             // getNodeByPath
             cy.apollo({
                 errorPolicy: 'all',

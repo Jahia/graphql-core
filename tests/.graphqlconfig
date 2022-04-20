@@ -1,14 +1,14 @@
 {
-  "name": "Untitled GraphQL Schema",
+  "name": "core GraphQL Schema",
   "schemaPath": "schema.graphql",
   "extensions": {
     "endpoints": {
       "Default GraphQL Endpoint": {
-        "url": "http://localhost:8080/modules/graphql",
+        "url": "http://localhost:8080/jahia/modules/graphql",
         "headers": {
           "user-agent": "JS GraphQL",
-          "authorization": "Basic: cm9vdDpyb290MTIzNA==",
-          "Origin": "localhost"
+          "Authorization": "Basic cm9vdDpyb290MTIzNA==",
+          "Origin": "http://localhost:8080"
         },
         "introspect": false
       }
