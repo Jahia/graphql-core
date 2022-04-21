@@ -101,11 +101,13 @@ public class ZipUtils {
      */
     public static void unzip(JCRNodeWrapper dest, JCRNodeWrapper zipFile) {
         File tmp = null;
+        ZipFile zip = null;
         try (InputStream is = zipFile.getFileContent().downloadFile()) {
             tmp = File.createTempFile(UUID.randomUUID() + ".zip", "");
             FileUtils.copyInputStreamToFile(is, tmp);
-            ZipFile zip = new ZipFile(tmp);
+            zip = new ZipFile(tmp);
             File finalTmp = tmp;
+            ZipFile finalZip = zip;
             zip.stream().forEach(entry -> {
                 try {
                     if (entry.isDirectory()) {
@@ -121,22 +123,27 @@ public class ZipUtils {
                             if (!JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE).nodeExists(dest.getPath() + "/" + parentName)) {
                                 dest.addNode(parentName, Constants.JAHIANT_FOLDER);
                             }
-                            dest.getNode(name.substring(0, name.lastIndexOf("/"))).uploadFile(name, zip.getInputStream(entry), getMimeType(entry.getName(), finalTmp));
+                            dest.getNode(name.substring(0, name.lastIndexOf("/"))).uploadFile(name, finalZip.getInputStream(entry), getMimeType(entry.getName(), finalTmp));
                         } else {
-                            dest.uploadFile(name, zip.getInputStream(entry), getMimeType(entry.getName(), finalTmp));
+                            dest.uploadFile(name, finalZip.getInputStream(entry), getMimeType(entry.getName(), finalTmp));
                         }
                     }
                 } catch (IOException | RepositoryException e) {
                     logger.error("Failed to process zip entry during unzip", e);
                 }
             });
-
-            // Closes streams opened in the foreach
-            zip.close();
         } catch (IOException e) {
             throw new DataFetchingException(e);
         } finally {
             FileUtils.deleteQuietly(tmp);
+            try {
+                if (zip != null) {
+                    // Closes streams opened in the foreach
+                    zip.close();
+                }
+            } catch (IOException e) {
+                logger.error("Failed to close zip stream", e);
+            }
         }
     }
 
