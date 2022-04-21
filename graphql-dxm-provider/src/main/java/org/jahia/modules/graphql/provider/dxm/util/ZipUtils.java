@@ -23,12 +23,16 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import java.io.*;
 import java.net.URLConnection;
 import java.util.List;
+import java.util.UUID;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
@@ -38,6 +42,8 @@ import java.util.zip.ZipOutputStream;
  * @author yousria
  */
 public class ZipUtils {
+
+    private static final Logger logger = LoggerFactory.getLogger(ZipUtils.class);
 
     private ZipUtils() {
     }
@@ -95,20 +101,19 @@ public class ZipUtils {
      */
     public static void unzip(JCRNodeWrapper dest, JCRNodeWrapper zipFile) {
         File tmp = null;
-        try (ZipInputStream zis = new ZipInputStream(zipFile.getFileContent().downloadFile())) {
-            tmp = File.createTempFile("temp", "");
-            ZipEntry entry = zis.getNextEntry();
-            while (entry != null) {
-                if (entry.isDirectory()) {
-                    //if the entry is a directory, create it to build the whole tree
-                    if (!JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE).nodeExists(dest.getPath() + "/" + entry.getName())) {
-                        dest.addNode(entry.getName(), Constants.JAHIANT_FOLDER);
-                    }
-                } else {
-                    try (FileOutputStream fos = new FileOutputStream(tmp)) {
-                        IOUtils.copy(zis, fos);
-                    }
-                    try (InputStream is = new FileInputStream(tmp)) {
+        try (InputStream is = zipFile.getFileContent().downloadFile()) {
+            tmp = File.createTempFile(UUID.randomUUID() + ".zip", "");
+            FileUtils.copyInputStreamToFile(is, tmp);
+            ZipFile zip = new ZipFile(tmp);
+            File finalTmp = tmp;
+            zip.stream().forEach(entry -> {
+                try {
+                    if (entry.isDirectory()) {
+                        //if the entry is a directory, create it to build the whole tree
+                        if (!JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE).nodeExists(dest.getPath() + "/" + entry.getName())) {
+                            dest.addNode(entry.getName(), Constants.JAHIANT_FOLDER);
+                        }
+                    } else {
                         String name = entry.getName();
                         if(name.lastIndexOf("/") > 0) {
                             String parentName = name.substring(0, name.lastIndexOf("/"));
@@ -116,16 +121,19 @@ public class ZipUtils {
                             if (!JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE).nodeExists(dest.getPath() + "/" + parentName)) {
                                 dest.addNode(parentName, Constants.JAHIANT_FOLDER);
                             }
-                            dest.getNode(name.substring(0, name.lastIndexOf("/"))).uploadFile(name, is, getMimeType(entry.getName(), tmp));
+                            dest.getNode(name.substring(0, name.lastIndexOf("/"))).uploadFile(name, zip.getInputStream(entry), getMimeType(entry.getName(), finalTmp));
                         } else {
-                            dest.uploadFile(name, is, getMimeType(entry.getName(), tmp));
+                            dest.uploadFile(name, zip.getInputStream(entry), getMimeType(entry.getName(), finalTmp));
                         }
                     }
+                } catch (IOException | RepositoryException e) {
+                    logger.error("Failed to process zip entry during unzip", e);
                 }
-                entry = zis.getNextEntry();
-            }
-            zis.closeEntry();
-        } catch (IOException | RepositoryException e) {
+            });
+
+            // Closes streams opened in the foreach
+            zip.close();
+        } catch (IOException e) {
             throw new DataFetchingException(e);
         } finally {
             FileUtils.deleteQuietly(tmp);
