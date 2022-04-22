@@ -125,7 +125,7 @@ public class GqlJcrQuery {
     @GraphQLDescription("Get GraphQL representation of a node by its UUID")
     public GqlJcrNode getNodeById(
             @GraphQLName("uuid") @GraphQLNonNull @GraphQLDescription("The UUID of the node") String uuid,
-            @GraphQLName("validInLanguage") @GraphQLDescription("Check node validity in this language") String validInLanguage
+            @GraphQLName("validInLanguage") @GraphQLDescription("Check node validity in this language. \n Node validity is determined by multiple conditions: \n\n * The node exists \n\n The node is not attached to a validity condition preventing its display \n\n * The node is published in this language \n\n * The node's language has not been invalidated.") String validInLanguage
     ) {
         try {
             return getGqlNodeById(uuid, validInLanguage);
@@ -147,7 +147,7 @@ public class GqlJcrQuery {
     @GraphQLDescription("Get GraphQL representation of a node by its path")
     public GqlJcrNode getNodeByPath(
             @GraphQLName("path") @GraphQLNonNull @GraphQLDescription("The path of the node") String path,
-            @GraphQLName("validInLanguage") @GraphQLDescription("Check node validity in this language") String validInLanguage) {
+            @GraphQLName("validInLanguage") @GraphQLDescription("Check node validity in this language. \n Node validity is determined by multiple conditions: \n\n * The node exists \n\n The node is not attached to a validity condition preventing its display \n\n * The node is published in this language \n\n * The node's language has not been invalidated.") String validInLanguage) {
         try {
             return getGqlNodeByPath(path, validInLanguage);
         } catch (RepositoryException e) {
@@ -169,7 +169,7 @@ public class GqlJcrQuery {
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their UUIDs")
     public DataFetcherResult<Collection<GqlJcrNode>> getNodesById(
             @GraphQLName("uuids") @GraphQLNonNull @GraphQLDescription("The UUIDs of the nodes") Collection<@GraphQLNonNull String> uuids,
-            @GraphQLName("validInLanguage") @GraphQLDescription("Check node validity in this language") String validInLanguage,
+            @GraphQLName("validInLanguage") @GraphQLDescription("Check node validity in this language. \n Node validity is determined by multiple conditions: \n\n * The node exists \n\n The node is not attached to a validity condition preventing its display \n\n * The node is published in this language \n\n * The node's language has not been invalidated.") String validInLanguage,
             DataFetchingEnvironment environment) {
         List<GqlJcrNode> nodes = new ArrayList<>(uuids.size());
         DataFetcherResult.Builder<Collection<GqlJcrNode>> result = DataFetcherResult.newResult();
