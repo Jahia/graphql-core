@@ -199,7 +199,7 @@ public class GqlJcrQuery {
     @GraphQLDescription("Get GraphQL representations of multiple nodes by their paths")
     public DataFetcherResult<Collection<GqlJcrNode>> getNodesByPath(
             @GraphQLName("paths") @GraphQLNonNull @GraphQLDescription("The paths of the nodes") Collection<@GraphQLNonNull String> paths,
-            @GraphQLName("validInLanguage") @GraphQLDescription("Check node validity in this language") String validInLanguage,
+            @GraphQLName("validInLanguage") @GraphQLDescription("Check node validity in this language. \n Node validity is determined by multiple conditions: \n\n * The node exists \n\n The node is not attached to a validity condition preventing its display \n\n * The node is published in this language \n\n * The node's language has not been invalidated.") String validInLanguage,
             DataFetchingEnvironment environment) {
         List<GqlJcrNode> nodes = new ArrayList<>(paths.size());
         DataFetcherResult.Builder<Collection<GqlJcrNode>> result = DataFetcherResult.newResult();
