@@ -144,4 +144,35 @@ describe('Node validity graphql test', () => {
             expect(result[1].path).to.equal('/sites/systemsite/testValidity/with-inactive-language')
         })
     })
+    const queryTypes = ['children', 'descendants']
+    queryTypes.forEach(queryType => it(`[${queryType}] should return only valid nodes in FR and error in EN`, function () {
+        const query = `query {
+                    jcr(workspace: LIVE) {
+                        nodeByPath(path: "/sites/systemsite/testValidity/with-inactive-language") {
+                            en: ${queryType}(validInLanguage: "en") {
+                                nodes {
+                                    path
+                                }
+                            }
+                            fr: ${queryType}(validInLanguage: "fr") {
+                                nodes {
+                                    path
+                                }
+                            }
+                        }
+                    }
+                }`
+        cy.apollo({
+            errorPolicy: 'all',
+            query: gql(query),
+        }).should((response) => {
+            const errors = response.errors;
+            expect(errors.length).to.equal(1)
+            const expectedValues =    ['nodeByPath', 'en', 'jcr']
+            expectedValues.forEach(value => expect(errors[0].path).to.contain(value))
+            const result = response.data.jcr.nodeByPath
+            expect(result.en).to.be.null
+            expect(result.fr.nodes).to.exist
+        })
+    }))
 })
