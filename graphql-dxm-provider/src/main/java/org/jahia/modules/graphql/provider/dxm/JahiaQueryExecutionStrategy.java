@@ -27,7 +27,7 @@ public class JahiaQueryExecutionStrategy extends AsyncExecutionStrategy {
 
     @Override
     protected FieldValueInfo completeField(ExecutionContext executionContext,
-            ExecutionStrategyParameters parameters, FetchedValue fetchedValue) {
+                                           ExecutionStrategyParameters parameters, FetchedValue fetchedValue) {
         FieldValueInfo result = super.completeField(executionContext, parameters, fetchedValue);
 
         Object value = fetchedValue.getFetchedValue();

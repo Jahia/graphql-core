@@ -141,7 +141,6 @@ public interface GqlJcrNode {
      */
     @GraphQLField
     @GraphQLName("children")
-    @GraphQLNonNull
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the child nodes, according to parameters passed")
     DXPaginatedData<GqlJcrNode> getChildren(@GraphQLName("names") @GraphQLDescription("Filter of child nodes by their names; null to avoid such filtering") Collection<String> names,
@@ -179,7 +178,6 @@ public interface GqlJcrNode {
      */
     @GraphQLField
     @GraphQLName("descendants")
-    @GraphQLNonNull
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the descendant nodes, according to parameters passed")
     DXPaginatedData<GqlJcrNode> getDescendants(@GraphQLName("typesFilter") @GraphQLDescription("Filter of descendant nodes by their types; null to avoid such filtering") NodeTypesInput typesFilter,
