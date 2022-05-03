@@ -8,7 +8,7 @@ on:
       jahia_image:
         description: 'Jahia Image'
         required: true
-        default: 'jahia/jahia-ee-dev:8-SNAPSHOT'
+        default: 'jahia/jahia-discovery-dev:8-SNAPSHOT'
       manifest:
         description: 'Provisioning manifest. Can be a local repository file in the tests folder or a publicly accessible link'
         required: true
