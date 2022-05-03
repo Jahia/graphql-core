@@ -10,6 +10,8 @@ jobs:
     runs-on: self-hosted
     strategy:
       fail-fast: false
+      matrix:
+        jahia_image: ["jahia/jahia-discovery:8", "jahia/jahia-discovery-dev:8-SNAPSHOT"]
     timeout-minutes: 45
     steps:
       - uses: jahia/jahia-modules-action/helper@v2
@@ -25,11 +27,11 @@ jobs:
           module_id: graphql-dxm-provider
           testrail_project: GraphQL Core module
           tests_manifest: provisioning-manifest-snapshot.yml
-          jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
+          jahia_image: ${{ matrix.jahia_image }}
           jahia_license: ${{ secrets.JAHIA_LICENSE_8X_FULL }}
           should_use_build_artifacts: false
           should_skip_testrail: false
-          github_artifact_name: gql-core-standalone-${{ github.run_number }}
+          github_artifact_name: gql-core-standalone-${{ matrix.jahia_image }}-${{ github.run_number }}
           bastion_ssh_private_key: ${{ secrets.BASTION_SSH_PRIVATE_KEY_JAHIACI }}
           docker_username: ${{ secrets.DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.DOCKERHUB_PASSWORD }}
