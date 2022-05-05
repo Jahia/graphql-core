@@ -31,7 +31,7 @@ jobs:
         with:
           module_id: graphql-dxm-provider
           testrail_project: GraphQL Core module
-          tests_manifest: ${{ github.event.inputs.manifest }
+          tests_manifest: ${{ github.event.inputs.manifest }}
           jahia_image: ${{ github.event.inputs.jahia_image }}
           jahia_license: ${{ secrets.JAHIA_LICENSE_8X_FULL }}
           should_use_build_artifacts: false
