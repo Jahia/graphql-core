@@ -31,7 +31,7 @@ jobs:
           jahia_license: ${{ secrets.JAHIA_LICENSE_8X_FULL }}
           should_use_build_artifacts: false
           should_skip_testrail: false
-          github_artifact_name: gql-core-standalone-${{ matrix.jahia_image }}-${{ github.run_number }}
+          github_artifact_name: gql-core-standalone-${{ strategy.job-index }}-${{ github.run_number }}
           bastion_ssh_private_key: ${{ secrets.BASTION_SSH_PRIVATE_KEY_JAHIACI }}
           docker_username: ${{ secrets.DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.DOCKERHUB_PASSWORD }}
