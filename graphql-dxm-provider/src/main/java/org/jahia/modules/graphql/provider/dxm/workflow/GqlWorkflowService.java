@@ -66,6 +66,7 @@ import java.util.List;
  * Workflow service
  */
 @GraphQLName("WorkflowService")
+@GraphQLDescription("Workflow service")
 public class GqlWorkflowService {
 
     @GraphQLField

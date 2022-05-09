@@ -12,6 +12,7 @@ import org.jahia.services.workflow.WorkflowTask;
 import java.util.Calendar;
 
 @GraphQLName("Task")
+@GraphQLDescription("Workflow task")
 public class GqlTask {
     private WorkflowTask task;
 
