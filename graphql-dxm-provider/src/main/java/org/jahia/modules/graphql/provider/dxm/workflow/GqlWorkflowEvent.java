@@ -56,7 +56,6 @@ import org.jahia.services.workflow.WorkflowTask;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@GraphQLTypeExtension(DXGraphQLProvider.Subscription.class)
 public class GqlWorkflowEvent {
     private WorkflowService workflowService;
     private GqlWorkflow startedWorkflow;
