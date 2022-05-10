@@ -48,11 +48,14 @@ import graphql.schema.DataFetchingEnvironment;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
+import org.apache.commons.beanutils.PropertyUtils;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.modules.graphql.provider.dxm.util.BeanWrapper;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.workflow.*;
 import org.reactivestreams.Publisher;
 
+import java.util.List;
 import java.util.Set;
 
 @GraphQLTypeExtension(DXGraphQLProvider.Subscription.class)
@@ -67,7 +70,7 @@ public class GqlWorkflowSubscriptionExtension {
             workflowService.addWorkflowListener(wfListener);
 
             obs.setCancellable(() -> {
-                //workflowService.getObservationManager().removeWorkflowListener(wfListener);
+                BeanWrapper.wrap(workflowService.getObservationManager()).get("listeners").unwrap(List.class).remove(wfListener);
             });
         }, BackpressureStrategy.BUFFER);
     }
