@@ -15,6 +15,8 @@
  */
 package org.jahia.modules.graphql.provider.dxm.util;
 
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.jackrabbit.value.BinaryImpl;
@@ -65,7 +67,7 @@ public class ZipUtils {
                 if (file.hasNode(Constants.JCR_CONTENT) && file.getNode(Constants.JCR_CONTENT).hasProperty(Constants.JCR_DATA)) {
                     try (ZipInputStream zin = new ZipInputStream(file.getFileContent().downloadFile())) {
                         ZipEntry entry = zin.getNextEntry();
-                        while (entry != null) {
+                        while (entry != null && !isZipBomb(entry)) {
                             zout.putNextEntry(entry);
                             IOUtils.copy(zin, zout);
                             entry = zin.getNextEntry();
@@ -116,6 +118,9 @@ public class ZipUtils {
                             dest.addNode(entry.getName(), Constants.JAHIANT_FOLDER);
                         }
                     } else {
+                        if (isZipBomb(entry)) {
+                            return;
+                        }
                         String name = entry.getName();
                         if(name.lastIndexOf("/") > 0) {
                             String parentName = name.substring(0, name.lastIndexOf("/"));
@@ -145,6 +150,25 @@ public class ZipUtils {
                 logger.error("Failed to close zip stream", e);
             }
         }
+    }
+
+    public static boolean isZipBomb(ZipEntry entry) {
+        if (entry.isDirectory()) {
+            return false;
+        }
+        long compressedSize = entry.getCompressedSize();
+        long uncompressedSize = entry.getSize();
+        if (compressedSize < 0 || uncompressedSize < 0) {
+            logger.error("Zip bomb attack detected, invalid sizes: compressed {}, uncompressed {}, name {}",
+                    compressedSize, uncompressedSize, entry.getName());
+            return true;
+        }
+        if (compressedSize * 100 < uncompressedSize) {
+            logger.error("Zip bomb attack detected, invalid sizes: compressed {}, uncompressed {}, name {}",
+                    compressedSize, uncompressedSize, entry.getName());
+            return true;
+        }
+        return false;
     }
 
     /**
