@@ -8,7 +8,7 @@ on:
 
 jobs:
   on-release:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     # The cimg-mvn-cache is an image containing a .m2 folder warmed-up
     # with common Jahia dependencies. Using this prevents maven from
