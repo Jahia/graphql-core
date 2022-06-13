@@ -15,30 +15,24 @@
  */
 package org.jahia.modules.graphql.provider.dxm.workflow;
 
-import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery;
-import org.jahia.osgi.BundleUtils;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.workflow.WorkflowService;
-
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 
 /**
  * Extensions to retrieve workflow and task data.
- * 
+ *
  * @author Sergiy Shyrkov
  */
 @GraphQLTypeExtension(GqlJcrQuery.class)
 public class WorkflowJCRQueryExtensions {
 
+    private static GqlWorkflowService service = new GqlWorkflowService();
+
     @GraphQLField
     @GraphQLName("activeWorkflowTaskCountForUser")
     @GraphQLDescription("Retrieves the number of active workflow tasks for the current user")
+    @GraphQLDeprecate("Use /workflow/activeWorkflowTaskCountForUser instead")
     public static int getActiveWorkflowTaskCountForUser() {
-        return BundleUtils.getOsgiService(WorkflowService.class, null)
-                .getTasksForUser(JCRSessionFactory.getInstance().getCurrentUser(), null).size();
+        return service.getActiveWorkflowTaskCountForUser();
     }
-
 }

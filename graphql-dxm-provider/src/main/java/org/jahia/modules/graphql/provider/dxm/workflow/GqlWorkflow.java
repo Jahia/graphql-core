@@ -15,11 +15,16 @@
  */
 package org.jahia.modules.graphql.provider.dxm.workflow;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.services.workflow.Workflow;
 
+import java.util.Calendar;
+
 @GraphQLName("Workflow")
+@GraphQLDescription("Workflow process")
 public class GqlWorkflow {
     private Workflow workflowProcess;
 
@@ -29,7 +34,28 @@ public class GqlWorkflow {
 
     @GraphQLField
     @GraphQLName("startUser")
+    @GraphQLDescription("Username who started the workflow")
     public String getStartUser() {
         return workflowProcess.getStartUser();
     }
+
+    @GraphQLField
+    @GraphQLDescription("Workflow creation time")
+    public String getCreationTime() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(workflowProcess.getStartTime());
+        return ISO8601.format(calendar);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Workflow due date")
+    public String getDueDate() {
+        if (workflowProcess.getDuedate() != null) {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(workflowProcess.getDuedate());
+            return ISO8601.format(calendar);
+        }
+        return null;
+    }
+
 }
