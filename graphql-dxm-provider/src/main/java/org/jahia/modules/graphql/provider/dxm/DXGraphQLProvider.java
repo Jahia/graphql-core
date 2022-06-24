@@ -217,24 +217,29 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         sdlSchemaService.clearExtensions();
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
-            sdlSchemaService.addExtensions(extensionsProvider);
-            for (Class<?> aClass : extensionsProvider.getExtensions()) {
-                if (aClass.isAnnotationPresent(GraphQLTypeExtension.class)) {
-                    extensionsHandler.registerTypeExtension(aClass, container);
-                    if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
-                        logger.debug("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
-                    } else {
-                        logger.debug("Registered type extension {}", aClass);
+            try {
+                sdlSchemaService.addExtensions(extensionsProvider);
+                for (Class<?> aClass : extensionsProvider.getExtensions()) {
+                    if (aClass.isAnnotationPresent(GraphQLTypeExtension.class)) {
+                        extensionsHandler.registerTypeExtension(aClass, container);
+                        if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
+                            logger.debug("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
+                        } else {
+                            logger.debug("Registered type extension {}", aClass);
+                        }
                     }
                 }
-            }
-            for (Class<? extends GqlJcrNode> aClass : extensionsProvider.getSpecializedTypes()) {
-                SpecializedType annotation = aClass.getAnnotation(SpecializedType.class);
-                if (annotation != null) {
-                    specializedTypesHandler.addType(annotation.value(), aClass);
-                } else {
-                    logger.error("No annotation found on class " + aClass);
+                for (Class<? extends GqlJcrNode> aClass : extensionsProvider.getSpecializedTypes()) {
+                    SpecializedType annotation = aClass.getAnnotation(SpecializedType.class);
+                    if (annotation != null) {
+                        specializedTypesHandler.addType(annotation.value(), aClass);
+                    } else {
+                        logger.error("No annotation found on class " + aClass);
+                    }
                 }
+            } catch (Throwable e) {
+                logger.error("Unable to register extension for provider {} because {}", extensionsProvider.getClass().getName(), e.getCause());
+                logger.debug("full error", e);
             }
         }
 
