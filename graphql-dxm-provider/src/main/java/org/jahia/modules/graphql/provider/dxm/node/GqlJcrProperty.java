@@ -31,9 +31,7 @@ import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.ValueFormatException;
 import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 
@@ -174,9 +172,9 @@ public class GqlJcrProperty {
                 return null;
             }
 
-            Calendar date = property.getValue().getDate();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(GqlJcrMutationSupport.DEFAULT_DATE_FORMAT).withZone(date.getTimeZone().toZoneId());
-            return formatter.format(date.toInstant());
+            SimpleDateFormat defaultDataFormat = new SimpleDateFormat(DEFAULT_DATE_FORMAT);
+
+            return defaultDataFormat.format(property.getValue().getTime());
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -237,10 +235,10 @@ public class GqlJcrProperty {
             JCRValueWrapper[] notZonedDateValues = property.getValues();
             List<String> result = new ArrayList<>(notZonedDateValues.length);
 
+            SimpleDateFormat defaultDateFormat = new SimpleDateFormat(DEFAULT_DATE_FORMAT);
+
             for (JCRValueWrapper value : notZonedDateValues) {
-                Calendar date = value.getDate();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(GqlJcrMutationSupport.DEFAULT_DATE_FORMAT).withZone(date.getTimeZone().toZoneId());
-                result.add(formatter.format(date.toInstant()));
+                result.add(defaultDateFormat.format(value.getDate().getTime()));
             }
             return result;
         } catch (RepositoryException e) {
