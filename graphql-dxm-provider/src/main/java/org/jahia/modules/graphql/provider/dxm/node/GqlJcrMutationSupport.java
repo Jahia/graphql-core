@@ -204,10 +204,11 @@ public class GqlJcrMutationSupport {
         } else if (option == GqlJcrPropertyOption.NOT_ZONED_DATE) {
             try {
                 SimpleDateFormat defaultDateFormat = new SimpleDateFormat(DEFAULT_DATE_FORMAT);
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
                 Date date = defaultDateFormat.parse(value);
 
-                return valueFactory.createValue(defaultDateFormat.format(date)+"Z", jcrType);
+                return valueFactory.createValue(simpleDateFormat.format(date), jcrType);
             } catch (ParseException e) {
                 throw new GqlJcrWrongInputException("Unable to parse the date value", e);
             }
