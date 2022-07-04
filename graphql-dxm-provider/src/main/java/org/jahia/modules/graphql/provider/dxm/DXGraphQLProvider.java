@@ -238,7 +238,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
                     }
                 }
             } catch (Throwable e) {
-                logger.error("Unable to register extension for provider {} because {}", extensionsProvider.getClass().getName(), e.getCause());
+                logger.error("Unable to register extension for provider {} because {}", extensionsProvider.getClass().getName(), e.getCause().toString());
                 logger.debug("full error", e);
             }
         }
