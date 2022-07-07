@@ -46,13 +46,19 @@ public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStr
 
     @Override
     protected FieldValueInfo completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, FetchedValue fetchedValue) {
-        try {
+        boolean resetUser = false;
+        if (JCRSessionFactory.getInstance().getCurrentUser() == null) {
             DefaultGraphQLWebSocketContext context = (DefaultGraphQLWebSocketContext) executionContext.getContext();
             JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) context.getSession().getUserProperties().get(Constants.SESSION_USER));
+            resetUser = true;
+        }
 
+        try {
             return super.completeField(executionContext, parameters, fetchedValue);
         } finally {
-            JcrSessionFilter.endRequest();
+            if (resetUser) {
+                JcrSessionFilter.endRequest();
+            }
         }
     }
 }
