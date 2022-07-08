@@ -27,7 +27,7 @@ parameters:
     default: "jahia/graphql-core"
   PRIMARY_RELEASE_BRANCH:
     type: string
-    default: "master" # main or master ? set the branch for the main release
+    default: "2_8_x" # main or master ? set the branch for the main release
   JAHIA_IMAGE:
     type: string
     default: "jahia/jahia-discovery-dev:8-SNAPSHOT"
