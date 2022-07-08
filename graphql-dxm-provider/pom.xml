@@ -101,11 +101,7 @@
             graphql.schema;version="[13.0,14)",
             graphql.schema.idl;version="[13.0,14)",
             org.jahia.modules.external.modules.osgi;version="[4.0,5)",
-            !org.jahia.modules.graphql.provider.dxm.osgi.annotations
-            org.jahia.modules.graphql.provider.dxm.relay,
-            !org.jahia.modules.graphql.provider.dxm.sdl,
-            !org.jahia.modules.graphql.provider.dxm.sdl.extension,
-            org.jahia.modules.graphql.provider.dxm.util,
+            !org.jahia.modules.graphql.provider.dxm.*
         </import-package>
         <jahia-module-type>system</jahia-module-type>
         <jahia-module-signature>MC0CFQCLcU8/s6xZ6utB3z+dUk/U+oJRVQIUBM/Fvt8BzFc172SucnFzfEcZBE0=</jahia-module-signature>
