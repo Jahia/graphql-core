@@ -10,6 +10,7 @@ describe('Test page properties', () => {
                 nodeType: 'jnt:page',
                 properties: [
                     { name: 'j:templateName', type: 'STRING', value: 'default', language: 'en' },
+                    { name: 'jcr:title', type: 'STRING', value: 'test Page', language: 'en' },
                     {
                         name: 'j:isHomePage',
                         type: 'BOOLEAN',
