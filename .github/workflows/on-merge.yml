@@ -27,6 +27,8 @@ jobs:
     name: Build Module
     needs: update-signature
     runs-on: self-hosted
+    env:
+      NEXUS_INTERNAL_URL: https://devtools.jahia.com/nexus/content/groups/internal/
     container:
       image: jahia/cimg-mvn-cache:ga_cimg_openjdk_8.0.312-node
       credentials:
