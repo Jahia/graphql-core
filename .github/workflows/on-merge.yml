@@ -14,8 +14,6 @@ jobs:
   update-signature:
     name: Update module signature
     runs-on: ubuntu-latest
-    env:
-      NEXUS_INTERNAL_URL: https://devtools.jahia.com/nexus/content/groups/internal/
     steps:
       - uses: actions/checkout@v2
       - uses: jahia/jahia-modules-action/update-signature@v2
