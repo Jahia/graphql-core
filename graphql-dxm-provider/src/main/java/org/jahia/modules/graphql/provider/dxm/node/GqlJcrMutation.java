@@ -26,7 +26,10 @@ import org.jahia.services.importexport.DocumentViewImportHandler;
 import org.jahia.services.query.QueryWrapper;
 
 import javax.jcr.RepositoryException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -459,12 +462,6 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     public void completeField() {
         try {
             if (save) {
-                // Validate all i18n sessions
-                Set<JCRSessionWrapper> sessions = JCRSessionFactory.getInstance().getAllOpenUserSessions();
-                for (JCRSessionWrapper session : sessions) {
-                    session.validate();
-                }
-
                 getSession().save();
             }
         } catch (RepositoryException e) {
