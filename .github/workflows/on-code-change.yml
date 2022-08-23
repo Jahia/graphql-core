@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jahia/jahia-modules-action/sonar-analysis@v2
+      - uses: jahia/jahia-modules-action/sonar-analysis@improve-sonar
         with:
           primary_release_branch: master
           github_pr_id: ${{github.event.number}}
