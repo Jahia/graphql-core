@@ -105,6 +105,7 @@ class VanityUrlMutationService {
             Map<String, Object> extensions = new HashMap<>();
             extensions.put("type", e.getClass().getName());
             extensions.put("urlMapping", vanityUrl.getUrl());
+            extensions.put("errorMessage", e.getMessage());
             if (e instanceof NonUniqueUrlMappingException) {
                 NonUniqueUrlMappingException nonUniqueUrlMappingException = (NonUniqueUrlMappingException) e;
                 extensions.put("existingNodePath", nonUniqueUrlMappingException.getExistingNodePath());
