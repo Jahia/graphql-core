@@ -15,7 +15,6 @@
  */
 package org.jahia.modules.graphql.provider.dxm.service.vanity;
 
-import org.apache.commons.beanutils.PropertyUtils;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.GqlConstraintViolationException;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -24,7 +23,7 @@ import org.jahia.services.seo.jcr.NonUniqueUrlMappingException;
 import org.jahia.services.seo.jcr.VanityUrlService;
 
 import javax.jcr.RepositoryException;
-import java.lang.reflect.InvocationTargetException;
+import javax.validation.ConstraintViolationException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,15 +101,19 @@ class VanityUrlMutationService {
             }
             vanityUrl.setFile(targetNode.isFile());
             vanityUrlService.saveVanityUrlMapping(targetNode, vanityUrl, false);
-        } catch (NonUniqueUrlMappingException e) {
+        } catch (ConstraintViolationException e) {
             Map<String, Object> extensions = new HashMap<>();
             extensions.put("type", e.getClass().getName());
-            extensions.put("existingNodePath", e.getExistingNodePath());
-            extensions.put("urlMapping", e.getUrlMapping());
-            extensions.put("workspace", e.getWorkspace());
-            extensions.put("nodePath", e.getNodePath());
+            extensions.put("urlMapping", vanityUrl.getUrl());
+            extensions.put("errorMessage", e.getMessage());
+            if (e instanceof NonUniqueUrlMappingException) {
+                NonUniqueUrlMappingException nonUniqueUrlMappingException = (NonUniqueUrlMappingException) e;
+                extensions.put("existingNodePath", nonUniqueUrlMappingException.getExistingNodePath());
+                extensions.put("workspace", nonUniqueUrlMappingException.getWorkspace());
+                extensions.put("nodePath", nonUniqueUrlMappingException.getNodePath());
+            }
             throw new GqlConstraintViolationException(e, extensions);
-        } catch (RepositoryException e) {
+        } catch (Exception e) {
             throw new JahiaRuntimeException(e);
         }
     }
