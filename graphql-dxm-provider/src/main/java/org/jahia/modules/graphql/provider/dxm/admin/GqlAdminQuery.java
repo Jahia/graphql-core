@@ -39,7 +39,7 @@ public class GqlAdminQuery {
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("Get Jahia admin query")
-    @GraphQLRequiresPermission(value = "admin")
+    @GraphQLRequiresPermission(value = "graphqlAdminQuery")
     public GqlJahiaAdminQuery getJahia() {
         return new GqlJahiaAdminQuery();
     }

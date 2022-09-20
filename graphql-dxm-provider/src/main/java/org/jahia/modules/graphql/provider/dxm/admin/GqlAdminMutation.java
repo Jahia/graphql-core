@@ -34,7 +34,7 @@ public class GqlAdminMutation {
     @GraphQLField
     @GraphQLNonNull
     @GraphQLDescription("Get Jahia admin mutation")
-    @GraphQLRequiresPermission(value = "admin")
+    @GraphQLRequiresPermission(value = "graphqlAdminMutation")
     public GqlJahiaAdminMutation getJahia() {
         return new GqlJahiaAdminMutation();
     }

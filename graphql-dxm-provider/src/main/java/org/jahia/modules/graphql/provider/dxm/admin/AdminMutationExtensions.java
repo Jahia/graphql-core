@@ -37,7 +37,7 @@ public class AdminMutationExtensions {
     @GraphQLNonNull
     @GraphQLDescription("Admin Mutation")
     @GraphQLRequiresPermission(value = "jcr:read/jcr:system")
-    public static GqlAdminMutation getAdmin() throws RepositoryException {
+    public static GqlAdminMutation getAdmin() {
         return new GqlAdminMutation();
     }
 
