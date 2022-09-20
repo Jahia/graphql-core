@@ -190,7 +190,6 @@ public class SDLSchemaService {
     public List<GraphQLFieldDefinition> getSDLQueries() {
         List<GraphQLFieldDefinition> defs = new ArrayList<>();
         if (graphQLSchema != null) {
-
             /** implicit data fetcher for all customer types  **/
             applyDefaultFetchers(defs);
 
