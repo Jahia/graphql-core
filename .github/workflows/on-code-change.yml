@@ -22,7 +22,7 @@ jobs:
     name: Build Module
     runs-on: self-hosted
     env:
-      NEXUS_INTERNAL_URL: https://devtools.jahia.com/nexus/content/groups/internal/
+      NEXUS_INTERNAL_URL: ${{ secrets.NEXUS_INTERNAL_URL }}
     container:
       image: jahia/cimg-mvn-cache:ga_cimg_openjdk_8.0.312-node
       credentials:
@@ -34,6 +34,8 @@ jobs:
         with:
           module_id: graphql-dxm-provider
           mvn_settings_filepath: '.github/maven.settings.xml'
+          nexus_username: ${{ secrets.NEXUS_USERNAME }}
+          nexus_password: ${{ secrets.NEXUS_PASSWORD }}
 
   sonar-analysis:
     name: Sonar Analysis
