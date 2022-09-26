@@ -11,7 +11,7 @@
                     <id>central</id>
                     <name>Central Repository</name>
                     <url>https://repo.maven.apache.org/maven2</url>
-                </repository>            
+                </repository>
                 <repository>
                     <id>jahia-internal</id>
                     <name>Jahia Internal Repository</name>
@@ -38,6 +38,10 @@
             </properties>
         </profile>
     </profiles>
+
+    <activeProfiles>
+        <activeProfile>jahia-internal-repository</activeProfile>
+    </activeProfiles>
 
     <servers>
         <server>
