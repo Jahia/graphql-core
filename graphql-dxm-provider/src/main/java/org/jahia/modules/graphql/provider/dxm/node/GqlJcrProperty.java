@@ -24,7 +24,11 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
+import org.jahia.services.content.nodetypes.initializers.ChoiceListInitializerService;
+import org.jahia.services.content.nodetypes.renderer.ChoiceListRenderer;
+import org.jahia.services.content.nodetypes.renderer.ChoiceListRendererService;
 import org.jahia.utils.EncryptionUtils;
+import org.jahia.utils.LanguageCodeConverters;
 import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
 
 import javax.jcr.PropertyType;
@@ -34,6 +38,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport.DEFAULT_DATE_FORMAT;
 
@@ -393,6 +398,50 @@ public class GqlJcrProperty {
                 return null;
             }
             return property.getValue().getBoolean();
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+    }
+
+    @GraphQLField
+    @GraphQLName("choicelistValue")
+    @GraphQLDescription("The value of the JCR property rendered by the specified choicelist renderer in case the property is single-valued, null otherwise")
+    public String getChoicelistValue(@GraphQLName("renderer") @GraphQLDescription("The choicelist renderer name to be used") String renderer, @GraphQLName("language") @GraphQLDescription("The language") String language) {
+        try {
+            if (property.isMultiple()) {
+                return null;
+            }
+            Locale locale = LanguageCodeConverters.languageCodeToLocale(language);
+            ChoiceListRenderer choiceListRenderer = ChoiceListRendererService.getInstance().getRenderers().get(renderer);
+            return choiceListRenderer.getStringRendering(locale,
+                    (ExtendedPropertyDefinition) property.getDefinition(),
+                    property.getValue());
+        } catch (RepositoryException e) {
+            try {
+                return property.getValue().getString();
+            } catch (RepositoryException ex) {
+                throw new DataFetchingException(e);
+            }
+        }
+    }
+
+    @GraphQLField
+    @GraphQLName("choicelistValues")
+    @GraphQLDescription("The value of the JCR property rendered by the specified choicelist renderer in case the property is multiple-valued, null otherwise")
+    public List<String> getChoicelistValues(@GraphQLName("renderer") @GraphQLDescription("The choicelist renderer name to be used") String renderer, @GraphQLName("language") @GraphQLDescription("The language") String language) {
+        try {
+            if (!property.isMultiple()) {
+                return null;
+            }
+            Locale locale = LanguageCodeConverters.languageCodeToLocale(language);
+            ChoiceListRenderer choiceListRenderer = ChoiceListRendererService.getInstance().getRenderers().get(renderer);
+            JCRValueWrapper[] values = property.getValues();
+            List<String> result = new ArrayList<>(values.length);
+            for (JCRValueWrapper value : values) {
+                result.add(choiceListRenderer.getStringRendering(locale,
+                        (ExtendedPropertyDefinition) property.getDefinition(), value));
+            }
+            return result;
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
