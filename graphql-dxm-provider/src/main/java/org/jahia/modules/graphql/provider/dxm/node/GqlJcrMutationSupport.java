@@ -21,6 +21,7 @@ import org.apache.commons.io.FileUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.upload.UploadHelper;
+import org.jahia.modules.graphql.provider.dxm.upload.UploadNotAllowedException;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
@@ -98,13 +99,13 @@ public class GqlJcrMutationSupport {
                 int type = (property.getType() != null ? property.getType().getValue() : PropertyType.STRING);
 
                 if (property.getValue() != null) {
-                    Value v = getValue(type, property.getOption(), property.getValue(), session, null);
+                    Value v = getValue(node, type, property.getOption(), property.getValue(), session, null);
                     result.add(localizedNode.setProperty(property.getName(), v));
                 } else if (property.getValues() != null) {
                     List<Value> values = new ArrayList<>();
                     if (property.getValues() != null) {
                         for (String value : property.getValues()) {
-                            values.add(getValue(type, property.getOption(), value, session, null));
+                            values.add(getValue(node, type, property.getOption(), value, session, null));
                         }
                     }
                     result.add(localizedNode.setProperty(property.getName(), values.toArray(new Value[0])));
@@ -116,7 +117,7 @@ public class GqlJcrMutationSupport {
             }
 
             return result;
-        } catch (RepositoryException | FileUploadBase.FileSizeLimitExceededException | IOException e) {
+        } catch (RepositoryException | FileUploadBase.FileSizeLimitExceededException | UploadNotAllowedException| IOException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
     }
@@ -196,7 +197,7 @@ public class GqlJcrMutationSupport {
      * @throws IOException                                   in case of input stream errors
      * @throws FileUploadBase.FileSizeLimitExceededException in case of file upload errors
      */
-    public static Value getValue(int jcrType, GqlJcrPropertyOption option, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, FileUploadBase.FileSizeLimitExceededException, IOException {
+    public static Value getValue(JCRNodeWrapper node, int jcrType, GqlJcrPropertyOption option, String value, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, FileUploadBase.FileSizeLimitExceededException, IOException, UploadNotAllowedException {
         ValueFactory valueFactory = session.getValueFactory();
 
         if (option == GqlJcrPropertyOption.ENCRYPTED && jcrType == PropertyType.STRING) {
@@ -220,7 +221,7 @@ public class GqlJcrMutationSupport {
             case PropertyType.WEAKREFERENCE:
                 return valueFactory.createValue(getNodeFromPathOrId(session, value), true);
             case PropertyType.BINARY:
-                if (UploadHelper.isValidFileUpload(value, environment)) {
+                if (UploadHelper.hasUploadPermission(node, value, environment) && UploadHelper.isValidFileUpload(value, environment)) {
                     return valueFactory.createValue(valueFactory.createBinary(UploadHelper.getFileUpload(value, environment).getInputStream()));
                 } else {
                     return valueFactory.createValue(value, jcrType);

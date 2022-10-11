@@ -18,10 +18,17 @@ package org.jahia.modules.graphql.provider.dxm.upload;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.kickstart.servlet.context.GraphQLServletContext;
 import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
+import org.apache.commons.io.IOUtils;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
+import org.jahia.osgi.BundleUtils;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.settings.SettingsBean;
+import org.owasp.validator.html.PolicyException;
+import org.owasp.validator.html.ScanException;
 
 import javax.servlet.http.Part;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -100,6 +107,34 @@ public class UploadHelper {
 
         return (parts.isEmpty() || parts.size() > 1) ?
                 null : parts.get(0);
+    }
+
+    public static boolean hasUploadPermission(JCRNodeWrapper node, String name, DataFetchingEnvironment environment) throws UploadNotAllowedException, IOException {
+        boolean allowed = false;
+
+        GraphQLServletContext context = environment.getContext();
+        if (context.getParts().isEmpty()) {
+            return allowed;
+        }
+
+        Part part = UploadHelper.getPartForName(context, name);
+        if (part == null) {
+            return allowed;
+        }
+
+        UploadXSSProtectionService uploadXSSProtectionService = BundleUtils.getOsgiService(UploadXSSProtectionService.class, null);
+        try {
+            allowed = !uploadXSSProtectionService.canHandleContentType(part.getContentType()) || (uploadXSSProtectionService.canHandleContentType(part.getContentType()) &&
+                    uploadXSSProtectionService.hasPermissionToUploadFile(IOUtils.toString(part.getInputStream(), StandardCharsets.UTF_8), node));
+        } catch (ScanException | PolicyException e) {
+            throw new UploadNotAllowedException("Some custom message indicating that upload can't happen");
+        }
+
+        if (!allowed) {
+            throw new UploadNotAllowedException("File content is shady");
+        }
+
+        return allowed;
     }
 
 }

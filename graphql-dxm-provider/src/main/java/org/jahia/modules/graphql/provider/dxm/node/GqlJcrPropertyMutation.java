@@ -22,6 +22,7 @@ import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.upload.UploadNotAllowedException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -98,9 +99,9 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            localizedNode.setProperty(name, getValue(getPropertyType(type), option, value, localizedNode.getSession(), environment));
+            localizedNode.setProperty(name, getValue(localizedNode, getPropertyType(type), option, value, localizedNode.getSession(), environment));
             localizedNode.getSession().validate();
-        } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
+        } catch (RepositoryException | IOException | FileSizeLimitExceededException | UploadNotAllowedException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
         return true;
@@ -119,7 +120,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.setProperty(name, getValues(type, option, values, localizedNode.getSession(), environment));
             localizedNode.getSession().validate();
-        } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
+        } catch (RepositoryException | IOException | FileSizeLimitExceededException | UploadNotAllowedException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
         return true;
@@ -135,9 +136,9 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            localizedNode.getProperty(name).addValue(getValue(getPropertyType(type), option, value, localizedNode.getSession(), environment));
+            localizedNode.getProperty(name).addValue(getValue(localizedNode, getPropertyType(type), option, value, localizedNode.getSession(), environment));
             localizedNode.getSession().validate();
-        } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
+        } catch (RepositoryException | IOException | FileSizeLimitExceededException | UploadNotAllowedException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
         return true;
@@ -153,9 +154,9 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             throws BaseGqlClientException {
         try {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
-            localizedNode.getProperty(name).removeValue(getValue(getPropertyType(type), option, value, localizedNode.getSession(), environment));
+            localizedNode.getProperty(name).removeValue(getValue(localizedNode, getPropertyType(type), option, value, localizedNode.getSession(), environment));
             localizedNode.getSession().validate();
-        } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
+        } catch (RepositoryException | IOException | FileSizeLimitExceededException | UploadNotAllowedException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
         return true;
@@ -173,7 +174,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).addValues(getValues(type, option, values, localizedNode.getSession(), environment));
             localizedNode.getSession().validate();
-        } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
+        } catch (RepositoryException | IOException | FileSizeLimitExceededException | UploadNotAllowedException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
         return true;
@@ -191,7 +192,7 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
             JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, language);
             localizedNode.getProperty(name).removeValues(getValues(type, option, values, localizedNode.getSession(), environment));
             localizedNode.getSession().validate();
-        } catch (RepositoryException | IOException | FileSizeLimitExceededException e) {
+        } catch (RepositoryException | IOException | FileSizeLimitExceededException | UploadNotAllowedException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
         return true;
@@ -219,12 +220,12 @@ public class GqlJcrPropertyMutation extends GqlJcrMutationSupport {
                 : PropertyType.STRING;
     }
 
-    private Value[] getValues(GqlJcrPropertyType type, GqlJcrPropertyOption option, List<String> values, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException, FileSizeLimitExceededException {
+    private Value[] getValues(GqlJcrPropertyType type, GqlJcrPropertyOption option, List<String> values, JCRSessionWrapper session, DataFetchingEnvironment environment) throws RepositoryException, IOException, FileSizeLimitExceededException, UploadNotAllowedException {
         List<Value> jcrValues = new ArrayList<>();
         int jcrType = getPropertyType(type);
 
         for (String value : (values == null ? Collections.<String>emptyList() : values)) {
-            jcrValues.add(getValue(jcrType, option, value, session, environment));
+            jcrValues.add(getValue(null, jcrType, option, value, session, environment));
         }
 
         return jcrValues.toArray(new Value[0]);
