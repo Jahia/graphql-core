@@ -221,7 +221,7 @@ public class GqlJcrMutationSupport {
             case PropertyType.WEAKREFERENCE:
                 return valueFactory.createValue(getNodeFromPathOrId(session, value), true);
             case PropertyType.BINARY:
-                if (UploadHelper.hasUploadPermission(node, value, environment) && UploadHelper.isValidFileUpload(value, environment)) {
+                if (UploadHelper.isValidFileUpload(value, environment) && UploadHelper.hasUploadPermission(node, value, environment)) {
                     return valueFactory.createValue(valueFactory.createBinary(UploadHelper.getFileUpload(value, environment).getInputStream()));
                 } else {
                     return valueFactory.createValue(value, jcrType);

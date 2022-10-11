@@ -33,11 +33,21 @@ public class UploadXSSProtectionServiceImpl implements UploadXSSProtectionServic
 
         URL configResourceURL = bundleContext.getBundle().getResource("META-INF/antisamy/antisamy.xml");
         if (configResourceURL != null) {
+            InputStream is = null;
             try {
+                is = configResourceURL.openStream();
                 Policy p = Policy.getInstance(configResourceURL.openStream());
                 permissionForConfig.put("jcr:write", p);
             } catch (PolicyException | IOException e) {
                 e.printStackTrace();
+            } finally {
+                if (is != null) {
+                    try {
+                        is.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
 
