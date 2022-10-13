@@ -13,7 +13,7 @@ import static java.util.stream.Collectors.joining;
 public class QueryFilter implements Filter {
 
     // Detect strings such as @lala@lala@lala... and with space(s) in between @lala @lala
-    private Pattern regex = Pattern.compile("(.*@[^ ]+){2,2}|.*(@[^ ]+[ ]+@.*)");
+    private Pattern regex = Pattern.compile("@[^ ]+@|@[^ ]+[ ]+@");
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
 
@@ -25,7 +25,7 @@ public class QueryFilter implements Filter {
             MultiReadRequestWrapper r = new MultiReadRequestWrapper((HttpServletRequest) servletRequest);
             String query = r.getReader().lines().collect(joining(" "));
 
-            if (regex.matcher(query).matches()) {
+            if (regex.matcher(query).find()) {
                 HttpServletResponse resp = (HttpServletResponse) servletResponse;
                 resp.setContentType("application/json");
                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
