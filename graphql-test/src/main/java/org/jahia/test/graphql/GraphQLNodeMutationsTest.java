@@ -26,7 +26,10 @@ import org.jahia.test.graphql.utils.TestFileUtils;
 import org.jahia.utils.EncryptionUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
@@ -306,7 +309,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             assertEquals("test title", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
             assertEquals("my-view", session.getNode("/testList/testSubList1").getProperty("j:view").getString());
             assertEquals(60000, session.getNode("/testList/testSubList1").getProperty("j:expiration").getLong());
-            assertEquals(true, session.getNode("/testList/testSubList1").getProperty("j:perUser").getBoolean());
+            assertTrue(session.getNode("/testList/testSubList1").getProperty("j:perUser").getBoolean());
             return null;
         });
         inJcr(session -> {
@@ -923,18 +926,18 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
         inJcr(session -> {
             JCRNodeWrapper node = session.getNode("/testList/testSubList1");
-            assertEquals(false, node.getProperty("testPropString").isMultiple());
+            assertFalse(node.getProperty("testPropString").isMultiple());
             assertEquals(PropertyType.STRING, node.getProperty("testPropString").getValue().getType());
             assertEquals("string", node.getProperty("testPropString").getValue().getString());
 
-            assertEquals(false, node.getProperty("testPropLong").isMultiple());
+            assertFalse(node.getProperty("testPropLong").isMultiple());
             assertEquals(PropertyType.LONG, node.getProperty("testPropLong").getValue().getType());
             assertEquals(123, node.getProperty("testPropLong").getValue().getLong());
 
-            assertEquals(true, node.getProperty("testPropMultiple").isMultiple());
+            assertTrue(node.getProperty("testPropMultiple").isMultiple());
             assertEquals(Arrays.asList("val1", "val2"), getPropertyStringValues(node, "testPropMultiple"));
 
-            assertEquals(false, node.getProperty("jcr:title").isMultiple());
+            assertFalse(node.getProperty("jcr:title").isMultiple());
             assertEquals(PropertyType.STRING, node.getProperty("jcr:title").getValue().getType());
             assertEquals("en", node.getProperty("jcr:title").getValue().getString());
 
@@ -943,7 +946,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
         inJcr(session -> {
             JCRNodeWrapper node = session.getNode("/testList/testSubList1");
-            assertEquals(false, node.getProperty("jcr:title").isMultiple());
+            assertFalse(node.getProperty("jcr:title").isMultiple());
             assertEquals(PropertyType.STRING, node.getProperty("jcr:title").getValue().getType());
             assertEquals("fr", node.getProperty("jcr:title").getValue().getString());
             return null;
@@ -1932,5 +1935,53 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         } finally {
             disableReadOnlyMode();
         }
+    }
+
+    @Test
+    public void testSpecialCharactersInNode() throws Exception {
+        // add simple node
+        JSONObject result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId:\"/testList\",name:\"[]*|/%\",primaryNodeType:\"jnt:contentList\") {\n" +
+                "      uuid\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        String uuid = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getString("uuid");
+        String finalUuid = uuid;
+        inJcr(session -> {
+            JCRNodeWrapper node = session.getNodeByIdentifier(finalUuid);
+            assertEquals("/testList/%5B%5D%2A%7C %", node.getPath());
+            assertTrue(node.isNodeType("jnt:contentList"));
+            return null;
+        });
+
+        result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId:\"/testList\",name:\".\",primaryNodeType:\"jnt:contentList\") {\n" +
+                "      uuid\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        uuid = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getString("uuid");
+        String finalUuid1 = uuid;
+        inJcr(session -> {
+            JCRNodeWrapper node = session.getNodeByIdentifier(finalUuid1);
+            assertTrue(node.getPath().startsWith("/testList")); // we should improve this
+            assertTrue(node.isNodeType("jnt:contentList"));
+            return null;
+        });
+
+        result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId:\"/testList\",name:\"..\",primaryNodeType:\"jnt:contentList\") {\n" +
+                "      uuid\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        String errorType = result.getJSONArray("errors").getJSONObject(0).getString("errorType");
+        assertEquals("DataFetchingException", errorType);
+        String message = result.getJSONArray("errors").getJSONObject(0).getString("message");
+        assertEquals("javax.jcr.RepositoryException: Invalid last path element for adding node .. relative to node /testList", message);
     }
 }
