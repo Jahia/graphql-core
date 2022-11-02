@@ -97,6 +97,11 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 session.getNode("/testFolder").remove();
                 session.save();
             }
+
+            if (session.nodeExists("/testList")) {
+                session.getNode("/testList").remove();
+                session.save();
+            }
             return null;
         });
         JCRSessionFactory.getInstance().closeAllSessions();
@@ -1932,5 +1937,53 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         } finally {
             disableReadOnlyMode();
         }
+    }
+
+    @Test
+    public void testSpecialCharactersInNode() throws Exception {
+        // add simple node
+        JSONObject result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId:\"/testList\",name:\"[]*|/%\",primaryNodeType:\"jnt:contentList\") {\n" +
+                "      uuid\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        String uuid = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getString("uuid");
+        String finalUuid = uuid;
+        inJcr(session -> {
+            JCRNodeWrapper node = session.getNodeByIdentifier(finalUuid);
+            assertEquals("/testList/%5B%5D%2A%7C %", node.getPath());
+            assertTrue(node.isNodeType("jnt:contentList"));
+            return null;
+        });
+
+        result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId:\"/testList\",name:\".\",primaryNodeType:\"jnt:contentList\") {\n" +
+                "      uuid\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        uuid = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getString("uuid");
+        String finalUuid1 = uuid;
+        inJcr(session -> {
+            JCRNodeWrapper node = session.getNodeByIdentifier(finalUuid1);
+            assertTrue(node.getPath().startsWith("/testList")); // we should improve this
+            assertTrue(node.isNodeType("jnt:contentList"));
+            return null;
+        });
+
+        result = executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    addNode(parentPathOrId:\"/testList\",name:\"..\",primaryNodeType:\"jnt:contentList\") {\n" +
+                "      uuid\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+        String errorType = result.getJSONArray("errors").getJSONObject(0).getString("errorType");
+        assertEquals("DataFetchingException", errorType);
+        String message = result.getJSONArray("errors").getJSONObject(0).getString("message");
+        assertEquals("javax.jcr.RepositoryException: Invalid last path element for adding node .. relative to node /testList", message);
     }
 }
