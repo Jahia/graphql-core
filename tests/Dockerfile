@@ -1,4 +1,4 @@
-FROM cypress/base:16.5.0
+FROM cypress/browsers:node14.19.0-chrome100-ff99-edge
 
 RUN apt-get update && apt-get install -y jq
 
