@@ -1,7 +1,8 @@
 {
   "extends": "../tsconfig.json",
   "include": [
-    "**/*/*.ts", "support/index.js"
+    "**/*/*.ts",
+    "support/e2e.js"
   ],
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
@@ -12,6 +13,6 @@
       "node",
       "@jahia/cypress"
     ],
-    "lib": [ "es2015" ]    
+    "lib": [ "es2015" ]
   }
 }
