@@ -12,6 +12,7 @@ if [ ! -d ./artifacts ]; then
 fi
 
 if [[ -e ../graphql-dxm-provider/target ]]; then
+  rm -rf ./artifacts/*
   cp -R ../graphql-dxm-provider/target/*-SNAPSHOT.jar ./artifacts/
 fi
 
