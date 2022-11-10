@@ -37,13 +37,15 @@ sed -i -e "s/NEXUS_USERNAME/$(echo ${NEXUS_USERNAME} | sed -e 's/\\/\\\\/g; s/\/
 sed -i -e "s/NEXUS_PASSWORD/$(echo ${NEXUS_PASSWORD} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')/g" ./run-artifacts/${MANIFEST}
 sed -i "" -e "s/JAHIA_VERSION/${JAHIA_VERSION}/g" ./run-artifacts/${MANIFEST}
 
-echo "$(date +'%d %B %Y - %k:%M') == Executing manifest: ${MANIFEST} =="
-curl -u root:${SUPER_USER_PASSWORD} -X POST ${JAHIA_URL}/modules/api/provisioning --form script="@./run-artifacts/${MANIFEST};type=text/yaml"
-echo
-if [[ $? -eq 1 ]]; then
-  echo "PROVISIONING FAILURE - EXITING SCRIPT, NOT RUNNING THE TESTS"
-  echo "failure" > ./results/test_failure
-  exit 1
+if [[ $MANIFEST == *"snapshot"* ]]; then
+  echo "$(date +'%d %B %Y - %k:%M') == Executing manifest: ${MANIFEST} =="
+  curl -u root:${SUPER_USER_PASSWORD} -X POST ${JAHIA_URL}/modules/api/provisioning --form script="@./run-artifacts/${MANIFEST};type=text/yaml"
+  echo
+  if [[ $? -eq 1 ]]; then
+    echo "PROVISIONING FAILURE - EXITING SCRIPT, NOT RUNNING THE TESTS"
+    echo "failure" > ./results/test_failure
+    exit 1
+  fi
 fi
 
 if [[ -d artifacts/ && $MANIFEST == *"build"* ]]; then
