@@ -48,7 +48,7 @@ public class FetcherDirectiveWiring implements SchemaDirectiveWiring {
         // Mapping on field
 
         GraphQLFieldDefinition def = environment.getElement();
-        GraphQLDirective directive = environment.getDirective();
+        GraphQLAppliedDirective directive = environment.getAppliedDirective();
 
         Field field = new Field(def.getName());
         field.setProperty(def.getName());

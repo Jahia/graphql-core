@@ -160,7 +160,7 @@ public class FieldEvaluator {
             return (GraphQLObjectType) type;
         } else if (type instanceof GraphQLInterfaceType) {
             TypeResolver typeResolver = environment.getGraphQLSchema().getCodeRegistry().getTypeResolver((GraphQLInterfaceType) type);
-            return typeResolver.getType(new TypeResolutionEnvironment(object, null, null, null, null, null));
+            return typeResolver.getType(new TypeResolutionParameters.Builder().localContext(object).build());
         } else {
             return null;
         }

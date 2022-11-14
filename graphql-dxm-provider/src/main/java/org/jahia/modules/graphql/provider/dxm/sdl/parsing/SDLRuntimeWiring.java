@@ -15,13 +15,14 @@
  */
 package org.jahia.modules.graphql.provider.dxm.sdl.parsing;
 
+import graphql.Scalars;
 import graphql.language.ListType;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.idl.*;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.ListDataFetcher;
-import org.jahia.modules.graphql.provider.dxm.sdl.types.GraphQLDate;
+import org.jahia.modules.graphql.provider.dxm.sdl.types.CustomScalars;
 
 import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
 
@@ -45,7 +46,7 @@ public class SDLRuntimeWiring {
                         return DataFetchingEnvironment::getSource;
                     }
                 })
-                .scalar(new GraphQLDate())
+                .scalar(CustomScalars.DATE)
                 .build();
     }
 }

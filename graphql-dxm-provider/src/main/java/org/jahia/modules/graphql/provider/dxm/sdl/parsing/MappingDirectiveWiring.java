@@ -43,7 +43,7 @@ public class MappingDirectiveWiring implements SchemaDirectiveWiring {
         // Mapping on field
 
         GraphQLFieldDefinition def = environment.getElement();
-        GraphQLDirective directive = environment.getDirective();
+        GraphQLAppliedDirective directive = environment.getAppliedDirective();
 
         Field field = new Field(def.getName());
         field.setProperty(directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue().toString());

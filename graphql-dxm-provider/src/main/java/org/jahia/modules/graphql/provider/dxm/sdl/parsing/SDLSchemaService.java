@@ -198,7 +198,7 @@ public class SDLSchemaService {
                 GraphQLObjectType objectType = fieldDefinition.getType() instanceof GraphQLList ?
                         (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType() : (GraphQLObjectType) fieldDefinition.getType();
 
-                GraphQLDirective directive = objectType.getDirective(SDLConstants.MAPPING_DIRECTIVE);
+                GraphQLAppliedDirective directive = objectType.getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE);
 
                 if (directive == null) {
                     continue;
@@ -276,7 +276,7 @@ public class SDLSchemaService {
     private void applyDefaultFetchers(List<GraphQLFieldDefinition> defs) {
         for (GraphQLType type : graphQLSchema.getAllTypesAsList()) {
             if (type instanceof GraphQLObjectType) {
-                GraphQLDirective directive = ((GraphQLObjectType) type).getDirective(SDLConstants.MAPPING_DIRECTIVE);
+                GraphQLAppliedDirective directive = ((GraphQLObjectType) type).getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE);
                 if (directive != null) {
                     applyDefaultFetcher(defs, directive, (GraphQLOutputType) type, FinderFetchersFactory.FetcherType.ID);
                     applyDefaultFetcher(defs, directive, (GraphQLOutputType) type, FinderFetchersFactory.FetcherType.PATH);
@@ -285,7 +285,7 @@ public class SDLSchemaService {
         }
     }
 
-    private void applyDefaultFetcher(final List<GraphQLFieldDefinition> defs, final GraphQLDirective directive,
+    private void applyDefaultFetcher(final List<GraphQLFieldDefinition> defs, final GraphQLAppliedDirective directive,
                                      GraphQLOutputType type, final FinderFetchersFactory.FetcherType defaultFinder) {
         boolean shouldIgnoreDefaultQueries = false;
         if (directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).getValue() != null) {
@@ -299,7 +299,7 @@ public class SDLSchemaService {
                 baseType = (GraphQLOutputType) ((GraphQLList) type).getWrappedType();
             }
 
-            GraphQLArgument argument = ((GraphQLObjectType) baseType).getDirective(SDLConstants.MAPPING_DIRECTIVE).getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE);
+            GraphQLAppliedDirectiveArgument argument = ((GraphQLObjectType) baseType).getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE).getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE);
 
             if (argument != null) {
                 final String finderName = defaultFinder.getName(GqlTypeUtil.getTypeName(baseType));

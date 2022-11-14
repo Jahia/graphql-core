@@ -45,18 +45,18 @@ public class SDLUtil {
                             .name(arg.getName())
                             .description(arg.getDescription())
                             .type(arg.getType())
-                            .defaultValue(arg.getDefaultValue())
+                            .defaultValue(arg.getArgumentDefaultValue().getValue())
                             .build()
                     );
 
-            if (arg.getDefaultValue() != null) {
+            if (arg.getArgumentDefaultValue().getValue() != null) {
                 defaultObject
                         .name(String.format("%s%s", typeName, SDLConstants.CONNECTION_ARGUMENTS_INPUT_SUFFIX))
                         .field(GraphQLInputObjectField.newInputObjectField()
                                 .name(arg.getName())
                                 .description(arg.getDescription())
                                 .type(arg.getType())
-                                .defaultValue(arg.getDefaultValue())
+                                .defaultValue(arg.getArgumentDefaultValue().getValue())
                                 .build()
                         );
             }
@@ -89,7 +89,7 @@ public class SDLUtil {
             //In this case we are handling default arguments
             if (argObject instanceof GraphQLInputObjectType) {
                 GraphQLInputObjectField field = ((GraphQLInputObjectType) argObject).getField(argName);
-                return field != null ? field.getDefaultValue() : null;
+                return field != null ? field.getInputFieldDefaultValue() : null;
             }
 
             return ((Map<String, Object>) args.get(name)).get(argName);
@@ -117,7 +117,7 @@ public class SDLUtil {
                 return ((GraphQLInputObjectType) argObject)
                         .getFields()
                         .stream()
-                        .collect(Collectors.toMap(GraphQLInputObjectField::getName, GraphQLInputObjectField::getDefaultValue));
+                        .collect(Collectors.toMap(GraphQLInputObjectField::getName, f -> f.getInputFieldDefaultValue().getValue()));
             }
 
             return (Map<String, Object>) args.get(name);
