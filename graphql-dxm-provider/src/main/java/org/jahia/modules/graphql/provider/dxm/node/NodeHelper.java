@@ -22,6 +22,7 @@ import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.*;
+import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.visibility.VisibilityService;
 import org.jahia.utils.LanguageCodeConverters;
 import pl.touk.throwing.ThrowingFunction;
@@ -183,8 +184,9 @@ public class NodeHelper {
     }
 
     private static Locale getFallbackLanguage(JCRNodeWrapper node) throws RepositoryException {
-        if (node.getResolveSite().isMixLanguagesActive()) {
-            return LanguageCodeConverters.languageCodeToLocale(node.getResolveSite().getDefaultLanguage());
+        JCRSiteNode siteNode = node.getResolveSite();
+        if (siteNode != null && siteNode.isMixLanguagesActive()) {
+            return LanguageCodeConverters.languageCodeToLocale(siteNode.getDefaultLanguage());
         }
         return null;
     }
