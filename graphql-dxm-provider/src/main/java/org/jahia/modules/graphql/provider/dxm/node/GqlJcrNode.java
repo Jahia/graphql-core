@@ -106,6 +106,8 @@ public interface GqlJcrNode {
      *
      * @param names The names of the JCR properties; null to obtain all properties
      * @param language The language to obtain the properties in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones
+     * @param useFallbackLanguage if true and that the site of the node have a default locale, this locale will be used to get the translated
+     *                          properties of the node when there is no translation for the asked language
      * @return GraphQL representations of the properties in the requested language
      */
     @GraphQLField
@@ -114,20 +116,23 @@ public interface GqlJcrNode {
     @GraphQLDescription("GraphQL representations of the properties in the requested language")
     Collection<GqlJcrProperty> getProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names,
                                              @GraphQLName("language") @GraphQLDescription("The language to obtain the properties in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones") String language,
-                                             @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, DataFetchingEnvironment environment);
+                                             @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("useFallbackLanguage") @GraphQLDescription("Consider the default locale of the site of the node") Boolean useFallbackLanguage, DataFetchingEnvironment environment);
 
     /**
      * Get a GraphQL representation of a single property of the JCR node.
      *
      * @param name The name of the JCR property
      * @param language The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones
+     * @param useFallbackLanguage if true and that the site of the node have a default locale, this locale will be used to get the translated
+     *                          property of the node when there is no translation for the asked language
      * @return The GraphQL representation of the property in the requested language; null if the property does not exist
      */
     @GraphQLField
     @GraphQLName("property")
     @GraphQLDescription("The GraphQL representation of the property in the requested language; null if the property does not exist")
     GqlJcrProperty getProperty(@GraphQLName("name") @GraphQLDescription("The name of the JCR property") @GraphQLNonNull String name,
-                               @GraphQLName("language") @GraphQLDescription("The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones") String language);
+                               @GraphQLName("language") @GraphQLDescription("The language to obtain the property in; must be a valid "
+                                       + "language code for internationalized properties, does not matter for non-internationalized ones") String language, @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("useFallbackLanguage") @GraphQLDescription("Consider the default locale of the site of the node") Boolean useFallbackLanguage);
 
     /**
      * Get GraphQL representations of child nodes of the JCR node, according to filters specified. A child node must pass through all non-null filters in order to be included in the result.

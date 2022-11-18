@@ -41,25 +41,25 @@ public class GqlNews  {
     @GraphQLField
     @GraphQLDescription("News description field")
     public String getDescription(@GraphQLName("language") @GraphQLDescription("News language argument") @GraphQLNonNull String language) {
-        return node.getProperty("desc",language).getValue();
+        return node.getProperty("desc",language, false).getValue();
     }
 
     @GraphQLField
     @GraphQLDescription("News title field")
     public String getTitle(@GraphQLName("language") @GraphQLDescription("News language argument") @GraphQLNonNull String language) {
-        return node.getProperty("jcr:title",language).getValue();
+        return node.getProperty("jcr:title",language, false).getValue();
     }
 
     @GraphQLField
     @GraphQLDescription("News file field")
     public GqlJcrNode getFile() {
-        return node.getProperty("date", null).getRefNode();
+        return node.getProperty("date", null, false).getRefNode();
     }
 
     @GraphQLField
     @GraphQLDescription("News date field")
     public String getDate() {
-        return node.getProperty("date", null).getValue();
+        return node.getProperty("date", null, false).getValue();
     }
 
 }

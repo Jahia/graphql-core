@@ -154,6 +154,20 @@ public class NodeHelper {
      * @throws RepositoryException in case of JCR access errors
      */
     public static JCRNodeWrapper getNodeInLanguage(JCRNodeWrapper node, String language) throws RepositoryException {
+        return getNodeInLanguage(node, language, false);
+    }
+
+    /**
+     * Retrieves the JCR node using localized session. If <code>language</code> is <code>null</code>, returns the node itself.
+     *
+     * @param node the node to be retrieved in a localized session
+     * @param language the language of the localized session to use
+     * @param useFallbackLanguage if true and that the site of the node have a default locale, this locale will be used to get a translated node
+     *                    when there is no translation for the asked language
+     * @return the JCR node using localized session. If <code>language</code> is <code>null</code>, returns the node itself
+     * @throws RepositoryException in case of JCR access errors
+     */
+    public static JCRNodeWrapper getNodeInLanguage(JCRNodeWrapper node, String language, boolean useFallbackLanguage) throws RepositoryException {
         String workspace = node.getSession().getWorkspace().getName();
         if (language == null) {
             if (node.getLanguage() != null) {
@@ -163,8 +177,16 @@ public class NodeHelper {
             return node;
         }
         Locale locale = LanguageCodeConverters.languageCodeToLocale(language);
-        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(workspace, locale);
+        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(workspace, locale,
+                useFallbackLanguage  ? getFallbackLanguage(node): null);
         return session.getNodeByIdentifier(node.getIdentifier());
+    }
+
+    private static Locale getFallbackLanguage(JCRNodeWrapper node) throws RepositoryException {
+        if (node.getResolveSite().isMixLanguagesActive()) {
+            return LanguageCodeConverters.languageCodeToLocale(node.getResolveSite().getDefaultLanguage());
+        }
+        return null;
     }
 
     public static boolean checkNodeValidity(JCRNodeWrapper node) throws RepositoryException {
