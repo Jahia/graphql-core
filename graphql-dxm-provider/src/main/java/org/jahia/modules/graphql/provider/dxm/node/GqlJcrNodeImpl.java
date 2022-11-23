@@ -334,6 +334,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             JCRPropertyWrapper reference = (JCRPropertyWrapper) references.nextProperty();
             JCRNodeWrapper referencingNode = reference.getParent();
             if (PermissionHelper.hasPermission(referencingNode, environment)) {
+                if (referencingNode.isNodeType("jnt:translation")) {
+                    referencingNode = referencingNode.getParent();
+                }
                 GqlJcrNode gqlReferencingNode = SpecializedTypesHandler.getNode(referencingNode);
                 GqlJcrProperty gqlReference = gqlReferencingNode.getProperty(reference.getName(), reference.getLocale(), false);
                 gqlReferences.add(gqlReference);
