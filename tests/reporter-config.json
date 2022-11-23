@@ -1,7 +1,7 @@
 {
   "reporterEnabled": "mochawesome, mocha-junit-reporter",
   "mochaJunitReporterReporterOptions": {
-    "mochaFile": "./results/xml_reports/results-[suiteFilename].xml"
+    "mochaFile": "./results/xml_reports/[suiteFilename].xml"
   },
   "mochawesomeReporterOptions": {
     "reportDir": "./results/reports/",
