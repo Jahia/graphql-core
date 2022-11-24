@@ -169,6 +169,7 @@ public class RenderNodeExtensions {
             }
 
             renderContext.setServletPath(Render.getRenderServletPath());
+            renderContext.setWorkspace(node.getSession().getWorkspace().getName());
 
             JCRSiteNode site = node.getResolveSite();
             renderContext.setSite(site);
