@@ -37,10 +37,7 @@ import pl.touk.throwing.ThrowingFunction;
 import pl.touk.throwing.ThrowingPredicate;
 import pl.touk.throwing.ThrowingSupplier;
 
-import javax.jcr.ItemNotFoundException;
-import javax.jcr.Node;
-import javax.jcr.PropertyIterator;
-import javax.jcr.RepositoryException;
+import javax.jcr.*;
 import javax.jcr.security.AccessControlException;
 import java.util.*;
 import java.util.function.Predicate;
@@ -439,6 +436,27 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         }
         return toBeTranslated;
     }
+
+
+    @Override
+    @GraphQLName("translationLanguages")
+    @GraphQLDescription("Returns languages of available translations for this node")
+    public List<String> getTranslationLanguages() {
+        List<String> translations = new ArrayList<>();
+        try {
+            NodeIterator it = node.getI18Ns();
+            while (it.hasNext()) {
+                Node langNode = it.nextNode();
+                String lang = langNode.getProperty("jcr:language").getString();
+                translations.add(lang);
+            }
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+
+        return translations;
+    }
+
 
     @Override
     @GraphQLDescription("Get information on the operations that can be done on this node")
