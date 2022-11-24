@@ -170,20 +170,23 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLName("properties")
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the properties in the requested language")
-    public Collection<GqlJcrProperty> getProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names,
-                                                    @GraphQLName("language") @GraphQLDescription("The language to obtain the properties in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones") String language,
-                                                    @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter, @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("useFallbackLanguage") @GraphQLDescription("Consider the default locale of the site of the node") Boolean useFallbackLanguage, DataFetchingEnvironment environment) {
-        List<GqlJcrProperty> properties = new LinkedList<GqlJcrProperty>();
+    public Collection<GqlJcrProperty> getProperties(
+            @GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names,
+            @GraphQLName("language") @GraphQLDescription("The language to obtain the properties in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones") String language,
+            @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+            @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("useFallbackLanguage") @GraphQLDescription("When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language.") Boolean useFallbackLanguage,
+            DataFetchingEnvironment environment) {
+        List<GqlJcrProperty> properties = new LinkedList<>();
         try {
-            JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node, language, useFallbackLanguage);
+            JCRNodeWrapper translatedNode = NodeHelper.getNodeInLanguage(this.node, language, useFallbackLanguage);
             if (names != null) {
                 for (String name : names) {
-                    if (node.hasProperty(name)) {
-                        properties.add(new GqlJcrProperty(node.getProperty(name), this));
+                    if (translatedNode.hasProperty(name)) {
+                        properties.add(new GqlJcrProperty(translatedNode.getProperty(name), this));
                     }
                 }
             } else {
-                for (PropertyIterator it = node.getProperties(); it.hasNext(); ) {
+                for (PropertyIterator it = translatedNode.getProperties(); it.hasNext(); ) {
                     JCRPropertyWrapper property = (JCRPropertyWrapper) it.nextProperty();
                     properties.add(new GqlJcrProperty(property, this));
                 }
@@ -199,13 +202,13 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLDescription("The GraphQL representation of the property in the requested language; null if the property does not exist")
     public GqlJcrProperty getProperty(@GraphQLName("name") @GraphQLDescription("The name of the JCR property") @GraphQLNonNull String name,
             @GraphQLName("language") @GraphQLDescription("The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones") String language,
-            @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("useFallbackLanguage") @GraphQLDescription("Consider the default locale of the site of the node") Boolean useFallbackLanguage) {
+            @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("useFallbackLanguage") @GraphQLDescription("When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language.") Boolean useFallbackLanguage) {
         try {
-            JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node, language, useFallbackLanguage);
-            if (!node.hasProperty(name)) {
+            JCRNodeWrapper translatedNode = NodeHelper.getNodeInLanguage(this.node, language, useFallbackLanguage);
+            if (!translatedNode.hasProperty(name)) {
                 return null;
             }
-            return new GqlJcrProperty(node.getProperty(name), this);
+            return new GqlJcrProperty(translatedNode.getProperty(name), this);
         } catch (ItemNotFoundException e) {
             return null;
         } catch (RepositoryException e) {

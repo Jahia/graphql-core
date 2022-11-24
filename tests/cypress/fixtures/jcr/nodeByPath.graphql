@@ -1,0 +1,18 @@
+query nodeByPath($path: String!, $language: String, $useFallbackLanguage: Boolean) {
+    jcr {
+        nodeByPath(path: $path) {
+            uuid
+            name
+            primaryNodeType {
+                name
+            }
+            mixinTypes {
+                name
+            }
+            properties (language: $language, useFallbackLanguage: $useFallbackLanguage) {
+                name
+                value
+            }
+        }
+    }
+}
