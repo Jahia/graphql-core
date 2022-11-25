@@ -1,0 +1,13 @@
+mutation mutateNode($pathOrId: String!, $properties: [InputJCRProperty]!, $mixinsToAdd: [String] = [], $mixinsToRemove: [String] = []) {
+    jcr(workspace: EDIT) {
+        mutateNode(pathOrId: $pathOrId) {
+            addMixins(mixins: $mixinsToAdd)
+            removeMixins(mixins: $mixinsToRemove)
+            setPropertiesBatch(properties: $properties) {
+                property {
+                    name
+                }
+            }
+        }
+    }
+}
