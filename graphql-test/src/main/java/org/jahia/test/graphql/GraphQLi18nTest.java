@@ -17,10 +17,12 @@ package org.jahia.test.graphql;
 
 import java.util.*;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRTemplate;
+import org.jahia.test.TestHelper;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,11 +34,21 @@ import org.junit.Test;
 import javax.jcr.RepositoryException;
 
 public class GraphQLi18nTest extends GraphQLTestSupport {
+    private static final String SITE_NAME = "graphql_i18n_site_test";
+
+    private static JCRSessionWrapper session;
 
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
-
         GraphQLTestSupport.init();
+
+        session = JCRTemplate.getInstance().getSessionFactory().getCurrentSystemSession(Constants.EDIT_WORKSPACE, Locale.ENGLISH, null);
+        TestHelper.createSite(SITE_NAME,
+                new HashSet<String>(Arrays.asList("en", "fr", "de")),
+                Collections.singleton("en"),
+                false);
+        session.save();
+        sleep(2000);
 
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, Locale.ENGLISH, session -> {
             JCRNodeWrapper node = session.getNode("/").addNode("testList", "jnt:contentList");
@@ -50,9 +62,15 @@ public class GraphQLi18nTest extends GraphQLTestSupport {
     @AfterClass
     public static void oneTimeTearDown() throws Exception {
         GraphQLTestSupport.removeTestNodes();
+        TestHelper.deleteSite(SITE_NAME);
+        session.logout();
     }
 
     private static void updateTitle(Locale locale) throws RepositoryException {
+        updateProperty("jcr:title", locale);
+    }
+
+    private static void updateProperty(String property, Locale locale) throws RepositoryException {
         JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, locale, session -> {
             JCRNodeWrapper node = session.getNode("/testList");
             node.setProperty("jcr:title", locale.toString() + System.currentTimeMillis());
@@ -60,6 +78,8 @@ public class GraphQLi18nTest extends GraphQLTestSupport {
             return null;
         });
     }
+
+
 
     private List<String> getLanguagesToTranslate(List<String> translatedLanguages, List<String> languagesToBeChecked) throws JSONException {
         JSONObject result = executeQuery("{"
@@ -77,6 +97,101 @@ public class GraphQLi18nTest extends GraphQLTestSupport {
         }
         return foundLanguages;
     }
+
+    private List<String> getTranslatedLanguages(List<String> translatedLanguages, List<String> languagesToBeChecked) throws JSONException {
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "    nodeByPath(path: \"/testList\") {"
+                + "        languagesToTranslate(languagesTranslated: [\"" + String.join("\",\"", translatedLanguages) + "\"], languagesToCheck: [\"" + String.join("\",\"", languagesToBeChecked) + "\"])"
+                + "    }"
+                + "    }"
+                + "}");
+        JSONArray languages = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("nodeByPath").getJSONArray("languagesToTranslate");
+
+        List<String> foundLanguages = new ArrayList<>();
+        for (int i = 0; i < languages.length(); i++) {
+            foundLanguages.add(languages.getString(i));
+        }
+        return foundLanguages;
+    }
+
+    private void createTranslationNode(String name, String parentPath) throws RepositoryException {
+        JCRNodeWrapper node = session.getNode(parentPath).addNode(name, "jnt:text");
+        node.getSession().save();
+        sleep(2000);
+
+        JCRNodeWrapper localizedNode;
+        localizedNode = NodeHelper.getNodeInLanguage(node, "en");
+        localizedNode.setProperty("text", "hello");
+        localizedNode.getSession().save();
+        sleep(2000);
+
+        localizedNode = NodeHelper.getNodeInLanguage(node, "fr");
+        localizedNode.setProperty("text", "bonjour");
+        localizedNode.getSession().save();
+        sleep(2000);
+    }
+
+    @Test
+    public void shouldRetrieveTranslatedLanguages() throws RepositoryException, JSONException {
+        String name = "translation-test1";
+        String parentPath = String.format("/sites/%s/contents", SITE_NAME);
+        String nodePath = String.join("/", parentPath, name);
+        createTranslationNode(name, parentPath);
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodeByPath(path: \""+ nodePath +"\") {"
+                + "            translationLanguages"
+                + "        }"
+                + "    }"
+                + "}");
+        JSONArray languages = result.getJSONObject("data").getJSONObject("jcr")
+                .getJSONObject("nodeByPath").getJSONArray("translationLanguages");
+        List<String> foundLanguages = new ArrayList<>();
+        for (int i = 0; i < languages.length(); i++) {
+            foundLanguages.add(languages.getString(i));
+        }
+
+        Assert.assertEquals(2, languages.length());
+        Assert.assertTrue(foundLanguages.contains("en"));
+        Assert.assertTrue(foundLanguages.contains("fr"));
+    }
+
+    @Test
+    public void shouldRetrieveActiveTranslatedLanguages() throws RepositoryException, JSONException {
+        String name = "translation-test2";
+        String parentPath = String.format("/sites/%s/contents", SITE_NAME);
+        String nodePath = String.join("/", parentPath, name);
+        createTranslationNode(name, parentPath);
+
+        // disable fr in site
+        JCRNodeWrapper site = session.getNode("/sites/" + SITE_NAME);
+        Set<String> inactiveLangs = new HashSet<>();
+        inactiveLangs.add("fr");
+        site.getResolveSite().setInactiveLanguages(inactiveLangs);
+        session.save();
+
+        JSONObject result = executeQuery("{"
+                + "    jcr {"
+                + "        nodeByPath(path: \""+ nodePath +"\") {"
+                + "            translationLanguages(isActiveOnly:true)"
+                + "        }"
+                + "    }"
+                + "}");
+        JSONArray languages = result.getJSONObject("data").getJSONObject("jcr")
+                .getJSONObject("nodeByPath").getJSONArray("translationLanguages");
+        List<String> foundLanguages = new ArrayList<>();
+        for (int i = 0; i < languages.length(); i++) {
+            foundLanguages.add(languages.getString(i));
+        }
+
+        Assert.assertEquals(1, languages.length());
+        Assert.assertTrue(foundLanguages.contains("en"));
+        Assert.assertFalse(foundLanguages.contains("fr"));
+    }
+
+
 
     @Test
     public void shouldRetrieveRequiredTranslations() throws Exception {

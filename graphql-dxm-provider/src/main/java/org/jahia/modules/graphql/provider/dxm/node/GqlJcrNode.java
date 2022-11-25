@@ -271,8 +271,10 @@ public interface GqlJcrNode {
 
     @GraphQLField
     @GraphQLName("translationLanguages")
-    @GraphQLDescription("Returns nodes of available translations for this node")
-    public List<String> getTranslationLanguages();
+    @GraphQLDescription("Returns languages of available translations for this node")
+    public List<String> getTranslationLanguages(
+            @GraphQLName("isActiveOnly") @GraphQLDescription("Optional: Return languages only if it is active for the site") Boolean isActiveOnly
+    );
 
     /**
      * Get information on the operations that can be done on this node
