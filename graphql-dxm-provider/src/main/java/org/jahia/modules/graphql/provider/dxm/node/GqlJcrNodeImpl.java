@@ -323,10 +323,17 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         List<GqlJcrProperty> references = new LinkedList<GqlJcrProperty>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
-            collectReferences(node.getReferences(), references, environment);
             collectReferences(node.getWeakReferences(), references, environment);
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
+        }
+        try {
+            collectReferences(node.getReferences(), references, environment);
+        } catch (RepositoryException e) {
+            //EDP implementation will throw UnsupportedRepositoryOperationException on access to getReferences
+            if(!(e instanceof UnsupportedRepositoryOperationException)) {
+                throw new RuntimeException(e);
+            }
         }
         return PaginationHelper.paginate(FilterHelper.filterConnection(references, fieldFilter, environment), p -> PaginationHelper.encodeCursor(p.getNode().getUuid() + "/" + p.getName()), arguments);
     }
