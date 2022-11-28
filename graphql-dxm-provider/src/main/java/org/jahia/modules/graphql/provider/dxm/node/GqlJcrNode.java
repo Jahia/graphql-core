@@ -273,6 +273,13 @@ public interface GqlJcrNode {
     List<String> getLanguagesToTranslate(@GraphQLName("languagesTranslated") @GraphQLDescription("List of known translated languages, will be used to compare modifications dates") List<String> languagesTranslated,
                                    @GraphQLName("languagesToCheck") @GraphQLDescription("List of languages potentially to be translated") List<String> languagesToCheck);
 
+    @GraphQLField
+    @GraphQLName("translationLanguages")
+    @GraphQLDescription("Returns languages of available translations for this node")
+    public List<String> getTranslationLanguages(
+            @GraphQLName("isActiveOnly") @GraphQLDescription("Optional: Return languages only if it is active for the site") Boolean isActiveOnly
+    );
+
     /**
      * Get information on the operations that can be done on this node
      *
