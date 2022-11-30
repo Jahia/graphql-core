@@ -30,7 +30,7 @@ jobs:
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
     steps:
       - uses: actions/checkout@v2
-      - uses: jahia/jahia-modules-action/build@v2
+      - uses: jahia/jahia-modules-action/build@fix-coverage
         with:
           module_id: graphql-dxm-provider
           mvn_settings_filepath: '.github/maven.settings.xml'
