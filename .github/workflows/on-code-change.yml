@@ -41,9 +41,12 @@ jobs:
         if: success() || failure()
         with:
           name: Unit Tests
-          path: graphql-core/graphql-dxm-provider/target/surefire-reports/**/*.xml
+          path: '**/target/surefire-reports/**/*.xml'
           reporter: java-junit
           fail-on-error: 'false'
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
 
   sonar-analysis:
     name: Sonar Analysis
@@ -104,6 +107,6 @@ jobs:
         if: success() || failure()
         with:
           name: Tests Report (Standalone)
-          path: '**/target/surefire-reports/**/*.xml'
+          path: "tests/artifacts/results/xml_reports/**/*.xml"
           reporter: java-junit
           fail-on-error: 'false'
