@@ -41,7 +41,7 @@ jobs:
         if: success() || failure()
         with:
           name: Unit Tests
-          path: '**/target/surefire-reports/**/*.xml'
+          path: '**/target/surefire-reports/**/TEST-TestSuite.xml'
           reporter: java-junit
           fail-on-error: 'false'
       - name: Setup tmate session
