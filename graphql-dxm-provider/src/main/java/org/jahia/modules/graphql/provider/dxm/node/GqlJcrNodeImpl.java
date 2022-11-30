@@ -324,6 +324,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
             collectReferences(node.getWeakReferences(), references, environment);
+        } catch (UnsupportedRepositoryOperationException e) {
+            return null;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
