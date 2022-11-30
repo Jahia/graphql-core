@@ -104,6 +104,6 @@ jobs:
         if: success() || failure()
         with:
           name: Tests Report (Standalone)
-          path: tests/artifacts/results/xml_reports/**/*.xml
+          path: '**/target/surefire-reports/**/*.xml'
           reporter: java-junit
           fail-on-error: 'false'
