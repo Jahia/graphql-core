@@ -208,7 +208,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                 return null;
             }
             return new GqlJcrProperty(translatedNode.getProperty(name), this);
-        } catch (ItemNotFoundException e) {
+        } catch (ItemNotFoundException | PathNotFoundException e) {
             return null;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
