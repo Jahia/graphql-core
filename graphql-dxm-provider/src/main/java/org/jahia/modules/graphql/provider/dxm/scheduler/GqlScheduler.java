@@ -39,7 +39,7 @@ public class GqlScheduler {
     @GraphQLName("jobs")
     @GraphQLDescription("List of active jobs")
     public List<GqlBackgroundJob> getJobs() throws SchedulerException {
-        return schedulerService.getAllJobs().stream().map(job -> new GqlBackgroundJob(job, null)).collect(Collectors.toList());
+        return schedulerService.getAllJobs().stream().map(job -> new GqlBackgroundJob(job, GqlBackgroundJob.GqlBackgroundJobState.STARTED)).collect(Collectors.toList());
     }
 }
 
