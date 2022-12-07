@@ -2,15 +2,15 @@
 
 describe('Get properties graphql test', () => {
     const textValueEnglish = 'text EN'
-beforeEach("reset default value", ()=> {
-    cy.apollo({
-        mutationFile: 'jcr/mutateNode.graphql',
-        variables: {
-            pathOrId: '/sites/digitall',
-            properties: [{name: 'j:mixLanguage', value: false}]
-        },
+    beforeEach('reset default value', () => {
+        cy.apollo({
+            mutationFile: 'jcr/mutateNode.graphql',
+            variables: {
+                pathOrId: '/sites/digitall',
+                properties: [{ name: 'j:mixLanguage', value: false }],
+            },
+        })
     })
-})
     before('load graphql file and create nodes', () => {
         cy.apollo({
             mutationFile: 'jcr/addNode.graphql',
@@ -18,9 +18,7 @@ beforeEach("reset default value", ()=> {
                 parentPathOrId: '/sites/digitall/home/area-main',
                 nodeName: 'simple-text',
                 nodeType: 'jnt:text',
-                properties: [
-                    { name: 'text', value: textValueEnglish, language: 'en' },
-                ]
+                properties: [{ name: 'text', value: textValueEnglish, language: 'en' }],
             },
         })
     })
@@ -30,7 +28,7 @@ beforeEach("reset default value", ()=> {
             mutationFile: 'jcr/mutateNode.graphql',
             variables: {
                 pathOrId: '/sites/digitall',
-                properties: [{name: 'j:mixLanguage', value: true}]
+                properties: [{ name: 'j:mixLanguage', value: true }],
             },
         })
 
@@ -39,11 +37,11 @@ beforeEach("reset default value", ()=> {
             variables: {
                 path: '/sites/digitall/home/area-main/simple-text',
                 language: 'fr',
-                useFallbackLanguage: true
+                useFallbackLanguage: true,
             },
         }).should((response: any) => {
             expect(response.data.jcr.nodeByPath).to.exist
-            const textProperty = response.data.jcr.nodeByPath.properties.find(property => property.name === 'text')
+            const textProperty = response.data.jcr.nodeByPath.properties.find((property) => property.name === 'text')
             expect(textProperty.value).to.equal(textValueEnglish)
         })
 
@@ -52,27 +50,26 @@ beforeEach("reset default value", ()=> {
             variables: {
                 path: '/sites/digitall/home/area-main/simple-text',
                 language: 'fr',
-                useFallbackLanguage: false
+                useFallbackLanguage: false,
             },
         }).should((response: any) => {
             expect(response.data.jcr.nodeByPath).to.exist
-            const textProperty = response.data.jcr.nodeByPath.properties.find(property => property.name === 'text')
+            const textProperty = response.data.jcr.nodeByPath.properties.find((property) => property.name === 'text')
             expect(textProperty).to.be.undefined
         })
     })
 
     it('Get node should not have translated value', () => {
-
         cy.apollo({
             queryFile: 'jcr/nodeByPath.graphql',
             variables: {
                 path: '/sites/digitall/home/area-main/simple-text',
                 language: 'fr',
-                useFallbackLanguage: false
+                useFallbackLanguage: false,
             },
         }).should((response: any) => {
             expect(response.data.jcr.nodeByPath).to.exist
-            const textProperty = response.data.jcr.nodeByPath.properties.find(property => property.name === 'text')
+            const textProperty = response.data.jcr.nodeByPath.properties.find((property) => property.name === 'text')
             expect(textProperty).to.be.undefined
         })
 
@@ -81,11 +78,11 @@ beforeEach("reset default value", ()=> {
             variables: {
                 path: '/sites/digitall/home/area-main/simple-text',
                 language: 'fr',
-                useFallbackLanguage: true
+                useFallbackLanguage: true,
             },
         }).should((response: any) => {
             expect(response.data.jcr.nodeByPath).to.exist
-            const textProperty = response.data.jcr.nodeByPath.properties.find(property => property.name === 'text')
+            const textProperty = response.data.jcr.nodeByPath.properties.find((property) => property.name === 'text')
             expect(textProperty).to.be.undefined
         })
     })
@@ -96,11 +93,11 @@ beforeEach("reset default value", ()=> {
             variables: {
                 path: '/sites/digitall/home/area-main/simple-text',
                 language: 'en',
-                useFallbackLanguage: false
+                useFallbackLanguage: false,
             },
         }).should((response: any) => {
             expect(response.data.jcr.nodeByPath).to.exist
-            const textProperty = response.data.jcr.nodeByPath.properties.find(property => property.name === 'text')
+            const textProperty = response.data.jcr.nodeByPath.properties.find((property) => property.name === 'text')
             expect(textProperty.value).to.equal(textValueEnglish)
         })
 
@@ -109,11 +106,11 @@ beforeEach("reset default value", ()=> {
             variables: {
                 path: '/sites/digitall/home/area-main/simple-text',
                 language: 'en',
-                useFallbackLanguage: true
+                useFallbackLanguage: true,
             },
         }).should((response: any) => {
             expect(response.data.jcr.nodeByPath).to.exist
-            const textProperty = response.data.jcr.nodeByPath.properties.find(property => property.name === 'text')
+            const textProperty = response.data.jcr.nodeByPath.properties.find((property) => property.name === 'text')
             expect(textProperty.value).to.equal(textValueEnglish)
         })
     })

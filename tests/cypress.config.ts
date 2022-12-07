@@ -1,4 +1,4 @@
-import {defineConfig} from 'cypress';
+import { defineConfig } from 'cypress'
 
 export default defineConfig({
     chromeWebSecurity: false,
@@ -6,7 +6,7 @@ export default defineConfig({
     videoUploadOnPasses: false,
     reporter: 'cypress-multi-reporters',
     reporterOptions: {
-        configFile: 'reporter-config.json'
+        configFile: 'reporter-config.json',
     },
     screenshotsFolder: './results/screenshots',
     videosFolder: './results/videos',
@@ -16,10 +16,10 @@ export default defineConfig({
         // We've imported your old cypress plugins here.
         // You may want to clean this up later by importing these.
         setupNodeEvents(on, config) {
-            return require('./cypress/plugins/index.js')(on, config);
+            return require('./cypress/plugins/index.js')(on, config)
         },
         excludeSpecPattern: '*.ignore.ts',
         baseUrl: 'http://localhost:8080',
-        experimentalSessionAndOrigin: false
-    }
-});
+        experimentalSessionAndOrigin: false,
+    },
+})
