@@ -24,6 +24,7 @@ import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
 import org.jahia.modules.graphql.provider.dxm.osgiconfig.GqlConfigurationQuery;
+import org.jahia.modules.graphql.provider.dxm.scheduler.GqlScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +94,13 @@ public class GqlJahiaAdminQuery {
     @GraphQLField
     @GraphQLDescription("Read an OSGi configuration")
     public GqlConfigurationQuery configuration(@GraphQLName("pid") @GraphQLDescription("Configuration pid ot factory pid") @GraphQLNonNull String pid,
-                                               @GraphQLName("identifier") @GraphQLDescription("If factory pid, configiration identifier (filename suffix)") String identifier) {
+                                               @GraphQLName("identifier") @GraphQLDescription("If factory pid, configuration identifier (filename suffix)") String identifier) {
         return new GqlConfigurationQuery(pid, identifier);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Get jobs scheduler")
+    public GqlScheduler getScheduler() {
+        return new GqlScheduler();
     }
 }

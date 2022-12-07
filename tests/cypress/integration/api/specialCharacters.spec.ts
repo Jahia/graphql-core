@@ -1,5 +1,5 @@
 import gql from 'graphql-tag'
-import {validateError} from "./jcr/validateErrors";
+import { validateError } from '../../e2e/api/jcr/validateErrors'
 
 describe('Test GraphQL special characters', () => {
     before('create a list with 2 sub children', () => {
@@ -34,7 +34,11 @@ describe('Test GraphQL special characters', () => {
             mutation: gql`
                 mutation {
                     jcr(workspace: EDIT) {
-                        addNode(parentPathOrId: "/testCharsList/testCharSubList", name: "[]*|/%", primaryNodeType: "jnt:contentList") {
+                        addNode(
+                            parentPathOrId: "/testCharsList/testCharSubList"
+                            name: "[]*|/%"
+                            primaryNodeType: "jnt:contentList"
+                        ) {
                             node {
                                 path
                             }
@@ -44,9 +48,8 @@ describe('Test GraphQL special characters', () => {
             `,
         }).should((result) => {
             const path = result?.data?.jcr?.addNode?.node?.path
-            expect(path).to.be.equal("/testCharsList/testCharSubList/%5B%5D%2A%7C %");
+            expect(path).to.be.equal('/testCharsList/testCharSubList/%5B%5D%2A%7C %')
         })
-
     })
 
     it('Test .', () => {
@@ -54,7 +57,11 @@ describe('Test GraphQL special characters', () => {
             mutation: gql`
                 mutation {
                     jcr(workspace: EDIT) {
-                        addNode(parentPathOrId: "/testCharsList/testCharSubList", name: ".", primaryNodeType: "jnt:contentList") {
+                        addNode(
+                            parentPathOrId: "/testCharsList/testCharSubList"
+                            name: "."
+                            primaryNodeType: "jnt:contentList"
+                        ) {
                             node {
                                 path
                             }
@@ -62,14 +69,13 @@ describe('Test GraphQL special characters', () => {
                     }
                 }
             `,
-            errorPolicy: 'all'
+            errorPolicy: 'all',
         }).should((result) => {
             validateError(
                 result,
                 `javax.jcr.ItemExistsException: This node already exists: /testCharsList/testCharSubList`,
             )
         })
-
     })
 
     it('Test ..', () => {
@@ -77,7 +83,11 @@ describe('Test GraphQL special characters', () => {
             mutation: gql`
                 mutation {
                     jcr(workspace: EDIT) {
-                        addNode(parentPathOrId: "/testCharsList/testCharSubList/testCharSubSubList", name: ".", primaryNodeType: "jnt:contentList") {
+                        addNode(
+                            parentPathOrId: "/testCharsList/testCharSubList/testCharSubSubList"
+                            name: "."
+                            primaryNodeType: "jnt:contentList"
+                        ) {
                             node {
                                 path
                             }
@@ -85,14 +95,12 @@ describe('Test GraphQL special characters', () => {
                     }
                 }
             `,
-            errorPolicy: 'all'
+            errorPolicy: 'all',
         }).should((result) => {
             validateError(
                 result,
                 `javax.jcr.ItemExistsException: This node already exists: /testCharsList/testCharSubList`,
             )
         })
-
     })
-
 })

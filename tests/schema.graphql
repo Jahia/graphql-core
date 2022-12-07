@@ -27,16 +27,16 @@ interface JCRNode {
     "Get the last modified date of this node and its descendants. The recursion in descendants can be controlled by recursionTypesFilter. If no filter is passed, recursion will stop by default on sub pages."
     aggregatedLastModifiedDate(
         "The language to use to get the last modified date, if not specified, returns last modification date in any language"
-        language: String, 
+        language: String,
         "Stop recursion on nodes by their types; null to avoid such filtering"
         recursionTypesFilter: InputNodeTypesInput
     ): String
     "Aggregated publication info about the JCR node"
     aggregatedPublicationInfo(
         "Publication language"
-        language: String!, 
+        language: String!,
         "Whether to take references into account when calculating the aggregated publication status"
-        references: Boolean = false, 
+        references: Boolean = false,
         "Whether to take sub-nodes into account when calculating the aggregated publication status"
         subNodes: Boolean = false
     ): GqlPublicationInfo!
@@ -45,48 +45,48 @@ interface JCRNode {
     "Returns a list of types allowed under the provided node"
     allowedChildNodeTypes(
         "Filter by GraphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Whether all sub-types of allowed child node types should be included"
         includeSubTypes: Boolean = true
     ): [JCRNodeType]
     "GraphQL representations of the ancestor nodes of the JCR node, top down direction"
     ancestors(
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes"
         upToPath: String
     ): [JCRNode]!
     "GraphQL representations of the child nodes, according to parameters passed"
     children(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "Include the current node itself in results"
-        includesSelf: Boolean = false, 
+        includesSelf: Boolean = false,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "Filter of child nodes by their names; null to avoid such filtering"
-        names: [String], 
+        names: [String],
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "Filter of child nodes by their property values; null to avoid such filtering"
-        propertiesFilter: InputNodePropertiesInput, 
+        propertiesFilter: InputNodePropertiesInput,
         "Filter of child nodes by their types; null to avoid such filtering"
-        typesFilter: InputNodeTypesInput, 
+        typesFilter: InputNodeTypesInput,
         "Language to use to get children"
         validInLanguage: String
-    ): JCRNodeConnection!
+    ): JCRNodeConnection
     "Read default Work in progress information. Set by \"wip.checkbox.checked\" system proprety"
     defaultWipInfo: wipInfo
     "Returns the node definition that applies to this node."
@@ -99,34 +99,34 @@ interface JCRNode {
     "GraphQL representations of the descendant nodes, according to parameters passed"
     descendants(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "Filter of descendant nodes by their property values; null to avoid such filtering"
-        propertiesFilter: InputNodePropertiesInput, 
+        propertiesFilter: InputNodePropertiesInput,
         "Filter out and stop recursion on nodes by their property values; null to avoid such filtering"
-        recursionPropertiesFilter: InputNodePropertiesInput, 
+        recursionPropertiesFilter: InputNodePropertiesInput,
         "Filter out and stop recursion on nodes by their types; null to avoid such filtering"
-        recursionTypesFilter: InputNodeTypesInput, 
+        recursionTypesFilter: InputNodeTypesInput,
         "Filter of descendant nodes by their types; null to avoid such filtering"
-        typesFilter: InputNodeTypesInput, 
+        typesFilter: InputNodeTypesInput,
         "Language to use to get children"
         validInLanguage: String
-    ): JCRNodeConnection!
+    ): JCRNodeConnection
     "The display name of the JCR node this object represents in the requested language"
     displayName(
         "The language to obtain the display name in"
@@ -151,7 +151,7 @@ interface JCRNode {
     "Check if the given locales need translation, by comparing last modifications dates with already existing translations"
     languagesToTranslate(
         "List of languages potentially to be translated"
-        languagesToCheck: [String], 
+        languagesToCheck: [String],
         "List of known translated languages, will be used to compare modifications dates"
         languagesTranslated: [String]
     ): [String]
@@ -182,50 +182,54 @@ interface JCRNode {
     "GraphQL representations of the properties in the requested language"
     properties(
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "The language to obtain the properties in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones"
-        language: String, 
+        language: String,
         "The names of the JCR properties; null to obtain all properties"
-        names: [String]
+        names: [String],
+        "Consider the default locale of the site of the node"
+        useFallbackLanguage: Boolean = false
     ): [JCRProperty]!
     "The GraphQL representation of the property in the requested language; null if the property does not exist"
     property(
         "The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones"
-        language: String, 
+        language: String,
         "The name of the JCR property"
-        name: String!
+        name: String!,
+        "Consider the default locale of the site of the node"
+        useFallbackLanguage: Boolean = false
     ): JCRProperty
     "GraphQL representations of the reference properties that target the current JCR Node"
     references(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): JCRPropertyConnection!
     "Gets the fully rendered content for this node"
     renderedContent(
         "Rendering context configuration"
-        contextConfiguration: String, 
+        contextConfiguration: String,
         "Is edit mode"
-        isEditMode: Boolean, 
+        isEditMode: Boolean,
         "Language"
-        language: String, 
+        language: String,
         "Main resource path"
-        mainResourcePath: String, 
+        mainResourcePath: String,
         "Additional request attributes"
-        requestAttributes: [InputRenderRequestAttributeInput], 
+        requestAttributes: [InputRenderRequestAttributeInput],
         "Template type"
-        templateType: String, 
+        templateType: String,
         "Name of the view"
         view: String
     ): RenderedNode
@@ -236,7 +240,7 @@ interface JCRNode {
     "Get vanity URLs from the current node filtered by the parameters"
     vanityUrls(
         "Filter results based on graphql field values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Languages"
         languages: [String]
     ): [VanityUrl]
@@ -253,30 +257,30 @@ interface Principal {
     "List of groups this principal belongs to"
     groupMembership(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "Return only groups which belong to this site"
         site: String
     ): GroupConnection!
     "Is this principal member of the specified group"
     memberOf(
         "Target group"
-        group: String, 
+        group: String,
         "Site where the group is defined"
         site: String
     ): Boolean
@@ -352,7 +356,7 @@ type ConfigurationItemValuesMutation {
     "Set a property value"
     value(
         "property name part"
-        name: String, 
+        name: String,
         value: String
     ): String
 }
@@ -407,7 +411,7 @@ type CountAggregation {
     "Count all values"
     values(
         "The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones"
-        language: String, 
+        language: String,
         "The name of the JCR property"
         name: String!
     ): Int
@@ -430,7 +434,7 @@ type Current_32_user {
     "Is this principal member of the specified group"
     memberOf(
         "Target group"
-        group: String, 
+        group: String,
         "Site where the group is defined"
         site: String
     ): Boolean
@@ -537,6 +541,8 @@ type EditorFormProperty {
     name: String
     "Property value"
     value: String
+    "Property values"
+    values: [String]
 }
 
 type EditorFormSection {
@@ -544,6 +550,8 @@ type EditorFormSection {
     description: String
     "Retrieve the displayable name of the section"
     displayName: String
+    "Is the section expanded"
+    expanded: Boolean
     "Returns the field sets contained in this section"
     fieldSets: [EditorFormFieldSet]
     "Check if this section should be hide"
@@ -557,16 +565,16 @@ type GenericJCRNode implements JCRNode {
     "Get the last modified date of this node and its descendants. The recursion in descendants can be controlled by recursionTypesFilter. If no filter is passed, recursion will stop by default on sub pages."
     aggregatedLastModifiedDate(
         "The language"
-        language: String, 
+        language: String,
         "Stop recursion on graphql field values"
         recursionTypesFilter: InputNodeTypesInput
     ): String
     "Aggregated publication info about the JCR node"
     aggregatedPublicationInfo(
         "Publication language"
-        language: String!, 
+        language: String!,
         "Whether to take references into account when calculating the aggregated publication status"
-        references: Boolean = false, 
+        references: Boolean = false,
         "Whether to take sub-nodes into account when calculating the aggregated publication status"
         subNodes: Boolean = false
     ): GqlPublicationInfo!
@@ -575,48 +583,48 @@ type GenericJCRNode implements JCRNode {
     "Returns a list of types allowed under the provided node"
     allowedChildNodeTypes(
         "Filter by GraphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Whether all sub-types of allowed child node types should be included"
         includeSubTypes: Boolean = true
     ): [JCRNodeType]
     "GraphQL representations of the ancestor nodes of the JCR node, top down direction"
     ancestors(
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes"
         upToPath: String
     ): [JCRNode]!
     "GraphQL representations of the child nodes, according to parameters passed"
     children(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "Include the current node itself in results"
-        includesSelf: Boolean = false, 
+        includesSelf: Boolean = false,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "Filter of child nodes by their names; null to avoid such filtering"
-        names: [String], 
+        names: [String],
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "Filter of child nodes by their property values; null to avoid such filtering"
-        propertiesFilter: InputNodePropertiesInput, 
+        propertiesFilter: InputNodePropertiesInput,
         "Filter of child nodes by their types; null to avoid such filtering"
-        typesFilter: InputNodeTypesInput, 
+        typesFilter: InputNodeTypesInput,
         "Language to use to get children"
         validInLanguage: String
-    ): JCRNodeConnection!
+    ): JCRNodeConnection
     "Read default Work in progress information. Set by \"wip.checkbox.checked\" system proprety"
     defaultWipInfo: wipInfo
     "Returns the node definition that applies to this node."
@@ -629,34 +637,34 @@ type GenericJCRNode implements JCRNode {
     "GraphQL representations of the descendant nodes, according to parameters passed"
     descendants(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "Filter of descendant nodes by their property values; null to avoid such filtering"
-        propertiesFilter: InputNodePropertiesInput, 
+        propertiesFilter: InputNodePropertiesInput,
         "Filter out and stop recursion on nodes by their property values; null to avoid such filtering"
-        recursionPropertiesFilter: InputNodePropertiesInput, 
+        recursionPropertiesFilter: InputNodePropertiesInput,
         "Filter out and stop recursion on nodes by their types; null to avoid such filtering"
-        recursionTypesFilter: InputNodeTypesInput, 
+        recursionTypesFilter: InputNodeTypesInput,
         "Filter of descendant nodes by their types; null to avoid such filtering"
-        typesFilter: InputNodeTypesInput, 
+        typesFilter: InputNodeTypesInput,
         "Language to use to get children"
         validInLanguage: String
-    ): JCRNodeConnection!
+    ): JCRNodeConnection
     "The displayable name of the JCR node"
     displayName(
         "Language"
@@ -681,7 +689,7 @@ type GenericJCRNode implements JCRNode {
     "Check if the given locales need translation, by comparing last modifications dates with already existing translations"
     languagesToTranslate(
         "The languages to check"
-        languagesToCheck: [String], 
+        languagesToCheck: [String],
         "The translated languages"
         languagesTranslated: [String]
     ): [String]
@@ -712,50 +720,54 @@ type GenericJCRNode implements JCRNode {
     "GraphQL representations of the properties in the requested language"
     properties(
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "The language to obtain the properties in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones"
-        language: String, 
+        language: String,
         "The names of the JCR properties; null to obtain all properties"
-        names: [String]
+        names: [String],
+        "Consider the default locale of the site of the node"
+        useFallbackLanguage: Boolean = false
     ): [JCRProperty]!
     "The GraphQL representation of the property in the requested language; null if the property does not exist"
     property(
         "The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones"
-        language: String, 
+        language: String,
         "The name of the JCR property"
-        name: String!
+        name: String!,
+        "Consider the default locale of the site of the node"
+        useFallbackLanguage: Boolean = false
     ): JCRProperty
     "GraphQL representations of the reference properties that target the current JCR Node"
     references(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): JCRPropertyConnection!
     "Gets the fully rendered content for this node"
     renderedContent(
         "Rendering context configuration"
-        contextConfiguration: String, 
+        contextConfiguration: String,
         "Is edit mode"
-        isEditMode: Boolean, 
+        isEditMode: Boolean,
         "Language"
-        language: String, 
+        language: String,
         "Main resource path"
-        mainResourcePath: String, 
+        mainResourcePath: String,
         "Additional request attributes"
-        requestAttributes: [InputRenderRequestAttributeInput], 
+        requestAttributes: [InputRenderRequestAttributeInput],
         "Template type"
-        templateType: String, 
+        templateType: String,
         "Name of the view"
         view: String
     ): RenderedNode
@@ -766,7 +778,7 @@ type GenericJCRNode implements JCRNode {
     "Get vanity URLs from the current node filtered by the parameters"
     vanityUrls(
         "Filter results based on graphql field values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Languages"
         languages: [String]
     ): [VanityUrl]
@@ -821,7 +833,7 @@ type GqlConfigurationMutation {
     "Set a property value"
     value(
         "property name part"
-        name: String, 
+        name: String,
         value: String
     ): String
 }
@@ -872,7 +884,7 @@ type GqlEditorFormMutations {
     "Publish the edited node with the associated technical sub nodes (visibility conditions, vanity urls, ACLs)"
     publishForm(
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
-        locale: String!, 
+        locale: String!,
         "UUID or path of the edited node."
         uuidOrPath: String!
     ): Boolean
@@ -897,65 +909,65 @@ type GqlEditorForms {
     "Get a list of allowed child nodeTypes for a given nodeType and path. (Note that it returns nothing for type [jnt:page]. [jnt:contentFolder] is filterered by [jmix:editorialContent])"
     contentTypesAsTree(
         "the child node name, used to check the type allowed for this named child node, do not specify if you want to check for unnamed children"
-        childNodeName: String, 
+        childNodeName: String,
         "List of types we want to exclude, null for all"
-        excludedNodeTypes: [String], 
+        excludedNodeTypes: [String],
         "if true, retrieves all the sub types of the given node types, if false, returns the type only. Default value is true"
-        includeSubTypes: Boolean = true, 
+        includeSubTypes: Boolean = true,
         "thPath of an existing node under with the new content will be created."
-        nodePath: String!, 
+        nodePath: String!,
         "List of types we want to retrieve, null for all"
-        nodeTypes: [String], 
+        nodeTypes: [String],
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
-        uiLocale: String!, 
+        uiLocale: String!,
         "if true, check the contribute property of the node. Default value is true"
         useContribute: Boolean = true
     ): [NodeTypeTreeEntry]
     "Get a editor form to create a new content from its nodetype and parent"
     createForm(
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
-        locale: String!, 
+        locale: String!,
         "The primary node type name identifying the form we want to retrieve"
-        primaryNodeType: String!, 
+        primaryNodeType: String!,
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
-        uiLocale: String!, 
+        uiLocale: String!,
         "uuid or path of an existing node under with the new content will be created."
         uuidOrPath: String!
     ): EditorForm
     "Get a editor form from a locale and an existing node"
     editForm(
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
-        locale: String!, 
+        locale: String!,
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
-        uiLocale: String!, 
+        uiLocale: String!,
         "UUID or path of an existing node under with the new content will be created."
         uuidOrPath: String!
     ): EditorForm
     "Get field constraints"
     fieldConstraints(
         "Object contains additional information of the node"
-        context: [InputContextEntryInput], 
+        context: [InputContextEntryInput],
         "A string representation of field name"
-        fieldName: String!, 
+        fieldName: String!,
         "A string representation of the field node type (the node type that contains the field, can be the node type of the node, a mixin or a super type)"
-        fieldNodeType: String!, 
+        fieldNodeType: String!,
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
-        locale: String!, 
+        locale: String!,
         "UUID or path of the node (optional in case you are creating it, and it doesnt exist yet)"
-        nodeUuidOrPath: String, 
+        nodeUuidOrPath: String,
         "UUID or path of the parent node"
-        parentNodeUuidOrPath: String!, 
+        parentNodeUuidOrPath: String!,
         "A string representation of the primary node type of the node"
-        primaryNodeType: String!, 
+        primaryNodeType: String!,
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
         uiLocale: String!
     ): [EditorFormFieldValueConstraint]
     "Retrieve the number of sub contents under the node for given types"
     subContentsCount(
         "List of node types to check for"
-        includeTypes: [String], 
+        includeTypes: [String],
         "Limit of sub contents count"
-        limit: Int, 
+        limit: Int,
         "node path"
         nodePath: String
     ): Int
@@ -965,11 +977,11 @@ type GqlJcrImageTransformMutation {
     "Crop an image under the current node"
     cropImage(
         "new height"
-        height: Int!, 
+        height: Int!,
         "left"
-        left: Int!, 
+        left: Int!,
         "top"
-        top: Int!, 
+        top: Int!,
         "new width"
         width: Int!
     ): Boolean
@@ -978,7 +990,7 @@ type GqlJcrImageTransformMutation {
     "Resize an image under the current node"
     resizeImage(
         "new height"
-        height: Int!, 
+        height: Int!,
         "new width"
         width: Int!
     ): Boolean
@@ -1038,12 +1050,30 @@ type GqlPublicationInfo {
     workInProgress: Boolean
 }
 
+type GqlScheduler {
+    "List of active jobs"
+    jobs: [GqlBackgroundJob]
+}
+
 "API Scope"
 type GqlScope {
     "The description of the scope"
     description: String
     "The name of the scope"
     name: String
+}
+
+type GqlWorkflowEvent {
+    "Number of tasks for current user"
+    activeWorkflowTaskCountForUser: Int
+    "Task that has just been created"
+    createdTask: Task
+    "Task that has just been ended"
+    endedTask: Task
+    "Workflow that has just been ended"
+    endedWorkflow: Workflow
+    "Workflow that has just been started"
+    startedWorkflow: Workflow
 }
 
 "GraphQL representation of a Jahia group"
@@ -1053,51 +1083,51 @@ type Group implements Principal {
     "List of groups this principal belongs to"
     groupMembership(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "Return only groups which belong to this site"
         site: String
     ): GroupConnection!
     "Is this principal member of the specified group"
     memberOf(
         "Target group"
-        group: String, 
+        group: String,
         "Site where the group is defined"
         site: String
     ): Boolean
     "Group members"
     members(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): PrincipalConnection!
@@ -1152,16 +1182,16 @@ type ImageAsset {
 type JCRMutation {
     "Creates a new JCR node under the specified parent"
     addNode(
-        children: [InputJCRNode], 
+        children: [InputJCRNode],
         "The collection of mixin type names"
-        mixins: [String], 
+        mixins: [String],
         "The name of the node to create"
-        name: String!, 
+        name: String!,
         "The path or id of the parent node"
-        parentPathOrId: String!, 
+        parentPathOrId: String!,
         "The primary node type of the node to create"
-        primaryNodeType: String!, 
-        properties: [InputJCRProperty], 
+        primaryNodeType: String!,
+        properties: [InputJCRProperty],
         "If true, use the next available name for a node, appending if needed numbers. Default is false"
         useAvailableNodeName: Boolean
     ): JCRNodeMutation
@@ -1173,9 +1203,9 @@ type JCRMutation {
     "Copy a single node to a different parent node"
     copyNode(
         "The name of the node at the new location or null if its current name should be preserved"
-        destName: String, 
+        destName: String,
         "Path or UUID of the destination parent node to copy the node to"
-        destParentPathOrId: String!, 
+        destParentPathOrId: String!,
         "Path or UUID of the node to be copied"
         pathOrId: String!
     ): JCRNodeMutation
@@ -1189,16 +1219,16 @@ type JCRMutation {
     "Import a file under the specified parent"
     importContent(
         "Name of the request part that contains desired import file body"
-        file: String!, 
+        file: String!,
         "The path or id of the parent node"
-        parentPathOrId: String!, 
+        parentPathOrId: String!,
         "Specify the behaviour in case of existing content, possible values are in the DocumentViewImportHandler class"
         rootBehaviour: Int = 2
     ): Boolean
     "Marks the existing node and all its children for deletion"
     markNodeForDeletion(
         "Optional deletion comment"
-        comment: String, 
+        comment: String,
         "The path or id of the node to mark for deletion"
         pathOrId: String!
     ): Boolean
@@ -1207,9 +1237,9 @@ type JCRMutation {
     "Move a single node to a different parent node"
     moveNode(
         "The name of the node at the new location or null if its current name should be preserved"
-        destName: String, 
+        destName: String,
         "Path or UUID of the destination parent node to move the node to"
-        destParentPathOrId: String!, 
+        destParentPathOrId: String!,
         "Path or UUID of the node to be moved"
         pathOrId: String!
     ): JCRNodeMutation
@@ -1228,11 +1258,11 @@ type JCRMutation {
     "Mutates a set of existing nodes, based on query execution"
     mutateNodesByQuery(
         "The maximum size of the result set"
-        limit: Long, 
+        limit: Long,
         "The start offset of the result set"
-        offset: Long, 
+        offset: Long,
         "The query string"
-        query: String!, 
+        query: String!,
         "The query language"
         queryLanguage: QueryLanguage = SQL2
     ): [JCRNodeMutation]
@@ -1244,22 +1274,22 @@ type JCRMutation {
     "Paste a single node to a different parent node"
     pasteNode(
         "The name of the node at the new location or null if its current name should be preserved"
-        destName: String, 
+        destName: String,
         "Path or UUID of the destination parent node to paste the node to"
-        destParentPathOrId: String!, 
+        destParentPathOrId: String!,
         "Paste mode, either COPY or MOVE"
-        mode: PasteMode!, 
+        mode: PasteMode!,
         "The way to deal with duplicate node names when they are not allowed, either FAIL or RENAME"
-        namingConflictResolution: NodeNamingConflictResolutionStrategy = FAIL, 
+        namingConflictResolution: NodeNamingConflictResolutionStrategy = FAIL,
         "Path or UUID of the node to be pasted"
         pathOrId: String!
     ): JCRNodeMutation
     "Paste multiple nodes to different parent node(s)"
     pasteNodes(
         "Paste mode, either COPY or MOVE"
-        mode: PasteMode!, 
+        mode: PasteMode!,
         "The way to deal with duplicate node names when they are not allowed, either FAIL or RENAME"
-        namingConflictResolution: NodeNamingConflictResolutionStrategy = FAIL, 
+        namingConflictResolution: NodeNamingConflictResolutionStrategy = FAIL,
         "Info about nodes to paste and their new parent node(s)"
         nodes: [InputCarriedJCRNode!]!
     ): [JCRNodeMutation]
@@ -1332,14 +1362,14 @@ type JCRNodeEdge {
 type JCRNodeMutation {
     "Creates a new JCR node under the current node"
     addChild(
-        children: [InputJCRNode], 
+        children: [InputJCRNode],
         "The collection of mixin type names"
-        mixins: [String], 
+        mixins: [String],
         "The name of the node to create"
-        name: String!, 
+        name: String!,
         "The primary node type of the node to create"
-        primaryNodeType: String!, 
-        properties: [InputJCRProperty], 
+        primaryNodeType: String!,
+        properties: [InputJCRProperty],
         "If true, use the next available name for a node, appending if needed numbers. Default is false"
         useAvailableNodeName: Boolean
     ): JCRNodeMutation
@@ -1385,16 +1415,16 @@ type JCRNodeMutation {
     "Moves the current node to a specified destination path (if destPath is specified) or moves it under the specified node (if parentPathOrId is specified). Either of two parameters is expected."
     move(
         "The target node path of the current node after the move operation"
-        destPath: String, 
+        destPath: String,
         "The parent node path or id under which the current node will be moved to"
         parentPathOrId: String
     ): String
     "Mutates a set of existing direct sub nodes, based on filters passed as parameter"
     mutateChildren(
         "Filter of child nodes by their names; null to avoid such filtering"
-        names: [String], 
+        names: [String],
         "Filter of child nodes by their property values; null to avoid such filtering"
-        propertiesFilter: InputNodePropertiesInput, 
+        propertiesFilter: InputNodePropertiesInput,
         "Filter of child nodes by their types; null to avoid such filtering"
         typesFilter: InputNodeTypesInput
     ): [JCRNodeMutation]
@@ -1406,11 +1436,11 @@ type JCRNodeMutation {
     "Mutates a set of existing descendant nodes, based on filters passed as parameter"
     mutateDescendants(
         "Filter of descendant nodes by their property values; null to avoid such filtering"
-        propertiesFilter: InputNodePropertiesInput, 
+        propertiesFilter: InputNodePropertiesInput,
         "Filter out and stop recursion on nodes by their property values; null to avoid such filtering"
-        recursionPropertiesFilter: InputNodePropertiesInput, 
+        recursionPropertiesFilter: InputNodePropertiesInput,
         "Filter out and stop recursion on nodes by their types; null to avoid such filtering"
-        recursionTypesFilter: InputNodeTypesInput, 
+        recursionTypesFilter: InputNodeTypesInput,
         "Filter of descendant nodes by their types; null to avoid such filtering"
         typesFilter: InputNodeTypesInput
     ): [JCRNodeMutation]
@@ -1444,9 +1474,9 @@ type JCRNodeMutation {
     "Publish the node in certain languages"
     publish(
         "Publish all sub tree including sub pages. Default is false."
-        includeSubTree: Boolean = false, 
+        includeSubTree: Boolean = false,
         "Languages to publish the node in"
-        languages: [String], 
+        languages: [String],
         "Publish all sub and related nodes. Default is true."
         publishSubNodes: Boolean = true
     ): Boolean
@@ -1463,7 +1493,7 @@ type JCRNodeMutation {
     "Reorder child nodes according to the list of names passed"
     reorderChildren(
         "List of child node names in the desired order"
-        names: [String]!, 
+        names: [String]!,
         "The target position of reordered child nodes. The default value is inplace."
         position: ReorderedChildrenPosition = INPLACE
     ): Boolean
@@ -1476,7 +1506,7 @@ type JCRNodeMutation {
     "Return image transformation mutation"
     transformImage(
         "name of target file, if different"
-        name: String, 
+        name: String,
         "target path, if different"
         targetPath: String
     ): GqlJcrImageTransformMutation
@@ -1537,15 +1567,15 @@ type JCRNodeType {
     "Returns all subtypes of this node type in the node type inheritance hierarchy."
     subTypes(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): JCRNodeTypeConnection
@@ -1584,6 +1614,20 @@ type JCRProperty {
     booleanValue: Boolean
     "The values of the JCR property as Booleans in case the property is multiple-valued, null otherwise"
     booleanValues: [Boolean]
+    "The value of the JCR property rendered by the specified choicelist renderer in case the property is single-valued, null otherwise"
+    choicelistValue(
+        "The language"
+        language: String,
+        "The choicelist renderer name to be used"
+        renderer: String
+    ): String
+    "The value of the JCR property rendered by the specified choicelist renderer in case the property is multiple-valued, null otherwise"
+    choicelistValues(
+        "The language"
+        language: String,
+        "The choicelist renderer name to be used"
+        renderer: String
+    ): [String]
     "The decrypted value of the JCR encrypted property as a String in case the property is single-valued, null otherwise"
     decryptedValue: String
     "The decrypted values of the JCR encrypted property as a Strings in case the property is multiple-valued, null otherwise"
@@ -1700,19 +1744,39 @@ type JCRPropertyMutation {
 "JCR Queries"
 type JCRQuery {
     "Retrieves the number of active workflow tasks for the current user"
-    activeWorkflowTaskCountForUser: Int
+    activeWorkflowTaskCountForUser: Int @deprecated(reason: "Use /workflow/activeWorkflowTaskCountForUser instead")
     "Get GraphQL representation of a node by its UUID"
     nodeById(
         "The UUID of the node"
-        uuid: String!, 
-        "Check node validity in this language"
+        uuid: String!,
+        """
+
+        Check node validity in this language.
+
+        Node validity is determined by multiple conditions:
+
+        * The node exists
+        * The node is not attached to a visibility condition preventing its display
+        * The node is published in this language
+        * The node's language has not been invalidated.
+        """
         validInLanguage: String
     ): JCRNode
     "Get GraphQL representation of a node by its path"
     nodeByPath(
         "The path of the node"
-        path: String!, 
-        "Check node validity in this language"
+        path: String!,
+        """
+
+        Check node validity in this language.
+
+        Node validity is determined by multiple conditions:
+
+        * The node exists
+        * The node is not attached to a visibility condition preventing its display
+        * The node is published in this language
+        * The node's language has not been invalidated.
+        """
         validInLanguage: String
     ): JCRNode
     "Get a node type by its name"
@@ -1723,19 +1787,19 @@ type JCRQuery {
     "Get a list of nodetypes based on specified parameter"
     nodeTypes(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Filter on node type"
-        filter: InputNodeTypesListInput, 
+        filter: InputNodeTypesListInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): JCRNodeTypeConnection
@@ -1747,64 +1811,84 @@ type JCRQuery {
     "handles query nodes with QOM factory"
     nodesByCriteria(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "The criteria to fetch nodes by"
-        criteria: InputGqlJcrNodeCriteriaInput!, 
+        criteria: InputGqlJcrNodeCriteriaInput!,
         "Filter by GraphQL field values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields by criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "sort by GraphQL field values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): JCRNodeConnection
     "Get GraphQL representations of multiple nodes by their UUIDs"
     nodesById(
         "The UUIDs of the nodes"
-        uuids: [String!]!, 
-        "Check node validity in this language"
+        uuids: [String!]!,
+        """
+
+        Check node validity in this language.
+
+        Node validity is determined by multiple conditions:
+
+        * The node exists
+        * The node is not attached to a visibility condition preventing its display
+        * The node is published in this language
+        * The node's language has not been invalidated.
+        """
         validInLanguage: String
     ): [JCRNode]!
     "Get GraphQL representations of multiple nodes by their paths"
     nodesByPath(
         "The paths of the nodes"
-        paths: [String!]!, 
-        "Check node validity in this language"
+        paths: [String!]!,
+        """
+
+        Check node validity in this language.
+
+        Node validity is determined by multiple conditions:
+
+        * The node exists
+        * The node is not attached to a visibility condition preventing its display
+        * The node is published in this language
+        * The node's language has not been invalidated.
+        """
         validInLanguage: String
     ): [JCRNode]!
     "Get GraphQL representations of nodes using a query language supported by JCR"
     nodesByQuery(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields by criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by GraphQL field values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "Language to use for the query"
-        language: String, 
+        language: String,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "The query string"
-        query: String!, 
+        query: String!,
         "The query language"
         queryLanguage: QueryLanguage = SQL2
     ): JCRNodeConnection
@@ -1817,16 +1901,16 @@ type JCRSite implements JCRNode {
     "Get the last modified date of this node and its descendants. The recursion in descendants can be controlled by recursionTypesFilter. If no filter is passed, recursion will stop by default on sub pages."
     aggregatedLastModifiedDate(
         "The language"
-        language: String, 
+        language: String,
         "Stop recursion on graphql field values"
         recursionTypesFilter: InputNodeTypesInput
     ): String
     "Aggregated publication info about the JCR node"
     aggregatedPublicationInfo(
         "Publication language"
-        language: String!, 
+        language: String!,
         "Whether to take references into account when calculating the aggregated publication status"
-        references: Boolean = false, 
+        references: Boolean = false,
         "Whether to take sub-nodes into account when calculating the aggregated publication status"
         subNodes: Boolean = false
     ): GqlPublicationInfo!
@@ -1835,48 +1919,48 @@ type JCRSite implements JCRNode {
     "Returns a list of types allowed under the provided node"
     allowedChildNodeTypes(
         "Filter by GraphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Whether all sub-types of allowed child node types should be included"
         includeSubTypes: Boolean = true
     ): [JCRNodeType]
     "GraphQL representations of the ancestor nodes of the JCR node, top down direction"
     ancestors(
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes"
         upToPath: String
     ): [JCRNode]!
     "GraphQL representations of the child nodes, according to parameters passed"
     children(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "Include the current node itself in results"
-        includesSelf: Boolean = false, 
+        includesSelf: Boolean = false,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "Filter of child nodes by their names; null to avoid such filtering"
-        names: [String], 
+        names: [String],
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "Filter of child nodes by their property values; null to avoid such filtering"
-        propertiesFilter: InputNodePropertiesInput, 
+        propertiesFilter: InputNodePropertiesInput,
         "Filter of child nodes by their types; null to avoid such filtering"
-        typesFilter: InputNodeTypesInput, 
+        typesFilter: InputNodeTypesInput,
         "Language to use to get children"
         validInLanguage: String
-    ): JCRNodeConnection!
+    ): JCRNodeConnection
     "Site default language"
     defaultLanguage: String
     "Read default Work in progress information. Set by \"wip.checkbox.checked\" system proprety"
@@ -1891,34 +1975,34 @@ type JCRSite implements JCRNode {
     "GraphQL representations of the descendant nodes, according to parameters passed"
     descendants(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "Filter of descendant nodes by their property values; null to avoid such filtering"
-        propertiesFilter: InputNodePropertiesInput, 
+        propertiesFilter: InputNodePropertiesInput,
         "Filter out and stop recursion on nodes by their property values; null to avoid such filtering"
-        recursionPropertiesFilter: InputNodePropertiesInput, 
+        recursionPropertiesFilter: InputNodePropertiesInput,
         "Filter out and stop recursion on nodes by their types; null to avoid such filtering"
-        recursionTypesFilter: InputNodeTypesInput, 
+        recursionTypesFilter: InputNodeTypesInput,
         "Filter of descendant nodes by their types; null to avoid such filtering"
-        typesFilter: InputNodeTypesInput, 
+        typesFilter: InputNodeTypesInput,
         "Language to use to get children"
         validInLanguage: String
-    ): JCRNodeConnection!
+    ): JCRNodeConnection
     "Site description"
     description: String
     "The displayable name of the JCR node"
@@ -1953,7 +2037,7 @@ type JCRSite implements JCRNode {
     "Check if the given locales need translation, by comparing last modifications dates with already existing translations"
     languagesToTranslate(
         "The languages to check"
-        languagesToCheck: [String], 
+        languagesToCheck: [String],
         "The translated languages"
         languagesTranslated: [String]
     ): [String]
@@ -1984,50 +2068,54 @@ type JCRSite implements JCRNode {
     "GraphQL representations of the properties in the requested language"
     properties(
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "The language to obtain the properties in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones"
-        language: String, 
+        language: String,
         "The names of the JCR properties; null to obtain all properties"
-        names: [String]
+        names: [String],
+        "Consider the default locale of the site of the node"
+        useFallbackLanguage: Boolean = false
     ): [JCRProperty]!
     "The GraphQL representation of the property in the requested language; null if the property does not exist"
     property(
         "The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones"
-        language: String, 
+        language: String,
         "The name of the JCR property"
-        name: String!
+        name: String!,
+        "Consider the default locale of the site of the node"
+        useFallbackLanguage: Boolean = false
     ): JCRProperty
     "GraphQL representations of the reference properties that target the current JCR Node"
     references(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): JCRPropertyConnection!
     "Gets the fully rendered content for this node"
     renderedContent(
         "Rendering context configuration"
-        contextConfiguration: String, 
+        contextConfiguration: String,
         "Is edit mode"
-        isEditMode: Boolean, 
+        isEditMode: Boolean,
         "Language"
-        language: String, 
+        language: String,
         "Main resource path"
-        mainResourcePath: String, 
+        mainResourcePath: String,
         "Additional request attributes"
-        requestAttributes: [InputRenderRequestAttributeInput], 
+        requestAttributes: [InputRenderRequestAttributeInput],
         "Template type"
-        templateType: String, 
+        templateType: String,
         "Name of the view"
         view: String
     ): RenderedNode
@@ -2042,7 +2130,7 @@ type JCRSite implements JCRNode {
     "Get vanity URLs from the current node filtered by the parameters"
     vanityUrls(
         "Filter results based on graphql field values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Languages"
         languages: [String]
     ): [VanityUrl]
@@ -2082,15 +2170,15 @@ type JCRTags {
     "Handles suggestion tags queries"
     suggest(
         "Max number of tags to get"
-        limit: Long!, 
+        limit: Long!,
         "Minimal occurrences to return a tag"
-        minCount: Long, 
+        minCount: Long,
         "Offset value"
-        offset: Long, 
+        offset: Long,
         "The prefix of the tags"
-        prefix: String!, 
+        prefix: String!,
         "Sort the tags by occurrences"
-        sortByCount: Boolean, 
+        sortByCount: Boolean,
         "The root node to start the search"
         startPath: String!
     ): [JCRTag]
@@ -2107,7 +2195,7 @@ type JahiaAdminMutation {
     "Mutate an OSGi configuration"
     configuration(
         "If factory pid, configiration identifier (filename suffix)"
-        identifier: String, 
+        identifier: String,
         "Configuration pid ot factory pid"
         pid: String!
     ): GqlConfigurationMutation
@@ -2117,11 +2205,13 @@ type JahiaAdminMutation {
 type JahiaAdminQuery {
     "Read an OSGi configuration"
     configuration(
-        "If factory pid, configiration identifier (filename suffix)"
-        identifier: String, 
+        "If factory pid, configuration identifier (filename suffix)"
+        identifier: String,
         "Configuration pid ot factory pid"
         pid: String!
     ): GqlConfigurationQuery
+    "Get jobs scheduler"
+    scheduler: GqlScheduler
     "Version of the running Jahia instance"
     version: JahiaVersion
 }
@@ -2178,7 +2268,7 @@ type Mutation {
     "JCR Mutation"
     jcr(
         "Should save"
-        save: Boolean = true, 
+        save: Boolean = true,
         "The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default"
         workspace: Workspace
     ): JCRMutation
@@ -2267,13 +2357,13 @@ type PersonalApiTokensMutation {
     "Create a new token"
     createToken(
         "Expiration date of the token"
-        expireAt: String, 
+        expireAt: String,
         "Name to give to the token"
-        name: String!, 
+        name: String!,
         "Scopes attached to this token"
-        scopes: [String], 
+        scopes: [String],
         "The site the user belongs to, null if global user"
-        site: String, 
+        site: String,
         "State to give the newly created token"
         state: TokenState
     ): String
@@ -2285,13 +2375,13 @@ type PersonalApiTokensMutation {
     "Update an existing token"
     updateToken(
         "Expiration date of the token, use empty string to unset expiration date"
-        expireAt: String, 
+        expireAt: String,
         "The token key"
-        key: String!, 
+        key: String!,
         "Name to give to the token"
-        name: String, 
+        name: String,
         "Scopes attached to this token"
-        scopes: [String], 
+        scopes: [String],
         "State to give the token"
         state: TokenState
     ): Boolean
@@ -2309,30 +2399,30 @@ type PersonalApiTokensQuery {
     "Get token details, based on user and token name"
     tokenByUserAndName(
         "The site the user belongs to, null if global user"
-        site: String, 
+        site: String,
         "The token name"
-        tokenName: String!, 
+        tokenName: String!,
         "The user id"
         userId: String!
     ): PersonalApiToken
     "List tokens attached to the provided user ID and site key"
     tokens(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "The site the user belongs to, null if global user"
-        site: String, 
+        site: String,
         "If a userId is provided, only returns tokens assigned to that user."
         userId: String
     ): PersonalApiTokenConnection
@@ -2369,17 +2459,17 @@ type Query {
     admin: AdminQuery!
     "default finder for categoryById"
     categoryById(
-        id: String, 
+        id: String,
         "Content language, defaults to English"
-        language: String = "en", 
+        language: String = "en",
         "Return content from live or default workspace"
         preview: Boolean = false
     ): Category
     "default finder for categoryByPath"
     categoryByPath(
         "Content language, defaults to English"
-        language: String = "en", 
-        path: String, 
+        language: String = "en",
+        path: String,
         "Return content from live or default workspace"
         preview: Boolean = false
     ): Category
@@ -2396,6 +2486,8 @@ type Query {
     ): JCRQuery!
     "Tag Queries"
     tag: JCRTags
+    "Retrieves the number of active workflow tasks for the current user"
+    workflow: WorkflowService
 }
 
 "Rendering result for a node"
@@ -2416,21 +2508,21 @@ type StatAggregation {
     "The date representation of a JCR node property"
     datePropertyValue(
         "The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones"
-        language: String, 
+        language: String,
         "The name of the JCR property"
         name: String!
     ): String
     "The float representation of a JCR node property"
     floatPropertyValue(
         "The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones"
-        language: String, 
+        language: String,
         "The name of the JCR property"
         name: String!
     ): Float
     "The long representation of a JCR node property"
     longPropertyValue(
         "The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones"
-        language: String, 
+        language: String,
         "The name of the JCR property"
         name: String!
     ): Long
@@ -2452,23 +2544,61 @@ type Subscription {
     "Subscription on background jobs"
     backgroundJobSubscription(
         "Subscribe only to job with matching group names"
-        filterByGroups: [String], 
+        filterByGroups: [String],
         "Subscribe only to job with matching job states"
-        filterByJobStates: [GqlBackgroundJobState], 
+        filterByJobStates: [GqlBackgroundJobState],
         "Subscribe only to job with matching job statuses"
-        filterByJobStatuses: [GqlBackgroundJobStatus], 
+        filterByJobStatuses: [GqlBackgroundJobStatus],
         "Subscribe only to job with matching names"
-        filterByNames: [String], 
+        filterByNames: [String],
         "The target scheduler for listening jobs"
         targetScheduler: TargetScheduler = BOTH
     ): GqlBackgroundJob
     "Lock the node for edition and subscribe to hold the lock. The node is automatically unlocked when the client disconnect or close the connection"
     subscribeToEditorLock(
         "An ID generated client side used to identify the lock"
-        editorID: String!, 
+        editorID: String!,
         "Uuid of the node to be locked."
         nodeId: String!
     ): String
+    "Subscription on workflows"
+    workflowEvent: GqlWorkflowEvent
+}
+
+"Workflow task"
+type Task {
+    "Task assignee"
+    assignee: User
+    "Creation time"
+    creationTime: String
+    "Due date"
+    dueDate: String
+    "Task id"
+    id: String
+    "Task name"
+    name: String
+    "Parent workflow"
+    workflow: Workflow
+}
+
+"A connection to a list of items."
+type TaskConnection {
+    "a list of edges"
+    edges: [TaskEdge]
+    "a list of nodes"
+    nodes: [Task]
+    "details about this specific page"
+    pageInfo: PageInfo!
+}
+
+"An edge in a connection"
+type TaskEdge {
+    "cursor marks a unique position or index into the connection"
+    cursor: String!
+    "index in the connection"
+    index: Int
+    "The item at the end of the edge"
+    node: Task
 }
 
 "GraphQL representation of a Jahia user"
@@ -2482,23 +2612,23 @@ type User implements Principal {
     "List of groups this principal belongs to"
     groupMembership(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "Return only groups which belong to this site"
         site: String
     ): GroupConnection!
@@ -2511,7 +2641,7 @@ type User implements Principal {
     "Is this principal member of the specified group"
     memberOf(
         "Target group"
-        group: String, 
+        group: String,
         "Site where the group is defined"
         site: String
     ): Boolean
@@ -2537,28 +2667,28 @@ type UserAdminQuery {
     "Get a user"
     user(
         "Site where the user is defined"
-        site: String, 
+        site: String,
         "User name"
         username: String!
     ): User
     "Get users list"
     users(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): UserConnection
@@ -2589,7 +2719,7 @@ type UserGroupQuery {
     "Get a group"
     group(
         "Group name"
-        groupName: String!, 
+        groupName: String!,
         "Site where the group is defined"
         site: String
     ): Group
@@ -2602,16 +2732,16 @@ type VanityUrl implements JCRNode {
     "Get the last modified date of this node and its descendants. The recursion in descendants can be controlled by recursionTypesFilter. If no filter is passed, recursion will stop by default on sub pages."
     aggregatedLastModifiedDate(
         "The language"
-        language: String, 
+        language: String,
         "Stop recursion on graphql field values"
         recursionTypesFilter: InputNodeTypesInput
     ): String
     "Aggregated publication info about the JCR node"
     aggregatedPublicationInfo(
         "Publication language"
-        language: String!, 
+        language: String!,
         "Whether to take references into account when calculating the aggregated publication status"
-        references: Boolean = false, 
+        references: Boolean = false,
         "Whether to take sub-nodes into account when calculating the aggregated publication status"
         subNodes: Boolean = false
     ): GqlPublicationInfo!
@@ -2620,48 +2750,48 @@ type VanityUrl implements JCRNode {
     "Returns a list of types allowed under the provided node"
     allowedChildNodeTypes(
         "Filter by GraphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Whether all sub-types of allowed child node types should be included"
         includeSubTypes: Boolean = true
     ): [JCRNodeType]
     "GraphQL representations of the ancestor nodes of the JCR node, top down direction"
     ancestors(
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "The path of the topmost ancestor node to include in the result; null or empty string to include all the ancestor nodes"
         upToPath: String
     ): [JCRNode]!
     "GraphQL representations of the child nodes, according to parameters passed"
     children(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "Include the current node itself in results"
-        includesSelf: Boolean = false, 
+        includesSelf: Boolean = false,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "Filter of child nodes by their names; null to avoid such filtering"
-        names: [String], 
+        names: [String],
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "Filter of child nodes by their property values; null to avoid such filtering"
-        propertiesFilter: InputNodePropertiesInput, 
+        propertiesFilter: InputNodePropertiesInput,
         "Filter of child nodes by their types; null to avoid such filtering"
-        typesFilter: InputNodeTypesInput, 
+        typesFilter: InputNodeTypesInput,
         "Language to use to get children"
         validInLanguage: String
-    ): JCRNodeConnection!
+    ): JCRNodeConnection
     "true whether this URL mapping is the default one for the language"
     default: Boolean
     "Read default Work in progress information. Set by \"wip.checkbox.checked\" system proprety"
@@ -2676,34 +2806,34 @@ type VanityUrl implements JCRNode {
     "GraphQL representations of the descendant nodes, according to parameters passed"
     descendants(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Group fields according to specified criteria"
-        fieldGrouping: InputFieldGroupingInput, 
+        fieldGrouping: InputFieldGroupingInput,
         "Sort by graphQL fields values"
-        fieldSorter: InputFieldSorterInput, 
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
-        offset: Int, 
+        offset: Int,
         "Filter of descendant nodes by their property values; null to avoid such filtering"
-        propertiesFilter: InputNodePropertiesInput, 
+        propertiesFilter: InputNodePropertiesInput,
         "Filter out and stop recursion on nodes by their property values; null to avoid such filtering"
-        recursionPropertiesFilter: InputNodePropertiesInput, 
+        recursionPropertiesFilter: InputNodePropertiesInput,
         "Filter out and stop recursion on nodes by their types; null to avoid such filtering"
-        recursionTypesFilter: InputNodeTypesInput, 
+        recursionTypesFilter: InputNodeTypesInput,
         "Filter of descendant nodes by their types; null to avoid such filtering"
-        typesFilter: InputNodeTypesInput, 
+        typesFilter: InputNodeTypesInput,
         "Language to use to get children"
         validInLanguage: String
-    ): JCRNodeConnection!
+    ): JCRNodeConnection
     "The displayable name of the JCR node"
     displayName(
         "Language"
@@ -2730,7 +2860,7 @@ type VanityUrl implements JCRNode {
     "Check if the given locales need translation, by comparing last modifications dates with already existing translations"
     languagesToTranslate(
         "The languages to check"
-        languagesToCheck: [String], 
+        languagesToCheck: [String],
         "The translated languages"
         languagesTranslated: [String]
     ): [String]
@@ -2761,50 +2891,54 @@ type VanityUrl implements JCRNode {
     "GraphQL representations of the properties in the requested language"
     properties(
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "The language to obtain the properties in; must be a valid language code in case any internationalized properties are requested, does not matter for non-internationalized ones"
-        language: String, 
+        language: String,
         "The names of the JCR properties; null to obtain all properties"
-        names: [String]
+        names: [String],
+        "Consider the default locale of the site of the node"
+        useFallbackLanguage: Boolean = false
     ): [JCRProperty]!
     "The GraphQL representation of the property in the requested language; null if the property does not exist"
     property(
         "The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones"
-        language: String, 
+        language: String,
         "The name of the JCR property"
-        name: String!
+        name: String!,
+        "Consider the default locale of the site of the node"
+        useFallbackLanguage: Boolean = false
     ): JCRProperty
     "GraphQL representations of the reference properties that target the current JCR Node"
     references(
         "fetching only nodes after this node (exclusive)"
-        after: String, 
+        after: String,
         "fetching only nodes before this node (exclusive)"
-        before: String, 
+        before: String,
         "Filter by graphQL fields values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "fetching only the first certain number of nodes"
-        first: Int, 
+        first: Int,
         "fetching only the last certain number of nodes"
-        last: Int, 
+        last: Int,
         "fetching only the first certain number of nodes"
-        limit: Int, 
+        limit: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): JCRPropertyConnection!
     "Gets the fully rendered content for this node"
     renderedContent(
         "Rendering context configuration"
-        contextConfiguration: String, 
+        contextConfiguration: String,
         "Is edit mode"
-        isEditMode: Boolean, 
+        isEditMode: Boolean,
         "Language"
-        language: String, 
+        language: String,
         "Main resource path"
-        mainResourcePath: String, 
+        mainResourcePath: String,
         "Additional request attributes"
-        requestAttributes: [InputRenderRequestAttributeInput], 
+        requestAttributes: [InputRenderRequestAttributeInput],
         "Template type"
-        templateType: String, 
+        templateType: String,
         "Name of the view"
         view: String
     ): RenderedNode
@@ -2819,7 +2953,7 @@ type VanityUrl implements JCRNode {
     "Get vanity URLs from the current node filtered by the parameters"
     vanityUrls(
         "Filter results based on graphql field values"
-        fieldFilter: InputFieldFiltersInput, 
+        fieldFilter: InputFieldFiltersInput,
         "Languages"
         languages: [String]
     ): [VanityUrl]
@@ -2842,11 +2976,11 @@ type VanityUrlMappingMutation {
     "Update vanity URL"
     update(
         "Desired value of the active flag or null to keep existing value"
-        active: Boolean, 
+        active: Boolean,
         "Desired value of the default flag or null to keep existing value"
-        defaultMapping: Boolean, 
+        defaultMapping: Boolean,
         "Desired vanity URL language or null to keep existing value"
-        language: String, 
+        language: String,
         "Desired URL value or null to keep existing value"
         url: String
     ): Boolean
@@ -2854,13 +2988,40 @@ type VanityUrlMappingMutation {
     uuid: String
 }
 
+"Workflow process"
 type Workflow {
+    "Workflow creation time"
+    creationTime: String
+    "Workflow due date"
+    dueDate: String
+    "Username who started the workflow"
     startUser: String
 }
 
 type WorkflowMutation {
     abortWorkflow: Boolean
     workflow: Workflow
+}
+
+"Workflow service"
+type WorkflowService {
+    "Retrieves the number of active workflow tasks for the current user"
+    activeWorkflowTaskCountForUser: Int
+    "Retrieves the active workflow tasks for the current user"
+    activeWorkflowTasksForUser(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int
+    ): TaskConnection
 }
 
 type ZipFileMutation {

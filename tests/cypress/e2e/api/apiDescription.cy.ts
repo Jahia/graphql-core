@@ -7,7 +7,7 @@ describe('Test if every type in graphQL API has description', () => {
         const invalidNames = new Set()
 
         cy.apolloClient()
-            .then((client) => executeTest(client, 'Query', types, noDesc, invalidNames))
+            .then({ timeout: 25000 }, (client) => executeTest(client, 'Query', types, noDesc, invalidNames))
             .should(() => {
                 const noDescBlacklist = [
                     'type=JCRSite/field=findAvailableNodeName/arg=nodeType',

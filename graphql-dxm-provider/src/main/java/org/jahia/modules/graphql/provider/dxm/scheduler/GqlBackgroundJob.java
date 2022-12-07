@@ -22,6 +22,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.services.scheduler.BackgroundJob;
 import org.quartz.JobDetail;
 
+@GraphQLDescription("Background job")
 public class GqlBackgroundJob {
     private JobDetail jobDetail;
     private GqlBackgroundJobStatus jobStatus;
@@ -94,7 +95,7 @@ public class GqlBackgroundJob {
     @GraphQLField
     @GraphQLName("jobStringProperty")
     @GraphQLDescription("The job (String) property that correspond to the given name. The returned value will be null in case the job doesn't have the property")
-    public String getJobStringProperty(@GraphQLName("name") String name) {
+    public String getJobStringProperty(@GraphQLName("name") @GraphQLDescription("The job name") String name) {
         if (jobDetail.getJobDataMap().containsKey(name)) {
             return jobDetail.getJobDataMap().getString(name);
         }
@@ -104,7 +105,7 @@ public class GqlBackgroundJob {
     @GraphQLField
     @GraphQLName("jobLongProperty")
     @GraphQLDescription("The job (Long) property that correspond to the given name. The returned value will be null in case the job doesn't have the property")
-    public Long getJobLongProperty(@GraphQLName("name") String name) {
+    public Long getJobLongProperty(@GraphQLName("name") @GraphQLDescription("The job name") String name) {
         if (jobDetail.getJobDataMap().containsKey(name)) {
             return jobDetail.getJobDataMap().getLongValue(name);
         }
@@ -114,7 +115,7 @@ public class GqlBackgroundJob {
     @GraphQLField
     @GraphQLName("jobIntegerProperty")
     @GraphQLDescription("The job (Int) property that correspond to the given name. The returned value will be null in case the job doesn't have the property")
-    public Integer getJobIntegerProperty(@GraphQLName("name") String name) {
+    public Integer getJobIntegerProperty(@GraphQLName("name") @GraphQLDescription("The job name") String name) {
         if (jobDetail.getJobDataMap().containsKey(name)) {
             return jobDetail.getJobDataMap().getIntValue(name);
         }
@@ -124,7 +125,7 @@ public class GqlBackgroundJob {
     @GraphQLField
     @GraphQLName("jobBooleanProperty")
     @GraphQLDescription("The job (Boolean) property that correspond to the given name. The returned value will be null in case the job doesn't have the property")
-    public Boolean getJobBooleanProperty(@GraphQLName("name") String name) {
+    public Boolean getJobBooleanProperty(@GraphQLName("name") @GraphQLDescription("The job name") String name) {
         if (jobDetail.getJobDataMap().containsKey(name)) {
             return jobDetail.getJobDataMap().getBoolean(name);
         }
