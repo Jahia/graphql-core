@@ -26,6 +26,7 @@ import javax.inject.Inject;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@GraphQLDescription("Scheduler object which allows to access to background jobs")
 public class GqlScheduler {
 
     @Inject
