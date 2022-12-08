@@ -23,6 +23,7 @@ import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.LocaleUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
@@ -345,11 +346,26 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             JCRPropertyWrapper reference = (JCRPropertyWrapper) references.nextProperty();
             JCRNodeWrapper referencingNode = reference.getParent();
             if (PermissionHelper.hasPermission(referencingNode, environment)) {
+                String name = reference.getName();
+                String locale = reference.getLocale();
                 if (referencingNode.isNodeType("jnt:translation")) {
                     referencingNode = referencingNode.getParent();
+                } else if (referencingNode.isNodeType("jnt:referenceInField")) {
+                    String s = referencingNode.getProperty("j:fieldName").getValue().getString();
+                    referencingNode = referencingNode.getParent();
+                    NodeIterator it = referencingNode.getI18Ns();
+                    while (it.hasNext()) {
+                        Node langNode = it.nextNode();
+                        String lang = langNode.getProperty("jcr:language").getString();
+                        if (s.endsWith("_" + lang)) {
+                            locale = lang;
+                            name =  StringUtils.substringBeforeLast(s, "_" + lang);
+                            break;
+                        }
+                    }
                 }
                 GqlJcrNode gqlReferencingNode = SpecializedTypesHandler.getNode(referencingNode);
-                GqlJcrProperty gqlReference = gqlReferencingNode.getProperty(reference.getName(), reference.getLocale(), false);
+                GqlJcrProperty gqlReference = gqlReferencingNode.getProperty(name, locale, false);
                 gqlReferences.add(gqlReference);
             }
         }
