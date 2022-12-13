@@ -102,7 +102,7 @@ public class ZipUtils {
         String canonicalPath = new File(filename).getCanonicalPath();
         String canonicalID = new File(".").getCanonicalPath();
 
-        if (canonicalPath.startsWith(canonicalID)) {
+        if (canonicalPath.startsWith(canonicalID) && canonicalPath.length() > canonicalID.length()) {
             return canonicalPath.substring(canonicalID.length() + 1);
         } else {
             throw new IllegalStateException("File is outside extraction target directory.");
