@@ -17,19 +17,22 @@ package org.jahia.modules.graphql.provider.dxm.util;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.jackrabbit.spi.commons.conversion.MalformedPathException;
 import org.apache.jackrabbit.value.BinaryImpl;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.services.content.JCRNodeIteratorWrapper;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.*;
+import org.jahia.services.content.decorator.JCRFileContent;
 import org.jahia.settings.SettingsBean;
+import org.jahia.utils.zip.ZipEntryCharsetDetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import java.io.*;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.Enumeration;
 import java.util.List;
@@ -119,25 +122,42 @@ public class ZipUtils {
         long maxSize = SettingsBean.getInstance().getLong("zipFile.maxSize", MAX_SIZE);
         int maxEntries = SettingsBean.getInstance().getInt("zipFile.maxEntriesCount", MAX_ENTRIES);
 
+        JCRFileContent fileContent = zipFile.getFileContent();
+        Charset charset = ZipEntryCharsetDetector.detect(fileContent);
+
         File zipTmpFile = null;
         ZipFile zip = null;
-        try (InputStream is = zipFile.getFileContent().downloadFile()) {
+        try (InputStream is = fileContent.downloadFile()) {
             zipTmpFile = File.createTempFile("zipfile", ".zip");
             FileUtils.copyInputStreamToFile(is, zipTmpFile);
-            zip = new ZipFile(zipTmpFile);
+            zip = new ZipFile(zipTmpFile, charset);
             int entries = 0;
             long total = 0;
 
             Enumeration<? extends ZipEntry> enumeration = zip.entries();
             while (enumeration.hasMoreElements()) {
-                ZipEntry entry =  enumeration.nextElement();
+                ZipEntry zipEntry =  enumeration.nextElement();
                 try {
-                    String name = validateFilename(entry.getName());
+                    JCRSessionWrapper currentUserSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
 
-                    if (entry.isDirectory()) {
-                        //if the entry is a directory, create it to build the whole tree
-                        if (!JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE).nodeExists(dest.getPath() + "/" + entry.getName())) {
-                            dest.addNode(name, Constants.JAHIANT_FOLDER);
+                    String filename = zipEntry.getName().replace('\\', '/');
+                    filename = validateFilename(filename);
+                    if (filename.endsWith("/")) {
+                        filename = filename.substring(0, filename.length() - 1);
+                    }
+                    int endIndex = filename.lastIndexOf('/');
+                    String parentName = dest.getPath();
+                    if (endIndex > -1) {
+                        parentName += "/" + filename.substring(0, endIndex);
+                        filename = filename.substring(endIndex + 1);
+                    }
+
+                    JCRNodeWrapper target = ensureDir(parentName, currentUserSession);
+
+                    if (zipEntry.isDirectory()) {
+                        String folderName = JCRContentUtils.escapeLocalNodeName(filename);
+                        if (!target.hasNode(folderName)) {
+                            target.addNode(folderName, Constants.JAHIANT_FOLDER);
                         }
                     } else {
                         byte data[] = new byte[BUFFER];
@@ -146,7 +166,7 @@ public class ZipUtils {
                         // and that the file is not insanely big
                         File unzippedTmpFile = File.createTempFile("unzipped", "");
                         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(unzippedTmpFile), BUFFER);
-                        InputStream zis = zip.getInputStream(entry);
+                        InputStream zis = zip.getInputStream(zipEntry);
                         while (total + BUFFER <= maxSize && (count = zis.read(data, 0, BUFFER)) != -1) {
                             bos.write(data, 0, count);
                             total += count;
@@ -161,16 +181,7 @@ public class ZipUtils {
                         }
 
                         try (InputStream inputStream = Files.newInputStream(unzippedTmpFile.toPath())) {
-                            if (name.lastIndexOf("/") > 0) {
-                                String parentName = name.substring(0, name.lastIndexOf("/"));
-                                //if the entry has a parent directory and this one is not listed in zip entries we re-create it here to avoid a PathNotFound exception
-                                if (!JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE).nodeExists(dest.getPath() + "/" + parentName)) {
-                                    dest.addNode(parentName, Constants.JAHIANT_FOLDER);
-                                }
-                                dest.getNode(parentName).uploadFile(name, inputStream, getMimeType(entry.getName(), zipTmpFile));
-                            } else {
-                                dest.uploadFile(name, inputStream, getMimeType(entry.getName(), zipTmpFile));
-                            }
+                            target.uploadFile(filename, inputStream, getMimeType(zipEntry.getName(), zipTmpFile));
                         } finally {
                             Files.delete(unzippedTmpFile.toPath());
                         }
@@ -231,4 +242,25 @@ public class ZipUtils {
         }
         return mimeType;
     }
+
+    private static JCRNodeWrapper ensureDir(String path, JCRSessionWrapper currentUserSession) throws RepositoryException {
+        try {
+            return currentUserSession.getNode(JCRContentUtils.escapeNodePath(path));
+        } catch (RepositoryException e) {
+            if (e instanceof PathNotFoundException || e.getCause() != null && e.getCause() instanceof MalformedPathException) {
+                int endIndex = path.lastIndexOf('/');
+                if (endIndex == -1) {
+                    return null;
+                }
+                JCRNodeWrapper parentDir = ensureDir(path.substring(0, endIndex), currentUserSession);
+                if (parentDir == null) {
+                    return null;
+                }
+                return parentDir.createCollection(JCRContentUtils.escapeLocalNodeName(path.substring(path.lastIndexOf('/') + 1)));
+            } else {
+                throw e;
+            }
+        }
+    }
+
 }
