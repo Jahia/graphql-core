@@ -141,7 +141,7 @@ public class ZipUtils {
                     JCRSessionWrapper currentUserSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
 
                     String filename = zipEntry.getName().replace('\\', '/');
-                    filename = validateFilename(filename);
+                    validateFilename(filename);
                     if (filename.endsWith("/")) {
                         filename = filename.substring(0, filename.length() - 1);
                     }
