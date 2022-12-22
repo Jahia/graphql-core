@@ -25,7 +25,9 @@ import graphql.annotations.processor.searchAlgorithms.SearchAlgorithm;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.kickstart.servlet.osgi.*;
 import graphql.schema.*;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jahia.bin.filters.jcr.JcrSessionFilter;
+import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
@@ -46,6 +48,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.stream.Collectors;
 
 @Component(service = GraphQLProvider.class, immediate = true)
 public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider, GraphQLSubscriptionProvider {
@@ -151,11 +154,15 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     @Reference(cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY)
     public void addExtensionProvider(DXGraphQLExtensionsProvider provider) {
+        logger.debug("Adding extension : {}",provider.toString());
         this.extensionsProviders.add(provider);
+        registerSchema();
     }
 
     public void removeExtensionProvider(DXGraphQLExtensionsProvider provider) {
+        logger.debug("Removing extension : {}",provider.toString());
         this.extensionsProviders.remove(provider);
+        registerSchema();
     }
 
     @Reference
@@ -165,6 +172,9 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     @Activate
     public void activate() {
+        if(logger.isDebugEnabled()) {
+            logger.debug("Activating GraphQL API schema with extensions {}", extensionsProviders.stream().map(dxGraphQLExtensionsProvider -> dxGraphQLExtensionsProvider.getClass().getSimpleName()).collect(Collectors.joining(",")));
+        }
         instance = this;
 
         // Initialize thread pool
@@ -215,6 +225,21 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         extensionsProviders.add(this);
 
+        registerSchema(extensionsHandler);
+    }
+
+    private void registerSchema() {
+        if (instance != null && graphQLAnnotations != null && graphQLTypeRetriever != null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Registering GraphQL API schema with extensions {}", extensionsProviders.stream().map(dxGraphQLExtensionsProvider -> dxGraphQLExtensionsProvider.getClass().getSimpleName()).collect(Collectors.joining(",")));
+            }
+            GraphQLExtensionsHandler extensionsHandler = graphQLAnnotations.getExtensionsHandler();
+            extensionsHandler.setFieldRetriever(graphQLTypeRetriever.getGraphQLFieldRetriever());
+            registerSchema(extensionsHandler);
+        }
+    }
+
+    private void registerSchema(GraphQLExtensionsHandler extensionsHandler) {
         sdlSchemaService.clearExtensions();
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             try {
