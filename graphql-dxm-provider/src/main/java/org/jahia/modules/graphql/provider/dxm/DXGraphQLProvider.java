@@ -25,9 +25,7 @@ import graphql.annotations.processor.searchAlgorithms.SearchAlgorithm;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.kickstart.servlet.osgi.*;
 import graphql.schema.*;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jahia.bin.filters.jcr.JcrSessionFilter;
-import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
@@ -154,13 +152,13 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     @Reference(cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY)
     public void addExtensionProvider(DXGraphQLExtensionsProvider provider) {
-        logger.debug("Adding extension : {}",provider.toString());
+        logger.debug("Adding extension : {}", provider.toString());
         this.extensionsProviders.add(provider);
         registerSchema();
     }
 
     public void removeExtensionProvider(DXGraphQLExtensionsProvider provider) {
-        logger.debug("Removing extension : {}",provider.toString());
+        logger.debug("Removing extension : {}", provider.toString());
         this.extensionsProviders.remove(provider);
         registerSchema();
     }
@@ -172,7 +170,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
     @Activate
     public void activate() {
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug("Activating GraphQL API schema with extensions {}", extensionsProviders.stream().map(dxGraphQLExtensionsProvider -> dxGraphQLExtensionsProvider.getClass().getSimpleName()).collect(Collectors.joining(",")));
         }
         instance = this;
@@ -210,9 +208,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         ((UnboxingTypeFunction) unboxingTypeFunction).setDefaultTypeFunction(defaultTypeFunction);
 
-        GraphQLExtensionsHandler extensionsHandler = graphQLAnnotations.getExtensionsHandler();
-        extensionsHandler.setFieldRetriever(graphQLFieldWithPermissionsRetriever);
-
         relay = new DXRelay();
         sdlSchemaService.setRelay(relay);
         container.setRelay(relay);
@@ -225,7 +220,7 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
 
         extensionsProviders.add(this);
 
-        registerSchema(extensionsHandler);
+        registerSchema();
     }
 
     private void registerSchema() {
