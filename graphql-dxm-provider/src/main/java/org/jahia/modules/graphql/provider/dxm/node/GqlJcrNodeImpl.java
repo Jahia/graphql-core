@@ -366,7 +366,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                 }
                 GqlJcrNode gqlReferencingNode = SpecializedTypesHandler.getNode(referencingNode);
                 GqlJcrProperty gqlReference = gqlReferencingNode.getProperty(name, locale, false);
-                gqlReferences.add(gqlReference);
+                if (gqlReference != null) {
+                    gqlReferences.add(gqlReference);
+                }
             }
         }
     }

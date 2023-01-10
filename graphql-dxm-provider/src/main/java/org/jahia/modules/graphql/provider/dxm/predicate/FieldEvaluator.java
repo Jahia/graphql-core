@@ -185,6 +185,9 @@ public class FieldEvaluator {
      * @return The value, as returned by the DataFetcher
      */
     public Object getFieldValue(Object source, String fieldName) {
+        if (source == null) {
+            return null;
+        }
         List<String> fields = Splitter.on(FIELD_NAME_SEPARATOR).splitToList(fieldName);
         String nextField = null;
         if (fields.size() > 1) {
