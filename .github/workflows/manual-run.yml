@@ -8,7 +8,7 @@ on:
       jahia_url:
         description: 'Jahia URL'
         required: true
-        default: 'jahia/jahia-discovery-dev:8-SNAPSHOT'
+        default: 'https://CHANGEME.internal.cloud.jahia.com/'
       jahia_password:
         description: 'Jahia Root password'
         required: true
