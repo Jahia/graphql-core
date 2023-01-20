@@ -18,7 +18,7 @@ export default defineConfig({
         setupNodeEvents(on, config) {
             return require('./cypress/plugins/index.js')(on, config)
         },
-        excludeSpecPattern: ['*.ignore.ts', '**/users.cy.ts'],
+        excludeSpecPattern: ['*.ignore.ts', 'admin/users.cy.ts'],
         baseUrl: 'http://localhost:8080',
         experimentalSessionAndOrigin: false,
     },
