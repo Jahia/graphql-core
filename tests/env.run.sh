@@ -11,6 +11,7 @@ echo " == Using MANIFEST: ${MANIFEST}"
 echo " == Using JAHIA_URL= ${JAHIA_URL}"
 echo " == Using Node version: $(node -v)"
 echo " == Using yarn version: $(yarn -v)"
+echo " == Using TESTS_PROFILE: ${TESTS_PROFILE}"
 
 echo " == Waiting for Jahia to startup"
 while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' ${JAHIA_URL}/cms/login)" != "200" ]];
@@ -81,8 +82,14 @@ if [[ $INSTALLED_MODULE_VERSION == "UNKNOWN" ]]; then
   exit 1
 fi
 
+if [[ "${TESTS_PROFILE}" != "" ]]; then
+  CYPRESS_CONFIG=${TESTS_PROFILE}
+else
+  CYPRESS_CONFIG="cypress.config.ts"
+fi
+
 echo "$(date +'%d %B %Y - %k:%M') == Run tests =="
-yarn e2e:ci
+yarn e2e:ci --config-file ${CYPRESS_CONFIG}
 if [[ $? -eq 0 ]]; then
   echo "$(date +'%d %B %Y - %k:%M') == Full execution successful =="
   echo "success" > ./results/test_success
