@@ -1,18 +1,22 @@
 # This workflows can be triggered manually via the GitHub actions UI
 # It is used to trigger an integration tests run using snapshot artifacts
-name: Manual Tests Run
+name: Manual Tests Run in Jahia Cloud
 
 on:
   workflow_dispatch:
     inputs:
-      jahia_image:
-        description: 'Jahia Image'
+      jahia_url:
+        description: 'Jahia URL'
         required: true
-        default: 'jahia/jahia-discovery-dev:8-SNAPSHOT'
+        default: 'https://CHANGEME.internal.cloud.jahia.com'
+      jahia_password:
+        description: 'Jahia Root password'
+        required: true
+        default: 'changeme'        
       manifest:
         description: 'Provisioning manifest. Can be a local repository file in the tests folder or a publicly accessible link'
         required: true
-        default: 'provisioning-manifest-snapshot.yml'
+        default: 'provisioning-manifest-snapshot.cloud.yml'
 
 jobs:
   integration-tests:
@@ -30,6 +34,8 @@ jobs:
       - uses: jahia/jahia-modules-action/integration-tests@v2
         with:
           module_id: graphql-dxm-provider
+          ci_startup_script: ci.cloud.startup.sh
+          ci_postrun_script:
           testrail_project: GraphQL Core module
           tests_manifest: ${{ github.event.inputs.manifest }}
           jahia_image: ${{ github.event.inputs.jahia_image }}
@@ -50,6 +56,10 @@ jobs:
           incident_google_client_email: ${{ secrets.INCIDENT_GOOGLE_CLIENT_EMAIL }}
           incident_google_api_key_base64: ${{ secrets.INCIDENT_GOOGLE_PRIVATE_KEY_BASE64 }}
           zencrepes_secret: ${{ secrets.ZENCREPES_WEBHOOK_SECRET }}
+        env:
+          JAHIA_URL: ${{ github.event.inputs.jahia_url }}
+          SUPER_USER_PASSWORD: ${{ github.event.inputs.jahia_password }}
+          TESTS_PROFILE: cypress.cloud.config.ts
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
