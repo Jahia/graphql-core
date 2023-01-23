@@ -13,8 +13,7 @@ export default defineConfig({
     viewportWidth: 1366,
     viewportHeight: 768,
     e2e: {
-        // We've imported your old cypress plugins here.
-        // You may want to clean this up later by importing these.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         setupNodeEvents(on, config) {
             return require('./cypress/plugins/index.js')(on, config)
         },
