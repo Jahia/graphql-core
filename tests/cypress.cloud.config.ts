@@ -13,8 +13,8 @@ export default defineConfig({
     viewportWidth: 1366,
     viewportHeight: 768,
     e2e: {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
         setupNodeEvents(on, config) {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
             return require('./cypress/plugins/index.js')(on, config)
         },
         excludeSpecPattern: ['*.ignore.ts', 'admin/users.cy.ts'],
