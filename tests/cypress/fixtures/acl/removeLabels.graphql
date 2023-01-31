@@ -1,0 +1,9 @@
+mutation removeLabels($pathOrId: String!, $lang: String) {
+    jcr(workspace:EDIT) {
+        mutateNode(pathOrId: $pathOrId) {
+            mutateProperties(names:["jcr:title", "jcr:description"]) {
+                delete(language: $lang)
+            }
+        }
+    }
+}

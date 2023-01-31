@@ -1,0 +1,12 @@
+mutation setLabels($pathOrId:String!, $lang:String, $title: String, $description: String) {
+    jcr(workspace:EDIT) {
+        mutateNode(pathOrId: $pathOrId) {
+            setPropertiesBatch(properties:[
+                {language: $lang, name:"jcr:title", value: $title},
+                {language: $lang, name:"jcr:description", value: $description},
+            ]) {
+                path
+            }
+        }
+    }
+}
