@@ -59,7 +59,8 @@ public class JahiaAclRole {
     }
 
     public String getLabel(String locale) {
-        return i18nProperties.get(locale).getLabel();
+        JahiaAclRoleProperties i18nProps = i18nProperties.get(locale);
+        return (i18nProps != null) ? i18nProps.getLabel() : null;
     }
 
     public String getRoleGroup() throws RepositoryException {
@@ -69,16 +70,17 @@ public class JahiaAclRole {
 
 
     public String getDescription(String locale) {
-        return i18nProperties.get(locale).getDescription();
+        JahiaAclRoleProperties i18nProps = i18nProperties.get(locale);
+        return (i18nProps != null) ? i18nProps.getDescription() : null;
     }
 
     public List<JahiaAclRole> getDependencies() throws RepositoryException {
         List<JahiaAclRole> result = new ArrayList<>();
         if (roleNode.hasProperty(JCR_ROLE_DEPENDENCIES_TYPE)) {
             JCRValueWrapper[] dependencies = roleNode.getProperty(JCR_ROLE_DEPENDENCIES_TYPE).getValues();
-            result = Streams.stream(Arrays.stream(dependencies))
-                    .map(d -> new JahiaAclRole(d.getNode()))
-                    .collect(Collectors.toList());
+            for (JCRValueWrapper d: dependencies) {
+                result.add(new JahiaAclRole(d.getNode()));
+            }
         }
         return result;
     }
@@ -86,7 +88,5 @@ public class JahiaAclRole {
     private JCRSessionWrapper getSession(Locale locale) throws RepositoryException {
         return JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE, locale);
     }
-
-
 
 }
