@@ -1,0 +1,10 @@
+query($lang:String){
+    admin {
+        roles {
+            name
+            label(locale:$lang)
+            description(locale:$lang)
+            roleGroup
+        }
+    }
+}

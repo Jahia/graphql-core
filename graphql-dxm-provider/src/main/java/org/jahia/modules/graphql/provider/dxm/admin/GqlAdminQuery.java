@@ -19,12 +19,19 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.apache.commons.lang3.stream.Streams;
 import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.bin.Jahia;
+import org.jahia.modules.graphql.provider.dxm.acl.GqlAclRole;
+import org.jahia.modules.graphql.provider.dxm.acl.service.JahiaAclService;
+import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 
+import javax.inject.Inject;
+import javax.jcr.RepositoryException;
 import java.util.Calendar;
-
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * GraphQL root object for Admin related queries.
@@ -32,6 +39,11 @@ import java.util.Calendar;
 @GraphQLName("AdminQuery")
 @GraphQLDescription("Admin queries root")
 public class GqlAdminQuery {
+
+    @Inject
+    @GraphQLOsgiService
+    private JahiaAclService aclService;
+
 
     /**
      * Get Jahia admin query
@@ -64,5 +76,13 @@ public class GqlAdminQuery {
     @GraphQLDescription("Current datetime")
     public String getDatetime() {
         return ISO8601.format(Calendar.getInstance());
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Get available ACL roles")
+    public List<GqlAclRole> getRoles() throws RepositoryException {
+        return Streams.stream(aclService.getRoles())
+                .map(GqlAclRole::new)
+                .collect(Collectors.toList());
     }
 }
