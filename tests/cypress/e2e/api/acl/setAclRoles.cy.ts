@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { grantUserRole, revokeUserRole } from '../../../fixtures/acl'
+import { validateError } from '../jcr/validateErrors'
 
 describe('Test grant/revoke role mutation on node endpoint', () => {
     const parentPath = '/sites/digitall/files/images'
@@ -99,6 +100,17 @@ describe('Test grant/revoke role mutation on node endpoint', () => {
             const acls = resp?.data?.jcr?.nodeByPath?.descendants?.nodes || []
             const userAcl = acls.find((a) => a.principal.value === `u:${user}`)
             expect(userAcl, `No grant role added for user ${user}`).to.be.undefined
+        })
+    })
+
+    it('throws exception when setting role with invalid user', () => {
+        cy.apollo({
+            mutationFile: 'acl/grantRoles.graphql',
+            variables: { pathOrId, roles: ['editor'], pType: 'USER', pName: 'invalidUser' },
+            errorPolicy: 'all',
+        }).should((resp) => {
+            validateError(resp, 'Internal Server Error(s) while executing query')
+            expect(resp?.data?.jcr?.mutateNode?.grantRoles, 'Grant role operation should fail').to.be.null
         })
     })
 
