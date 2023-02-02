@@ -34,7 +34,9 @@ import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component(service = JahiaAclService.class, immediate = true)
 public class JahiaAclServiceImpl implements JahiaAclService {
@@ -42,6 +44,8 @@ public class JahiaAclServiceImpl implements JahiaAclService {
     public static final String JCR_ROLE_TYPE = "jnt:role";
     public static final String JCR_ROLEGROUP_TYPE = "j:roleGroup";
     public static final String JCR_ROLE_DEPENDENCIES_TYPE = "j:dependencies";
+
+    public static final String REMOVE = "REMOVE";
 
 
     public List<JahiaAclRole> getRoles() throws RepositoryException {
@@ -54,6 +58,48 @@ public class JahiaAclServiceImpl implements JahiaAclService {
             }
         }
         return roles;
+    }
+
+    public boolean grantRoles(JCRNodeWrapper jcrNode, String principalKey, List<String> roleNames) throws RepositoryException {
+        Map<String, String> roles = new HashMap<>(roleNames.size());
+        boolean breakInheritance = jcrNode.getAclInheritanceBreak();
+        for (String r: roleNames) {
+            roles.put(r, (breakInheritance || !hasInheritedPermission(jcrNode, principalKey, r)) ? Constants.GRANT : REMOVE);
+        }
+        return jcrNode.changeRoles(principalKey, roles);
+    }
+
+    public boolean revokeRoles(JCRNodeWrapper jcrNode, String principalKey, List<String> roleNames) throws RepositoryException {
+        Map<String, String> roles = new HashMap<>(roleNames.size());
+        boolean breakInheritance = jcrNode.getAclInheritanceBreak();
+        for (String r: roleNames) {
+            roles.put(r, (breakInheritance || hasInheritedPermission(jcrNode, principalKey, r)) ? Constants.DENY : REMOVE);
+        }
+        return jcrNode.changeRoles(principalKey, roles);
+    }
+
+    public boolean hasInheritedPermission(JCRNodeWrapper jcrNode, String principalKey, String roleName) {
+        Map<String, List<String[]>> acl = jcrNode.getAclEntries();
+        if (acl == null) {
+            return false;
+        }
+
+        List<String[]> permissions = acl.get(principalKey);
+        if (permissions == null || permissions.isEmpty()) {
+            return false;
+        }
+
+        for (String[] p: permissions) {
+            String fromAclPath = p[0];
+            String type = p[1];
+            String pRole = p[2];
+            if (!jcrNode.getPath().equals(fromAclPath)
+                    && roleName.equals(pRole)
+                    && Constants.GRANT.equals(type)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private NodeIterator execQuery(String query) throws RepositoryException {
