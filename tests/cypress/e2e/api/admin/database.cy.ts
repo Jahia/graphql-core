@@ -3,7 +3,7 @@
 describe('Test admin jahia database endpoint', () => {
     it('Gets database details', () => {
         cy.apollo({
-            queryFile: 'admin/database.graphql'
+            queryFile: 'admin/database.graphql',
         }).should((response: any) => {
             expect(response.data.admin.jahia.database.type).to.equal('derby')
 
