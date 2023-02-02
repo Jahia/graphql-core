@@ -1,0 +1,7 @@
+mutation grantRoles($pathOrId:String!, $roles:[String!]!, $pType:PrincipalType!,$pName:String!) {
+    jcr {
+        mutateNode(pathOrId: $pathOrId) {
+            grantRoles(roleNames: $roles, principalType: $pType, principalName: $pName)
+        }
+    }
+}

@@ -1,0 +1,20 @@
+
+query getAce($pathOrId:String!) {
+    jcr {
+        nodeByPath(path: $pathOrId) {
+            descendants(typesFilter:{types:["jnt:ace"]}) {
+                nodes {
+                    principal: property(name:"j:principal") {
+                        value
+                    }
+                    aceType: property(name:"j:aceType") {
+                        value
+                    }
+                    roles: property(name:"j:roles") {
+                        values
+                    }
+                }
+            }
+        }
+    }
+}

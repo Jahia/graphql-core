@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-describe('Test admin roles endpoint', () => {
+describe('Test admin roles query endpoint', () => {
     it('gets ACL roles', () => {
         cy.apollo({
             queryFile: 'acl/getRoles.graphql',
