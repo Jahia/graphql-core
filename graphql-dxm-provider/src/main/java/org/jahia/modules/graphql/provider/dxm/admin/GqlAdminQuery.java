@@ -26,6 +26,7 @@ import org.jahia.modules.graphql.provider.dxm.acl.GqlAclRole;
 import org.jahia.modules.graphql.provider.dxm.acl.service.JahiaAclService;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
+import org.jahia.settings.SettingsBean;
 
 import javax.inject.Inject;
 import javax.jcr.RepositoryException;
@@ -84,5 +85,19 @@ public class GqlAdminQuery {
         return Streams.stream(aclService.getRoles())
                 .map(GqlAclRole::new)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Get getCluster
+     *
+     * @return GqlCluster
+     */
+    @GraphQLField
+    @GraphQLDescription("Details about the Jahia cluster")
+    public GqlCluster getCluster() {
+
+        GqlCluster gqlCluster = new GqlCluster();
+        gqlCluster.setIsActivated(SettingsBean.getInstance().isClusterActivated());
+        return gqlCluster;
     }
 }

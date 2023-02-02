@@ -1,0 +1,24 @@
+query ($systemKey: String!) {
+  admin {
+    jahia {
+      system {
+        property(key: $systemKey) {
+        	key
+          value
+        }
+        os {
+          name
+          architecture
+          version
+        }
+        java {
+          runtimeName
+          runtimeVersion
+          vendor
+          vendorVersion
+        }
+      }
+    }
+  }
+}
+

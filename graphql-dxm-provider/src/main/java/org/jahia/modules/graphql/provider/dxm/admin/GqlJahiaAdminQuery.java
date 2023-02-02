@@ -119,6 +119,17 @@ public class GqlJahiaAdminQuery {
     }
 
     /**
+     * Get getJahiaSystem
+     *
+     * @return GqlJahiaSystem
+     */
+    @GraphQLField
+    @GraphQLDescription("Details about the system hosting Jahia")
+    public GqlJahiaSystem getSystem() {
+        return new GqlJahiaSystem();
+    }
+
+    /**
      * We must have at least one field for the schema to be valid
      *
      * @return true
