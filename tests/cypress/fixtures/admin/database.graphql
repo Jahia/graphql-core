@@ -1,0 +1,14 @@
+query {
+  admin {
+    jahia {
+      database {
+        type
+        name
+        version
+        driverName
+        driverVersion
+        url
+      }
+    }
+  }
+}
