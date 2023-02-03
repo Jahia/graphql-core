@@ -22,6 +22,8 @@ package org.jahia.modules.graphql.provider.dxm.acl.service;/*
  * ==========================================================================================
  */
 
+import org.jahia.services.content.JCRNodeWrapper;
+
 import javax.jcr.RepositoryException;
 import java.util.List;
 
@@ -31,4 +33,33 @@ import java.util.List;
 public interface JahiaAclService {
 
     public List<JahiaAclRole> getRoles() throws RepositoryException;
+
+    /**
+     * Add GRANT permission on roleNames for a given node and principalKey
+     * Removes DENY permission or do nothing if node already has inherited role or has ACL inheritance break
+     *
+     * @param node to grant roleNames permissions
+     * @param principalKey one of <code>u:[username]</code> for users, or <code>g:[groupname]</code> for groups
+     * @param roleNames role names to add
+     * @return true if successful
+     * @throws RepositoryException
+     */
+    public boolean grantRoles(JCRNodeWrapper node, String principalKey, List<String> roleNames) throws RepositoryException;
+
+    /**
+     * Remove GRANT permission on roleNames for a given node and principalKey
+     * Add DENY permission if node has inherited role or has ACL inheritance break
+     *
+     * @param node to grant roleNames permissions
+     * @param principalKey one of <code>u:[username]</code> for users, or <code>g:[groupname]</code> for groups
+     * @param roleNames role names to revoke
+     * @return true if successful
+     * @throws RepositoryException
+     */
+    public boolean revokeRoles(JCRNodeWrapper node, String principalKey, List<String> roleNames) throws RepositoryException;
+
+    /**
+     * @return true if principalKey has GRANT permission on a roleName for a given node; false otherwise.
+     */
+    public boolean hasInheritedPermission(JCRNodeWrapper node, String principalKey, String roleName);
 }

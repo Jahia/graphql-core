@@ -19,14 +19,19 @@ import com.google.common.collect.Lists;
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.acl.service.JahiaAclService;
 import org.jahia.modules.graphql.provider.dxm.image.GqlJcrImageTransformMutation;
+import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.predicate.PredicateHelper;
+import org.jahia.modules.graphql.provider.dxm.user.PrincipalType;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 
+import javax.inject.Inject;
 import javax.jcr.RepositoryException;
 import java.util.*;
 import java.util.function.Supplier;
@@ -38,6 +43,10 @@ import java.util.stream.Collectors;
 @GraphQLName("JCRNodeMutation")
 @GraphQLDescription("Mutations on a JCR node")
 public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
+
+    @Inject
+    @GraphQLOsgiService
+    private JahiaAclService aclService;
 
     /**
      * The target position of reordered child nodes.
@@ -489,6 +498,28 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         }
 
         return true;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Grant role permissions to specified principal user/group for the given node")
+    public boolean grantRoles(
+            @GraphQLName("roleNames") @GraphQLDescription("Roles to grant user/group for this node") @GraphQLNonNull List<String> roleNames,
+            @GraphQLName("principalType") @GraphQLDescription("Type of principal (user/group) specified") @GraphQLNonNull PrincipalType principalType,
+            @GraphQLName("principalName") @GraphQLDescription("Name of principal (user/group)") @GraphQLNonNull String principalName
+    ) throws RepositoryException {
+        String principalKey = principalType.getPrincipalKey(principalName);
+        return aclService.grantRoles(jcrNode, principalKey, roleNames);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Remove/deny roles to specified principal user/group for the given node")
+    public boolean revokeRoles(
+            @GraphQLName("roleNames") @GraphQLDescription("Roles to grant user/group for this node") @GraphQLNonNull List<String> roleNames,
+            @GraphQLName("principalType") @GraphQLDescription("Type of principal (user/group) specified") @GraphQLNonNull PrincipalType principalType,
+            @GraphQLName("principalName") @GraphQLDescription("Name of principal (user/group)") @GraphQLNonNull String principalName
+    ) throws RepositoryException {
+        String principalKey = principalType.getPrincipalKey(principalName);
+        return aclService.revokeRoles(jcrNode, principalKey, roleNames);
     }
 
     private void validateChildNamesToReorder(List<String> names, ReorderedChildrenPosition position) {
