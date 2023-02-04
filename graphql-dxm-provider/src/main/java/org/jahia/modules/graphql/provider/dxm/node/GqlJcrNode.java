@@ -18,6 +18,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.modules.graphql.provider.dxm.acl.GqlAcl;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldGroupingInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
@@ -289,6 +290,10 @@ public interface GqlJcrNode {
     @GraphQLDescription("Get information on the operations that can be done on this node")
     GqlOperationsSupport getOperationsSupport();
 
+    @GraphQLField
+    @GraphQLDescription("Get ACL info for this node")
+    public GqlAcl getAcl();
+
     /**
      * Nodes filter based on their types.
      */
@@ -474,5 +479,6 @@ public interface GqlJcrNode {
         public String getPropertyValue() {
             return propertyValue;
         }
+
     }
 }

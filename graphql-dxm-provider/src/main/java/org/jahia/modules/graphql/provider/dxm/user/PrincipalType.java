@@ -48,4 +48,21 @@ public enum PrincipalType {
     public String getPrincipalKey(String principalName) {
         return String.join(":", getValue(), principalName);
     }
+
+    public static boolean isUser(String principalKey) {
+        return principalKey != null && principalKey.startsWith(USER.getValue() + ":");
+    }
+
+    public static boolean isGroup(String principalKey) {
+        return principalKey != null && principalKey.startsWith(GROUP.getValue() + ":");
+    }
+
+    public static PrincipalType getByValue(String type) {
+        if (USER.getValue().equals(type)) {
+            return USER;
+        } else if (GROUP.getValue().equals(type)) {
+            return GROUP;
+        }
+        return null;
+    }
 }

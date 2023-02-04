@@ -32,7 +32,16 @@ import java.util.List;
  */
 public interface JahiaAclService {
 
+    /**
+     * Get all roles that are not hidden or privileged
+     */
     public List<JahiaAclRole> getRoles() throws RepositoryException;
+
+    /**
+     * Fetch role for a given role name; return null if it is hidden or privileged
+     */
+    public JahiaAclRole getRole(String roleName) throws RepositoryException;
+
 
     /**
      * Add GRANT permission on roleNames for a given node and principalKey
@@ -62,4 +71,8 @@ public interface JahiaAclService {
      * @return true if principalKey has GRANT permission on a roleName for a given node; false otherwise.
      */
     public boolean hasInheritedPermission(JCRNodeWrapper node, String principalKey, String roleName);
+
+    public List<JahiaAclEntry> getAclEntries(JCRNodeWrapper jcrNode);
+
+    public List<JahiaAclEntry> getAclEntries(JCRNodeWrapper jcrNode, String principalKey);
 }

@@ -80,7 +80,7 @@ public class GqlAdminQuery {
     }
 
     @GraphQLField
-    @GraphQLDescription("Get available ACL roles")
+    @GraphQLDescription("Get available ACL roles; does not include any hidden or privileged roles")
     public List<GqlAclRole> getRoles() throws RepositoryException {
         return Streams.stream(aclService.getRoles())
                 .map(GqlAclRole::new)
