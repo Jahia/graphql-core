@@ -28,9 +28,9 @@ function revokeRoles(apiParams) {
         })
 }
 
-export function getAclEntries(path, principalFilter=null, inclInherited=true) {
+export function getAclEntries(path, principalFilter = null, inclInherited = true) {
     return cy.apollo({
         queryFile: 'acl/getAclEntries.graphql',
-        variables: {path, principalFilter, inclInherited}
+        variables: { path, principalFilter, inclInherited },
     })
 }
