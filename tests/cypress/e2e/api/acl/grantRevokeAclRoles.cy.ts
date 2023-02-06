@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { grantUserRole, revokeUserRole } from '../../../fixtures/acl'
+import {getAclEntries, grantUserRole, revokeUserRole} from '../../../fixtures/acl'
 import { validateError } from '../jcr/validateErrors'
 
 describe('Test grant/revoke role mutation on node endpoint', () => {
@@ -14,15 +14,12 @@ describe('Test grant/revoke role mutation on node endpoint', () => {
         grantUserRole(pathOrId, role, user)
 
         cy.log(`Verify role '${role}' has been added to node ${pathOrId}`)
-        cy.apollo({
-            queryFile: 'acl/getAceNode.graphql',
-            variables: { pathOrId },
-        }).should((resp) => {
-            const acls = resp?.data?.jcr?.nodeByPath?.descendants?.nodes || []
-            const userAcl = acls.find((a) => a.principal.value === `u:${user}`)
-            expect(userAcl, `Found ACE for user ${user}`).to.be.not.undefined
-            expect(userAcl.roles.values).to.contain(role, 'ACE has ${role} role')
-            expect(userAcl.aceType.value).equals('GRANT', 'ACE has GRANT permission ${role} role')
+        getAclEntries(pathOrId, {type:'USER', name: user}, false).should(resp => {
+            const aclEntries = resp?.data?.jcr?.nodeByPath?.acl.aclEntries
+            const aclEntry = aclEntries.find(ace => ace.aclEntryType === 'GRANT' && ace.role.name === role)
+            expect(aclEntry, `ACE has GRANT permission ${role} role`).to.be.not.undefined
+            expect(aclEntry.inherited).to.be.false
+            expect(aclEntry.inheritedFrom.path).equals(pathOrId)
         })
     })
 
@@ -34,13 +31,10 @@ describe('Test grant/revoke role mutation on node endpoint', () => {
         revokeUserRole(pathOrId, role, user)
 
         cy.log(`Verify role '${role}' has been removed from node ${pathOrId}`)
-        cy.apollo({
-            queryFile: 'acl/getAceNode.graphql',
-            variables: { pathOrId },
-        }).should((resp) => {
-            const acls = resp?.data?.jcr?.nodeByPath?.descendants?.nodes || []
-            const userAcl = acls.find((a) => a.principal.value === `u:${user}`)
-            expect(userAcl, `ACE for user ${user} has been removed on node ${pathOrId}`).to.be.undefined
+        getAclEntries(pathOrId, {type:'USER', name: user}, false).should(resp => {
+            const aclEntries = resp?.data?.jcr?.nodeByPath?.acl.aclEntries
+            const aclEntry = aclEntries.find(ace => ace.role.name === role)
+            expect(aclEntry, `editor role for user ${user} has been removed on node ${pathOrId}`).to.be.undefined
         })
     })
 
@@ -55,15 +49,12 @@ describe('Test grant/revoke role mutation on node endpoint', () => {
         revokeUserRole(pathOrId, role, user)
 
         cy.log(`Verify role '${role}' has deny permission on node ${pathOrId}`)
-        cy.apollo({
-            queryFile: 'acl/getAceNode.graphql',
-            variables: { pathOrId },
-        }).should((resp) => {
-            const acls = resp?.data?.jcr?.nodeByPath?.descendants?.nodes || []
-            const userAcl = acls.find((a) => a.principal.value === `u:${user}`)
-            expect(userAcl, `ACE for user ${user} has been removed`).to.be.not.undefined
-            expect(userAcl.roles.values).to.contain(role, 'ACE has ${role} role')
-            expect(userAcl.aceType.value).equals('DENY', 'ACE has DENY permission ${role} role')
+        getAclEntries(pathOrId, {type:'USER', name: user}, false).should(resp => {
+            const aclEntries = resp?.data?.jcr?.nodeByPath?.acl.aclEntries
+            const aclEntry = aclEntries.find(ace => ace.aclEntryType === 'DENY' && ace.role.name === role)
+            expect(aclEntry, `ACE has DENY permission on ${role} role`).to.be.not.undefined
+            expect(aclEntry.inherited).to.be.false
+            expect(aclEntry.inheritedFrom.path).equals(pathOrId)
         })
     })
 
@@ -75,13 +66,19 @@ describe('Test grant/revoke role mutation on node endpoint', () => {
         grantUserRole(pathOrId, role, user)
 
         cy.log(`Verify DENY permission on role '${role}' has been removed on node ${pathOrId}`)
-        cy.apollo({
-            queryFile: 'acl/getAceNode.graphql',
-            variables: { pathOrId },
-        }).should((resp) => {
-            const acls = resp?.data?.jcr?.nodeByPath?.descendants?.nodes || []
-            const userAcl = acls.find((a) => a.principal.value === `u:${user}`)
-            expect(userAcl, `ACE for user ${user} has been removed`).to.be.undefined
+        getAclEntries(pathOrId, {type:'USER', name: user}, false).should(resp => {
+            const aclEntries = resp?.data?.jcr?.nodeByPath?.acl.aclEntries
+            const aclEntry = aclEntries.find(ace => ace.role.name === role)
+            expect(aclEntry, `DENY for user ${user} has been removed on node ${pathOrId}`).to.be.undefined
+        })
+
+        cy.log(`Verify inherited role '${role}' still exists for node ${pathOrId}`)
+        getAclEntries(pathOrId, {type:'USER', name: user}, true).should(resp => {
+            const aclEntries = resp?.data?.jcr?.nodeByPath?.acl.aclEntries
+            const aclEntry = aclEntries.find(ace => ace.role.name === role && ace.aclEntryType === 'GRANT')
+            expect(aclEntry, `user ${user} still has inherited role on node ${pathOrId}`).to.be.not.undefined
+            expect(aclEntry.inherited).to.be.true
+            expect(aclEntry.inheritedFrom.path).equals(parentPath)
         })
     })
 
@@ -93,13 +90,18 @@ describe('Test grant/revoke role mutation on node endpoint', () => {
         grantUserRole(pathOrId, role, user)
 
         cy.log(`Verify GRANT role '${role}' not added on node ${pathOrId}`)
-        cy.apollo({
-            queryFile: 'acl/getAceNode.graphql',
-            variables: { pathOrId },
-        }).should((resp) => {
-            const acls = resp?.data?.jcr?.nodeByPath?.descendants?.nodes || []
-            const userAcl = acls.find((a) => a.principal.value === `u:${user}`)
-            expect(userAcl, `No grant role added for user ${user}`).to.be.undefined
+        getAclEntries(pathOrId, {type:'USER', name: user}, false).should(resp => {
+            const aclEntries = resp?.data?.jcr?.nodeByPath?.acl.aclEntries
+            expect(aclEntries, `No GRANT added for user ${user} on node ${pathOrId}`).to.be.empty
+        })
+
+        cy.log(`Verify inherited role '${role}' still exists for node ${pathOrId}`)
+        getAclEntries(pathOrId, {type:'USER', name: user}, true).should(resp => {
+            const aclEntries = resp?.data?.jcr?.nodeByPath?.acl.aclEntries
+            const aclEntry = aclEntries.find(ace => ace.role.name === role && ace.aclEntryType === 'GRANT')
+            expect(aclEntry, `user ${user} still has inherited role on node ${pathOrId}`).to.be.not.undefined
+            expect(aclEntry.inherited).to.be.true
+            expect(aclEntry.inheritedFrom.path).equals(parentPath)
         })
     })
 

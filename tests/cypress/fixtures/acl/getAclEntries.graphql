@@ -13,7 +13,7 @@ query getAce($path:String!, $principalFilter: InputPrincipalInput, $inclInherite
                     }
                     principal {
                         name
-                        type
+                        principalType
                     }
                     aclEntryType
                     inherited
