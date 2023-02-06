@@ -1,0 +1,25 @@
+# Write your query or mutation here
+query getAce($path:String!, $principalFilter: InputPrincipalInput, $inclInherited: Boolean){
+    jcr {
+        nodeByPath(path: $path) {
+            acl {
+                aclEntries(principalFilter: $principalFilter, inclInherited: $inclInherited) {
+                    inheritedFrom {
+                        path
+                    }
+                    role {
+                        roleGroup
+                        name
+                    }
+                    principal {
+                        name
+                        type
+                    }
+                    aclEntryType
+                    inherited
+                    externalPermissionsName
+                }
+            }
+        }
+    }
+}
