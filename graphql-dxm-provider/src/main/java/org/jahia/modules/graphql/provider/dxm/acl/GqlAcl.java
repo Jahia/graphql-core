@@ -68,7 +68,7 @@ public class GqlAcl {
 
     @GraphQLField
     @GraphQLDescription("Get list of access control entries for this ACL")
-    public List<GqlAclEntry> getAce(
+    public List<GqlAclEntry> getAclEntries(
             @GraphQLName("principalFilter") @GraphQLDescription("Fetch ACL entry only for this principal") PrincipalInput principalInput,
             @GraphQLName("inclInherited") @GraphQLDescription("The languages to check") Boolean inclInherited) {
 

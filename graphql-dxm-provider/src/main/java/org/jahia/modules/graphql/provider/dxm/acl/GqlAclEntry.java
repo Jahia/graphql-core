@@ -38,6 +38,8 @@ import org.jahia.modules.graphql.provider.dxm.user.PrincipalInput;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.usermanager.JahiaGroupManagerService;
+import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +56,15 @@ public class GqlAclEntry {
     @GraphQLOsgiService
     private JahiaAclService aclService;
 
+    @Inject
+    @GraphQLOsgiService
+    private JahiaGroupManagerService groupService;
+
+    @Inject
+    @GraphQLOsgiService
+    private JahiaUserManagerService userService;
+
+
     private final JahiaAclEntry aclEntry;
 
     public GqlAclEntry(JahiaAclEntry aclEntry) {
@@ -65,13 +76,7 @@ public class GqlAclEntry {
     public GqlPrincipal getPrincipal() {
         String principalKey = aclEntry.getPrincipalKey();
         PrincipalInput principal = new PrincipalInput(principalKey);
-        return principal.getPrincipal(aclEntry.getSitePath());
-    }
-
-    @GraphQLField
-    @GraphQLDescription("TEMP: Get principal key for this entry")
-    public String getPrincipalKey() {
-        return aclEntry.getPrincipalKey();
+        return principal.getPrincipal(aclEntry.getSiteKey(), userService, groupService);
     }
 
     @GraphQLField
@@ -80,18 +85,6 @@ public class GqlAclEntry {
         String roleName = aclEntry.getRoleName();
         JahiaAclRole aclRole = aclService.getRole(roleName);
         return (aclRole != null) ? new GqlAclRole(aclService.getRole(roleName)): null;
-    }
-
-    @GraphQLField
-    @GraphQLDescription("TEMP: Get role name for this entry")
-    public String getRoleName() throws RepositoryException {
-        return aclEntry.getRoleName();
-    }
-
-    @GraphQLField
-    @GraphQLDescription("TEMP: Get external role name for this entry")
-    public String getExternalRoleName() throws RepositoryException {
-        return aclEntry.getExternalRoleName();
     }
 
     @GraphQLField
@@ -112,6 +105,18 @@ public class GqlAclEntry {
     @GraphQLDescription("Type of access for this ACL entry - one of GRANT, DENY or EXTERNAL")
     public String getAclEntryType() {
         return aclEntry.getType().toString();
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Return true if this ACL entry did not originate from this ACL's parent node")
+    public boolean isInherited() {
+        return aclEntry.isInherited();
+    }
+
+    @GraphQLField
+    @GraphQLDescription("External permissions name ")
+    public String getExternalPermissionsName() {
+        return aclEntry.getExternalPermissionsName();
     }
 
 }

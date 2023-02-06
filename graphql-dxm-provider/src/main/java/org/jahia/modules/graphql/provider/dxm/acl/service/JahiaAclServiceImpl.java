@@ -52,7 +52,6 @@ public class JahiaAclServiceImpl implements JahiaAclService {
 
     public static final String JCR_ROLEGROUP_TYPE = "j:roleGroup";
     public static final String JCR_ROLE_DEPENDENCIES_TYPE = "j:dependencies";
-
     public static final String REMOVE = "REMOVE";
 
 
@@ -74,12 +73,7 @@ public class JahiaAclServiceImpl implements JahiaAclService {
                         + JCRContentUtils.sqlEncode(roleName) + "' and isdescendantnode(r,['/roles'])");
         while (ni.hasNext()) {
             JCRNodeWrapper roleNode = (JCRNodeWrapper) ni.next();
-            JahiaAclRole aclRole = new JahiaAclRole(roleNode);
-            // FIXME do I need to restrict this?
-//            if (!aclRole.isHidden() && !aclRole.isPrivileged()) {
-//                return aclRole;
-//            }
-            return aclRole;
+            return new JahiaAclRole(roleNode);
         }
         return null;
     }

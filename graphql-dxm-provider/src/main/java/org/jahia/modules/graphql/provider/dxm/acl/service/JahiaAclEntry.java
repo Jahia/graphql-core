@@ -40,7 +40,7 @@ public class JahiaAclEntry {
 
     private final String sourcePath;
 
-    private String sitePath;
+    private String siteKey;
 
     private final AclEntryType type;
 
@@ -55,7 +55,7 @@ public class JahiaAclEntry {
         this.principalKey = principalKey;
         this.sourcePath = jcrNode.getPath();
         this.fromPath = permission[0];
-        setSitePath(jcrNode);
+        setSiteKey(jcrNode);
         this.type = AclEntryType.valueOf(permission[1]);
 
         if (type == AclEntryType.EXTERNAL) {
@@ -67,14 +67,14 @@ public class JahiaAclEntry {
         }
     }
 
-    private void setSitePath(JCRNodeWrapper jcrNode) {
+    private void setSiteKey(JCRNodeWrapper jcrNode) {
         JCRSiteNode site = null;
         try {
             site = jcrNode.getResolveSite();
         } catch (RepositoryException e) {
             logger.debug("unable to fetch site for node {}", jcrNode.getPath());
         }
-        sitePath = (site != null) ? site.getPath() : null;
+        siteKey = (site != null) ? site.getSiteKey() : null;
     }
 
     public boolean isInherited() {
@@ -93,8 +93,8 @@ public class JahiaAclEntry {
         return sourcePath;
     }
 
-    public String getSitePath() {
-        return sitePath;
+    public String getSiteKey() {
+        return siteKey;
     }
 
     public String getPrincipalKey() {

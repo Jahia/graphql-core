@@ -27,25 +27,14 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
-import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.services.content.decorator.JCRGroupNode;
 import org.jahia.services.content.decorator.JCRUserNode;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 
-import javax.inject.Inject;
 
-@GraphQLName("PrincipalInput")
 @GraphQLDescription("Describes input using name and with principal type (user/group)")
 public class PrincipalInput {
-
-    @Inject
-    @GraphQLOsgiService
-    private JahiaGroupManagerService groupService;
-
-    @Inject
-    @GraphQLOsgiService
-    private JahiaUserManagerService userService;
 
     private final PrincipalType principalType;
     private final String principalName;
@@ -60,21 +49,19 @@ public class PrincipalInput {
         this.principalKey = principalType.getPrincipalKey(principalName);
     }
 
-    public PrincipalInput(
-            @GraphQLName("key") @GraphQLNonNull String principalKey
-    ) {
+    public PrincipalInput(String principalKey) {
         String[] principals = principalKey.split(":");
         this.principalType = PrincipalType.getByValue(principals[0]);
         this.principalName = principals[1];
         this.principalKey = principalKey;
     }
 
-    public GqlPrincipal getPrincipal(String siteKey) {
+    public GqlPrincipal getPrincipal(String siteKey, JahiaUserManagerService userService, JahiaGroupManagerService groupService) {
         GqlPrincipal principal = null;
-        if (principalType == PrincipalType.USER) {
+        if (principalType == PrincipalType.USER && userService != null) {
             JCRUserNode userNode = userService.lookupUser(principalName, siteKey);
             principal = (userNode != null) ? new GqlUser(userNode.getJahiaUser()) : null;
-        } else if (principalType == PrincipalType.GROUP) {
+        } else if (principalType == PrincipalType.GROUP && groupService != null) {
             JCRGroupNode groupNode = groupService.lookupGroup(siteKey, principalName);
             principal = (groupNode != null) ? new GqlGroup(groupNode.getJahiaGroup()) : null;
         }
