@@ -96,4 +96,8 @@ public interface GqlPrincipal {
     @GraphQLDescription("Get the corresponding JCR node")
     GqlJcrNode getNode() throws RepositoryException;
 
+    @GraphQLField
+    @GraphQLDescription("Get principal type for this principal")
+    PrincipalType getPrincipalType();
+
 }

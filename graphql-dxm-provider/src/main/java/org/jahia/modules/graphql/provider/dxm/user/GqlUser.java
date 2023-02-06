@@ -152,4 +152,8 @@ public class GqlUser implements GqlPrincipal {
     public GqlJcrNode getNode() throws RepositoryException {
         return SpecializedTypesHandler.getNode(jcrSessionFactory.getCurrentUserSession().getNode(user.getLocalPath()));
     }
+
+    @Override public PrincipalType getPrincipalType() {
+        return PrincipalType.USER;
+    }
 }

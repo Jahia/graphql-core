@@ -149,4 +149,9 @@ public class GqlGroup implements GqlPrincipal {
     public GqlJcrNode getNode() throws RepositoryException {
         return SpecializedTypesHandler.getNode(jcrSessionFactory.getCurrentUserSession().getNode(group.getLocalPath()));
     }
+
+    @Override
+    public PrincipalType getPrincipalType() {
+        return PrincipalType.GROUP;
+    }
 }
