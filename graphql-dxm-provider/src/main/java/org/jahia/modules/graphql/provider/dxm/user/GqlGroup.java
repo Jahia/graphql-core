@@ -150,7 +150,8 @@ public class GqlGroup implements GqlPrincipal {
         return SpecializedTypesHandler.getNode(jcrSessionFactory.getCurrentUserSession().getNode(group.getLocalPath()));
     }
 
-    @Override
+    @GraphQLField
+    @GraphQLDescription("Return GROUP principal type")
     public PrincipalType getPrincipalType() {
         return PrincipalType.GROUP;
     }

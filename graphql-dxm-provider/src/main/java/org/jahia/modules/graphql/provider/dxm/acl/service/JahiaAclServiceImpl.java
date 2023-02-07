@@ -57,7 +57,7 @@ public class JahiaAclServiceImpl implements JahiaAclService {
 
     public List<JahiaAclRole> getRoles() throws RepositoryException {
         List<JahiaAclRole> roles = new ArrayList<>();
-        NodeIterator ni = execQuery("select * from [" + Constants.JAHIANT_ROLE + "] as r and isdescendantnode(r,['/roles'])");
+        NodeIterator ni = execQuery("select * from [" + Constants.JAHIANT_ROLE + "] as r where isdescendantnode(r,['/roles'])");
         while (ni.hasNext()) {
             JCRNodeWrapper roleNode = (JCRNodeWrapper) ni.next();
             JahiaAclRole aclRole = new JahiaAclRole(roleNode);
