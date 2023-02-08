@@ -27,3 +27,10 @@ function revokeRoles(apiParams) {
             expect(resp?.data?.jcr?.mutateNode?.revokeRoles, 'Revoke role request OK').to.be.true
         })
 }
+
+export function getAclEntries(path, principalFilter = null, inclInherited = true) {
+    return cy.apollo({
+        queryFile: 'acl/getAclEntries.graphql',
+        variables: { path, principalFilter, inclInherited },
+    })
+}

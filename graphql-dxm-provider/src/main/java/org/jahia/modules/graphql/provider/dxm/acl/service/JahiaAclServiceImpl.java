@@ -24,6 +24,7 @@
 package org.jahia.modules.graphql.provider.dxm.acl.service;
 
 import org.jahia.api.Constants;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -38,10 +39,7 @@ import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component(service = JahiaAclService.class, immediate = true)
 public class JahiaAclServiceImpl implements JahiaAclService {
@@ -52,23 +50,32 @@ public class JahiaAclServiceImpl implements JahiaAclService {
     @Reference
     private JahiaGroupManagerService groupService;
 
-    public static final String JCR_ROLE_TYPE = "jnt:role";
     public static final String JCR_ROLEGROUP_TYPE = "j:roleGroup";
     public static final String JCR_ROLE_DEPENDENCIES_TYPE = "j:dependencies";
-
     public static final String REMOVE = "REMOVE";
 
 
     public List<JahiaAclRole> getRoles() throws RepositoryException {
         List<JahiaAclRole> roles = new ArrayList<>();
-        NodeIterator ni = execQuery("select * from [jnt:role] as role");
+        NodeIterator ni = execQuery("select * from [" + Constants.JAHIANT_ROLE + "] as r where isdescendantnode(r,['/roles'])");
         while (ni.hasNext()) {
-            JCRNodeWrapper next = (JCRNodeWrapper) ni.next();
-            if (!next.getName().equals("privileged")) {
-                roles.add(new JahiaAclRole(next));
+            JCRNodeWrapper roleNode = (JCRNodeWrapper) ni.next();
+            JahiaAclRole aclRole = new JahiaAclRole(roleNode);
+            if (!aclRole.isHidden() && !aclRole.isPrivileged()) {
+                roles.add(aclRole);
             }
         }
         return roles;
+    }
+
+    public JahiaAclRole getRole(String roleName) throws RepositoryException {
+        NodeIterator ni = execQuery("select * from [" + Constants.JAHIANT_ROLE + "] as r where localname()='"
+                        + JCRContentUtils.sqlEncode(roleName) + "' and isdescendantnode(r,['/roles'])");
+        while (ni.hasNext()) {
+            JCRNodeWrapper roleNode = (JCRNodeWrapper) ni.next();
+            return new JahiaAclRole(roleNode);
+        }
+        return null;
     }
 
     public boolean grantRoles(JCRNodeWrapper jcrNode, String principalKey, List<String> roleNames) throws RepositoryException {
@@ -110,27 +117,45 @@ public class JahiaAclServiceImpl implements JahiaAclService {
     }
 
     public boolean hasInheritedPermission(JCRNodeWrapper jcrNode, String principalKey, String roleName) {
+        List<JahiaAclEntry> aclEntries = getAclEntries(jcrNode, principalKey);
+        return aclEntries.stream().anyMatch(ace -> roleName.equals(ace.getRoleName()) && ace.isGrantType() && ace.isInherited());
+    }
+
+    public List<JahiaAclEntry> getAclEntries(JCRNodeWrapper jcrNode, String principalKey) {
+        List<JahiaAclEntry> result = new ArrayList<>();
+
         Map<String, List<String[]>> acl = jcrNode.getAclEntries();
         if (acl == null) {
-            return false;
+            return result;
         }
 
         List<String[]> permissions = acl.get(principalKey);
         if (permissions == null || permissions.isEmpty()) {
-            return false;
+            return result;
         }
 
-        for (String[] p: permissions) {
-            String fromAclPath = p[0];
-            String type = p[1];
-            String pRole = p[2];
-            if (!jcrNode.getPath().equals(fromAclPath)
-                    && roleName.equals(pRole)
-                    && Constants.GRANT.equals(type)) {
-                return true;
+        for (String[] perm : permissions) {
+            result.add(new JahiaAclEntry(jcrNode, principalKey, perm));
+        }
+
+        return result;
+    }
+
+    public List<JahiaAclEntry> getAclEntries(JCRNodeWrapper jcrNode) {
+        List<JahiaAclEntry> result = new ArrayList<>();
+
+        Map<String, List<String[]>> acl = jcrNode.getAclEntries();
+        if (acl == null) {
+            return result;
+        }
+
+        for (Map.Entry<String, List<String[]>> e : acl.entrySet()) {
+            String principalKey = e.getKey();
+            for (String[] perm : e.getValue()) {
+                result.add(new JahiaAclEntry(jcrNode, principalKey, perm));
             }
         }
-        return false;
+        return result;
     }
 
     private NodeIterator execQuery(String query) throws RepositoryException {
@@ -139,4 +164,5 @@ public class JahiaAclServiceImpl implements JahiaAclService {
         Query q = qm.createQuery(query, Query.JCR_SQL2);
         return q.execute().getNodes();
     }
+
 }

@@ -89,4 +89,12 @@ public class JahiaAclRole {
         return JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE, locale);
     }
 
+    public boolean isHidden() throws RepositoryException {
+        return roleNode.hasProperty("j:hidden") && roleNode.getProperty("j:hidden").getBoolean();
+    }
+
+    public boolean isPrivileged() {
+        return roleNode.getName().equals("privileged");
+    }
+
 }

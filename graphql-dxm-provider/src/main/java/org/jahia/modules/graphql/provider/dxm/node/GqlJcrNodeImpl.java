@@ -27,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.acl.GqlAcl;
 import org.jahia.modules.graphql.provider.dxm.predicate.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
@@ -505,4 +506,12 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     public GqlOperationsSupport getOperationsSupport() {
         return new GqlOperationsSupport(this);
     }
+
+    @Override
+    @GraphQLDescription("Get ACL info for this node")
+    public GqlAcl getAcl() {
+        return new GqlAcl(node);
+    }
+
+
 }

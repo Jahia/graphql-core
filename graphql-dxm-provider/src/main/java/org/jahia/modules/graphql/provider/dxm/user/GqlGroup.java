@@ -149,4 +149,10 @@ public class GqlGroup implements GqlPrincipal {
     public GqlJcrNode getNode() throws RepositoryException {
         return SpecializedTypesHandler.getNode(jcrSessionFactory.getCurrentUserSession().getNode(group.getLocalPath()));
     }
+
+    @GraphQLField
+    @GraphQLDescription("Return GROUP principal type")
+    public PrincipalType getPrincipalType() {
+        return PrincipalType.GROUP;
+    }
 }

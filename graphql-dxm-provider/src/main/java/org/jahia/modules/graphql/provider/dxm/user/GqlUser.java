@@ -27,7 +27,6 @@ import org.jahia.modules.graphql.provider.dxm.predicate.FieldGroupingInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
-import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 import org.jahia.modules.graphql.provider.dxm.site.GqlJcrSite;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.decorator.JCRGroupNode;
@@ -151,5 +150,11 @@ public class GqlUser implements GqlPrincipal {
     @GraphQLDescription("Get the corresponding JCR node")
     public GqlJcrNode getNode() throws RepositoryException {
         return SpecializedTypesHandler.getNode(jcrSessionFactory.getCurrentUserSession().getNode(user.getLocalPath()));
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Return USER principal type")
+    public PrincipalType getPrincipalType() {
+        return PrincipalType.USER;
     }
 }
