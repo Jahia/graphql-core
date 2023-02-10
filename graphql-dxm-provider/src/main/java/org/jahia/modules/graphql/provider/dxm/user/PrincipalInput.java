@@ -63,6 +63,9 @@ public class PrincipalInput {
             principal = (userNode != null) ? new GqlUser(userNode.getJahiaUser()) : null;
         } else if (principalType == PrincipalType.GROUP && groupService != null) {
             JCRGroupNode groupNode = groupService.lookupGroup(siteKey, principalName);
+            if (groupNode == null) {
+                groupNode = groupService.lookupGroup(null, principalName); // Try searching global groups
+            }
             principal = (groupNode != null) ? new GqlGroup(groupNode.getJahiaGroup()) : null;
         }
         return principal;
