@@ -17,8 +17,10 @@ package org.jahia.modules.graphql.provider.dxm.util;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.spi.commons.conversion.MalformedPathException;
 import org.apache.jackrabbit.value.BinaryImpl;
+import org.apache.tika.Tika;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.*;
@@ -31,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import java.io.*;
-import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.Enumeration;
@@ -49,6 +50,7 @@ import java.util.zip.ZipOutputStream;
 public class ZipUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ZipUtils.class);
+    private static final Tika TIKA = new Tika();
     static final int BUFFER = 512;
     static final long MAX_SIZE = 0x6400000; // Max size of unzipped data, 100MB
     static final int MAX_ENTRIES = 1024;      // Max number of files
@@ -136,7 +138,7 @@ public class ZipUtils {
 
             Enumeration<? extends ZipEntry> enumeration = zip.entries();
             while (enumeration.hasMoreElements()) {
-                ZipEntry zipEntry =  enumeration.nextElement();
+                ZipEntry zipEntry = enumeration.nextElement();
                 try {
                     JCRSessionWrapper currentUserSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
 
@@ -181,7 +183,7 @@ public class ZipUtils {
                         }
 
                         try (InputStream inputStream = Files.newInputStream(unzippedTmpFile.toPath())) {
-                            target.uploadFile(filename, inputStream, getMimeType(zipEntry.getName(), zipTmpFile));
+                            target.uploadFile(filename, inputStream, getMimeType(zipEntry.getName(), inputStream));
                         } finally {
                             Files.delete(unzippedTmpFile.toPath());
                         }
@@ -233,12 +235,13 @@ public class ZipUtils {
         }
     }
 
-    private static String getMimeType(String name, File tmp) throws IOException {
-        String mimeType = URLConnection.guessContentTypeFromName(name);
+    public static String getMimeType(String name, InputStream inputStream) throws IOException {
+        String mimeType = TIKA.detect(name);
+        if ((mimeType == null || StringUtils.equals("application/octet-stream", mimeType)) && inputStream != null) {
+            mimeType = TIKA.detect(inputStream);
+        }
         if (mimeType == null) {
-            try (InputStream inputStream = new FileInputStream(tmp)) {
-                mimeType = URLConnection.guessContentTypeFromStream(inputStream);
-            }
+            logger.warn("Unable to resolve mime type for file {}", name);
         }
         return mimeType;
     }
