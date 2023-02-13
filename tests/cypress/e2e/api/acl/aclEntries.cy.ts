@@ -70,7 +70,22 @@ describe('Test ACL/ACE query endpoint', () => {
         })
     })
 
-    function getRole(ace, userName, roleName) {
-        return ace.find((a) => a.principal?.name === userName && a.aclEntryType === 'GRANT' && a.role.name === roleName)
+    it('Get ACL for specific global group', () => {
+        const principalFilter = { type: 'GROUP', name: 'users' }
+        getAclEntries(path, principalFilter).should((resp) => {
+            const acl = resp?.data?.jcr?.nodeByPath?.acl
+            expect(acl).to.exist
+            expect(acl.aclEntries).to.be.not.empty
+            const aclEntry = getRole(acl.aclEntries, 'users', 'reader')
+            expect(aclEntry, `'users' group has a reader role for ${path}`).to.be.not.undefined
+            expect(aclEntry.inherited).to.be.true
+            expect(aclEntry.inheritedFrom.path, "'users' group is defined globally").equals('/')
+        })
+    })
+
+    function getRole(ace, principalName, roleName) {
+        return ace.find(
+            (a) => a.principal?.name === principalName && a.aclEntryType === 'GRANT' && a.role.name === roleName,
+        )
     }
 })
