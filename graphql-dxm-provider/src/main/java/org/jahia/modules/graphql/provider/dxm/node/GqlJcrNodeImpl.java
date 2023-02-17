@@ -41,6 +41,7 @@ import pl.touk.throwing.ThrowingPredicate;
 import pl.touk.throwing.ThrowingSupplier;
 
 import javax.jcr.*;
+import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.security.AccessControlException;
 import java.util.*;
 import java.util.function.Predicate;
@@ -326,7 +327,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
             collectReferences(node.getWeakReferences(), references, environment);
-        } catch (UnsupportedRepositoryOperationException e) {
+        } catch (UnsupportedRepositoryOperationException | ConstraintViolationException e) {
             return null;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
