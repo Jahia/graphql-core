@@ -150,6 +150,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         try {
             JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node, language);
             return node.getDisplayableName();
+        } catch (ItemNotFoundException e) {
+            return null;
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
