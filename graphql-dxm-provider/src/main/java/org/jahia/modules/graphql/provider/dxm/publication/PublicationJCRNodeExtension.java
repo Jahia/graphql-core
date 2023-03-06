@@ -68,15 +68,46 @@ public class PublicationJCRNodeExtension extends PublicationJCRExtensionSupport 
         ComplexPublicationService publicationService = BundleUtils.getOsgiService(ComplexPublicationService.class, null);
 
         JCRSessionWrapper session;
+        ComplexPublicationService.AggregatedPublicationInfo aggregatedInfo = null;
+
         try {
             session = JCRSessionFactory.getInstance().getCurrentUserSession();
+            aggregatedInfo = publicationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, subNodes, references, session);
+        } catch (RuntimeException e) {
+            return new GqlPublicationInfo(new EmptyAggregateInfo(), gqlJcrNode);
         } catch (RepositoryException e) {
             throw new JahiaRuntimeException(e);
         }
 
-        final ComplexPublicationService.AggregatedPublicationInfo aggregatedInfo = publicationService.getAggregatedPublicationInfo(gqlJcrNode.getUuid(), language, subNodes, references, session);
-
         return new GqlPublicationInfo(aggregatedInfo, gqlJcrNode);
+    }
+
+    private static class EmptyAggregateInfo implements ComplexPublicationService.AggregatedPublicationInfo {
+
+        @Override
+        public int getPublicationStatus() {
+            return 4;
+        }
+
+        @Override
+        public boolean isLocked() {
+            return false;
+        }
+
+        @Override
+        public boolean isWorkInProgress() {
+            return false;
+        }
+
+        @Override
+        public boolean isAllowedToPublishWithoutWorkflow() {
+            return false;
+        }
+
+        @Override
+        public boolean isNonRootMarkedForDeletion() {
+            return false;
+        }
     }
 
 }
