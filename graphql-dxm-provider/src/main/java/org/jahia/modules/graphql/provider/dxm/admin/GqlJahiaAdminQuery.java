@@ -109,7 +109,6 @@ public class GqlJahiaAdminQuery {
             gqlJahiaDatabase.setVersion(metadata.getDatabaseProductVersion());
             gqlJahiaDatabase.setDriverName(metadata.getDriverName());
             gqlJahiaDatabase.setDriverVersion(metadata.getDriverVersion());
-            gqlJahiaDatabase.setUrl(metadata.getURL());
         } catch (Exception e) {
             logger.error("Unable to get database information . Cause: " + e.getMessage(), e);
         } finally {
