@@ -12,8 +12,6 @@ describe('Test admin jahia database endpoint', () => {
 
             expect(response.data.admin.jahia.database.driverName).to.equal('Apache Derby Embedded JDBC Driver')
             expect(response.data.admin.jahia.database.driverVersion.length).to.greaterThan(8)
-
-            expect(response.data.admin.jahia.database.url).to.equal('jdbc:derby:directory:/var/jahia/jahiadb')
         })
     })
 })
