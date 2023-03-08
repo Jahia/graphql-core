@@ -5,11 +5,7 @@ describe('Test admin jahia cluster endpoint', () => {
         const systemKey = 'karaf.base'
         cy.apollo({
             queryFile: 'admin/system.graphql',
-            variables: { systemKey: systemKey },
         }).should((response: any) => {
-            expect(response.data.admin.jahia.system.property.key).to.equal(systemKey)
-            expect(response.data.admin.jahia.system.property.value).to.equal('/var/jahia/karaf')
-
             expect(response.data.admin.jahia.system.os.name).to.equal('Linux')
             expect(response.data.admin.jahia.system.os.architecture.length).to.greaterThan(3)
             expect(response.data.admin.jahia.system.os.version.length).to.greaterThan(3)

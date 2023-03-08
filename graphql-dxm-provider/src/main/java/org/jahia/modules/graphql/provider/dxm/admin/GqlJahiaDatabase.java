@@ -28,7 +28,6 @@ public class GqlJahiaDatabase {
     private String version;
     private String driverName;
     private String driverVersion;
-    private String url;
 
     public GqlJahiaDatabase() {
     }
@@ -68,13 +67,6 @@ public class GqlJahiaDatabase {
         return driverVersion;
     }
 
-    @GraphQLField
-    @GraphQLName("url")
-    @GraphQLDescription("url used to connect to the database")
-    public String getUrl() {
-        return url;
-    }
-
     public void setType(String type) {
         this.type = type;
     }
@@ -95,9 +87,6 @@ public class GqlJahiaDatabase {
         this.driverVersion = driverVersion;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
-    }    
 }
 
 

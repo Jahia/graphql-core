@@ -1,11 +1,7 @@
-query ($systemKey: String!) {
+query {
   admin {
     jahia {
       system {
-        property(key: $systemKey) {
-        	key
-          value
-        }
         os {
           name
           architecture

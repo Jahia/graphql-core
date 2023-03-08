@@ -7,7 +7,6 @@ query {
         version
         driverName
         driverVersion
-        url
       }
     }
   }

@@ -26,16 +26,6 @@ public class GqlJahiaSystem {
     public GqlJahiaSystem() {
     }
 
-    @GraphQLField
-    @GraphQLName("property")
-    @GraphQLDescription("Get a system property by key")
-    public GqlJahiaSystemProperty getProperty(@GraphQLName("key") @GraphQLDescription("Java system property key") @GraphQLNonNull String key) {
-        GqlJahiaSystemProperty gqlJahiaSystemProperty = new GqlJahiaSystemProperty();
-        gqlJahiaSystemProperty.setKey(key);
-        gqlJahiaSystemProperty.setValue(System.getProperty(key));
-        return gqlJahiaSystemProperty;
-    }
-
     /**
      * Get getJahiaSystemOs
      *
