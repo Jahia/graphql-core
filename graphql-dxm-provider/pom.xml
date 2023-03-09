@@ -76,7 +76,7 @@
             !org.jahia.modules.graphql.provider.dxm.*
         </import-package>
         <jahia-module-type>system</jahia-module-type>
-        <jahia-module-signature>MCwCFH+OZuOEMls4l+qgqZf/zyE4VoZiAhQjbwPGlDPX+N9eEkoTTU1WwZsPxg==</jahia-module-signature>
+        <jahia-module-signature>MC4CFQCPz6GjUYRXAdPZInPHXf52H1nLNQIVAIMyynFpUI6yUsBVQMqtCjAKu87z</jahia-module-signature>
         <mockito.version>2.21.0</mockito.version>
         <powermock.version>2.0.9</powermock.version>
     </properties>
