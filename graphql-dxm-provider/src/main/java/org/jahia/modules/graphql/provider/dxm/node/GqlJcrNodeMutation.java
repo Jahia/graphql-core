@@ -19,6 +19,7 @@ import com.google.common.collect.Lists;
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.FastDateFormat;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
@@ -29,10 +30,15 @@ import org.jahia.modules.graphql.provider.dxm.predicate.PredicateHelper;
 import org.jahia.modules.graphql.provider.dxm.user.PrincipalType;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.JCRVersionService;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 
 import javax.inject.Inject;
+import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
+import javax.jcr.version.VersionIterator;
+import javax.jcr.version.VersionManager;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -70,6 +76,15 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
          */
         @GraphQLDescription("Specified children are sorted in a requested order and placed at the top, before all remaining children")
         FIRST;
+    }
+
+    @GraphQLDescription("Type of version created")
+    public enum Versioning {
+        @GraphQLDescription("Indicates initial version")
+        INITIAL_VERSION,
+
+        @GraphQLDescription("Indicates subsequent version")
+        SUBSEQUENT_VERSION;
     }
 
     /**
@@ -520,6 +535,46 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     ) throws RepositoryException {
         String principalKey = principalType.getPrincipalKey(principalName);
         return aclService.revokeRoles(jcrNode, principalKey, roleNames);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Create new version for the node if the node supports versioning")
+    public boolean createVersion(@GraphQLName("versionType") @GraphQLDescription("Type of version to be created") @GraphQLNonNull Versioning versioning) throws DataFetchingException {
+        FastDateFormat DF = FastDateFormat.getInstance("yyyy_MM_dd_HH_mm_ss");
+        JCRVersionService versionService = JCRVersionService.getInstance();
+        boolean supportVersioning = false;
+
+        try {
+            supportVersioning = jcrNode.getProvider().getRepository().getDescriptorValue(Repository.OPTION_VERSIONING_SUPPORTED).getBoolean();
+            if(supportVersioning) {
+                JCRSessionWrapper session = jcrNode.getSession();
+                VersionManager versionManager = session.getWorkspace().getVersionManager();
+                String label = "uploaded_at_" + DF.format(jcrNode.getProperty("jcr:created").getDate().getTime().getTime());
+
+                if (versioning.equals(Versioning.INITIAL_VERSION)) {
+                    if (!jcrNode.isVersioned()) {
+                        jcrNode.versionFile();
+                        session.save();
+                    }
+                    VersionIterator allVersions = versionManager.getVersionHistory(jcrNode.getPath()).getAllVersions();
+                    if (allVersions.getSize() == 1) {
+                        // First version ever apart root version
+                        versionManager.checkpoint(jcrNode.getPath());
+                        versionService.addVersionLabel(jcrNode, label);
+                    }
+                    return true;
+                } else if (versioning.equals(Versioning.SUBSEQUENT_VERSION) && JCRContentUtils.needVersion(jcrNode, versionService.getVersionedTypes())) {
+                    versionManager.checkout(jcrNode.getPath());
+                    session.getWorkspace().getVersionManager().checkpoint(jcrNode.getPath());
+                    versionService.addVersionLabel(jcrNode, label);
+                    return true;
+                }
+            }
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+
+        return false;
     }
 
     private void validateChildNamesToReorder(List<String> names, ReorderedChildrenPosition position) {
