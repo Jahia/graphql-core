@@ -564,6 +564,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
                     }
                     return true;
                 } else if (versioning.equals(Versioning.SUBSEQUENT_VERSION) && JCRContentUtils.needVersion(jcrNode, versionService.getVersionedTypes())) {
+                    session.save();
                     versionManager.checkout(jcrNode.getPath());
                     session.getWorkspace().getVersionManager().checkpoint(jcrNode.getPath());
                     versionService.addVersionLabel(jcrNode, label);
