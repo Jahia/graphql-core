@@ -78,15 +78,6 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         FIRST;
     }
 
-    @GraphQLDescription("Type of version created")
-    public enum Versioning {
-        @GraphQLDescription("Indicates initial version")
-        INITIAL_VERSION,
-
-        @GraphQLDescription("Indicates subsequent version")
-        SUBSEQUENT_VERSION;
-    }
-
     /**
      * Default value supplier for {@link ReorderedChildrenPosition}.
      */
@@ -539,37 +530,25 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
     @GraphQLField
     @GraphQLDescription("Create new version for the node if the node supports versioning")
-    public boolean createVersion(@GraphQLName("versionType") @GraphQLDescription("Type of version to be created") @GraphQLNonNull Versioning versioning) throws DataFetchingException {
+    public boolean createVersion() throws DataFetchingException {
         FastDateFormat DF = FastDateFormat.getInstance("yyyy_MM_dd_HH_mm_ss");
         JCRVersionService versionService = JCRVersionService.getInstance();
-        boolean supportVersioning = false;
 
         try {
-            supportVersioning = jcrNode.getProvider().getRepository().getDescriptorValue(Repository.OPTION_VERSIONING_SUPPORTED).getBoolean();
+            boolean supportVersioning = jcrNode.getProvider().getRepository().getDescriptorValue(Repository.OPTION_VERSIONING_SUPPORTED).getBoolean();
             if(supportVersioning) {
                 JCRSessionWrapper session = jcrNode.getSession();
                 VersionManager versionManager = session.getWorkspace().getVersionManager();
                 String label = "uploaded_at_" + DF.format(jcrNode.getProperty("jcr:created").getDate().getTime().getTime());
-
-                if (versioning.equals(Versioning.INITIAL_VERSION)) {
-                    if (!jcrNode.isVersioned()) {
-                        jcrNode.versionFile();
-                        session.save();
-                    }
-                    VersionIterator allVersions = versionManager.getVersionHistory(jcrNode.getPath()).getAllVersions();
-                    if (allVersions.getSize() == 1) {
-                        // First version ever apart root version
-                        versionManager.checkpoint(jcrNode.getPath());
-                        versionService.addVersionLabel(jcrNode, label);
-                    }
-                    return true;
-                } else if (versioning.equals(Versioning.SUBSEQUENT_VERSION) && JCRContentUtils.needVersion(jcrNode, versionService.getVersionedTypes())) {
+                if (!jcrNode.isVersioned()) {
+                    jcrNode.versionFile();
                     session.save();
-                    versionManager.checkout(jcrNode.getPath());
-                    session.getWorkspace().getVersionManager().checkpoint(jcrNode.getPath());
-                    versionService.addVersionLabel(jcrNode, label);
-                    return true;
                 }
+                session.save();
+                versionManager.checkout(jcrNode.getPath());
+                session.getWorkspace().getVersionManager().checkpoint(jcrNode.getPath());
+                versionService.addVersionLabel(jcrNode, label);
+                return true;
             }
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
