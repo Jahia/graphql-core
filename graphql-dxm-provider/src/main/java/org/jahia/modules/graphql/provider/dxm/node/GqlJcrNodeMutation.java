@@ -538,13 +538,13 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             boolean supportVersioning = jcrNode.getProvider().getRepository().getDescriptorValue(Repository.OPTION_VERSIONING_SUPPORTED).getBoolean();
             if(supportVersioning) {
                 JCRSessionWrapper session = jcrNode.getSession();
+                session.save();
                 VersionManager versionManager = session.getWorkspace().getVersionManager();
-                String label = "uploaded_at_" + DF.format(jcrNode.getProperty("jcr:created").getDate().getTime().getTime());
+                String label = "uploaded_at_" + DF.format(jcrNode.getProperty("jcr:lastModified").getDate().getTime().getTime());
                 if (!jcrNode.isVersioned()) {
                     jcrNode.versionFile();
                     session.save();
                 }
-                session.save();
                 versionManager.checkout(jcrNode.getPath());
                 session.getWorkspace().getVersionManager().checkpoint(jcrNode.getPath());
                 versionService.addVersionLabel(jcrNode, label);
