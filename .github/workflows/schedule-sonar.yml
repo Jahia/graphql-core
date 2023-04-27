@@ -13,7 +13,7 @@ env:
 jobs:
   sonar-analysis:
     name: Sonar Analysis
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       NEXUS_INTERNAL_URL: ${{ secrets.NEXUS_INTERNAL_URL }}    
     strategy:
