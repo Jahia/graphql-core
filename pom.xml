@@ -55,26 +55,11 @@
         </repository>
     </repositories>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-test</artifactId>
-            <version>${spring.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework</groupId>
-                    <artifactId>spring-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-    </dependencies>
-
     <modules>
         <module>graphql-dxm-provider</module>
         <module>graphql-extension-example</module>
         <module>graphql-test</module>
     </modules>
-
 
     <build>
         <plugins>
