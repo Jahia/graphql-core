@@ -35,6 +35,13 @@ public class GqlCluster {
         return isActivated;
     }
 
+    @GraphQLField
+    @GraphQLName("journal")
+    @GraphQLDescription("Details about the Jahia cluster journal")
+    public GqlClusterJournal getJournal() {
+        return isActivated ? new GqlClusterJournal() : null;
+    }
+
     public void setIsActivated(Boolean isActivated) {
         this.isActivated = isActivated;
     }
