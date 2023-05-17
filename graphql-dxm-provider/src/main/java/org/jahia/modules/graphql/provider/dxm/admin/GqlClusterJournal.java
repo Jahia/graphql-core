@@ -62,8 +62,8 @@ public class GqlClusterJournal {
     }
 
     @GraphQLField
-    @GraphQLDescription("The latest revisions of the journal for oll nodes")
-    public List<GqlClusterJournalLocalRevision> getAllLocalRevisions() {
+    @GraphQLDescription("The latest revisions of the journal for all cluster nodes")
+    public List<GqlClusterJournalLocalRevision> getRevisions() {
         try (Session session = hibernateSessionFactory.openSession()) {
             return queryAllLocalRevisions(session);
         }

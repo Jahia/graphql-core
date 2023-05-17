@@ -24,22 +24,22 @@ import graphql.annotations.annotationTypes.GraphQLName;
 @GraphQLDescription("Details about one journal revision")
 public class GqlClusterJournalLocalRevision {
 
-    String journalId;
+    String serverId;
     Long revision;
 
-    public GqlClusterJournalLocalRevision(String journalId, Long revision) {
-        this.journalId = journalId;
+    public GqlClusterJournalLocalRevision(String serverId, Long revision) {
+        this.serverId = serverId;
         this.revision = revision;
     }
 
     @GraphQLField
-    @GraphQLDescription("The journal Id")
-    public String getJournalId() {
-        return journalId;
+    @GraphQLDescription("The cluster node server Id")
+    public String getServerId() {
+        return serverId;
     }
 
-    public void setJournalId(String journalId) {
-        this.journalId = journalId;
+    public void setServerId(String serverId) {
+        this.serverId = serverId;
     }
 
     @GraphQLField
