@@ -19,31 +19,36 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 
-@GraphQLName("Cluster")
-@GraphQLDescription("Details about the Jahia Cluster")
-public class GqlCluster {
 
-    private Boolean isActivated;
+@GraphQLName("JournalRevision")
+@GraphQLDescription("Details about one journal revision")
+public class GqlClusterJournalLocalRevision {
 
-    public GqlCluster() {
+    String journalId;
+    Long revision;
+
+    public GqlClusterJournalLocalRevision(String journalId, Long revision) {
+        this.journalId = journalId;
+        this.revision = revision;
     }
 
     @GraphQLField
-    @GraphQLName("isActivated")
-    @GraphQLDescription("Is the cluster mode activated on this Jahia instance")
-    public Boolean getIsActivated() {
-        return isActivated;
+    @GraphQLDescription("The journal Id")
+    public String getJournalId() {
+        return journalId;
+    }
+
+    public void setJournalId(String journalId) {
+        this.journalId = journalId;
     }
 
     @GraphQLField
-    @GraphQLDescription("Query operation on Jahia's journal across all nodes of a cluster")
-    public GqlClusterJournal getJournal() {
-        return isActivated ? new GqlClusterJournal() : null;
+    @GraphQLDescription("The revision")
+    public Long getRevision() {
+        return revision;
     }
 
-    public void setIsActivated(Boolean isActivated) {
-        this.isActivated = isActivated;
+    public void setRevision(Long revision) {
+        this.revision = revision;
     }
 }
-
-
