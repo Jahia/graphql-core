@@ -37,7 +37,7 @@ public class GqlCluster {
 
     @GraphQLField
     @GraphQLName("journal")
-    @GraphQLDescription("Details about the Jahia cluster journal")
+    @GraphQLDescription("Query operation on Jahia's journal across all nodes of a cluster")
     public GqlClusterJournal getJournal() {
         return isActivated ? new GqlClusterJournal() : null;
     }

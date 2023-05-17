@@ -43,7 +43,7 @@ public class GqlClusterJournal {
 
     @GraphQLField
     @GraphQLName("globalRevision")
-    @GraphQLDescription("Get global revision")
+    @GraphQLDescription("The latest revision of the journal on the cluster")
     public Long getGlobalRevision() {
         try (Session session = hibernateSessionFactory.openSession()) {
             return queryGlobalRevision(session);
@@ -52,7 +52,7 @@ public class GqlClusterJournal {
 
     @GraphQLField
     @GraphQLName("localRevision")
-    @GraphQLDescription("Get local node revision")
+    @GraphQLDescription("The latest revision of the journal on the local node")
     public Long getLocalRevision() {
         String currentNodeServerId = System.getProperty("cluster.node.serverId");
         if (!StringUtils.isEmpty(currentNodeServerId)) {
@@ -67,7 +67,7 @@ public class GqlClusterJournal {
 
     @GraphQLField
     @GraphQLName("isClusterSync")
-    @GraphQLDescription("Check if all nodes locales revisions are equals to the global revision")
+    @GraphQLDescription("Is the journal in sync across all nodes of a cluster")
     public Boolean isClusterSync() {
         try (Session session = hibernateSessionFactory.openSession()) {
             Long globalRevision = queryGlobalRevision(session);
