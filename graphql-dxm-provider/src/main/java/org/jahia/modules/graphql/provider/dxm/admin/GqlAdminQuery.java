@@ -94,6 +94,7 @@ public class GqlAdminQuery {
      */
     @GraphQLField
     @GraphQLDescription("Details about the Jahia cluster")
+    @GraphQLRequiresPermission(value = "graphqlAdminQuery")
     public GqlCluster getCluster() {
 
         GqlCluster gqlCluster = new GqlCluster();
