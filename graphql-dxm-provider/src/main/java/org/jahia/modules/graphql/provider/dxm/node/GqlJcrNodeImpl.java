@@ -195,6 +195,25 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                     properties.add(new GqlJcrProperty(property, this));
                 }
             }
+
+            // There could be a case when a property exists directly on the node and in translation child, we keep translated property only
+            if (language != null) {
+                String translationPath = "/j:translation_" + language + "/";
+                properties.removeIf(p -> {
+                    try {
+                        return !p.getProperty().getRealProperty().getPath().contains(translationPath)
+                                && properties.stream().anyMatch(p2 -> {
+                            try {
+                                return p.getName().equals(p2.getName()) && p2.getProperty().getRealProperty().getPath().contains(translationPath);
+                            } catch (RepositoryException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                    } catch (RepositoryException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
