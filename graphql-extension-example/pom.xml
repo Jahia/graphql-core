@@ -79,7 +79,7 @@
                             org.glassfish.jersey.server,
                             *
                         </Import-Package>
-                        <jahia-module-signature>MCwCFFY12oPk31uxRlvPk/4UR1MACFE8AhQSrQ/7eiYbGnzGPCS+P2QCH4Jtow==</jahia-module-signature>
+                        <jahia-module-signature>MC0CFBRvYXU6B3vfnR+oaUlSEDYIdKDnAhUAj4nQZQ52jresL3sER1H285+flu0=</jahia-module-signature>
                     </instructions>
                 </configuration>
             </plugin>
