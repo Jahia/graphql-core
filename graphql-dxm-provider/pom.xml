@@ -73,7 +73,8 @@
             graphql.schema;version="[13.0,14)",
             graphql.schema.idl;version="[13.0,14)",
             org.jahia.modules.external.modules.osgi;version="[4.0,5)",
-            !org.jahia.modules.graphql.provider.dxm.*
+            !org.jahia.modules.graphql.provider.dxm.*,
+            org.apache.tika;version="[1.27,3)"
         </import-package>
         <jahia-module-type>system</jahia-module-type>
         <jahia-module-signature>MCwCFF+OA2JTSs4XZqAlfoP157UxsrxYAhQbILGqUYsZyQ0ZdSM9hZzA0S4z+g==</jahia-module-signature>
