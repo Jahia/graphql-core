@@ -24,6 +24,8 @@ describe('Test if every type in graphQL API has description', () => {
                     'type=GqlEditorFormFieldValue',
                     'type=GqlEditorFormProperty',
                     'type=GqlEditorFormFieldValueConstraint',
+                    'type=GqlEditorFormValue',
+                    'type=GqlEditorFormValueConstraint',
                     'type=InputContextEntryInput',
                     'inputType=InputContextEntryInput/field=key',
                     'inputType=InputContextEntryInput/field=value',
