@@ -55,7 +55,7 @@ public class GqlPublicationBackgroundJob extends GqlBackgroundJob {
                 }
             }
 
-            if (translationNode != null && translationNode.getResolveSite().getActiveLiveLanguages().size() > 1) {
+            if (translationNode != null) {
                 return translationNode.getLanguage();
             }
         } catch (RuntimeException | RepositoryException e) {
