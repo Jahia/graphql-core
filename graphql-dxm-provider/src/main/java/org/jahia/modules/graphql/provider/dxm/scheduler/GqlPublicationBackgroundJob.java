@@ -43,20 +43,18 @@ public class GqlPublicationBackgroundJob extends GqlBackgroundJob {
         JCRSessionWrapper session;
 
         try {
-            JCRNodeWrapper translationNode = null;
+            JCRNodeWrapper publishedNode = null;
             session = JCRSessionFactory.getInstance().getCurrentUserSession();
             Collection<String> uuids = (Collection<String>) this.jobDetail.getJobDataMap().get(PublicationJob.PUBLICATION_UUIDS);
-            Iterator<String> it = uuids.iterator();
-            while (it.hasNext() && translationNode == null) {
-                String uuid = it.next();
-                translationNode = session.getNodeByIdentifier(uuid);
-                if (!translationNode.isNodeType("jnt:translation")) {
-                    translationNode = null;
+            for (String uuid : uuids) {
+                publishedNode = session.getNodeByIdentifier(uuid);
+                if (publishedNode.isNodeType("jnt:translation")) {
+                    break;
                 }
             }
 
-            if (translationNode != null) {
-                return translationNode.getLanguage();
+            if (publishedNode != null) {
+                return publishedNode.getLanguage();
             }
         } catch (RuntimeException | RepositoryException e) {
             throw new JahiaRuntimeException(e);
