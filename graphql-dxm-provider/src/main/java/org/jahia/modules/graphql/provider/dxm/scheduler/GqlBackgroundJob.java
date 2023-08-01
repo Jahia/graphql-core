@@ -24,11 +24,18 @@ import org.quartz.JobDetail;
 
 @GraphQLDescription("Background job")
 public class GqlBackgroundJob {
-    private JobDetail jobDetail;
-    private GqlBackgroundJobStatus jobStatus;
-    private GqlBackgroundJobState jobState;
+    protected JobDetail jobDetail;
+    protected GqlBackgroundJobStatus jobStatus;
+    protected GqlBackgroundJobState jobState;
+
+    public GqlBackgroundJob() {
+    }
 
     public GqlBackgroundJob(JobDetail jobDetail, GqlBackgroundJobState state) {
+        init(jobDetail, state);
+    }
+
+    public void init(JobDetail jobDetail, GqlBackgroundJobState state) {
         this.jobDetail = jobDetail;
         this.jobStatus = GqlBackgroundJobStatus.valueOf(jobDetail.getJobDataMap().getString(BackgroundJob.JOB_STATUS).toUpperCase());
         this.jobState = state;

@@ -20,18 +20,21 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.listeners.JobListenerSupport;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.function.Predicate;
 
-public class GqlJobListener extends JobListenerSupport {
+public class GqlJobListener<T extends GqlBackgroundJob> extends JobListenerSupport {
 
     private String name;
-    private FlowableEmitter<GqlBackgroundJob> obs;
-    private Predicate<GqlBackgroundJob> jobFilter;
+    private FlowableEmitter<T> obs;
+    private Predicate<T> jobFilter;
+    private Class<T> clazz;
 
-    public GqlJobListener(String name, FlowableEmitter<GqlBackgroundJob> obs, Predicate<GqlBackgroundJob> jobFilter) {
+    public GqlJobListener(String name, FlowableEmitter<T> obs, Predicate<T> jobFilter, Class<T> clazz) {
         this.name = name;
         this.obs = obs;
         this.jobFilter = jobFilter;
+        this.clazz = clazz;
     }
 
     @Override
@@ -55,9 +58,20 @@ public class GqlJobListener extends JobListenerSupport {
     }
 
     private void submitJobEvent(JobExecutionContext context, GqlBackgroundJob.GqlBackgroundJobState state) {
-        GqlBackgroundJob gqlBackgroundJob = new GqlBackgroundJob(context.getJobDetail(), state);
+        T gqlBackgroundJob = null;
+        try {
+            gqlBackgroundJob = getInstanceOfT();
+            gqlBackgroundJob.init(context.getJobDetail(), state);
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
         if (jobFilter.test(gqlBackgroundJob)) {
             obs.onNext(gqlBackgroundJob);
         }
+    }
+
+    private T getInstanceOfT() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        return this.clazz.getDeclaredConstructor().newInstance();
     }
 }

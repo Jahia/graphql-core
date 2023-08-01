@@ -55,7 +55,50 @@ public class GqlJobSubscriptionExtension {
         return Flowable.create(obs -> {
             SchedulerService schedulerService = ServicesRegistry.getInstance().getSchedulerService();
             String name = UUID.randomUUID().toString();
-            GqlJobListener jobListener = new GqlJobListener(name, obs, jobFilter);
+            GqlJobListener<GqlBackgroundJob> jobListener = new GqlJobListener<>(name, obs, jobFilter, GqlBackgroundJob.class);
+
+            if (ramScheduler) {
+                logger.info("Adding job listener {} for RAM scheduler", name);
+                schedulerService.addJobListener(jobListener, true);
+            }
+
+            if (scheduler) {
+                logger.info("Adding job listener {}", name);
+                schedulerService.addJobListener(jobListener, false);
+            }
+
+            obs.setCancellable(() -> {
+                if (ramScheduler) {
+                    schedulerService.removeJobListener(name, true);
+                }
+
+                if (scheduler) {
+                    schedulerService.removeJobListener(name, false);
+                }
+            });
+        }, BackpressureStrategy.BUFFER);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Subscription on publication background jobs")
+    public static Publisher<GqlPublicationBackgroundJob> publicationBackgroundJobSubscription(
+            @GraphQLName("targetScheduler") @GraphQLDefaultValue(GqlJobSubscriptionExtension.TargetSchedulerDefaultValue.class) @GraphQLDescription("The target scheduler for listening jobs") TargetScheduler targetScheduler,
+            @GraphQLName("filterByJobStatuses") @GraphQLDescription("Subscribe only to job with matching job statuses") List<GqlPublicationBackgroundJob.GqlBackgroundJobStatus> jobStatusesFilter,
+            @GraphQLName("filterByJobStates") @GraphQLDescription("Subscribe only to job with matching job states") List<GqlPublicationBackgroundJob.GqlBackgroundJobState> jobStatesFilter,
+            @GraphQLName("filterByUserKey") @GraphQLDescription("Subscribe only to job with matching user key") List<String> userKeyFilter) {
+
+        boolean ramScheduler = targetScheduler == TargetScheduler.RAM_SCHEDULER || targetScheduler == TargetScheduler.BOTH;
+        boolean scheduler = targetScheduler == TargetScheduler.SCHEDULER || targetScheduler == TargetScheduler.BOTH;
+
+        Predicate<GqlPublicationBackgroundJob> jobFilter = gqlBackgroundJob -> (gqlBackgroundJob.getGroup().equals("PublicationJob")) &&
+                (userKeyFilter == null || userKeyFilter.contains(gqlBackgroundJob.getUserKey())) &&
+                (jobStatusesFilter == null || jobStatusesFilter.contains(gqlBackgroundJob.getJobStatus())) &&
+                (jobStatesFilter == null || jobStatesFilter.contains(gqlBackgroundJob.getJobState()));
+
+        return Flowable.create(obs -> {
+            SchedulerService schedulerService = ServicesRegistry.getInstance().getSchedulerService();
+            String name = UUID.randomUUID().toString();
+            GqlJobListener<GqlPublicationBackgroundJob> jobListener = new GqlJobListener<>(name, obs, jobFilter, GqlPublicationBackgroundJob.class);
 
             if (ramScheduler) {
                 logger.info("Adding job listener {} for RAM scheduler", name);
