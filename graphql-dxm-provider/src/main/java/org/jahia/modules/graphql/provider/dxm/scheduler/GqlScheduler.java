@@ -19,6 +19,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
+import org.jahia.modules.graphql.provider.dxm.scheduler.jobs.GqlBackgroundJob;
 import org.jahia.services.scheduler.SchedulerService;
 import org.quartz.SchedulerException;
 

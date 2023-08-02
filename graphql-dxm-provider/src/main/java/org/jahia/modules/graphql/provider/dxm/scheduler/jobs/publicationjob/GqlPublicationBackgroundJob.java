@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jahia.modules.graphql.provider.dxm.scheduler;
+package org.jahia.modules.graphql.provider.dxm.scheduler.jobs.publicationjob;
 
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.modules.graphql.provider.dxm.scheduler.jobs.GqlBackgroundJob;
 import org.jahia.services.content.*;
 import org.quartz.JobDetail;
 
@@ -28,9 +29,6 @@ import java.util.*;
 
 @GraphQLDescription("Publication background job")
 public class GqlPublicationBackgroundJob extends GqlBackgroundJob {
-
-    public GqlPublicationBackgroundJob() {
-    }
 
     public GqlPublicationBackgroundJob(JobDetail jobDetail, GqlBackgroundJobState state) {
         super(jobDetail, state);

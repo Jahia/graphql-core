@@ -16,25 +16,23 @@
 package org.jahia.modules.graphql.provider.dxm.scheduler;
 
 import io.reactivex.FlowableEmitter;
+import org.jahia.modules.graphql.provider.dxm.scheduler.jobs.GqlBackgroundJob;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.listeners.JobListenerSupport;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.function.Predicate;
 
-public class GqlJobListener<T extends GqlBackgroundJob> extends JobListenerSupport {
+public class GqlJobListener extends JobListenerSupport {
 
     private String name;
-    private FlowableEmitter<T> obs;
-    private Predicate<T> jobFilter;
-    private Class<T> clazz;
+    private FlowableEmitter<GqlBackgroundJob> obs;
+    private Predicate<GqlBackgroundJob> jobFilter;
 
-    public GqlJobListener(String name, FlowableEmitter<T> obs, Predicate<T> jobFilter, Class<T> clazz) {
+    public GqlJobListener(String name, FlowableEmitter<GqlBackgroundJob> obs, Predicate<GqlBackgroundJob> jobFilter) {
         this.name = name;
         this.obs = obs;
         this.jobFilter = jobFilter;
-        this.clazz = clazz;
     }
 
     @Override
@@ -58,20 +56,9 @@ public class GqlJobListener<T extends GqlBackgroundJob> extends JobListenerSuppo
     }
 
     private void submitJobEvent(JobExecutionContext context, GqlBackgroundJob.GqlBackgroundJobState state) {
-        T gqlBackgroundJob = null;
-        try {
-            gqlBackgroundJob = getInstanceOfT();
-            gqlBackgroundJob.init(context.getJobDetail(), state);
-        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-
+        GqlBackgroundJob gqlBackgroundJob = new GqlBackgroundJob(context.getJobDetail(), state);
         if (jobFilter.test(gqlBackgroundJob)) {
             obs.onNext(gqlBackgroundJob);
         }
-    }
-
-    private T getInstanceOfT() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        return this.clazz.getDeclaredConstructor().newInstance();
     }
 }
