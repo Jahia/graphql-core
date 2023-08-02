@@ -43,12 +43,14 @@ public class GqlJobSubscriptionExtension {
             @GraphQLName("filterByGroups") @GraphQLDescription("Subscribe only to job with matching group names") List<String> groupsFilter,
             @GraphQLName("filterByNames") @GraphQLDescription("Subscribe only to job with matching names") List<String> namesFilter,
             @GraphQLName("filterByJobStatuses") @GraphQLDescription("Subscribe only to job with matching job statuses") List<GqlBackgroundJob.GqlBackgroundJobStatus> jobStatusesFilter,
-            @GraphQLName("filterByJobStates") @GraphQLDescription("Subscribe only to job with matching job states") List<GqlBackgroundJob.GqlBackgroundJobState> jobStatesFilter) {
+            @GraphQLName("filterByJobStates") @GraphQLDescription("Subscribe only to job with matching job states") List<GqlBackgroundJob.GqlBackgroundJobState> jobStatesFilter,
+            @GraphQLName("filterByUserKey") @GraphQLDescription("Subscribe only to job with matching user keys") List<String> jobUserKeyFilter) {
 
         boolean ramScheduler = targetScheduler == TargetScheduler.RAM_SCHEDULER || targetScheduler == TargetScheduler.BOTH;
         boolean scheduler = targetScheduler == TargetScheduler.SCHEDULER || targetScheduler == TargetScheduler.BOTH;
 
         Predicate<GqlBackgroundJob> jobFilter = gqlBackgroundJob -> (groupsFilter == null || groupsFilter.contains(gqlBackgroundJob.getGroup())) &&
+                (jobUserKeyFilter == null || jobUserKeyFilter.contains(gqlBackgroundJob.getUserKey())) &&
                 (namesFilter == null || namesFilter.contains(gqlBackgroundJob.getName())) &&
                 (jobStatusesFilter == null || jobStatusesFilter.contains(gqlBackgroundJob.getJobStatus())) &&
                 (jobStatesFilter == null || jobStatesFilter.contains(gqlBackgroundJob.getJobState()));

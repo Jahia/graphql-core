@@ -38,26 +38,6 @@ public class GqlPublicationBackgroundJob extends GqlBackgroundJob {
     @GraphQLName("language")
     @GraphQLDescription("Publication language")
     public String getLanguage() {
-        JCRSessionWrapper session;
-
-        try {
-            JCRNodeWrapper publishedNode = null;
-            session = JCRSessionFactory.getInstance().getCurrentUserSession();
-            Collection<String> uuids = (Collection<String>) this.jobDetail.getJobDataMap().get(PublicationJob.PUBLICATION_UUIDS);
-            for (String uuid : uuids) {
-                publishedNode = session.getNodeByIdentifier(uuid);
-                if (publishedNode.isNodeType("jnt:translation")) {
-                    break;
-                }
-            }
-
-            if (publishedNode != null) {
-                return publishedNode.getLanguage();
-            }
-        } catch (RuntimeException | RepositoryException e) {
-            throw new JahiaRuntimeException(e);
-        }
-
-        return null;
+        return (String) this.jobDetail.getJobDataMap().get("language");
     }
 }
