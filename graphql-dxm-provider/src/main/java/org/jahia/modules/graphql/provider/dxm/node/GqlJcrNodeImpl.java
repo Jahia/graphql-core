@@ -343,6 +343,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLNonNull
     @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
     public DXPaginatedData<GqlJcrProperty> getReferences(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                                         @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
                                                   DataFetchingEnvironment environment) {
         List<GqlJcrProperty> references = new LinkedList<GqlJcrProperty>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
@@ -361,7 +362,13 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                 throw new RuntimeException(e);
             }
         }
-        return PaginationHelper.paginate(FilterHelper.filterConnection(references, fieldFilter, environment), p -> PaginationHelper.encodeCursor(p.getNode().getUuid() + "/" + p.getName()), arguments);
+
+        List<GqlJcrProperty> result = FilterHelper.filterConnection(references, fieldFilter, environment);
+        if (fieldSorter != null) {
+            result.sort(SorterHelper.getFieldComparator(fieldSorter, FieldEvaluator.forConnection(environment)));
+        }
+
+        return PaginationHelper.paginate(result, p -> PaginationHelper.encodeCursor(p.getNode().getUuid() + "/" + p.getName()), arguments);
     }
 
     private void collectReferences(PropertyIterator references, Collection<GqlJcrProperty> gqlReferences, DataFetchingEnvironment environment) throws RepositoryException {
