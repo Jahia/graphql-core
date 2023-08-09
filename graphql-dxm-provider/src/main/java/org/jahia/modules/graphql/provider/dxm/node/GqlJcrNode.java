@@ -227,6 +227,7 @@ public interface GqlJcrNode {
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
     DXPaginatedData<GqlJcrProperty> getReferences(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                                  @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
                                                   DataFetchingEnvironment environment);
 
     /**
