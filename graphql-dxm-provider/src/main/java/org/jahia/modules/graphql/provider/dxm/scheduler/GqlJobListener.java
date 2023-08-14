@@ -16,6 +16,7 @@
 package org.jahia.modules.graphql.provider.dxm.scheduler;
 
 import io.reactivex.FlowableEmitter;
+import org.jahia.modules.graphql.provider.dxm.scheduler.jobs.GqlBackgroundJob;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.listeners.JobListenerSupport;
