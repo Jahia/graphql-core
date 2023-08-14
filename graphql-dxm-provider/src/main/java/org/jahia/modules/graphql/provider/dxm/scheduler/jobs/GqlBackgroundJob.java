@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jahia.modules.graphql.provider.dxm.scheduler;
+package org.jahia.modules.graphql.provider.dxm.scheduler.jobs;
 
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
@@ -24,11 +24,15 @@ import org.quartz.JobDetail;
 
 @GraphQLDescription("Background job")
 public class GqlBackgroundJob {
-    private JobDetail jobDetail;
-    private GqlBackgroundJobStatus jobStatus;
-    private GqlBackgroundJobState jobState;
+    protected JobDetail jobDetail;
+    protected GqlBackgroundJobStatus jobStatus;
+    protected GqlBackgroundJobState jobState;
 
     public GqlBackgroundJob(JobDetail jobDetail, GqlBackgroundJobState state) {
+        init(jobDetail, state);
+    }
+
+    public void init(JobDetail jobDetail, GqlBackgroundJobState state) {
         this.jobDetail = jobDetail;
         this.jobStatus = GqlBackgroundJobStatus.valueOf(jobDetail.getJobDataMap().getString(BackgroundJob.JOB_STATUS).toUpperCase());
         this.jobState = state;
@@ -132,6 +136,10 @@ public class GqlBackgroundJob {
         return null;
     }
 
+    public JobDetail getJobDetail() {
+        return jobDetail;
+    }
+
     public enum GqlBackgroundJobStatus {
         ADDED, SCHEDULED, EXECUTING, SUCCESSFUL, FAILED, CANCELED
     }
@@ -140,5 +148,3 @@ public class GqlBackgroundJob {
         STARTED, VETOED, FINISHED
     }
 }
-
-
