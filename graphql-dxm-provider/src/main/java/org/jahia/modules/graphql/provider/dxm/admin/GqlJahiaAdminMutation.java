@@ -17,7 +17,15 @@ package org.jahia.modules.graphql.provider.dxm.admin;
 
 
 import graphql.annotations.annotationTypes.*;
+import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.osgiconfig.GqlConfigurationMutation;
+import org.jahia.services.modulemanager.spi.Config;
+import org.jahia.services.modulemanager.spi.ConfigService;
+
+import javax.inject.Inject;
+import java.io.IOException;
 
 /**
  * GraphQL root object for Admin related mutations.
@@ -25,6 +33,10 @@ import org.jahia.modules.graphql.provider.dxm.osgiconfig.GqlConfigurationMutatio
 @GraphQLName("JahiaAdminMutation")
 @GraphQLDescription("Admin mutations")
 public class GqlJahiaAdminMutation {
+
+    @Inject
+    @GraphQLOsgiService
+    private ConfigService configService;
 
     /**
      * We must have at least one field for the schema to be valid
@@ -34,7 +46,23 @@ public class GqlJahiaAdminMutation {
     @GraphQLField
     @GraphQLDescription("Mutate an OSGi configuration")
     public GqlConfigurationMutation configuration(@GraphQLName("pid") @GraphQLDescription("Configuration pid ot factory pid") @GraphQLNonNull String pid,
-                                                  @GraphQLName("identifier") @GraphQLDescription("If factory pid, configiration identifier (filename suffix)") String identifier) {
-        return new GqlConfigurationMutation(pid, identifier);
+                                                  @GraphQLName("identifier") @GraphQLDescription("If factory pid, configiration identifier (filename suffix)") String identifier,
+                                                  @GraphQLName("updateOnly") @GraphQLDescription("Do not create new configuration, update existing one") Boolean updateOnly) {
+        Config configuration;
+        try {
+            if (identifier == null) {
+                configuration = configService.getConfig(pid);
+            } else {
+                configuration = configService.getConfig(pid, identifier);
+            }
+
+            if (updateOnly && StringUtils.isEmpty(configuration.getContent())) {
+                return null;
+            }
+
+            return new GqlConfigurationMutation(configuration);
+        } catch (IOException e) {
+            throw new DataFetchingException(e);
+        }
     }
 }
