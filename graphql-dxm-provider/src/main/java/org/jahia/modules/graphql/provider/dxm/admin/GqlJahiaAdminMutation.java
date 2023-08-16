@@ -21,6 +21,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.osgiconfig.GqlConfigurationMutation;
+import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.services.modulemanager.spi.Config;
 import org.jahia.services.modulemanager.spi.ConfigService;
 
@@ -47,7 +48,7 @@ public class GqlJahiaAdminMutation {
     @GraphQLDescription("Mutate an OSGi configuration")
     public GqlConfigurationMutation configuration(@GraphQLName("pid") @GraphQLDescription("Configuration pid ot factory pid") @GraphQLNonNull String pid,
                                                   @GraphQLName("identifier") @GraphQLDescription("If factory pid, configiration identifier (filename suffix)") String identifier,
-                                                  @GraphQLName("updateOnly") @GraphQLDescription("Do not create new configuration, update existing one") Boolean updateOnly) {
+                                                  @GraphQLName("updateOnly") @GraphQLDescription("Do not create new configuration, update existing one") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) Boolean updateOnly) {
         Config configuration;
         try {
             if (identifier == null) {
