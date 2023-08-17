@@ -17,3 +17,4 @@ These types can be extended with new fields. The servlet looks for services impl
 ## Open-Source
 
 This is an Open-Source module, you can find more details about Open-Source @ Jahia [in this repository](https://github.com/Jahia/open-source)
+ 
