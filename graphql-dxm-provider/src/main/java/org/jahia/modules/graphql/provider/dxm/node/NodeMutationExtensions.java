@@ -30,7 +30,7 @@ public class NodeMutationExtensions {
 
     /**
      * Root for all JCR mutations.
-     * 
+     *
      * @param workspace the name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default
      * @return GraphQL root object for JCR related mutations
      * @throws RepositoryException in case of JCR related errors
@@ -39,7 +39,8 @@ public class NodeMutationExtensions {
     @GraphQLName("jcr")
     @GraphQLDescription("JCR Mutation")
     public static GqlJcrMutation getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") NodeQueryExtensions.Workspace workspace,
-                                        @GraphQLName("save") @GraphQLDescription("Should save") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean save) throws RepositoryException {
-        return new GqlJcrMutation(workspace != null ? workspace.getValue() : null, save);
+                                        @GraphQLName("save") @GraphQLDescription("Should save") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean save,
+                                        @GraphQLName("sessionLanguage") @GraphQLDescription("The language which will be used in the session which will save the node") String sessionLanguage) throws RepositoryException {
+        return new GqlJcrMutation(workspace != null ? workspace.getValue() : null, save, sessionLanguage);
     }
 }

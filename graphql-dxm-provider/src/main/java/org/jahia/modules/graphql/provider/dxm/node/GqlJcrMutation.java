@@ -17,6 +17,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.lang.LocaleUtils;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLFieldCompleter;
@@ -26,10 +27,7 @@ import org.jahia.services.importexport.DocumentViewImportHandler;
 import org.jahia.services.query.QueryWrapper;
 
 import javax.jcr.RepositoryException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -43,14 +41,18 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     private String workspace;
     private boolean save = true;
 
+    private String sessionLanguage;
     /**
      * Initializes an instance of this class with the specified JCR workspace name.
      *
      * @param workspace the name of the JCR workspace
+     * @param save if true, the node will be saved
+     * @param sessionLanguage The language which will be used in the session which will save the node
      */
-    public GqlJcrMutation(String workspace, boolean save) {
+    public GqlJcrMutation(String workspace, boolean save, String sessionLanguage) {
         this.workspace = workspace;
         this.save = save;
+        this.sessionLanguage = sessionLanguage;
     }
 
     /**
@@ -444,13 +446,16 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     }
 
     public JCRSessionWrapper getSession() {
+        return getSession(null);
+    }
+
+    public JCRSessionWrapper getSession(Locale locale) {
         try {
-            return JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
+            return JCRSessionFactory.getInstance().getCurrentUserSession(workspace, locale);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
     }
-
     public String getWorkspace() {
         return workspace;
     }
@@ -462,7 +467,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     public void completeField() {
         try {
             if (save) {
-                getSession().save();
+                getSession(LocaleUtils.toLocale(sessionLanguage)).save();
             }
         } catch (RepositoryException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
