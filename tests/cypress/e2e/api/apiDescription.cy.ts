@@ -42,6 +42,7 @@ describe('Test if every type in graphQL API has description', () => {
                     'type=Category/field=uuid',
                     'type=Category/field=path',
                     'type=Query/field=categoryByPath/arg=path',
+                    'type=GqlNpmHelper',
                 ]
                 noDescBlacklist.forEach((n) => noDesc.delete(n))
 
