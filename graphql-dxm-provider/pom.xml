@@ -81,10 +81,6 @@
         <mockito.version>2.21.0</mockito.version>
         <powermock.version>2.0.9</powermock.version>
         <sonar.sources>src/main/resources/javascript</sonar.sources>
-
-        <graphql-java.version>15.0</graphql-java.version>
-        <graphql-java-annotations.version>8.3</graphql-java-annotations.version>
-        <graphql-java-servlet.version>10.1.0</graphql-java-servlet.version>
     </properties>
 
     <dependencies>
