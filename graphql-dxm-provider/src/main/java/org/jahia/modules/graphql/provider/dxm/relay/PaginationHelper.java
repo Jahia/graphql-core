@@ -22,7 +22,6 @@ import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.commons.lang.mutable.MutableObject;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.modules.graphql.provider.dxm.util.StreamUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -130,7 +129,6 @@ public class PaginationHelper {
         return new StreamBasedDXPaginatedData<>(filtered, cursorSupport, hasPrevious, hasNext, count.intValue(), it);
     }
 
-    @NotNull
     private static <T> List<T> collectItems(Iterator<T> it, Arguments arguments, CursorSupport<T> cursorSupport, MutableInt count, MutableObject last) {
         // Elements collected in dedicated list, depending on last/before combination
         Collection<T> items;
