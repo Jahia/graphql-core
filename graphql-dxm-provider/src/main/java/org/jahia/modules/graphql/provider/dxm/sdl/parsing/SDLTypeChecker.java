@@ -58,7 +58,8 @@ public class SDLTypeChecker {
     // @TODO revisit this functionality in the future and extract out of type checker, as it does not fit with the named implication of this class.
     private static void addDefaultFields(ObjectTypeDefinition objectTypeDefinition) {
         // append id, path and url fields
-        List<FieldDefinition> fieldDefinitions = objectTypeDefinition.getFieldDefinitions();
+        // TODO list of fields cannot be modified anymore
+        List<FieldDefinition> fieldDefinitions = new ArrayList<>(objectTypeDefinition.getFieldDefinitions());
         FieldDefinition uuid = FieldDefinition.newFieldDefinition()
                 .name("uuid")
                 .type(TypeName.newTypeName(GraphQLString.getName()).build())
