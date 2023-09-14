@@ -39,9 +39,9 @@
     <properties>
         <jahia.nexus.staging.repository.id>64277f72646358</jahia.nexus.staging.repository.id>
 
-        <graphql-java.version>19.2</graphql-java.version>
-        <graphql-java-annotations.version>10.0</graphql-java-annotations.version>
-        <graphql-java-servlet.version>14.0.0</graphql-java-servlet.version>
+        <graphql-java.version>21.1</graphql-java.version>
+        <graphql-java-annotations.version>21.1.0-SNAPSHOT</graphql-java-annotations.version>
+        <graphql-java-servlet.version>15.1.1-SNAPSHOT</graphql-java-servlet.version>
     </properties>
 
     <repositories>

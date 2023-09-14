@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Custom DataFetchingExceptionHandler
@@ -58,7 +59,7 @@ public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHa
     }
 
     @Override
-    public DataFetcherExceptionHandlerResult onException(DataFetcherExceptionHandlerParameters handlerParameters) {
+    public CompletableFuture<DataFetcherExceptionHandlerResult> handleException(DataFetcherExceptionHandlerParameters handlerParameters) {
         Throwable exception = handlerParameters.getException();
         exception = unwrapException(exception);
 
@@ -70,6 +71,6 @@ public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHa
             log.warn(error.getMessage(), exception);
         }
 
-        return builder.build();
+        return CompletableFuture.completedFuture(builder.build());
     }
 }
