@@ -15,6 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.util;
 
+import graphql.GraphQLContext;
 import graphql.kickstart.servlet.context.GraphQLServletContext;
 
 import javax.servlet.http.HttpServletRequest;
@@ -34,6 +35,10 @@ public class ContextUtil {
      * @return response
      */
     public static HttpServletRequest getHttpServletRequest(Object context) {
+        if (context instanceof GraphQLContext) {
+            return ((GraphQLContext) context).get(HttpServletRequest.class);
+        }
+
         if (context instanceof GraphQLServletContext) {
             return ((GraphQLServletContext) context).getHttpServletRequest();
         }
@@ -47,6 +52,10 @@ public class ContextUtil {
      * @return response
      */
     public static HttpServletResponse getHttpServletResponse(Object context) {
+        if (context instanceof GraphQLContext) {
+            return ((GraphQLContext) context).get(HttpServletResponse.class);
+        }
+
         if (context instanceof GraphQLServletContext) {
             return ((GraphQLServletContext) context).getHttpServletResponse();
         }

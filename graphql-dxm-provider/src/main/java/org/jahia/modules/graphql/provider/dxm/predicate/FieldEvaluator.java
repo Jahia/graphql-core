@@ -129,14 +129,14 @@ public class FieldEvaluator {
     }
 
     private static Map<String, Object> getVariables(DataFetchingEnvironment environment) {
-        HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getContext());
+        HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
         return (request != null) ?
                 (Map<String, Object>) request.getAttribute(GRAPHQL_VARIABLES) :
                 new LinkedHashMap<>();
     }
 
     private static Map<String, FragmentDefinition> getFragmentDefinitions(DataFetchingEnvironment environment) {
-        HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getContext());
+        HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
         return (request != null) ?
                 (Map<String, FragmentDefinition>) request.getAttribute(FRAGMENTS_BY_NAME) :
                 new LinkedHashMap<>();
@@ -160,7 +160,7 @@ public class FieldEvaluator {
             return (GraphQLObjectType) type;
         } else if (type instanceof GraphQLInterfaceType) {
             TypeResolver typeResolver = environment.getGraphQLSchema().getCodeRegistry().getTypeResolver((GraphQLInterfaceType) type);
-            return typeResolver.getType(new TypeResolutionParameters.Builder().localContext(object).build());
+            return typeResolver.getType(new TypeResolutionParameters.Builder().value(object).build());
         } else {
             return null;
         }
@@ -200,7 +200,7 @@ public class FieldEvaluator {
         DataFetchingEnvironmentImpl.Builder fieldEnvBuilder = newDataFetchingEnvironment()
                 .source(source)
                 .parentType(objectType)
-                .context(environment.getContext())
+                .graphQLContext(environment.getGraphQlContext())
                 .root(environment.getRoot())
                 .executionId(environment.getExecutionId())
                 .fragmentsByName(environment.getFragmentsByName())
