@@ -131,6 +131,7 @@
             <groupId>com.graphql-java</groupId>
             <artifactId>java-dataloader</artifactId>
             <version>${dataloader.version}</version>
+            <scope>provided</scope>
         </dependency>
 
     </dependencies>

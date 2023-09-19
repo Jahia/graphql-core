@@ -19,7 +19,6 @@ import graphql.kickstart.execution.subscriptions.SubscriptionProtocolFactory;
 import graphql.kickstart.servlet.GraphQLConfiguration;
 import graphql.kickstart.servlet.GraphQLWebsocketServlet;
 import graphql.kickstart.servlet.OsgiGraphQLHttpServlet;
-import graphql.kickstart.servlet.subscriptions.WebSocketSubscriptionProtocolFactory;
 import org.jahia.api.Constants;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
@@ -34,26 +33,21 @@ import javax.websocket.*;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.Arrays.asList;
 
 @Component(immediate = true, service = Endpoint.class)
 @ServerEndpoint(value="/graphqlws", subprotocols = {"graphql-ws", "graphql-transport-ws"}, configurator = OsgiGraphQLWsEndpoint.Configurator.class)
 public class OsgiGraphQLWsEndpoint extends Endpoint {
     private Logger logger = LoggerFactory.getLogger(OsgiGraphQLWsEndpoint.class);
     private static GraphQLWebsocketServlet delegate;
-    private WebSocketSubscriptionProtocolFactory subscriptionProtocolFactory;
 
     @Reference(service = HttpServlet.class, target = "(component.name=graphql.kickstart.servlet.OsgiGraphQLHttpServlet)")
     public void setServlet(HttpServlet servlet) {
         try {
             GraphQLConfiguration configuration = ((OsgiGraphQLHttpServlet)servlet).getSchemaBuilder().getConfiguration();
             delegate = new GraphQLWebsocketServlet(configuration.getGraphQLInvoker(), configuration.getInvocationInputFactory(), configuration.getObjectMapper());
-            subscriptionProtocolFactory = (WebSocketSubscriptionProtocolFactory) delegate.getSubscriptionProtocolFactory(Collections.singletonList("graphql-ws"));
         } catch (Exception e) {
             logger.error("Cannot get schema from GQL servlet", e);
         }
@@ -68,7 +62,6 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     @Override
     public void onOpen(Session session, EndpointConfig endpointConfig) {
         Map<String, Object> userProperties = endpointConfig.getUserProperties();
-        userProperties.put(SubscriptionProtocolFactory.class.getName(), subscriptionProtocolFactory);
         JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) userProperties.get(Constants.SESSION_USER));
 
         try {
@@ -91,7 +84,18 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     public static class Configurator extends ServerEndpointConfig.Configurator {
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response) {
-            delegate.modifyHandshake(sec, request, response);
+            // Based on GraphQLWebsocketServlet.modifyHandshake - skip the last part sending response header, already handled by whiteboard
+            sec.getUserProperties().put(HandshakeRequest.class.getName(), request);
+
+            List<String> protocol = request.getHeaders().get(HandshakeRequest.SEC_WEBSOCKET_PROTOCOL);
+            if (protocol == null) {
+                protocol = Collections.emptyList();
+            }
+
+            SubscriptionProtocolFactory subscriptionProtocolFactory = delegate.getSubscriptionProtocolFactory(protocol);
+            sec.getUserProperties().put(SubscriptionProtocolFactory.class.getName(), subscriptionProtocolFactory);
+
+            // Add the current user to user props
             sec.getUserProperties().put(Constants.SESSION_USER, JCRSessionFactory.getInstance().getCurrentUser());
         }
     }
