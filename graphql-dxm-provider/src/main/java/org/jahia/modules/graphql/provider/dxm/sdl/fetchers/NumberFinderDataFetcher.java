@@ -147,16 +147,16 @@ public class NumberFinderDataFetcher extends FinderListDataFetcher {
         switch (name) {
             case "Int":
                 return GraphQLInt;
-            case "Long":
-                return GraphQLLong;
-            case "BigInteger":
-                return GraphQLBigInteger;
-            case "BigDecimal":
-                return GraphQLBigDecimal;
+//            case "Long":
+//                return GraphQLLong;
+//            case "BigInteger":
+//                return GraphQLBigInteger;
+//            case "BigDecimal":
+//                return GraphQLBigDecimal;
             case "Float":
                 return GraphQLFloat;
-            case "Short":
-                return GraphQLShort;
+//            case "Short":
+//                return GraphQLShort;
             default:
                 return GraphQLInt;
         }

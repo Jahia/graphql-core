@@ -21,6 +21,7 @@ import graphql.schema.idl.SchemaDirectiveWiringEnvironment;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.*;
+import org.jahia.modules.graphql.provider.dxm.util.GqlTypeUtil;
 import org.jahia.osgi.BundleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,11 +43,11 @@ public class MappingDirectiveWiring implements SchemaDirectiveWiring {
         // Mapping on field
 
         GraphQLFieldDefinition def = environment.getElement();
-        GraphQLDirective directive = environment.getDirective();
+        GraphQLAppliedDirective directive = environment.getAppliedDirective();
 
         Field field = new Field(def.getName());
         field.setProperty(directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue().toString());
-        field.setType(def.getType().getName());
+        field.setType(GqlTypeUtil.getTypeName(def.getType()));
 
         logger.debug("field name {} ", field.getName());
         logger.debug("field type {} ", field.getType());
@@ -58,7 +59,7 @@ public class MappingDirectiveWiring implements SchemaDirectiveWiring {
             String key = parentType + "." + def.getName();
             if (service.getConnectionFieldNameToSDLType().containsKey(key)) {
                 ConnectionHelper.ConnectionTypeInfo conInfo = service.getConnectionFieldNameToSDLType().get(key);
-                GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList) def.getType()).getWrappedType();
+                GraphQLNamedOutputType node = (GraphQLNamedOutputType) GqlTypeUtil.unwrapType(def.getType());
                 GraphQLObjectType connectionType = ConnectionHelper.getOrCreateConnection(service, node, conInfo.getMappedToType());
                 DataFetcher typeFetcher = PropertiesDataFetcherFactory.getFetcher(def, field);
                 List<GraphQLArgument> args = service.getRelay().getConnectionFieldArguments();

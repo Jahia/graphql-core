@@ -25,6 +25,7 @@ import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Field;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.FinderListDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.PropertiesDataFetcherFactory;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.SDLPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.util.GqlTypeUtil;
 import org.jahia.osgi.BundleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,11 +48,11 @@ public class FetcherDirectiveWiring implements SchemaDirectiveWiring {
         // Mapping on field
 
         GraphQLFieldDefinition def = environment.getElement();
-        GraphQLDirective directive = environment.getDirective();
+        GraphQLAppliedDirective directive = environment.getAppliedDirective();
 
         Field field = new Field(def.getName());
         field.setProperty(def.getName());
-        field.setType(def.getType().getName());
+        field.setType(((GraphQLNamedOutputType) def.getType()).getName());
         DataFetcher typeFetcher = PropertiesDataFetcherFactory.getFetcher(def, field);
 
         logger.debug("field name {} ", field.getName());
@@ -71,7 +72,7 @@ public class FetcherDirectiveWiring implements SchemaDirectiveWiring {
             String key = parentType + "." + def.getName();
             if (service.getConnectionFieldNameToSDLType().containsKey(key)) {
                 ConnectionHelper.ConnectionTypeInfo conInfo = service.getConnectionFieldNameToSDLType().get(key);
-                GraphQLOutputType node = (GraphQLOutputType) ((GraphQLList) def.getType()).getWrappedType();
+                GraphQLNamedOutputType node = (GraphQLNamedOutputType) GqlTypeUtil.unwrapType(def.getType());
                 GraphQLObjectType connectionType = ConnectionHelper.getOrCreateConnection(service, node, conInfo.getMappedToType());
                 List<GraphQLArgument> args = service.getRelay().getConnectionFieldArguments();
                 SDLPaginatedDataConnectionFetcher<GqlJcrNode> fetcher = new SDLPaginatedDataConnectionFetcher<>((FinderListDataFetcher) typeFetcher);

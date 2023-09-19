@@ -23,6 +23,7 @@ import graphql.annotations.processor.ProcessingElementsContainer;
 import graphql.annotations.processor.retrievers.*;
 import graphql.annotations.processor.searchAlgorithms.SearchAlgorithm;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
+import graphql.kickstart.servlet.GraphQLConfiguration;
 import graphql.kickstart.servlet.osgi.*;
 import graphql.schema.*;
 import org.jahia.bin.filters.jcr.JcrSessionFilter;
@@ -36,6 +37,7 @@ import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.services.securityfilter.ScopeDefinition;
 import org.jahia.services.usermanager.JahiaUser;
+import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +51,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 @Component(service = GraphQLProvider.class, immediate = true)
-public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider, GraphQLSubscriptionProvider {
+public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLSubscriptionProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider, GraphQLConfigurationProvider {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
@@ -67,6 +69,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private DXGraphQLConfig dxGraphQLConfig;
 
     private ProcessingElementsContainer container;
+
+    private BundleContext bundleContext;
 
     private static Map<String, URL> sdlResources = new ConcurrentHashMap<>();
 
@@ -169,11 +173,13 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     }
 
     @Activate
-    public void activate() {
+    public void activate(BundleContext bundleContext) {
         if (logger.isDebugEnabled()) {
             logger.debug("Activating GraphQL API schema with extensions {}", extensionsProviders.stream().map(dxGraphQLExtensionsProvider -> dxGraphQLExtensionsProvider.getClass().getSimpleName()).collect(Collectors.joining(",")));
         }
+
         instance = this;
+        this.bundleContext = bundleContext;
 
         // Initialize thread pool
         pool = new ForkJoinPool(50);
@@ -363,4 +369,8 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         this.defaultTypeFunction = null;
     }
 
+    @Override
+    public GraphQLConfiguration.Builder getConfigurationBuilder() {
+        return new GraphQLConfiguration.Builder().with(executor);
+    }
 }

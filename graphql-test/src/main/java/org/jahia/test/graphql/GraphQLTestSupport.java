@@ -15,7 +15,7 @@
  */
 package org.jahia.test.graphql;
 
-import graphql.kickstart.execution.context.GraphQLContext;
+import graphql.kickstart.execution.context.GraphQLKickstartContext;
 import graphql.kickstart.servlet.OsgiGraphQLHttpServlet;
 import graphql.kickstart.servlet.context.DefaultGraphQLServletContext;
 import graphql.kickstart.servlet.context.GraphQLServletContext;
@@ -89,10 +89,10 @@ public class GraphQLTestSupport extends JahiaTestCase {
 
     protected static JSONObject executeQueryWithFiles(String query, List<Part> files) throws JSONException {
         try {
-            servlet.setContextProvider(getCustomContextProvider(files));
+            servlet.setContextBuilder(getCustomContextBuilder(files));
             return executeQuery(query);
         } finally {
-            servlet.unsetContextProvider(null);
+            servlet.unsetContextBuilder(null);
         }
     }
 
@@ -162,15 +162,15 @@ public class GraphQLTestSupport extends JahiaTestCase {
         return new JSONObject(result);
     }
 
-    private static GraphQLServletContextBuilder getCustomContextProvider(List<Part> files) {
+    private static GraphQLServletContextBuilder getCustomContextBuilder(List<Part> files) {
         return new GraphQLServletContextBuilder() {
-            @Override public GraphQLContext build(HttpServletRequest request, HttpServletResponse response) {
+            @Override public GraphQLKickstartContext build(HttpServletRequest request, HttpServletResponse response) {
                 GraphQLServletContext context = DefaultGraphQLServletContext
                         .createServletContext().with(request).with(response).build();
                 return new CustomGraphQLServletContext(context, files);
             }
-            @Override public GraphQLContext build(Session session, HandshakeRequest handshakeRequest) { return null; }
-            @Override public GraphQLContext build() { return null; }
+            @Override public GraphQLKickstartContext build(Session session, HandshakeRequest handshakeRequest) { return null; }
+            @Override public GraphQLKickstartContext build() { return null; }
         };
     }
 

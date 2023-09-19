@@ -61,7 +61,7 @@ public class ListDataFetcher extends FinderListDataFetcher {
         if (environment.getFieldDefinition().getType() instanceof GraphQLObjectType) {
             //In this case we are dealing with connection at field level of a type i. e. text : TextConnection etc.
             GraphQLObjectType obj = (GraphQLObjectType) ((GraphQLList) ((GraphQLObjectType) environment.getFieldDefinition().getType()).getFieldDefinition("nodes").getType()).getWrappedType();
-            GraphQLDirective mappingDirective = obj.getDirective(SDLConstants.MAPPING_DIRECTIVE);
+            GraphQLAppliedDirective mappingDirective = obj.getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE);
             if (mappingDirective != null) {
                 String nodeType = mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
                 return resolveChildren(jcrNode, nodeType);
@@ -69,8 +69,8 @@ public class ListDataFetcher extends FinderListDataFetcher {
         }
         GraphQLType type = resolveWrappedObject(environment.getFieldDefinition().getType());
         if (type instanceof GraphQLObjectType) {
-            GraphQLDirective mappingDirective = ((GraphQLObjectType) type).getDirective(SDLConstants.MAPPING_DIRECTIVE);
-            GraphQLArgument arg = mappingDirective != null ? mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE) : null;
+            GraphQLAppliedDirective mappingDirective = ((GraphQLObjectType) type).getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE);
+            GraphQLAppliedDirectiveArgument arg = mappingDirective != null ? mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE) : null;
             return resolveFromArgument(jcrNode, arg);
         }
         try {
@@ -123,7 +123,7 @@ public class ListDataFetcher extends FinderListDataFetcher {
                 .map(GqlJcrNodeImpl::new);
     }
 
-    private Stream resolveFromArgument(JCRNodeWrapper node, GraphQLArgument arg) {
+    private Stream resolveFromArgument(JCRNodeWrapper node, GraphQLAppliedDirectiveArgument arg) {
         if (arg != null) {
             try {
                 String nodeType = arg.getValue().toString();
