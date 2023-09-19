@@ -26,7 +26,7 @@ jobs:
     needs: update-signature
     runs-on: self-hosted
     env:
-      NEXUS_INTERNAL_URL: https://devtools.jahia.com/nexus/content/groups/internal/
+      NEXUS_INTERNAL_URL: ${{ secrets.NEXUS_INTERNAL_URL }}
     container:
       image: cimg/openjdk:11.0.20-node
       options: --user root
@@ -39,7 +39,9 @@ jobs:
         with:
           module_id: graphql-dxm-provider
           mvn_settings_filepath: '.github/maven.settings.xml'
-          
+          nexus_username: ${{ secrets.NEXUS_USERNAME }}
+          nexus_password: ${{ secrets.NEXUS_PASSWORD }} 
+
   sbom:
     name: SBOM processing
     needs: build
