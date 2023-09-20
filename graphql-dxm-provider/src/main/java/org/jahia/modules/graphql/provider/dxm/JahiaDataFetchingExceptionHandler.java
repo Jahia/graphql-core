@@ -66,6 +66,7 @@ public class JahiaDataFetchingExceptionHandler implements DataFetcherExceptionHa
         DataFetcherExceptionHandlerResult.Builder builder = DataFetcherExceptionHandlerResult.newResult();
         ResultPath path = handlerParameters.getPath();
         GraphQLError error = transformException(exception, path, handlerParameters.getField().getSingleField().getSourceLocation());
+        builder.error(error);
 
         if (!(error instanceof DXGraphQLError)) {
             log.warn(error.getMessage(), exception);
