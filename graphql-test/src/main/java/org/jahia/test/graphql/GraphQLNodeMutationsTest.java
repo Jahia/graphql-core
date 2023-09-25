@@ -1086,7 +1086,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     @Test
     public void propertyBinaryValueAsString() throws Exception {
         String fileContent = "my text binary value";
-        JSONObject result = executeQueryWithFiles("mutation {\n" +
+        JSONObject result = executeQuery("mutation {\n" +
                 "  jcr {\n" +
                 "    addNode(parentPathOrId:\"/testFolder\", name:\"file2.txt\", primaryNodeType:\"jnt:file\") {\n" +
                 "      uuid\n" +
@@ -1105,7 +1105,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "      }\n" +
                 "    }\n" +
                 "  }\n" +
-                "}\n", new ArrayList<>()); // empty files
+                "}\n");
 
         String value = result.getJSONObject("data").getJSONObject("jcr")
                 .getJSONObject("addNode").getJSONObject("addChild").getJSONObject("node")
