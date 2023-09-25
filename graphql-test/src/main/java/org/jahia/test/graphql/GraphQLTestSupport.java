@@ -15,43 +15,31 @@
  */
 package org.jahia.test.graphql;
 
-import graphql.kickstart.execution.context.GraphQLContext;
 import graphql.kickstart.servlet.OsgiGraphQLHttpServlet;
-import graphql.kickstart.servlet.context.DefaultGraphQLServletContext;
-import graphql.kickstart.servlet.context.GraphQLServletContext;
-import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
-import org.apache.commons.lang3.ArrayUtils;
 import org.jahia.api.Constants;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.test.JahiaTestCase;
-import org.jahia.test.graphql.context.CustomGraphQLServletContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.mock.web.MockMultipartHttpServletRequest;
 
 import javax.jcr.RepositoryException;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
-import javax.websocket.Session;
-import javax.websocket.server.HandshakeRequest;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class GraphQLTestSupport extends JahiaTestCase {
 
@@ -84,62 +72,29 @@ public class GraphQLTestSupport extends JahiaTestCase {
     }
 
     protected static JSONObject executeQuery(String query) throws JSONException {
-        return executeQuery(query, new MockHttpServletRequest());
+        return executeQuery(query, new Helper.HttpServletRequestMock(Collections.emptyList()));
     }
 
     protected static JSONObject executeQueryWithFiles(String query, List<Part> files) throws JSONException {
-        try {
-            servlet.setContextProvider(getCustomContextProvider(files));
-            return executeQuery(query);
-        } finally {
-            servlet.unsetContextProvider(null);
-        }
+        return executeQuery(query, new Helper.HttpServletRequestMock(files));
     }
 
-    /*
-     * Creating a multipart request with a file attachment WIP
-     * https://stackoverflow.com/a/30541653
-     */
-    private MockMultipartHttpServletRequest buildMultipartRequest(String fileName) {
-        byte[] data = "test text".getBytes();
-        final String boundary = "myBoundary";
-        MockMultipartFile file = new MockMultipartFile("test-binary", fileName, MediaType.TEXT_PLAIN_VALUE, data);
-        MockMultipartHttpServletRequest req = new MockMultipartHttpServletRequest();
-        req.addFile(file);
-        req.setContentType("multipart/form-data; boundary=" + boundary);
-        req.setContent(createFileContent(data, boundary, MediaType.TEXT_PLAIN_VALUE, fileName));
-
-        return req;
-    }
-
-    private static byte[] createFileContent(byte[] data, String boundary, String contentType, String fileName) {
-        String start = "--" + boundary + "\r\n Content-Disposition: form-data; name=\"file\"; filename=\""+fileName+"\"\r\n"
-                + "Content-type: "+contentType+"\r\n\r\n";;
-        String end = "\r\n--" + boundary + "--";
-        return ArrayUtils.addAll(start.getBytes(), ArrayUtils.addAll(data, end.getBytes()));
-    }
-
-    protected static JSONObject executeQuery(String query, MockHttpServletRequest req) throws JSONException {
-        req.setMethod("POST");
-        req.setServerPort(8080);
-        req.setRequestURI("http://localhost:8080/modules/graphql");
-        req.addHeader("Origin", "http://localhost:8080");
-
-        MockHttpServletResponse res = new MockHttpServletResponse();
+    protected static JSONObject executeQuery(String query, Helper.HttpServletRequestMock req) throws JSONException {
+        Helper.HttpServletResponseMock res = new Helper.HttpServletResponseMock();
 
         PermissionService service = BundleUtils.getOsgiService(PermissionService.class, null);
         if (service != null) {
             service.initScopes(req);
+            service.addScopes(Collections.singleton("graphql"), req);
         }
 
-        req.setContentType("application/json");
         StringWriter writer = new StringWriter();
         new JSONObject(Collections.singletonMap("query", query)).write(writer);
         req.setContent(writer.getBuffer().toString().getBytes(StandardCharsets.UTF_8));
         String result = null;
         try {
             servlet.service(req, res);
-            result = res.getContentAsString();
+            result = ((Helper.ServletOutputStreamMock) res.getOutputStream()).getContent();
         } catch (ServletException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -160,18 +115,6 @@ public class GraphQLTestSupport extends JahiaTestCase {
             }
         }
         return new JSONObject(result);
-    }
-
-    private static GraphQLServletContextBuilder getCustomContextProvider(List<Part> files) {
-        return new GraphQLServletContextBuilder() {
-            @Override public GraphQLContext build(HttpServletRequest request, HttpServletResponse response) {
-                GraphQLServletContext context = DefaultGraphQLServletContext
-                        .createServletContext().with(request).with(response).build();
-                return new CustomGraphQLServletContext(context, files);
-            }
-            @Override public GraphQLContext build(Session session, HandshakeRequest handshakeRequest) { return null; }
-            @Override public GraphQLContext build() { return null; }
-        };
     }
 
     protected static Map<String, JSONObject> toItemByKeyMap(String key, JSONArray items) throws JSONException {
