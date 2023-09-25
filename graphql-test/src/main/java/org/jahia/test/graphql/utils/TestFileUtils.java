@@ -79,6 +79,11 @@ public class TestFileUtils {
             @Override public Collection<String> getHeaderNames() {
                 return null;
             }
+
+            @Override
+            public String getSubmittedFileName() {
+                return null;
+            }
         };
     }
 

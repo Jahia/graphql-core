@@ -63,6 +63,6 @@ public class CustomGraphQLServletContext implements GraphQLServletContext {
 
     @Override
     public Map<Object, Object> getMapOfContext() {
-        return null;
+        return context.getMapOfContext();
     }
 }

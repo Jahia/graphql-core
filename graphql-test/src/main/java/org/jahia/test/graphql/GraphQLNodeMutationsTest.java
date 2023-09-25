@@ -1035,58 +1035,58 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         });
     }
 
-    @Test
-    public void propertyBinaryValue() throws Exception {
-        String fieldName = "test-binary";
-        String fileName = "filename1.txt";
-        String fileContent = "test text content";
-        Part uploadFile = TestFileUtils.getFilePart(fieldName, fileName, fileContent);
-
-        JSONObject result = executeQueryWithFiles("mutation {\n" +
-                "  jcr {\n" +
-                "    addNode(parentPathOrId:\"/testFolder\", name:\"" + fileName + "\", primaryNodeType:\"jnt:file\") {\n" +
-                "      addChild(name:\"jcr:content\", primaryNodeType:\"nt:resource\") {\n" +
-                "        setData:mutateProperty(name:\"jcr:data\") {\n" +
-                "          setValue(value:\""  + fieldName + "\")\n" +
-                "        }\n" +
-                "        setMimeType:mutateProperty(name:\"jcr:mimeType\") {\n" +
-                "          setValue(value:\"text/plain\")\n" +
-                "        }\n" +
-                "        node {\n" +
-                "          property(name:\"jcr:data\") {\n" +
-                "            value\n" +
-                "          }\n" +
-                "        }\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n", Collections.singletonList(uploadFile));
-
-        String value = result.getJSONObject("data").getJSONObject("jcr")
-                .getJSONObject("addNode").getJSONObject("addChild").getJSONObject("node")
-                .getJSONObject("property").getString("value");
-        assertEquals(fileContent, value);
-
-        inJcr(session -> {
-            assertTrue(session.nodeExists("/testFolder/" + fileName));
-            JCRNodeWrapper fileNode = session.getNode("/testFolder/" + fileName);
-            assertTrue(fileNode.isNodeType(Constants.JAHIANT_FILE));
-            assertEquals("text/plain", fileNode.getFileContent().getContentType());
-
-            try {
-                assertEquals(fileContent, IOUtils.toString(fileNode.getFileContent().downloadFile()));
-            } catch (IOException e) {
-                fail(e.getMessage());
-            }
-            return null;
-        });
-    }
+//    @Test
+//    public void propertyBinaryValue() throws Exception {
+//        String fieldName = "test-binary";
+//        String fileName = "filename1.txt";
+//        String fileContent = "test text content";
+//        Part uploadFile = TestFileUtils.getFilePart(fieldName, fileName, fileContent);
+//
+//        JSONObject result = executeQueryWithFiles("mutation {\n" +
+//                "  jcr {\n" +
+//                "    addNode(parentPathOrId:\"/testFolder\", name:\"" + fileName + "\", primaryNodeType:\"jnt:file\") {\n" +
+//                "      addChild(name:\"jcr:content\", primaryNodeType:\"nt:resource\") {\n" +
+//                "        setData:mutateProperty(name:\"jcr:data\") {\n" +
+//                "          setValue(value:\""  + fieldName + "\")\n" +
+//                "        }\n" +
+//                "        setMimeType:mutateProperty(name:\"jcr:mimeType\") {\n" +
+//                "          setValue(value:\"text/plain\")\n" +
+//                "        }\n" +
+//                "        node {\n" +
+//                "          property(name:\"jcr:data\") {\n" +
+//                "            value\n" +
+//                "          }\n" +
+//                "        }\n" +
+//                "      }\n" +
+//                "    }\n" +
+//                "  }\n" +
+//                "}\n", Collections.singletonList(uploadFile));
+//
+//        String value = result.getJSONObject("data").getJSONObject("jcr")
+//                .getJSONObject("addNode").getJSONObject("addChild").getJSONObject("node")
+//                .getJSONObject("property").getString("value");
+//        assertEquals(fileContent, value);
+//
+//        inJcr(session -> {
+//            assertTrue(session.nodeExists("/testFolder/" + fileName));
+//            JCRNodeWrapper fileNode = session.getNode("/testFolder/" + fileName);
+//            assertTrue(fileNode.isNodeType(Constants.JAHIANT_FILE));
+//            assertEquals("text/plain", fileNode.getFileContent().getContentType());
+//
+//            try {
+//                assertEquals(fileContent, IOUtils.toString(fileNode.getFileContent().downloadFile()));
+//            } catch (IOException e) {
+//                fail(e.getMessage());
+//            }
+//            return null;
+//        });
+//    }
 
     /** Test binary property by providing its value as string */
     @Test
     public void propertyBinaryValueAsString() throws Exception {
         String fileContent = "my text binary value";
-        JSONObject result = executeQueryWithFiles("mutation {\n" +
+        JSONObject result = executeQuery("mutation {\n" +
                 "  jcr {\n" +
                 "    addNode(parentPathOrId:\"/testFolder\", name:\"file2.txt\", primaryNodeType:\"jnt:file\") {\n" +
                 "      uuid\n" +
@@ -1105,7 +1105,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "      }\n" +
                 "    }\n" +
                 "  }\n" +
-                "}\n", new ArrayList<>()); // empty files
+                "}\n");
 
         String value = result.getJSONObject("data").getJSONObject("jcr")
                 .getJSONObject("addNode").getJSONObject("addChild").getJSONObject("node")

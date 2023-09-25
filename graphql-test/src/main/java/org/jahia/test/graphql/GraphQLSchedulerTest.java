@@ -76,6 +76,7 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
                 .totalRequestTimeoutMillis(10000)
                 .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString("root:root1234".getBytes()))
                 .addHeader("Origin", getBaseServerURL())
+                .addHeader("Sec-Websocket-Protocol", "graphql-ws")
                 .build().build();
         webSocketClient.addListener(new MyWebSocketMessageListener(testJob, jobDatas));
         webSocketClient.connect().get();
