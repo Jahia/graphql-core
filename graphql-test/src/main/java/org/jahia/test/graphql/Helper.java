@@ -11,8 +11,10 @@ public class Helper {
 
     public static class HttpServletRequestMock implements HttpServletRequest {
         private byte[] content;
+        private List<Part> parts;
 
-        public HttpServletRequestMock() {
+        public HttpServletRequestMock(List<Part> parts) {
+            this.parts = parts;
         }
 
         public void setContent(byte[] content) {
@@ -167,7 +169,7 @@ public class Helper {
 
         @Override
         public Collection<Part> getParts() throws IOException, ServletException {
-            return Collections.emptyList();
+            return parts;
         }
 
         @Override

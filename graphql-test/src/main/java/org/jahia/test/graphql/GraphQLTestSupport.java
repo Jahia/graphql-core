@@ -15,17 +15,12 @@
  */
 package org.jahia.test.graphql;
 
-import graphql.kickstart.execution.context.GraphQLKickstartContext;
 import graphql.kickstart.servlet.OsgiGraphQLHttpServlet;
-import graphql.kickstart.servlet.context.DefaultGraphQLServletContext;
-import graphql.kickstart.servlet.context.GraphQLServletContext;
-import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
 import org.jahia.api.Constants;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.test.JahiaTestCase;
-import org.jahia.test.graphql.context.CustomGraphQLServletContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -36,11 +31,7 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
-import javax.websocket.Session;
-import javax.websocket.server.HandshakeRequest;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
@@ -81,16 +72,11 @@ public class GraphQLTestSupport extends JahiaTestCase {
     }
 
     protected static JSONObject executeQuery(String query) throws JSONException {
-        return executeQuery(query, new Helper.HttpServletRequestMock());
+        return executeQuery(query, new Helper.HttpServletRequestMock(Collections.emptyList()));
     }
 
     protected static JSONObject executeQueryWithFiles(String query, List<Part> files) throws JSONException {
-        try {
-            servlet.setContextBuilder(getCustomContextBuilder(files));
-            return executeQuery(query);
-        } finally {
-            servlet.unsetContextBuilder(null);
-        }
+        return executeQuery(query, new Helper.HttpServletRequestMock(files));
     }
 
     protected static JSONObject executeQuery(String query, Helper.HttpServletRequestMock req) throws JSONException {
@@ -129,18 +115,6 @@ public class GraphQLTestSupport extends JahiaTestCase {
             }
         }
         return new JSONObject(result);
-    }
-
-    private static GraphQLServletContextBuilder getCustomContextBuilder(List<Part> files) {
-        return new GraphQLServletContextBuilder() {
-            @Override public GraphQLKickstartContext build(HttpServletRequest request, HttpServletResponse response) {
-                GraphQLServletContext context = DefaultGraphQLServletContext
-                        .createServletContext().with(request).with(response).build();
-                return new CustomGraphQLServletContext(context, files);
-            }
-            @Override public GraphQLKickstartContext build(Session session, HandshakeRequest handshakeRequest) { return null; }
-            @Override public GraphQLKickstartContext build() { return null; }
-        };
     }
 
     protected static Map<String, JSONObject> toItemByKeyMap(String key, JSONArray items) throws JSONException {
