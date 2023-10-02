@@ -295,6 +295,15 @@ public interface GqlJcrNode {
     @GraphQLDescription("Get ACL info for this node")
     public GqlAcl getAcl();
 
+    @GraphQLField
+    @GraphQLName("usages")
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLNonNull
+    @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
+    DXPaginatedData<GqlUsage> getUsages(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                          @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
+                                          DataFetchingEnvironment environment);
+
     /**
      * Nodes filter based on their types.
      */
