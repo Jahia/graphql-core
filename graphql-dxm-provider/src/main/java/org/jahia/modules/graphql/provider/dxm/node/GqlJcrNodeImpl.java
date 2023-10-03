@@ -224,8 +224,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLName("property")
     @GraphQLDescription("The GraphQL representation of the property in the requested language; null if the property does not exist")
     public GqlJcrProperty getProperty(@GraphQLName("name") @GraphQLDescription("The name of the JCR property") @GraphQLNonNull String name,
-            @GraphQLName("language") @GraphQLDescription("The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones") String language,
-            @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("useFallbackLanguage") @GraphQLDescription("When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language.") Boolean useFallbackLanguage) {
+                                      @GraphQLName("language") @GraphQLDescription("The language to obtain the property in; must be a valid language code for internationalized properties, does not matter for non-internationalized ones") String language,
+                                      @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("useFallbackLanguage") @GraphQLDescription("When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language.") Boolean useFallbackLanguage) {
         try {
             JCRNodeWrapper translatedNode = NodeHelper.getNodeInLanguage(this.node, language, useFallbackLanguage);
             if (!translatedNode.hasProperty(name)) {
@@ -344,7 +344,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
     public DXPaginatedData<GqlJcrProperty> getReferences(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
                                                          @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
-                                                  DataFetchingEnvironment environment) {
+                                                         DataFetchingEnvironment environment) {
         List<GqlJcrProperty> references = new LinkedList<GqlJcrProperty>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         try {
@@ -358,7 +358,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             collectReferences(node.getReferences(), references, environment);
         } catch (RepositoryException e) {
             //EDP implementation will throw UnsupportedRepositoryOperationException on access to getReferences
-            if(!(e instanceof UnsupportedRepositoryOperationException)) {
+            if (!(e instanceof UnsupportedRepositoryOperationException)) {
                 throw new RuntimeException(e);
             }
         }
@@ -389,7 +389,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                         String lang = langNode.getProperty("jcr:language").getString();
                         if (s.endsWith("_" + lang)) {
                             locale = lang;
-                            name =  StringUtils.substringBeforeLast(s, "_" + lang);
+                            name = StringUtils.substringBeforeLast(s, "_" + lang);
                             break;
                         }
                     }
@@ -543,4 +543,71 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
 
+    @Override
+    @GraphQLName("usages")
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
+    @GraphQLNonNull
+    @GraphQLDescription("GraphQL representations of the reference properties that target the current JCR Node")
+    public DXPaginatedData<GqlUsage> getUsages(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                               @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
+                                               DataFetchingEnvironment environment) {
+        List<GqlUsage> references = new LinkedList<>();
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
+        try {
+            collectUsages(node.getWeakReferences(), references, environment);
+        } catch (UnsupportedRepositoryOperationException | ConstraintViolationException e) {
+            return null;
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            collectUsages(node.getReferences(), references, environment);
+        } catch (RepositoryException e) {
+            //EDP implementation will throw UnsupportedRepositoryOperationException on access to getReferences
+            if (!(e instanceof UnsupportedRepositoryOperationException)) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        List<GqlUsage> result = FilterHelper.filterConnection(references, fieldFilter, environment);
+        if (fieldSorter != null) {
+            result.sort(SorterHelper.getFieldComparator(fieldSorter, FieldEvaluator.forConnection(environment)));
+        }
+
+        return PaginationHelper.paginate(result, u -> PaginationHelper.encodeCursor(u.getNode().getUuid()), arguments);
+    }
+
+    private void collectUsages(PropertyIterator references, Collection<GqlUsage> gqlReferences, DataFetchingEnvironment environment) throws RepositoryException {
+        while (references.hasNext()) {
+            JCRPropertyWrapper reference = (JCRPropertyWrapper) references.nextProperty();
+            JCRNodeWrapper referencingNode = reference.getParent();
+            if (PermissionHelper.hasPermission(referencingNode, environment)) {
+                String name = reference.getName();
+                String locale = reference.getLocale();
+                if (referencingNode.isNodeType("jnt:translation")) {
+                    referencingNode = referencingNode.getParent();
+                } else if (referencingNode.isNodeType("jnt:referenceInField")) {
+                    String s = referencingNode.getProperty("j:fieldName").getValue().getString();
+                    referencingNode = referencingNode.getParent();
+                    NodeIterator it = referencingNode.getI18Ns();
+                    while (it.hasNext()) {
+                        Node langNode = it.nextNode();
+                        String lang = langNode.getProperty("jcr:language").getString();
+                        if (s.endsWith("_" + lang)) {
+                            locale = lang;
+                            name = StringUtils.substringBeforeLast(s, "_" + lang);
+                            break;
+                        }
+                    }
+                }
+                GqlJcrNode gqlReferencingNode = SpecializedTypesHandler.getNode(referencingNode);
+                GqlJcrProperty gqlReference = gqlReferencingNode.getProperty(name, locale, false);
+                gqlReferences.stream().filter(gqlUsage -> gqlUsage.getNode().getUuid().equals(gqlReferencingNode.getUuid())).findFirst().orElseGet(() -> {
+                    GqlUsage usage = new GqlUsage(gqlReferencingNode);
+                    gqlReferences.add(usage);
+                    return usage;
+                }).addUsage(gqlReference);
+            }
+        }
+    }
 }
