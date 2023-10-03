@@ -13,7 +13,7 @@ public class GqlUsage {
 
     private final GqlJcrNode node;
 
-    List<GqlJcrProperty> usages;
+    List<GqlJcrProperty> properties;
 
     /**
      * @return The GraphQL representation of the JCR node the property belongs to.
@@ -28,22 +28,22 @@ public class GqlUsage {
 
     public GqlUsage(GqlJcrNode node) {
         this.node = node;
-        this.usages = new ArrayList<>();
+        this.properties = new ArrayList<>();
     }
 
     public void addUsage(GqlJcrProperty property) {
-        usages.add(property);
+        properties.add(property);
     }
 
     /**
      * @return The GraphQL representation of the JCR node the property belongs to.
      */
     @GraphQLField
-    @GraphQLName("usages")
+    @GraphQLName("properties")
     @GraphQLNonNull
     @GraphQLDescription("The GraphQL representation of the references on this node.")
-    public List<GqlJcrProperty> getUsages() {
-        return usages;
+    public List<GqlJcrProperty> getProperties() {
+        return properties;
     }
 
     @Override
