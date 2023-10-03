@@ -602,13 +602,11 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                 }
                 GqlJcrNode gqlReferencingNode = SpecializedTypesHandler.getNode(referencingNode);
                 GqlJcrProperty gqlReference = gqlReferencingNode.getProperty(name, locale, false);
-                GqlUsage usage = new GqlUsage(gqlReferencingNode);
-                if (gqlReference != null) {
-                    gqlReferences.stream().filter(gqlUsage -> gqlUsage.equals(usage)).findFirst().orElse(usage).addUsage(gqlReference);
-                    if(!gqlReferences.contains(usage)) {
+                    gqlReferences.stream().filter(gqlUsage -> gqlUsage.getNode().getUuid().equals(gqlReferencingNode.getUuid())).findFirst().orElseGet(() -> {
+                        GqlUsage usage = new GqlUsage(gqlReferencingNode);
                         gqlReferences.add(usage);
-                    }
-                }
+                        return usage;
+                    }).addUsage(gqlReference);
             }
         }
     }
