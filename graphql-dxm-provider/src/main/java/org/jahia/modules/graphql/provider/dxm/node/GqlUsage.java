@@ -45,20 +45,4 @@ public class GqlUsage {
     public List<GqlJcrProperty> getProperties() {
         return properties;
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-
-        if (o == null || getClass() != o.getClass()) return false;
-
-        GqlUsage gqlUsage = (GqlUsage) o;
-
-        return node.getUuid().equals(gqlUsage.node.getUuid());
-    }
-
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(node).toHashCode();
-    }
 }
