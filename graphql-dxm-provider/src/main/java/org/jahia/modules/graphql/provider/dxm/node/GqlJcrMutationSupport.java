@@ -88,13 +88,10 @@ public class GqlJcrMutationSupport {
      */
     public static List<JCRPropertyWrapper> setProperties(JCRNodeWrapper node, Collection<GqlJcrPropertyInput> properties) {
         try {
-            HashMap<String, JCRSessionWrapper> sessions = new HashMap<>();
             List<JCRPropertyWrapper> result = new ArrayList<>();
             for (GqlJcrPropertyInput property : properties) {
                 JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, property.getLanguage());
                 JCRSessionWrapper session = localizedNode.getSession();
-                sessions.put(property.getLanguage(), session);
-
                 int type = (property.getType() != null ? property.getType().getValue() : PropertyType.STRING);
 
                 if (property.getValue() != null) {
@@ -110,11 +107,6 @@ public class GqlJcrMutationSupport {
                     result.add(localizedNode.setProperty(property.getName(), values.toArray(new Value[0])));
                 }
             }
-
-            for (JCRSessionWrapper session : sessions.values()) {
-                session.validate();
-            }
-
             return result;
         } catch (RepositoryException | FileUploadBase.FileSizeLimitExceededException | IOException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
