@@ -1,5 +1,5 @@
-import gql from 'graphql-tag'
-import { validateError } from '../../e2e/api/jcr/validateErrors'
+import gql from 'graphql-tag';
+import {validateError} from '../../e2e/api/jcr/validateErrors';
 
 describe('Test GraphQL special characters', () => {
     before('create a list with 2 sub children', () => {
@@ -16,18 +16,18 @@ describe('Test GraphQL special characters', () => {
                         }
                     }
                 }
-            `,
-        })
-    })
+            `
+        });
+    });
 
     after('Delete list created in the before', function () {
         cy.apollo({
             mutationFile: 'jcr/deleteNode.graphql',
             variables: {
-                pathOrId: '/testCharsList',
-            },
-        })
-    })
+                pathOrId: '/testCharsList'
+            }
+        });
+    });
 
     it('Test []*|/%', () => {
         cy.apollo({
@@ -45,12 +45,12 @@ describe('Test GraphQL special characters', () => {
                         }
                     }
                 }
-            `,
-        }).should((result) => {
-            const path = result?.data?.jcr?.addNode?.node?.path
-            expect(path).to.be.equal('/testCharsList/testCharSubList/%5B%5D%2A%7C %')
-        })
-    })
+            `
+        }).should(result => {
+            const path = result?.data?.jcr?.addNode?.node?.path;
+            expect(path).to.be.equal('/testCharsList/testCharSubList/%5B%5D%2A%7C %');
+        });
+    });
 
     it('Test .', () => {
         cy.apollo({
@@ -69,14 +69,14 @@ describe('Test GraphQL special characters', () => {
                     }
                 }
             `,
-            errorPolicy: 'all',
-        }).should((result) => {
+            errorPolicy: 'all'
+        }).should(result => {
             validateError(
                 result,
-                `javax.jcr.ItemExistsException: This node already exists: /testCharsList/testCharSubList`,
-            )
-        })
-    })
+                'javax.jcr.ItemExistsException: This node already exists: /testCharsList/testCharSubList'
+            );
+        });
+    });
 
     it('Test ..', () => {
         cy.apollo({
@@ -95,12 +95,12 @@ describe('Test GraphQL special characters', () => {
                     }
                 }
             `,
-            errorPolicy: 'all',
-        }).should((result) => {
+            errorPolicy: 'all'
+        }).should(result => {
             validateError(
                 result,
-                `javax.jcr.ItemExistsException: This node already exists: /testCharsList/testCharSubList`,
-            )
-        })
-    })
-})
+                'javax.jcr.ItemExistsException: This node already exists: /testCharsList/testCharSubList'
+            );
+        });
+    });
+});

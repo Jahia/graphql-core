@@ -1,5 +1,5 @@
-import gql from 'graphql-tag'
-import { validateError } from './validateErrors'
+import gql from 'graphql-tag';
+import {validateError} from './validateErrors';
 
 describe('Node types graphql test', () => {
     before('Create nodes', () => {
@@ -23,9 +23,9 @@ describe('Node types graphql test', () => {
                         }
                     }
                 }
-            `,
-        })
-    })
+            `
+        });
+    });
 
     it('Get all node types', () => {
         cy.apollo({
@@ -50,27 +50,27 @@ describe('Node types graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            expect(response.data.jcr.nodeByPath).to.exist
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeByPath).to.exist;
 
-            const primaryNodeType = response?.data?.jcr?.nodeByPath.primaryNodeType
-            expect(primaryNodeType.name).to.equal('jnt:contentList')
-            expect(primaryNodeType.mixin).to.equal(false)
-            expect(primaryNodeType.hasOrderableChildNodes).to.equal(true)
-            expect(primaryNodeType.queryable).to.equal(true)
-            expect(primaryNodeType.systemId).to.equal('system-jahia')
+            const primaryNodeType = response?.data?.jcr?.nodeByPath.primaryNodeType;
+            expect(primaryNodeType.name).to.equal('jnt:contentList');
+            expect(primaryNodeType.mixin).to.equal(false);
+            expect(primaryNodeType.hasOrderableChildNodes).to.equal(true);
+            expect(primaryNodeType.queryable).to.equal(true);
+            expect(primaryNodeType.systemId).to.equal('system-jahia');
 
-            const mixinTypes = response?.data?.jcr?.nodeByPath.mixinTypes
-            expect(mixinTypes).to.have.length(1)
-            expect(mixinTypes[0].name).to.equal('jmix:renderable')
-            expect(mixinTypes[0].mixin).to.equal(true)
+            const mixinTypes = response?.data?.jcr?.nodeByPath.mixinTypes;
+            expect(mixinTypes).to.have.length(1);
+            expect(mixinTypes[0].name).to.equal('jmix:renderable');
+            expect(mixinTypes[0].mixin).to.equal(true);
 
-            const allowedChildNodeTypes = response?.data?.jcr?.nodeByPath.allowedChildNodeTypes
-            expect(allowedChildNodeTypes).to.have.length(1)
-            expect(allowedChildNodeTypes[0].name).to.equal('jmix:droppableContent')
-        })
-    })
+            const allowedChildNodeTypes = response?.data?.jcr?.nodeByPath.allowedChildNodeTypes;
+            expect(allowedChildNodeTypes).to.have.length(1);
+            expect(allowedChildNodeTypes[0].name).to.equal('jmix:droppableContent');
+        });
+    });
 
     it('Check node type', () => {
         cy.apollo({
@@ -86,18 +86,18 @@ describe('Node types graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            expect(response.data.jcr.nodeByPath).to.exist
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeByPath).to.exist;
 
-            const node = response?.data?.jcr?.nodeByPath
-            expect(node.test1).to.equal(true)
-            expect(node.test2).to.equal(true)
-            expect(node.test3).to.equal(false)
-            expect(node.test4).to.equal(true)
-            expect(node.test5).to.equal(false)
-        })
-    })
+            const node = response?.data?.jcr?.nodeByPath;
+            expect(node.test1).to.equal(true);
+            expect(node.test2).to.equal(true);
+            expect(node.test3).to.equal(false);
+            expect(node.test4).to.equal(true);
+            expect(node.test5).to.equal(false);
+        });
+    });
 
     it('Get node definition', () => {
         cy.apollo({
@@ -114,15 +114,15 @@ describe('Node types graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            expect(response.data.jcr.nodeByPath).to.exist
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeByPath).to.exist;
 
-            const definition = response?.data?.jcr?.nodeByPath.definition
-            expect(definition.name).to.equal('*')
-            expect(definition.declaringNodeType.name).to.equal('nt:unstructured')
-        })
-    })
+            const definition = response?.data?.jcr?.nodeByPath.definition;
+            expect(definition.name).to.equal('*');
+            expect(definition.declaringNodeType.name).to.equal('nt:unstructured');
+        });
+    });
 
     it('Get property definition', () => {
         cy.apollo({
@@ -141,15 +141,15 @@ describe('Node types graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            expect(response.data.jcr.nodeByPath).to.exist
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeByPath).to.exist;
 
-            const definition = response?.data?.jcr?.nodeByPath.property.definition
-            expect(definition.name).to.equal('jcr:created')
-            expect(definition.declaringNodeType.name).to.equal('mix:created')
-        })
-    })
+            const definition = response?.data?.jcr?.nodeByPath.property.definition;
+            expect(definition.name).to.equal('jcr:created');
+            expect(definition.declaringNodeType.name).to.equal('mix:created');
+        });
+    });
 
     it('Get property definition with constraints', () => {
         cy.apollo({
@@ -183,23 +183,23 @@ describe('Node types graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            expect(response.data.jcr.nodeByPath).to.exist
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeByPath).to.exist;
 
-            const aceTypeDefinition = response?.data?.jcr?.nodeByPath.aceType.definition
-            expect(aceTypeDefinition.name).to.equal('j:aceType')
-            expect(aceTypeDefinition.declaringNodeType.name).to.equal('jnt:ace')
-            expect(aceTypeDefinition.constraints).to.have.length(2)
-            expect(aceTypeDefinition.constraints[0]).to.equal('GRANT')
-            expect(aceTypeDefinition.constraints[1]).to.equal('DENY')
+            const aceTypeDefinition = response?.data?.jcr?.nodeByPath.aceType.definition;
+            expect(aceTypeDefinition.name).to.equal('j:aceType');
+            expect(aceTypeDefinition.declaringNodeType.name).to.equal('jnt:ace');
+            expect(aceTypeDefinition.constraints).to.have.length(2);
+            expect(aceTypeDefinition.constraints[0]).to.equal('GRANT');
+            expect(aceTypeDefinition.constraints[1]).to.equal('DENY');
 
-            const principalDefinition = response?.data?.jcr?.nodeByPath.principal.definition
-            expect(principalDefinition.name).to.equal('j:principal')
-            expect(principalDefinition.declaringNodeType.name).to.equal('jnt:ace')
-            expect(principalDefinition.constraints).to.have.length(0)
-        })
-    })
+            const principalDefinition = response?.data?.jcr?.nodeByPath.principal.definition;
+            expect(principalDefinition.name).to.equal('j:principal');
+            expect(principalDefinition.declaringNodeType.name).to.equal('jnt:ace');
+            expect(principalDefinition.constraints).to.have.length(0);
+        });
+    });
 
     it('Get node type', () => {
         cy.apollo({
@@ -212,13 +212,13 @@ describe('Node types graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            expect(response.data.jcr.nodeTypeByName).to.exist
-            expect(response.data.jcr.nodeTypeByName.name).to.equal('jmix:editorialContent')
-            expect(response.data.jcr.nodeTypeByName.displayName).to.equal('Editorial content')
-        })
-    })
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeTypeByName).to.exist;
+            expect(response.data.jcr.nodeTypeByName.name).to.equal('jmix:editorialContent');
+            expect(response.data.jcr.nodeTypeByName.displayName).to.equal('Editorial content');
+        });
+    });
 
     it('Get node types', () => {
         cy.apollo({
@@ -231,23 +231,24 @@ describe('Node types graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            expect(response.data.jcr.nodeTypesByNames).to.exist
-            const nodes = response.data.jcr.nodeTypesByNames
-            const names: string[] = []
-            const displayNames: string[] = []
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeTypesByNames).to.exist;
+            const nodes = response.data.jcr.nodeTypesByNames;
+            const names: string[] = [];
+            const displayNames: string[] = [];
             for (let n = 0; n < nodes.length; n++) {
-                names[n] = nodes[n].name
-                displayNames[n] = nodes[n].displayName
+                names[n] = nodes[n].name;
+                displayNames[n] = nodes[n].displayName;
             }
-            expect(nodes).to.have.length(2)
-            expect(names).to.contain('jmix:editorialContent')
-            expect(displayNames).to.contain('Editorial content')
-            expect(names).to.contain('jmix:siteContent')
-            expect(displayNames).to.contain('siteContent')
-        })
-    })
+
+            expect(nodes).to.have.length(2);
+            expect(names).to.contain('jmix:editorialContent');
+            expect(displayNames).to.contain('Editorial content');
+            expect(names).to.contain('jmix:siteContent');
+            expect(displayNames).to.contain('siteContent');
+        });
+    });
 
     it('Get an error with wrong node type name', () => {
         cy.apollo({
@@ -261,11 +262,11 @@ describe('Node types graphql test', () => {
                     }
                 }
             `,
-            errorPolicy: 'all',
-        }).should((result) => {
-            validateError(result, `javax.jcr.nodetype.NoSuchNodeTypeException: Unknown type : jmix:wrong`)
-        })
-    })
+            errorPolicy: 'all'
+        }).should(result => {
+            validateError(result, 'javax.jcr.nodetype.NoSuchNodeTypeException: Unknown type : jmix:wrong');
+        });
+    });
 
     it('Get node types from a module', () => {
         cy.apollo({
@@ -280,18 +281,19 @@ describe('Node types graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            expect(response.data.jcr.nodeTypes).to.exist
-            const nodes = response.data.jcr.nodeTypes.nodes
-            const names: string[] = []
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeTypes).to.exist;
+            const nodes = response.data.jcr.nodeTypes.nodes;
+            const names: string[] = [];
             for (let n = 0; n < nodes.length; n++) {
-                names[n] = nodes[n].name
+                names[n] = nodes[n].name;
             }
-            expect(names).to.contain('jnt:text')
-            expect(names).to.not.contain('nt:base')
-        })
-    })
+
+            expect(names).to.contain('jnt:text');
+            expect(names).to.not.contain('nt:base');
+        });
+    });
 
     it('Get an error with wrong module name', () => {
         cy.apollo({
@@ -306,11 +308,11 @@ describe('Node types graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            expect(response.data.jcr.nodeTypes.nodes).to.have.length(0)
-        })
-    })
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeTypes.nodes).to.have.length(0);
+        });
+    });
 
     it('Get mixins', () => {
         cy.apollo({
@@ -325,19 +327,20 @@ describe('Node types graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            expect(response.data.jcr.nodeTypes).to.exist
-            const nodes = response.data.jcr.nodeTypes.nodes
-            const names: string[] = []
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeTypes).to.exist;
+            const nodes = response.data.jcr.nodeTypes.nodes;
+            const names: string[] = [];
             for (let n = 0; n < nodes.length; n++) {
-                names[n] = nodes[n].name
-                expect(nodes[n].mixin).to.equal(true)
+                names[n] = nodes[n].name;
+                expect(nodes[n].mixin).to.equal(true);
             }
-            expect(names).to.contain('mix:created')
-            expect(names).to.not.contain('nt:base')
-        })
-    })
+
+            expect(names).to.contain('mix:created');
+            expect(names).to.not.contain('nt:base');
+        });
+    });
 
     it('Get included and not excluded node types', () => {
         cy.apollo({
@@ -360,27 +363,27 @@ describe('Node types graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            expect(response.data.jcr.nodeTypes).to.exist
-            const nodes = response.data.jcr.nodeTypes.nodes
-            expect(nodes).to.have.length.gt(0)
-            let n = 0
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeTypes).to.exist;
+            const nodes = response.data.jcr.nodeTypes.nodes;
+            expect(nodes).to.have.length.gt(0);
+            let n = 0;
             while (n < nodes.length) {
-                expect(nodes[n].isEditorialContent).to.equal(true)
-                expect(nodes[n].isStudioOnly).to.equal(false)
-                expect(nodes[n].isHiddenType).to.equal(false)
-                n++
+                expect(nodes[n].isEditorialContent).to.equal(true);
+                expect(nodes[n].isStudioOnly).to.equal(false);
+                expect(nodes[n].isHiddenType).to.equal(false);
+                n++;
             }
-        })
-    })
+        });
+    });
 
     after('Delete testList node', function () {
         cy.apollo({
             mutationFile: 'jcr/deleteNode.graphql',
             variables: {
-                pathOrId: '/testList',
-            },
-        })
-    })
-})
+                pathOrId: '/testList'
+            }
+        });
+    });
+});

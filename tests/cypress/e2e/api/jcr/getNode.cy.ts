@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import gql from 'graphql-tag'
-import { validateErrors } from './validateErrors'
-import { validateError } from './validateErrors'
-import { validateNode } from './validateNode'
+import gql from 'graphql-tag';
+import {validateErrors} from './validateErrors';
+import {validateError} from './validateErrors';
+import {validateNode} from './validateNode';
 
 describe('Get node graphql test', () => {
-    let nodeUuid: string
-    const nodeTitleFr = 'text FR'
-    const nodeTitleEn = 'text EN'
-    let subNodeUuid1: string
-    let subNodeUuid2: string
+    let nodeUuid: string;
+    const nodeTitleFr = 'text FR';
+    const nodeTitleEn = 'text EN';
+    let subNodeUuid1: string;
+    let subNodeUuid2: string;
 
     before('load graphql file and create nodes', () => {
         cy.apollo({
@@ -20,20 +20,20 @@ describe('Get node graphql test', () => {
                 nodeName: 'testList',
                 nodeType: 'jnt:contentList',
                 properties: [
-                    { name: 'jcr:title', value: nodeTitleEn, language: 'en' },
-                    { name: 'jcr:title', value: nodeTitleFr, language: 'fr' },
+                    {name: 'jcr:title', value: nodeTitleEn, language: 'en'},
+                    {name: 'jcr:title', value: nodeTitleFr, language: 'fr'}
                 ],
                 children: [
-                    { name: 'testSubList1', primaryNodeType: 'jnt:contentList' },
-                    { name: 'testSubList2', primaryNodeType: 'jnt:contentList' },
-                ],
-            },
+                    {name: 'testSubList1', primaryNodeType: 'jnt:contentList'},
+                    {name: 'testSubList2', primaryNodeType: 'jnt:contentList'}
+                ]
+            }
         }).then((response: any) => {
-            nodeUuid = response.data.jcr.addNode.uuid
-            subNodeUuid1 = response.data.jcr.addNode.addChildrenBatch[0].uuid
-            subNodeUuid2 = response.data.jcr.addNode.addChildrenBatch[1].uuid
-        })
-    })
+            nodeUuid = response.data.jcr.addNode.uuid;
+            subNodeUuid1 = response.data.jcr.addNode.addChildrenBatch[0].uuid;
+            subNodeUuid2 = response.data.jcr.addNode.addChildrenBatch[1].uuid;
+        });
+    });
 
     it('Get main node', () => {
         cy.apollo({
@@ -54,17 +54,17 @@ describe('Get node graphql test', () => {
                         }
                     }
                 }
-            `,
+            `
         }).should((response: any) => {
-            expect(response.data.jcr.nodeByPath).to.exist
-            expect(response.data.jcr.nodeByPath.name).to.equal('testList')
-            expect(response.data.jcr.nodeByPath.path).to.equal('/testList')
-            expect(response.data.jcr.nodeByPath.uuid).to.equal(nodeUuid)
-            expect(response.data.jcr.nodeByPath.displayName).to.equal('testList')
-            expect(response.data.jcr.nodeByPath.titlefr.value).to.equal(nodeTitleFr)
-            expect(response.data.jcr.nodeByPath.titleen.value).to.equal(nodeTitleEn)
-        })
-    })
+            expect(response.data.jcr.nodeByPath).to.exist;
+            expect(response.data.jcr.nodeByPath.name).to.equal('testList');
+            expect(response.data.jcr.nodeByPath.path).to.equal('/testList');
+            expect(response.data.jcr.nodeByPath.uuid).to.equal(nodeUuid);
+            expect(response.data.jcr.nodeByPath.displayName).to.equal('testList');
+            expect(response.data.jcr.nodeByPath.titlefr.value).to.equal(nodeTitleFr);
+            expect(response.data.jcr.nodeByPath.titleen.value).to.equal(nodeTitleEn);
+        });
+    });
 
     it('Get child node by path', () => {
         cy.apollo({
@@ -76,12 +76,12 @@ describe('Get node graphql test', () => {
                         }
                     }
                 }
-            `,
+            `
         }).should((response: any) => {
-            expect(response.data.jcr.nodeByPath).to.exist
-            expect(response.data.jcr.nodeByPath.name).to.equal('testSubList2')
-        })
-    })
+            expect(response.data.jcr.nodeByPath).to.exist;
+            expect(response.data.jcr.nodeByPath.name).to.equal('testSubList2');
+        });
+    });
 
     it('Get an error when trying to get child node with wrong path', () => {
         cy.apollo({
@@ -94,11 +94,11 @@ describe('Get node graphql test', () => {
                     }
                 }
             `,
-            errorPolicy: 'all',
-        }).should((result) => {
-            validateError(result, `javax.jcr.PathNotFoundException: /testList/wrongPath`)
-        })
-    })
+            errorPolicy: 'all'
+        }).should(result => {
+            validateError(result, 'javax.jcr.PathNotFoundException: /testList/wrongPath');
+        });
+    });
 
     it('Get an error when trying to get child node in live', () => {
         cy.apollo({
@@ -111,11 +111,11 @@ describe('Get node graphql test', () => {
                     }
                 }
             `,
-            errorPolicy: 'all',
-        }).should((result) => {
-            validateError(result, `javax.jcr.PathNotFoundException: /testList/testSubList2`)
-        })
-    })
+            errorPolicy: 'all'
+        }).should(result => {
+            validateError(result, 'javax.jcr.PathNotFoundException: /testList/testSubList2');
+        });
+    });
 
     it('Get child nodes by path', () => {
         cy.apollo({
@@ -127,14 +127,14 @@ describe('Get node graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((result) => {
-            const nodes = result?.data?.jcr?.nodesByPath
-            expect(nodes).to.have.length(2)
-            validateNode(nodes[0], 'testSubList2')
-            validateNode(nodes[1], 'testSubList1')
-        })
-    })
+            `
+        }).should(result => {
+            const nodes = result?.data?.jcr?.nodesByPath;
+            expect(nodes).to.have.length(2);
+            validateNode(nodes[0], 'testSubList2');
+            validateNode(nodes[1], 'testSubList1');
+        });
+    });
 
     it('Get an error when trying to get child nodes by path with a wrong path', () => {
         cy.apollo({
@@ -147,11 +147,11 @@ describe('Get node graphql test', () => {
                     }
                 }
             `,
-            errorPolicy: 'all',
-        }).should((result) => {
-            validateError(result, `javax.jcr.PathNotFoundException: /testList/wrongPath`)
-        })
-    })
+            errorPolicy: 'all'
+        }).should(result => {
+            validateError(result, 'javax.jcr.PathNotFoundException: /testList/wrongPath');
+        });
+    });
 
     it('Get an error when trying to get child nodes in live', () => {
         cy.apollo({
@@ -164,14 +164,14 @@ describe('Get node graphql test', () => {
                     }
                 }
             `,
-            errorPolicy: 'all',
-        }).should((result) => {
+            errorPolicy: 'all'
+        }).should(result => {
             validateErrors(result, [
                 'javax.jcr.PathNotFoundException: /testList/testSubList2',
-                'javax.jcr.PathNotFoundException: /testList/testSubList1',
-            ])
-        })
-    })
+                'javax.jcr.PathNotFoundException: /testList/testSubList1'
+            ]);
+        });
+    });
 
     it('Get node by id', () => {
         cy.apollo({
@@ -182,12 +182,12 @@ describe('Get node graphql test', () => {
                             name
                         }
                     }
-                }`,
-        }).should((result) => {
-            const node = result?.data?.jcr?.nodeById
-            validateNode(node, 'testSubList2')
-        })
-    })
+                }`
+        }).should(result => {
+            const node = result?.data?.jcr?.nodeById;
+            validateNode(node, 'testSubList2');
+        });
+    });
 
     it('Get an error trying to get a node with wrong id', () => {
         cy.apollo({
@@ -200,11 +200,11 @@ describe('Get node graphql test', () => {
                     }
                 }
             `,
-            errorPolicy: 'all',
-        }).should((result) => {
-            validateError(result, `javax.jcr.ItemNotFoundException: badId`)
-        })
-    })
+            errorPolicy: 'all'
+        }).should(result => {
+            validateError(result, 'javax.jcr.ItemNotFoundException: badId');
+        });
+    });
 
     it('Get an error trying to get a node in live', () => {
         cy.apollo({
@@ -216,11 +216,11 @@ describe('Get node graphql test', () => {
                         }
                     }
                 }`,
-            errorPolicy: 'all',
-        }).should((result) => {
-            validateError(result, `javax.jcr.ItemNotFoundException: ${subNodeUuid2}`)
-        })
-    })
+            errorPolicy: 'all'
+        }).should(result => {
+            validateError(result, `javax.jcr.ItemNotFoundException: ${subNodeUuid2}`);
+        });
+    });
 
     it('Get child nodes by id', () => {
         cy.apollo({
@@ -231,14 +231,14 @@ describe('Get node graphql test', () => {
                             name
                         }
                     }
-                }`,
-        }).should((result) => {
-            const nodes = result?.data?.jcr?.nodesById
-            expect(nodes).to.have.length(2)
-            validateNode(nodes[0], 'testSubList2')
-            validateNode(nodes[1], 'testSubList1')
-        })
-    })
+                }`
+        }).should(result => {
+            const nodes = result?.data?.jcr?.nodesById;
+            expect(nodes).to.have.length(2);
+            validateNode(nodes[0], 'testSubList2');
+            validateNode(nodes[1], 'testSubList1');
+        });
+    });
 
     it('Get an error trying to get child nodes with wrong id', () => {
         cy.apollo({
@@ -250,11 +250,11 @@ describe('Get node graphql test', () => {
                         }
                     }
                 }`,
-            errorPolicy: 'all',
-        }).should((result) => {
-            validateError(result, `javax.jcr.ItemNotFoundException: wrongId`)
-        })
-    })
+            errorPolicy: 'all'
+        }).should(result => {
+            validateError(result, 'javax.jcr.ItemNotFoundException: wrongId');
+        });
+    });
 
     it('Get an error trying to get child nodes in live', () => {
         cy.apollo({
@@ -266,21 +266,21 @@ describe('Get node graphql test', () => {
                         }
                     }
                 }`,
-            errorPolicy: 'all',
-        }).should((result) => {
+            errorPolicy: 'all'
+        }).should(result => {
             validateErrors(result, [
                 `javax.jcr.ItemNotFoundException: ${subNodeUuid2}`,
-                `javax.jcr.ItemNotFoundException: ${subNodeUuid1}`,
-            ])
-        })
-    })
+                `javax.jcr.ItemNotFoundException: ${subNodeUuid1}`
+            ]);
+        });
+    });
 
     after('Delete testList node', function () {
         cy.apollo({
             mutationFile: 'jcr/deleteNode.graphql',
             variables: {
-                pathOrId: '/testList',
-            },
-        })
-    })
-})
+                pathOrId: '/testList'
+            }
+        });
+    });
+});

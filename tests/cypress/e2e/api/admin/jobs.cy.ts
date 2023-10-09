@@ -1,4 +1,4 @@
-import gql from 'graphql-tag'
+import gql from 'graphql-tag';
 
 describe('Jobs graphQL endpoint', () => {
     it('background job list should not be empty', function () {
@@ -16,10 +16,10 @@ describe('Jobs graphQL endpoint', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            const result = response.data.admin.jahia.scheduler.jobs
-            expect(result.length).to.gt(0)
-        })
-    })
-})
+            `
+        }).should(response => {
+            const result = response.data.admin.jahia.scheduler.jobs;
+            expect(result.length).to.gt(0);
+        });
+    });
+});
