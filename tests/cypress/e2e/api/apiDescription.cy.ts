@@ -56,6 +56,7 @@ describe('Test if every type in graphQL API has description', () => {
 });
 
 // Test to go down the AST of GraphQL to check for descriptions
+// eslint-disable-next-line max-params
 const executeTest = async (client, typeName, types, noDesc, invalidNames) => {
     if (types.has(typeName)) {
         return;
@@ -131,6 +132,7 @@ const executeTest = async (client, typeName, types, noDesc, invalidNames) => {
     }
 };
 
+// eslint-disable-next-line max-params
 const fieldCheck = async (client, message, field, types, noDesc, invalidNames) => {
     if (field.description === null) {
         noDesc.add(message);

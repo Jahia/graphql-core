@@ -170,7 +170,10 @@ describe('Node validity graphql test', () => {
                 const errors = response.errors;
                 expect(errors.length).to.equal(1);
                 const expectedValues = ['nodeByPath', 'en', 'jcr'];
-                expectedValues.forEach(value => expect(errors[0].path).to.contain(value));
+                for (const expectedValue of expectedValues) {
+                    expect(errors[0].path).to.contain(expectedValue);
+                }
+
                 const result = response.data.jcr.nodeByPath;
                 expect(result.en).to.be.null;
                 expect(result.fr.nodes).to.exist;

@@ -2,7 +2,6 @@
 
 describe('Test admin jahia cluster endpoint', () => {
     it('Gets cluster details', () => {
-        const systemKey = 'karaf.base';
         cy.apollo({
             queryFile: 'admin/system.graphql'
         }).should((response: any) => {
