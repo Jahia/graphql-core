@@ -1936,13 +1936,12 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.3.tgz#e45e384e4b8ec16bce2fd903af78450f6bf7ec98"
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
 
-"@jahia/cypress@^1.1.2":
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/@jahia/cypress/-/cypress-1.1.6.tgz#3be62c54ef747da10b29756fd71c0024ff9501e4"
-  integrity sha512-kHfC8ey74FoCHIY0dwtdZpGWwlNEpBsdUKxTXJqTuVwIxXmHUBciiMY4JOnlDx3S57JaoLMmhxq7oec2iwpxzA==
+"@jahia/cypress@^3.17.2":
+  version "3.17.2"
+  resolved "https://registry.yarnpkg.com/@jahia/cypress/-/cypress-3.17.2.tgz#63663b4b4cf53d6cc7f4edff768201aa63c79ecc"
+  integrity sha512-F7nFVQuA3JfTUzemECT7f/WMC7PAqrrDrKAxy0F2zJGEpBJCH2qBBZq127MkSgH7FyJyzQgRdqyzyAdTz1Bmsw==
   dependencies:
     "@apollo/client" "^3.4.9"
-    cypress-terminal-report "^3.4.2"
     graphql "^15.5.0"
     graphql-tag "^2.11.0"
 
@@ -3894,17 +3893,6 @@ cypress-terminal-report@^3.3.4:
   version "3.3.4"
   resolved "https://registry.yarnpkg.com/cypress-terminal-report/-/cypress-terminal-report-3.3.4.tgz#b607fe890a5b3cb6111ffcc836ace6ff623dd19e"
   integrity sha512-vNkHaU9yK6J1MxN6/DgK7QnDxqPdzOiic3Cu7hLPh5sxcKjBh1nwOA+sQ8+kuiLaTWpfBWf417YUuxWJmNAqkw==
-  dependencies:
-    chalk "^3.0.0"
-    fs-extra "^9.0.1"
-    methods "^1.1.2"
-    semver "^7.3.5"
-    tv4 "^1.3.0"
-
-cypress-terminal-report@^3.4.2:
-  version "3.5.2"
-  resolved "https://registry.yarnpkg.com/cypress-terminal-report/-/cypress-terminal-report-3.5.2.tgz#fa4fbc6eca78d4f3db0a3dfc441fd1b98dcc110f"
-  integrity sha512-06y4xTOnztyUOIwk3B+YoAYrK5DSwgCMZhUieUdU3EDXjIb4BgRs/wqPYbfCrH/N5/Yb9aV2hjO95pjzEClwqQ==
   dependencies:
     chalk "^3.0.0"
     fs-extra "^9.0.1"
