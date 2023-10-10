@@ -4,7 +4,6 @@ import {isValid} from 'date-fns';
 describe('admin.datetime - Jahia Server time', () => {
     it('Get Jahia server current time (as root)', () => {
         cy.apollo({queryFile: 'admin/datetime.graphql'}).should((response: any) => {
-            cy.log(`Date on the server is: ${response.data.admin.datetime}`);
             expect(isValid(new Date(response.data.admin.datetime))).to.be.true;
         });
     });
