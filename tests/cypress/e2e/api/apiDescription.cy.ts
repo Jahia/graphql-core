@@ -1,13 +1,13 @@
-import gql from 'graphql-tag'
+import gql from 'graphql-tag';
 
 describe('Test if every type in graphQL API has description', () => {
     it('Check every input for the User Type', () => {
-        const types = new Set()
-        const noDesc = new Set()
-        const invalidNames = new Set()
+        const types = new Set();
+        const noDesc = new Set();
+        const invalidNames = new Set();
 
         cy.apolloClient()
-            .then({ timeout: 25000 }, (client) => executeTest(client, 'Query', types, noDesc, invalidNames))
+            .then({timeout: 25000}, client => executeTest(client, 'Query', types, noDesc, invalidNames))
             .should(() => {
                 const noDescBlacklist = [
                     'type=JCRSite/field=findAvailableNodeName/arg=nodeType',
@@ -42,55 +42,56 @@ describe('Test if every type in graphQL API has description', () => {
                     'type=Category/field=uuid',
                     'type=Category/field=path',
                     'type=Query/field=categoryByPath/arg=path',
-                    'type=GqlNpmHelper',
-                ]
-                noDescBlacklist.forEach((n) => noDesc.delete(n))
+                    'type=GqlNpmHelper'
+                ];
+                noDescBlacklist.forEach(n => noDesc.delete(n));
 
-                const invalidNameBlacklist = ['wipInfo']
-                invalidNameBlacklist.forEach((n) => invalidNames.delete(n))
+                const invalidNameBlacklist = ['wipInfo'];
+                invalidNameBlacklist.forEach(n => invalidNames.delete(n));
 
-                expect(JSON.stringify(Array.from(noDesc))).to.equals('[]')
-                expect(JSON.stringify(Array.from(invalidNames))).to.equals('[]')
-            })
-    })
-})
+                expect(JSON.stringify(Array.from(noDesc))).to.equals('[]');
+                expect(JSON.stringify(Array.from(invalidNames))).to.equals('[]');
+            });
+    });
+});
 
 // Test to go down the AST of GraphQL to check for descriptions
+// eslint-disable-next-line max-params
 const executeTest = async (client, typeName, types, noDesc, invalidNames) => {
     if (types.has(typeName)) {
-        return
+        return;
     }
 
     if (typeName[0] !== typeName[0].toUpperCase()) {
-        invalidNames.add(typeName)
+        invalidNames.add(typeName);
     }
 
-    types.add(typeName)
+    types.add(typeName);
 
-    const query = constructQuery(typeName)
-    const response = await client.query({ query })
-    const responseDataType = response.data.__type
+    const query = constructQuery(typeName);
+    const response = await client.query({query});
+    const responseDataType = response.data.__type;
     if (responseDataType === null || responseDataType === undefined || responseDataType.kind === 'UNION') {
-        return
+        return;
     }
 
     if (!responseDataType.description) {
-        noDesc.add('type=' + responseDataType.name)
+        noDesc.add('type=' + responseDataType.name);
     }
 
     if (responseDataType.fields) {
-        await asyncForEach(responseDataType.fields, async (field) => {
+        await asyncForEach(responseDataType.fields, async field => {
             if (field.args) {
-                await asyncForEach(field.args, async (arg) => {
+                await asyncForEach(field.args, async arg => {
                     await fieldCheck(
                         client,
                         'type=' + responseDataType.name + '/field=' + field.name + '/arg=' + arg.name,
                         arg,
                         types,
                         noDesc,
-                        invalidNames,
-                    )
-                })
+                        invalidNames
+                    );
+                });
             }
 
             await fieldCheck(
@@ -99,24 +100,24 @@ const executeTest = async (client, typeName, types, noDesc, invalidNames) => {
                 field,
                 types,
                 noDesc,
-                invalidNames,
-            )
-        })
+                invalidNames
+            );
+        });
     }
 
     if (responseDataType.inputFields) {
-        await asyncForEach(responseDataType.inputFields, async (field) => {
+        await asyncForEach(responseDataType.inputFields, async field => {
             if (field.args) {
-                await asyncForEach(field.args, async (arg) => {
+                await asyncForEach(field.args, async arg => {
                     await fieldCheck(
                         client,
                         'inputType=' + responseDataType.name + '/arg=' + arg.name,
                         arg,
                         types,
                         noDesc,
-                        invalidNames,
-                    )
-                })
+                        invalidNames
+                    );
+                });
             }
 
             await fieldCheck(
@@ -125,36 +126,37 @@ const executeTest = async (client, typeName, types, noDesc, invalidNames) => {
                 field,
                 types,
                 noDesc,
-                invalidNames,
-            )
-        })
+                invalidNames
+            );
+        });
     }
-}
+};
 
+// eslint-disable-next-line max-params
 const fieldCheck = async (client, message, field, types, noDesc, invalidNames) => {
     if (field.description === null) {
-        noDesc.add(message)
+        noDesc.add(message);
     }
 
-    let type = field.type
+    let type = field.type;
 
     while (type.ofType) {
-        type = type.ofType
+        type = type.ofType;
     }
 
     if (type.kind === 'OBJECT' || type.kind === 'INPUT_OBJECT') {
-        await executeTest(client, type.name, types, noDesc, invalidNames)
+        await executeTest(client, type.name, types, noDesc, invalidNames);
     }
-}
+};
 
 const asyncForEach = async (array, callback) => {
     for (let index = 0; index < array.length; index++) {
         // eslint-disable-next-line no-await-in-loop
-        await callback(array[index], index, array)
+        await callback(array[index], index, array);
     }
-}
+};
 
-const constructQuery = (typeName) => {
+const constructQuery = typeName => {
     return gql`query IntrospectionQuery {
         __type(name:"${typeName}") {
             kind
@@ -207,5 +209,5 @@ const constructQuery = (typeName) => {
                 }
             }
         }
-    }`
-}
+    }`;
+};

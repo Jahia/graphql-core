@@ -15,24 +15,37 @@
 
 // Import commands.js using ES2015 syntax:
 
-require('@cypress/code-coverage/support');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-require('cypress-terminal-report/src/installLogsCollector')()
-require('@jahia/cypress/dist/support/registerSupport').registerSupport()
+import './commands';
+import addContext from 'mochawesome/addContext';
 
-Cypress.on('uncaught:exception', (err, runnable) => {
-    // returning false here prevents Cypress from
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+require('cypress-terminal-report/src/installLogsCollector')();
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+require('@jahia/cypress/dist/support/registerSupport').registerSupport();
+
+Cypress.on('uncaught:exception', () => {
+    // Returning false here prevents Cypress from
     // failing the test
-    return false
-})
+    return false;
+});
 if (Cypress.browser.family === 'chromium') {
     Cypress.automation('remote:debugger:protocol', {
         command: 'Network.enable',
-        params: {},
-    })
+        params: {}
+    });
     Cypress.automation('remote:debugger:protocol', {
         command: 'Network.setCacheDisabled',
-        params: { cacheDisabled: true },
-    })
+        params: {cacheDisabled: true}
+    });
 }
 
+Cypress.on('test:after:run', (test, runnable) => {
+    let videoName = Cypress.spec.relative;
+    videoName = videoName.replace('/.cy.*', '').replace('cypress/e2e/', '');
+    const videoUrl = 'videos/' + videoName + '.mp4';
+    addContext({test}, videoUrl);
+    if (test.state === 'failed') {
+        const screenshot = `screenshots/${Cypress.spec.relative.replace('cypress/e2e/', '')}/${runnable.parent.title} -- ${test.title} (failed).png`;
+        addContext({test}, screenshot);
+    }
+});

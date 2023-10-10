@@ -1,11 +1,11 @@
-import gql from 'graphql-tag'
+import gql from 'graphql-tag';
 
 describe('Node validity graphql test', () => {
     before('create nodes with validity constrains', () => {
         // Setup data for testing
-        console.log('run groovy script')
-        cy.executeGroovy('groovy/prepareValidityTest.groovy', {})
-    })
+        console.log('run groovy script');
+        cy.executeGroovy('groovy/prepareValidityTest.groovy', {});
+    });
     after('clean up test data', () => {
         cy.apollo({
             mutation: gql`
@@ -16,8 +16,8 @@ describe('Node validity graphql test', () => {
                         }
                     }
                 }
-            `,
-        })
+            `
+        });
         cy.apollo({
             errorPolicy: 'all',
             mutation: gql`
@@ -28,18 +28,18 @@ describe('Node validity graphql test', () => {
                         }
                     }
                 }
-            `,
-        })
-    })
+            `
+        });
+    });
     const invalidPath = [
         '/sites/systemsite/testValidity/visibility',
         '/sites/systemsite/testValidity/unpublished',
-        '/sites/systemsite/testValidity/with-inactive-language',
-    ]
+        '/sites/systemsite/testValidity/with-inactive-language'
+    ];
 
     invalidPath.forEach((path: string) =>
         it(`[nodeByPath] should not return a node ${path}`, function () {
-            // getNodeByPath
+            // GetNodeByPath
             cy.apollo({
                 errorPolicy: 'all',
                 query: gql`
@@ -50,12 +50,12 @@ describe('Node validity graphql test', () => {
                             }
                         }
                     }
-                `,
-            }).should((response) => {
-                expect(response.errors[0].message).to.contain('javax.jcr.PathNotFoundException')
-            })
-        }),
-    )
+                `
+            }).should(response => {
+                expect(response.errors[0].message).to.contain('javax.jcr.PathNotFoundException');
+            });
+        })
+    );
 
     it('[children] should return only valid nodes in EN', function () {
         cy.apollo({
@@ -71,13 +71,13 @@ describe('Node validity graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            const result = response.data.jcr.nodeByPath.children.nodes
-            expect(result.length).to.equal(1)
-            expect(result[0].path).to.equal('/sites/systemsite/testValidity/controlNode')
-        })
-    })
+            `
+        }).should(response => {
+            const result = response.data.jcr.nodeByPath.children.nodes;
+            expect(result.length).to.equal(1);
+            expect(result[0].path).to.equal('/sites/systemsite/testValidity/controlNode');
+        });
+    });
     it('[children] should return only valid nodes in FR', function () {
         cy.apollo({
             query: gql`
@@ -92,14 +92,14 @@ describe('Node validity graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            const result = response.data.jcr.nodeByPath.children.nodes
-            expect(result.length).to.equal(2)
-            expect(result[0].path).to.equal('/sites/systemsite/testValidity/controlNode')
-            expect(result[1].path).to.equal('/sites/systemsite/testValidity/with-inactive-language')
-        })
-    })
+            `
+        }).should(response => {
+            const result = response.data.jcr.nodeByPath.children.nodes;
+            expect(result.length).to.equal(2);
+            expect(result[0].path).to.equal('/sites/systemsite/testValidity/controlNode');
+            expect(result[1].path).to.equal('/sites/systemsite/testValidity/with-inactive-language');
+        });
+    });
 
     it('[descendants] should return only valid nodes in EN', function () {
         cy.apollo({
@@ -115,13 +115,13 @@ describe('Node validity graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            const result = response.data.jcr.nodeByPath.descendants.nodes
-            expect(result.length).to.equal(1)
-            expect(result[0].path).to.equal('/sites/systemsite/testValidity/controlNode')
-        })
-    })
+            `
+        }).should(response => {
+            const result = response.data.jcr.nodeByPath.descendants.nodes;
+            expect(result.length).to.equal(1);
+            expect(result[0].path).to.equal('/sites/systemsite/testValidity/controlNode');
+        });
+    });
     it('[descendants] should return only valid nodes in FR', function () {
         cy.apollo({
             query: gql`
@@ -136,16 +136,16 @@ describe('Node validity graphql test', () => {
                         }
                     }
                 }
-            `,
-        }).should((response) => {
-            const result = response.data.jcr.nodeByPath.descendants.nodes
-            expect(result.length).to.equal(2)
-            expect(result[0].path).to.equal('/sites/systemsite/testValidity/controlNode')
-            expect(result[1].path).to.equal('/sites/systemsite/testValidity/with-inactive-language')
-        })
-    })
-    const queryTypes = ['children', 'descendants']
-    queryTypes.forEach((queryType) =>
+            `
+        }).should(response => {
+            const result = response.data.jcr.nodeByPath.descendants.nodes;
+            expect(result.length).to.equal(2);
+            expect(result[0].path).to.equal('/sites/systemsite/testValidity/controlNode');
+            expect(result[1].path).to.equal('/sites/systemsite/testValidity/with-inactive-language');
+        });
+    });
+    const queryTypes = ['children', 'descendants'];
+    queryTypes.forEach(queryType =>
         it(`[${queryType}] should return only valid nodes in FR and error in EN`, function () {
             const query = `query {
                     jcr(workspace: LIVE) {
@@ -162,19 +162,22 @@ describe('Node validity graphql test', () => {
                             }
                         }
                     }
-                }`
+                }`;
             cy.apollo({
                 errorPolicy: 'all',
-                query: gql(query),
-            }).should((response) => {
-                const errors = response.errors
-                expect(errors.length).to.equal(1)
-                const expectedValues = ['nodeByPath', 'en', 'jcr']
-                expectedValues.forEach((value) => expect(errors[0].path).to.contain(value))
-                const result = response.data.jcr.nodeByPath
-                expect(result.en).to.be.null
-                expect(result.fr.nodes).to.exist
-            })
-        }),
-    )
-})
+                query: gql(query)
+            }).should(response => {
+                const errors = response.errors;
+                expect(errors.length).to.equal(1);
+                const expectedValues = ['nodeByPath', 'en', 'jcr'];
+                for (const expectedValue of expectedValues) {
+                    expect(errors[0].path).to.contain(expectedValue);
+                }
+
+                const result = response.data.jcr.nodeByPath;
+                expect(result.en).to.be.null;
+                expect(result.fr.nodes).to.exist;
+            });
+        })
+    );
+});

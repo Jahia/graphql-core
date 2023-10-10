@@ -9,36 +9,36 @@ describe('Test page properties', () => {
                 nodeName: 'testPage',
                 nodeType: 'jnt:page',
                 properties: [
-                    { name: 'j:templateName', type: 'STRING', value: 'default', language: 'en' },
-                    { name: 'jcr:title', type: 'STRING', value: 'test Page', language: 'en' },
+                    {name: 'j:templateName', type: 'STRING', value: 'default', language: 'en'},
+                    {name: 'jcr:title', type: 'STRING', value: 'test Page', language: 'en'},
                     {
                         name: 'j:isHomePage',
                         type: 'BOOLEAN',
                         value: false,
-                        language: 'en',
-                    },
-                ],
-            },
-        })
-    })
+                        language: 'en'
+                    }
+                ]
+            }
+        });
+    });
 
     it('Get a page by path and verify isHomePage has a boolean value', () => {
         cy.apollo({
             queryFile: 'jcr/pageByPath.graphql',
-            variables: { path: '/sites/systemsite/home/testPage' },
+            variables: {path: '/sites/systemsite/home/testPage'}
         }).should((response: any) => {
-            expect(response.data.jcr.nodeByPath).to.exist
-            expect(response.data.jcr.nodeByPath.name).to.equal('testPage')
-            expect(response.data.jcr.nodeByPath.isHomePage.booleanValue).to.equal(false)
-        })
-    })
+            expect(response.data.jcr.nodeByPath).to.exist;
+            expect(response.data.jcr.nodeByPath.name).to.equal('testPage');
+            expect(response.data.jcr.nodeByPath.isHomePage.booleanValue).to.equal(false);
+        });
+    });
 
     after('Delete testPage node', function () {
         cy.apollo({
             mutationFile: 'jcr/deleteNode.graphql',
             variables: {
-                pathOrId: '/sites/systemsite/home/testPage',
-            },
-        })
-    })
-})
+                pathOrId: '/sites/systemsite/home/testPage'
+            }
+        });
+    });
+});

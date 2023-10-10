@@ -1,4 +1,4 @@
-import gql from 'graphql-tag'
+import gql from 'graphql-tag';
 
 describe('Test GraphQL Field Sorter', () => {
     before('setup list with two children', () => {
@@ -16,76 +16,76 @@ describe('Test GraphQL Field Sorter', () => {
                         }
                     }
                 }
-            `,
-        })
-    })
+            `
+        });
+    });
 
     it('Should sort display name ASC with case', () => {
         cy.apollo({
             queryFile: 'sortingList.graphql',
             variables: {
                 sortType: 'ASC',
-                ignoreCase: true,
-            },
-        }).should((result) => {
-            const sortedList1 = result?.data?.jcr?.nodesByCriteria?.nodes
-            expect(sortedList1).to.have.length(2)
-            expect(sortedList1[0]).to.have.property('displayName', 'abonjour')
-            expect(sortedList1[1]).to.have.property('displayName', 'ZHello')
-        })
-    })
+                ignoreCase: true
+            }
+        }).should(result => {
+            const sortedList1 = result?.data?.jcr?.nodesByCriteria?.nodes;
+            expect(sortedList1).to.have.length(2);
+            expect(sortedList1[0]).to.have.property('displayName', 'abonjour');
+            expect(sortedList1[1]).to.have.property('displayName', 'ZHello');
+        });
+    });
 
     it('Should sort display name ASC ignoring case', () => {
         cy.apollo({
             queryFile: 'sortingList.graphql',
             variables: {
                 sortType: 'ASC',
-                ignoreCase: false,
-            },
-        }).should((result) => {
-            const sortedList1 = result?.data?.jcr?.nodesByCriteria?.nodes
-            expect(sortedList1).to.have.length(2)
-            expect(sortedList1[0]).to.have.property('displayName', 'ZHello')
-            expect(sortedList1[1]).to.have.property('displayName', 'abonjour')
-        })
-    })
+                ignoreCase: false
+            }
+        }).should(result => {
+            const sortedList1 = result?.data?.jcr?.nodesByCriteria?.nodes;
+            expect(sortedList1).to.have.length(2);
+            expect(sortedList1[0]).to.have.property('displayName', 'ZHello');
+            expect(sortedList1[1]).to.have.property('displayName', 'abonjour');
+        });
+    });
 
     it('Should sort display name DESC with case', () => {
         cy.apollo({
             queryFile: 'sortingList.graphql',
             variables: {
                 sortType: 'DESC',
-                ignoreCase: true,
-            },
-        }).should((result) => {
-            const sortedList1 = result?.data?.jcr?.nodesByCriteria?.nodes
-            expect(sortedList1).to.have.length(2)
-            expect(sortedList1[0]).to.have.property('displayName', 'ZHello')
-            expect(sortedList1[1]).to.have.property('displayName', 'abonjour')
-        })
-    })
+                ignoreCase: true
+            }
+        }).should(result => {
+            const sortedList1 = result?.data?.jcr?.nodesByCriteria?.nodes;
+            expect(sortedList1).to.have.length(2);
+            expect(sortedList1[0]).to.have.property('displayName', 'ZHello');
+            expect(sortedList1[1]).to.have.property('displayName', 'abonjour');
+        });
+    });
 
     it('Should sort display name DESC ignoring case', () => {
         cy.apollo({
             queryFile: 'sortingList.graphql',
             variables: {
                 sortType: 'DESC',
-                ignoreCase: false,
-            },
-        }).should((result) => {
-            const sortedList1 = result?.data?.jcr?.nodesByCriteria?.nodes
-            expect(sortedList1).to.have.length(2)
-            expect(sortedList1[0]).to.have.property('displayName', 'abonjour')
-            expect(sortedList1[1]).to.have.property('displayName', 'ZHello')
-        })
-    })
+                ignoreCase: false
+            }
+        }).should(result => {
+            const sortedList1 = result?.data?.jcr?.nodesByCriteria?.nodes;
+            expect(sortedList1).to.have.length(2);
+            expect(sortedList1[0]).to.have.property('displayName', 'abonjour');
+            expect(sortedList1[1]).to.have.property('displayName', 'ZHello');
+        });
+    });
 
     after('Delete list', function () {
         cy.apollo({
             mutationFile: 'jcr/deleteNode.graphql',
             variables: {
-                pathOrId: '/testList',
-            },
-        })
-    })
-})
+                pathOrId: '/testList'
+            }
+        });
+    });
+});

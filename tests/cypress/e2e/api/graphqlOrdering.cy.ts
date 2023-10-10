@@ -1,4 +1,4 @@
-import gql from 'graphql-tag'
+import gql from 'graphql-tag';
 
 describe('Test graphql ordering', () => {
     before('create a list with 3 children', () => {
@@ -19,18 +19,18 @@ describe('Test graphql ordering', () => {
                         }
                     }
                 }
-            `,
-        })
-    })
+            `
+        });
+    });
 
     after('Delete list created in the before', function () {
         cy.apollo({
             mutationFile: 'jcr/deleteNode.graphql',
             variables: {
-                pathOrId: '/testList',
-            },
-        })
-    })
+                pathOrId: '/testList'
+            }
+        });
+    });
 
     it('Should order by nodeType', () => {
         cy.apollo({
@@ -38,29 +38,29 @@ describe('Test graphql ordering', () => {
             variables: {
                 orderType: 'ASC',
                 nodeType: 'jnt:content',
-                property: 'jcr:primaryType',
-            },
-        }).should((result) => {
-            const orderedList1 = result?.data?.jcr?.nodesByCriteria?.nodes
-            expect(orderedList1).to.have.length(3)
-            expect(orderedList1[0].primaryNodeType).to.have.property('name', 'jnt:bigText')
-            expect(orderedList1[1].primaryNodeType).to.have.property('name', 'jnt:linkList')
-            expect(orderedList1[2].primaryNodeType).to.have.property('name', 'jnt:press')
-        })
+                property: 'jcr:primaryType'
+            }
+        }).should(result => {
+            const orderedList1 = result?.data?.jcr?.nodesByCriteria?.nodes;
+            expect(orderedList1).to.have.length(3);
+            expect(orderedList1[0].primaryNodeType).to.have.property('name', 'jnt:bigText');
+            expect(orderedList1[1].primaryNodeType).to.have.property('name', 'jnt:linkList');
+            expect(orderedList1[2].primaryNodeType).to.have.property('name', 'jnt:press');
+        });
 
         cy.apollo({
             queryFile: 'orderingList.graphql',
             variables: {
                 orderType: 'DESC',
                 nodeType: 'jnt:content',
-                property: 'jcr:primaryType',
-            },
-        }).should((result) => {
-            const orderedList1 = result?.data?.jcr?.nodesByCriteria?.nodes
-            expect(orderedList1).to.have.length(3)
-            expect(orderedList1[0].primaryNodeType).to.have.property('name', 'jnt:press')
-            expect(orderedList1[1].primaryNodeType).to.have.property('name', 'jnt:linkList')
-            expect(orderedList1[2].primaryNodeType).to.have.property('name', 'jnt:bigText')
-        })
-    })
-})
+                property: 'jcr:primaryType'
+            }
+        }).should(result => {
+            const orderedList1 = result?.data?.jcr?.nodesByCriteria?.nodes;
+            expect(orderedList1).to.have.length(3);
+            expect(orderedList1[0].primaryNodeType).to.have.property('name', 'jnt:press');
+            expect(orderedList1[1].primaryNodeType).to.have.property('name', 'jnt:linkList');
+            expect(orderedList1[2].primaryNodeType).to.have.property('name', 'jnt:bigText');
+        });
+    });
+});
