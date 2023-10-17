@@ -32,7 +32,9 @@ module.exports = (env, argv) => {
             fallback: {
                 "fs": false,
                 "os": false,
-                "path": false
+                "path": false,
+                "net": false,
+                "tls": false,
             }
         },
         module: {

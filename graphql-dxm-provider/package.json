@@ -33,7 +33,6 @@
     "@apollo/sandbox": "^2.5.1",
     "@jahia/ui-extender": "^1.1.0",
     "bufferutil": "^4.0.8",
-    "fs": "^0.0.1-security",
     "graphql": "^16.8.1",
     "graphql-ws": "^5.14.1",
     "i18next": "^23.5.1",
@@ -82,6 +81,8 @@
   "browser": {
     "fs": false,
     "os": false,
-    "path": false
+    "path": false,
+    "tls": false,
+    "net": false
   }
 }
