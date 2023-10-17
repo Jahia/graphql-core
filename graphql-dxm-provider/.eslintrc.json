@@ -1,0 +1,8 @@
+{
+  "extends": "@jahia",
+  "plugins": ["json", "react"],
+  "rules": {
+    "react/boolean-prop-naming": [1, { "rule": "^(is|has)[A-Z]([A-Za-z0-9]?)+" }],
+    "react-hooks/exhaustive-deps": [2]
+  }
+}
