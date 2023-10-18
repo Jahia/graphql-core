@@ -55,7 +55,8 @@
         <jahia-module-signature>MCwCFF+OA2JTSs4XZqAlfoP157UxsrxYAhQbILGqUYsZyQ0ZdSM9hZzA0S4z+g==</jahia-module-signature>
         <mockito.version>2.21.0</mockito.version>
         <powermock.version>2.0.9</powermock.version>
-        <sonar.sources>src/main/resources/javascript</sonar.sources>
+        <yarn.arguments>build:production</yarn.arguments>
+        <sonar.sources>src/javascript,src/main/resources/javascript</sonar.sources>
     </properties>
 
     <dependencies>
@@ -119,6 +120,12 @@
             <groupId>org.powermock</groupId>
             <artifactId>powermock-module-junit4</artifactId>
             <version>${powermock.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+            </exclusions>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -176,6 +183,51 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.13.4</version>
+                <executions>
+                    <execution>
+                        <id>npm install node and yarn</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>install-node-and-yarn</goal>
+                        </goals>
+                        <configuration>
+                            <nodeVersion>v18.18.0</nodeVersion>
+                            <yarnVersion>v1.22.19</yarnVersion>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>yarn install</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>yarn</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>yarn post-install</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>yarn</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>${yarn.arguments}</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>sync-pom</id>
+                        <phase>none</phase>
+                        <goals>
+                            <goal>yarn</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>sync-pom</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.cyclonedx</groupId>
                 <artifactId>cyclonedx-maven-plugin</artifactId>
                 <version>2.7.9</version>
@@ -205,4 +257,14 @@
         </plugins>
 
     </build>
+
+    <profiles>
+        <profile>
+            <id>dev</id>
+            <properties>
+                <yarn.arguments>build</yarn.arguments>
+                <cyclonedx.skip>true</cyclonedx.skip>
+            </properties>
+        </profile>
+    </profiles>
 </project>
