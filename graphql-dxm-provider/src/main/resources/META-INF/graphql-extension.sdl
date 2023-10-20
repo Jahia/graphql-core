@@ -33,7 +33,7 @@ type Asset @mapping(node: "jnt:file", ignoreDefaultQueries: true) {
     type: String @mapping(property: "jcr:content.jcr:mimeType")
 
     "Asset size"
-    size: Long @mapping(property: "jcr:content.jcr:data")
+    size: Float @mapping(property: "jcr:content.jcr:data")
 }
 
 """
@@ -47,13 +47,13 @@ type ImageAsset @mapping(node: "jmix:image,jnt:file", ignoreDefaultQueries: true
     type: String @mapping(property: "jcr:content.jcr:mimeType")
 
     "Image size"
-    size: Long @mapping(property: "jcr:content.jcr:data")
+    size: Float @mapping(property: "jcr:content.jcr:data")
 
     "Image height"
-    height: Long @mapping(property: "j:height")
+    height: Float @mapping(property: "j:height")
 
     "Image width"
-    width: Long @mapping(property: "j:width")
+    width: Float @mapping(property: "j:width")
 }
 
 """
