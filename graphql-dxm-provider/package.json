@@ -9,7 +9,7 @@
   "scripts": {
     "test": "env-cmd --no-override jest",
     "testcli": "jest",
-    "build": "yarn lint:fix && yarn webpack",
+    "build": "yarn lint:fix && yarn webpack && yarn webpack --config webpack.config.tools-embed.js",
     "build:nolint": "yarn webpack",
     "dev": "yarn webpack --watch",
     "webpack": "node --max_old_space_size=2048 ./node_modules/webpack/bin/webpack.js",
