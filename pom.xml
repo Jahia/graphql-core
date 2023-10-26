@@ -38,11 +38,6 @@
 
     <properties>
         <jahia.nexus.staging.repository.id>64277f72646358</jahia.nexus.staging.repository.id>
-
-        <dataloader.version>3.2.0</dataloader.version>
-        <graphql-java.version>21.1</graphql-java.version>
-        <graphql-java-annotations.version>21.1.0-SNAPSHOT</graphql-java-annotations.version>
-        <graphql-java-servlet.version>15.1.1-jahia-SNAPSHOT</graphql-java-servlet.version>
     </properties>
 
     <repositories>
