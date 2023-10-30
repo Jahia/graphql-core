@@ -2,6 +2,16 @@ import {registry} from '@jahia/ui-extender';
 import {ApolloSandbox} from '@apollo/sandbox/react';
 import React from 'react';
 
+const initialQuery = `
+query {
+    admin {
+        jahia {
+            version {
+                release
+            }
+        }
+    }
+}`;
 export const registerRoutes = () => {
     registry.add('adminRoute', 'graphql-playground', {
         targets: ['developerTools:20'],
@@ -9,28 +19,21 @@ export const registerRoutes = () => {
         icon: window.jahia.moonstone.toIconComponent('GraphQl'),
         label: 'graphql-dxm-provider:graphql',
         isSelectable: true,
-        render: () => (
-            <div style={{height: '100%'}}>
-                <ApolloSandbox
-                    initialEndpoint="http://localhost:8080/modules/graphql"
-                    endpointIsEditable={false}
-                    initialSubscriptionEndpoint="ws://localhost:8080/modules/graphqlws"
-                    initialState={{
-                        includeCookies: true,
-                        document: `
-query {
-	admin {
-		jahia {
-			version {
-				release
-			}
-		}
-	}
-}
-`
-                    }}
-                />
-            </div>
-        )
+        render: () => {
+            const url = window.location.origin + window.contextJsParameters.contextPath;
+            const subsciptionURL = url.replace(window.location.protocol, window.location.protocol === 'https:' ? 'wss:' : ' ws:');
+            return (
+                <div style={{height: '100%'}}>
+                    <ApolloSandbox
+                        initialEndpoint={url + '/modules/graphql'}
+                        initialSubscriptionEndpoint={subsciptionURL + '/modules/graphqlws'}
+                        initialState={{
+                            includeCookies: true,
+                            document: initialQuery
+                        }}
+                    />
+                </div>
+            );
+        }
     });
 };

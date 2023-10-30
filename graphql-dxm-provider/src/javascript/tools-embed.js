@@ -1,23 +1,26 @@
 import {ApolloSandbox} from '@apollo/sandbox';
 
+const initialQuery = `
+query {
+    admin {
+        jahia {
+            version {
+                release
+            }
+        }
+    }
+}`;
 export const EmbeddedSandbox = target => {
+    const url = window.location.origin + window.contextJsParameters.contextPath;
+    const subsciptionURL = url.replace(window.location.protocol, window.location.protocol === 'https:' ? 'wss:' : ' ws:');
     // eslint-disable-next-line
     new ApolloSandbox({
         target: target,
-        initialEndpoint: 'http://localhost:8080/modules/graphql',
-        endpointIsEditable: true,
-        initialSubscriptionEndpoint: 'ws://localhost:8080/modules/graphqlws',
+        initialEndpoint: url + '/modules/graphql',
+        initialSubscriptionEndpoint: subsciptionURL + '/modules/graphqlws',
         initialState: {
             includeCookies: true,
-            document: 'query Version {\n' +
-                '\tadmin {\n' +
-                '\t\tjahia {\n' +
-                '\t\t\tversion {\n' +
-                '\t\t\t\trelease\n' +
-                '\t\t\t}\n' +
-                '\t\t}\n' +
-                '\t}\n' +
-                '}'
+            document: initialQuery
         }
     });
 };
