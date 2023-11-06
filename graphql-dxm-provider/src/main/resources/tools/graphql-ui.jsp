@@ -9,6 +9,6 @@
     console.log('starting');
     document.addEventListener("DOMContentLoaded",() => {
         console.log('dom loaded');
-        GraphqlPlayground.EmbeddedSandbox('#embedded-sandbox');
+        GraphqlPlayground.EmbeddedSandbox('embedded-sandbox');
     });
 </script>

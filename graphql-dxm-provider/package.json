@@ -30,11 +30,14 @@
     }
   },
   "dependencies": {
-    "@apollo/sandbox": "^2.5.1",
+    "@graphiql/plugin-code-exporter": "^1.0.1",
+    "@graphiql/plugin-explorer": "^1.0.1",
+    "@graphiql/toolkit": "^0.9.1",
+    "@graphiql/react": "^0.20.1",
+    "graphiql": "^3.0.8",
     "@jahia/ui-extender": "^1.1.0",
     "bufferutil": "^4.0.8",
     "graphql": "^16.8.1",
-    "graphql-ws": "^5.14.1",
     "i18next": "^23.5.1",
     "net": "^1.0.2",
     "node-polyfill-webpack-plugin": "^2.0.1",
@@ -42,11 +45,9 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-i18next": "^13.3.0",
+    "subscriptions-transport-ws": "^0.11.0",
     "tls": "^0.0.1",
     "utf-8-validate": "^6.0.3"
-  },
-  "alias": {
-    "subscriptions-transport-ws": "node_modules/graphql-ws"
   },
   "devDependencies": {
     "@babel/cli": "^7.23.0",
@@ -76,7 +77,9 @@
     "sync-pom-version-to-package": "^1.6.1",
     "webpack": "^5.89.0",
     "webpack-bundle-analyzer": "^4.9.1",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "style-loader": "^3.3.3",
+    "css-loader": "^6.8.1"
   },
   "browser": {
     "fs": false,
