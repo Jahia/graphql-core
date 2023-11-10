@@ -4,7 +4,7 @@ import 'graphiql/graphiql.css';
 import '@graphiql/plugin-explorer/dist/style.css';
 import {createGraphiQLFetcher} from '@graphiql/toolkit';
 import {GraphiQL} from 'graphiql';
-import {useStorageContext, useTheme} from '@graphiql/react';
+import {useTheme} from '@graphiql/react';
 import {SubscriptionClient} from 'subscriptions-transport-ws';
 import {createRoot} from 'react-dom/client';
 
@@ -26,7 +26,6 @@ query {
  */
 const explorer = explorerPlugin();
 const GraphiQLComponent = () => {
-    const storage = useStorageContext();
     const {setTheme} = useTheme();
     const url = window.location.origin;
     const subscriptionURL = url.replace(window.location.protocol, window.location.protocol === 'https:' ? 'wss:' : ' ws:');
@@ -47,7 +46,6 @@ const GraphiQLComponent = () => {
             <GraphiQL
                 plugins={[explorer]}
                 fetcher={fetcher}
-                storage={storage}
                 defaultQuery={initialQuery}
             />
         </div>

@@ -5,8 +5,8 @@ import 'graphiql/graphiql.css';
 import '@graphiql/plugin-explorer/dist/style.css';
 import {createGraphiQLFetcher} from '@graphiql/toolkit';
 import {GraphiQL} from 'graphiql';
-import {useStorageContext, useTheme} from '@graphiql/react';
 import {SubscriptionClient} from 'subscriptions-transport-ws';
+import {useTheme} from '@graphiql/react';
 
 const initialQuery = `
 query {
@@ -26,7 +26,6 @@ query {
  */
 const explorer = explorerPlugin();
 const GraphiQLComponent = () => {
-    const storage = useStorageContext();
     const {setTheme} = useTheme();
     const url = window.location.origin + window.contextJsParameters.contextPath;
     const subscriptionURL = url.replace(window.location.protocol, window.location.protocol === 'https:' ? 'wss:' : ' ws:');
@@ -45,7 +44,6 @@ const GraphiQLComponent = () => {
             <GraphiQL
                 plugins={[explorer]}
                 fetcher={fetcher}
-                storage={storage}
                 defaultQuery={initialQuery}
             />
         </div>
@@ -53,7 +51,7 @@ const GraphiQLComponent = () => {
 };
 
 export const registerRoutes = () => {
-    registry.add('adminRoute', 'graphql-ui', {
+    registry.add('adminRoute', 'graphql-workspace', {
         targets: ['developerTools:20'],
         requiredPermission: 'developerToolsAccess',
         icon: window.jahia.moonstone.toIconComponent('GraphQl'),
