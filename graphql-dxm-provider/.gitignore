@@ -2,5 +2,9 @@
 /.project
 /.settings/
 /.node_modules
+node_modules
+node
+src/main/resources/javascript/apps
+src/main/resources/javascript/tools
 /.node
 .DS_Store
