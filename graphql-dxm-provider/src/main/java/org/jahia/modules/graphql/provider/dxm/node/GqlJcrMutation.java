@@ -17,16 +17,22 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.lang.mutable.MutableInt;
+import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLFieldCompleter;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.services.content.*;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.importexport.DocumentViewImportHandler;
+import org.jahia.services.importexport.ReferencesHelper;
 import org.jahia.services.query.QueryWrapper;
+import org.jahia.settings.SettingsBean;
 
 import javax.jcr.RepositoryException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -275,8 +281,9 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     public GqlJcrNodeMutation copyNode(
         @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the node to be copied") String pathOrId,
         @GraphQLName("destParentPathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the destination parent node to copy the node to") String destParentPathOrId,
-        @GraphQLName("destName") @GraphQLDescription("The name of the node at the new location or null if its current name should be preserved") String destName
-    ) throws BaseGqlClientException {
+        @GraphQLName("destName") @GraphQLDescription("The name of the node at the new location or null if its current name should be preserved") String destName,
+        @GraphQLName("childNodeTypesToSkip") @GraphQLDescription("The child node types that should be skipped during copy") List<String> childNodeTypesToSkip
+        ) throws BaseGqlClientException {
 
         JCRNodeWrapper destParentNode = getNodeFromPathOrId(getSession(), destParentPathOrId);
         JCRNodeWrapper node = getNodeFromPathOrId(getSession(), pathOrId);
@@ -288,9 +295,30 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
 
         JCRNodeWrapper destNode;
         try {
-            if (!node.copy(destParentNode.getPath(), destName, JCRNodeWrapper.NodeNamingConflictResolutionStrategy.FAIL)) {
-                throw new DataFetchingException("Error copying node '" + node.getPath() + "' to '" + destParentNode.getPath() + "'");
+            if (childNodeTypesToSkip == null || childNodeTypesToSkip.isEmpty()) {
+                if (!node.copy(destParentNode, destName, true, JCRNodeWrapper.NodeNamingConflictResolutionStrategy.FAIL)) {
+                    throw new DataFetchingException("Error copying node '" + node.getPath() + "' to '" + destParentNode.getPath() + "'");
+                }
+            } else {
+                JCRNodeWrapper newNode = destParentNode.addNode(destName, node.getPrimaryNodeTypeName());
+                for (ExtendedNodeType mixin : node.getMixinNodeTypes()) {
+                    if (!Constants.forbiddenMixinToCopy.contains(mixin.getName())) {
+                        newNode.addMixin(mixin.getName());
+                    }
+                }
+                Map<String, List<String>> references = new HashMap<>();
+                node.copyProperties(newNode, references);
+                ReferencesHelper.resolveCrossReferences(node.getSession(), references, false);
+
+                Set<String> ignoreNodeTypes = new HashSet<>(childNodeTypesToSkip);
+                // add default child node to skip to specified ones.
+                ignoreNodeTypes.addAll(Constants.forbiddenChildNodeTypesToCopy);
+                for (JCRNodeWrapper childNode : node.getNodes()) {
+                    childNode.copy(newNode, childNode.getName(), true, new ArrayList<>(ignoreNodeTypes), SettingsBean.getInstance().getImportMaxBatch());
+                }
+                ReferencesHelper.resolveCrossReferences(getSession(), references, false);
             }
+
             destNode = destParentNode.getNode(destName);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
@@ -344,21 +372,10 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     @GraphQLField
     @GraphQLDescription("Copy multiple nodes to different parent node(s)")
     public Collection<GqlJcrNodeMutation> copyNodes(
-        @GraphQLName("nodes") @GraphQLNonNull Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes
+        @GraphQLName("nodes") @GraphQLNonNull Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes,
+        @GraphQLName("childNodeTypesToSkip") @GraphQLDescription("The child node types that should be skipped during copy") List<String> childNodeTypesToSkip
     ) throws BaseGqlClientException {
-
-        return reproduceNodes(nodes, new NodeReproducer() {
-
-            @Override
-            public GqlJcrNodeMutation reproduce(GqlJcrReproducibleNodeInput node) {
-                return copyNode(node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName());
-            }
-
-            @Override
-            public String getOperationName() {
-                return "copying";
-            }
-        });
+        return reproduceNodes(nodes, node -> copyNode(node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName(), childNodeTypesToSkip));
     }
 
     /**
@@ -372,19 +389,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     public Collection<GqlJcrNodeMutation> moveNodes(
         @GraphQLName("nodes") @GraphQLNonNull Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes
     ) throws BaseGqlClientException {
-
-        return reproduceNodes(nodes, new NodeReproducer() {
-
-            @Override
-            public GqlJcrNodeMutation reproduce(GqlJcrReproducibleNodeInput node) {
-                return moveNode(node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName());
-            }
-
-            @Override
-            public String getOperationName() {
-                return "moving";
-            }
-        });
+        return reproduceNodes(nodes, node -> moveNode(node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName()));
     }
 
     private static void verifyNodeReproductionTarget(JCRNodeWrapper node, JCRNodeWrapper destParentNode) {
@@ -393,21 +398,20 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         }
     }
 
-    private Collection<GqlJcrNodeMutation> reproduceNodes(Collection<GqlJcrReproducibleNodeInput> nodes, NodeReproducer nodeReproducer) throws BaseGqlClientException {
-
+    private Collection<GqlJcrNodeMutation> reproduceNodes(Collection<GqlJcrReproducibleNodeInput> nodes, Function<GqlJcrReproducibleNodeInput, GqlJcrNodeMutation> nodeReproducer) throws BaseGqlClientException {
         ArrayList<GqlJcrNodeMutation> result = new ArrayList<>(nodes.size());
         LinkedList<Exception> exceptions = new LinkedList<>();
 
         for (GqlJcrReproducibleNodeInput node : nodes) {
             try {
-                result.add(nodeReproducer.reproduce(node));
+                result.add(nodeReproducer.apply(node));
             } catch (Exception e) {
                 exceptions.add(e);
             }
         }
 
         if (!exceptions.isEmpty()) {
-            StringBuilder message = new StringBuilder("Errors " + nodeReproducer.getOperationName() + " nodes:\n");
+            StringBuilder message = new StringBuilder("Errors copying/moving nodes:\n");
             for (Exception e : exceptions) {
                 message.append(e.getClass().getName()).append(": ").append(e.getMessage()).append('\n');
             }
@@ -415,12 +419,6 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         }
 
         return result;
-    }
-
-    private interface NodeReproducer {
-
-        GqlJcrNodeMutation reproduce(GqlJcrReproducibleNodeInput node);
-        String getOperationName();
     }
 
     /**
