@@ -48,9 +48,6 @@
     "tls": "^0.0.1",
     "utf-8-validate": "^6.0.3"
   },
-  "resolutions": {
-    "browserify-sign": "^4.2.2"
-  },
   "devDependencies": {
     "@babel/cli": "^7.23.0",
     "@babel/core": "^7.23.2",
