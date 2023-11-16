@@ -17,8 +17,10 @@ package org.jahia.modules.graphql.provider.dxm.content;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Supplier;
 
+import graphql.annotations.annotationTypes.*;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutation;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
@@ -26,13 +28,6 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrReproducibleNodeInput;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
-
-import graphql.annotations.annotationTypes.GraphQLDefaultValue;
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
-import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 
 /**
  * Provides for content management related mutation extensions.
@@ -70,7 +65,7 @@ public class ContentManagementGqlJcrMutationExtension {
      * @param pathOrId Path or UUID of the node to be pasted
      * @param destParentPathOrId Path or UUID of the destination parent node to paste the node to
      * @param destName The name of the node at the new location or null if its current name should be preserved
-     * @param namingConflictResolutionStrategy The way to deal with duplicate node names when they are not allowed
+     * @param namingConflictResolution The way to deal with duplicate node names when they are not allowed
      * @return Mutation object representing the node at the new location
      */
     @GraphQLField
@@ -80,11 +75,12 @@ public class ContentManagementGqlJcrMutationExtension {
         @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the node to be pasted") String pathOrId,
         @GraphQLName("destParentPathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the destination parent node to paste the node to") String destParentPathOrId,
         @GraphQLName("destName") @GraphQLDescription("The name of the node at the new location or null if its current name should be preserved") String destName,
+        @GraphQLName("childNodeTypesToSkip") @GraphQLDescription("The child node types that should be skipped during copy") List<String> childNodeTypesToSkip,
         @GraphQLName("namingConflictResolution") @GraphQLDefaultValue(SupplierFail.class) @GraphQLDescription("The way to deal with duplicate node names when they are not allowed, either FAIL or RENAME") NodeNamingConflictResolutionStrategy namingConflictResolution
     ) throws BaseGqlClientException {
         destName = getNodeName(pathOrId, destParentPathOrId, destName, namingConflictResolution);
         if (mode == PasteMode.COPY) {
-            return mutation.copyNode(pathOrId, destParentPathOrId, destName);
+            return mutation.copyNode(pathOrId, destParentPathOrId, destName, childNodeTypesToSkip);
         } else if (mode == PasteMode.MOVE) {
             return mutation.moveNode(pathOrId, destParentPathOrId, destName);
         } else {
@@ -97,7 +93,7 @@ public class ContentManagementGqlJcrMutationExtension {
      *
      * @param mode Paste mode
      * @param nodes Info about nodes to paste and their new parent node(s)
-     * @param namingConflictResolutionStrategy The way to deal with duplicate node names when they are not allowed
+     * @param namingConflictResolution The way to deal with duplicate node names when they are not allowed
      * @return A collection of mutation objects representing pasted nodes at their new location(s)
      */
     @GraphQLField
@@ -105,11 +101,12 @@ public class ContentManagementGqlJcrMutationExtension {
     public Collection<GqlJcrNodeMutation> pasteNodes(
         @GraphQLName("mode") @GraphQLNonNull @GraphQLDescription("Paste mode, either COPY or MOVE") PasteMode mode,
         @GraphQLName("nodes") @GraphQLNonNull  @GraphQLDescription("Info about nodes to paste and their new parent node(s)") Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes,
+        @GraphQLName("childNodeTypesToSkip") @GraphQLDescription("The child node types that should be skipped during copy") List<String> childNodeTypesToSkip,
         @GraphQLName("namingConflictResolution") @GraphQLDefaultValue(SupplierFail.class) @GraphQLDescription("The way to deal with duplicate node names when they are not allowed, either FAIL or RENAME") NodeNamingConflictResolutionStrategy namingConflictResolution
     ) throws BaseGqlClientException {
         ArrayList<GqlJcrNodeMutation> result = new ArrayList<>(nodes.size());
         for (GqlJcrReproducibleNodeInput node : nodes) {
-            result.add(pasteNode(mode, node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName(), namingConflictResolution));
+            result.add(pasteNode(mode, node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName(), childNodeTypesToSkip, namingConflictResolution));
         }
         return result;
     }
