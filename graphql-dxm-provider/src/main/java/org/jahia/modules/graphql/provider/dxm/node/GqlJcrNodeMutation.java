@@ -359,18 +359,14 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
             JCRSessionWrapper session = jcrNode.getSession();
             if (destPath != null) {
                 if (session.getNode(destPath).hasNode(jcrNode.getName()) && renameOnConflict) {
-                    String newName = JCRContentUtils.findAvailableNodeName(session.getNode(destPath), jcrNode.getName());
-                    jcrNode.rename(newName);
-                    session.save();
+                    safeRename(session.getNode(destPath), jcrNode.getName());
                 }
 
                 jcrNode.getSession().move(jcrNode.getPath(), destPath);
             } else if (parentPathOrId != null) {
                 JCRNodeWrapper parentDest = getNodeFromPathOrId(jcrNode.getSession(), parentPathOrId);
                 if (parentDest.hasNode(jcrNode.getName()) && renameOnConflict) {
-                    String newName = JCRContentUtils.findAvailableNodeName(parentDest, jcrNode.getName());
-                    jcrNode.rename(newName);
-                    session.save();
+                    safeRename(parentDest, jcrNode.getName());
                 }
 
                 jcrNode.getSession().move(jcrNode.getPath(), parentDest.getPath() + "/" + jcrNode.getName());
@@ -597,5 +593,22 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
                 }
             }
         }
+    }
+
+    private void safeRename(JCRNodeWrapper destNode, String desiredName) throws RepositoryException {
+        boolean nameFound = false;
+
+        // Go back and forth between dest and source and try to find suitable name
+        while(!nameFound) {
+            desiredName = JCRContentUtils.findAvailableNodeName(destNode, desiredName);
+            nameFound = true;
+            if (jcrNode.getParent().hasNode(desiredName)) {
+                desiredName = JCRContentUtils.findAvailableNodeName(jcrNode.getParent(), desiredName);
+                nameFound = false;
+            }
+        }
+
+        jcrNode.rename(desiredName);
+        jcrNode.getSession().save();
     }
 }
