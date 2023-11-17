@@ -345,6 +345,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
      *
      * @param destPath target node path of the current node after the move operation
      * @param parentPathOrId parent node path or id under which the current node will be moved to
+     * @param renameOnConflict boolean to indicate if source node needs to be renamed
      * @return the new path of the current node after move operation
      * @throws BaseGqlClientException in case of move error
      */
