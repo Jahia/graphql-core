@@ -352,12 +352,26 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     @GraphQLDescription("Moves the current node to a specified destination path (if destPath is specified) or moves it under the specified node"
             + " (if parentPathOrId is specified). Either of two parameters is expected.")
     public String move(@GraphQLName("destPath") @GraphQLDescription("The target node path of the current node after the move operation") String destPath,
-                       @GraphQLName("parentPathOrId") @GraphQLDescription("The parent node path or id under which the current node will be moved to") String parentPathOrId) throws BaseGqlClientException {
+                       @GraphQLName("parentPathOrId") @GraphQLDescription("The parent node path or id under which the current node will be moved to") String parentPathOrId,
+                       @GraphQLName("renameOnConflict") @GraphQLDescription("Renames current node before moving if the name exists under destination node") Boolean renameOnConflict) throws BaseGqlClientException {
         try {
+            JCRSessionWrapper session = jcrNode.getSession();
             if (destPath != null) {
+                if (session.getNode(destPath).hasNode(jcrNode.getName()) && renameOnConflict) {
+                    String newName = JCRContentUtils.findAvailableNodeName(session.getNode(destPath), jcrNode.getName());
+                    jcrNode.rename(newName);
+                    session.save();
+                }
+
                 jcrNode.getSession().move(jcrNode.getPath(), destPath);
             } else if (parentPathOrId != null) {
                 JCRNodeWrapper parentDest = getNodeFromPathOrId(jcrNode.getSession(), parentPathOrId);
+                if (parentDest.hasNode(jcrNode.getName()) && renameOnConflict) {
+                    String newName = JCRContentUtils.findAvailableNodeName(parentDest, jcrNode.getName());
+                    jcrNode.rename(newName);
+                    session.save();
+                }
+
                 jcrNode.getSession().move(jcrNode.getPath(), parentDest.getPath() + "/" + jcrNode.getName());
             } else {
                 throw new GqlJcrWrongInputException(
