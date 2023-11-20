@@ -600,9 +600,11 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
         // Go back and forth between dest and source and try to find suitable name
         while(!nameFound) {
-            desiredName = JCRContentUtils.findAvailableNodeName(destNode, desiredName);
+            if (destNode.hasNode(desiredName)) {
+                desiredName = JCRContentUtils.findAvailableNodeName(destNode, desiredName);
+            }
             nameFound = true;
-            if (jcrNode.getParent().hasNode(desiredName)) {
+            if (jcrNode.getParent() != null && jcrNode.getParent().hasNode(desiredName)) {
                 desiredName = JCRContentUtils.findAvailableNodeName(jcrNode.getParent(), desiredName);
                 nameFound = false;
             }
