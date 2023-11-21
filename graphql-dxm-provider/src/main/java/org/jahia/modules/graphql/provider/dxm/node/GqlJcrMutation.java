@@ -375,7 +375,19 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         @GraphQLName("nodes") @GraphQLNonNull Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes,
         @GraphQLName("childNodeTypesToSkip") @GraphQLDescription("The child node types that should be skipped during copy") List<String> childNodeTypesToSkip
     ) throws BaseGqlClientException {
-        return reproduceNodes(nodes, node -> copyNode(node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName(), childNodeTypesToSkip));
+
+        return reproduceNodes(nodes, new NodeReproducer() {
+
+            @Override
+            public GqlJcrNodeMutation reproduce(GqlJcrReproducibleNodeInput node) {
+                return copyNode(node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName(), childNodeTypesToSkip);
+            }
+
+            @Override
+            public String getOperationName() {
+                return "copying";
+            }
+        });
     }
 
     /**
@@ -389,7 +401,19 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     public Collection<GqlJcrNodeMutation> moveNodes(
         @GraphQLName("nodes") @GraphQLNonNull Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes
     ) throws BaseGqlClientException {
-        return reproduceNodes(nodes, node -> moveNode(node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName()));
+
+        return reproduceNodes(nodes, new NodeReproducer() {
+
+            @Override
+            public GqlJcrNodeMutation reproduce(GqlJcrReproducibleNodeInput node) {
+                return moveNode(node.getPathOrId(), node.getDestParentPathOrId(), node.getDestName());
+            }
+
+            @Override
+            public String getOperationName() {
+                return "moving";
+            }
+        });
     }
 
     private static void verifyNodeReproductionTarget(JCRNodeWrapper node, JCRNodeWrapper destParentNode) {
@@ -398,20 +422,21 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         }
     }
 
-    private Collection<GqlJcrNodeMutation> reproduceNodes(Collection<GqlJcrReproducibleNodeInput> nodes, Function<GqlJcrReproducibleNodeInput, GqlJcrNodeMutation> nodeReproducer) throws BaseGqlClientException {
+    private Collection<GqlJcrNodeMutation> reproduceNodes(Collection<GqlJcrReproducibleNodeInput> nodes, NodeReproducer nodeReproducer) throws BaseGqlClientException {
+
         ArrayList<GqlJcrNodeMutation> result = new ArrayList<>(nodes.size());
         LinkedList<Exception> exceptions = new LinkedList<>();
 
         for (GqlJcrReproducibleNodeInput node : nodes) {
             try {
-                result.add(nodeReproducer.apply(node));
+                result.add(nodeReproducer.reproduce(node));
             } catch (Exception e) {
                 exceptions.add(e);
             }
         }
 
         if (!exceptions.isEmpty()) {
-            StringBuilder message = new StringBuilder("Errors copying/moving nodes:\n");
+            StringBuilder message = new StringBuilder("Errors " + nodeReproducer.getOperationName() + " nodes:\n");
             for (Exception e : exceptions) {
                 message.append(e.getClass().getName()).append(": ").append(e.getMessage()).append('\n');
             }
@@ -419,6 +444,12 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         }
 
         return result;
+    }
+
+    private interface NodeReproducer {
+
+        GqlJcrNodeMutation reproduce(GqlJcrReproducibleNodeInput node);
+        String getOperationName();
     }
 
     /**
