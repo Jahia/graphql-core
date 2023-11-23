@@ -358,14 +358,14 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
         try {
             JCRSessionWrapper session = jcrNode.getSession();
             if (destPath != null) {
-                if (renameOnConflict && session.itemExists(destPath) && session.getNode(destPath).hasNode(jcrNode.getName())) {
+                if (renameOnConflict != null && renameOnConflict && session.itemExists(destPath) && session.getNode(destPath).hasNode(jcrNode.getName())) {
                     safeRename(session.getNode(destPath), jcrNode.getName());
                 }
 
                 jcrNode.getSession().move(jcrNode.getPath(), destPath);
             } else if (parentPathOrId != null) {
                 JCRNodeWrapper parentDest = getNodeFromPathOrId(jcrNode.getSession(), parentPathOrId);
-                if (renameOnConflict && parentDest.hasNode(jcrNode.getName())) {
+                if (renameOnConflict != null && renameOnConflict && parentDest.hasNode(jcrNode.getName())) {
                     safeRename(parentDest, jcrNode.getName());
                 }
 
