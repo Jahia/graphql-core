@@ -103,7 +103,7 @@ public class GraphQLSchedulerTest extends GraphQLTestSupport {
         Assert.assertEquals("STARTED", jobDatas.get(0).getString("jobState"));
         Assert.assertEquals("EXECUTING", jobDatas.get(0).getString("jobStatus"));
         Assert.assertEquals(-1L, jobDatas.get(0).getLong("duration"));
-        Assert.assertEquals("null", jobDatas.get(0).getString("jobLongProperty"));
+        Assert.assertTrue(jobDatas.get(0).isNull("jobLongProperty"));
         Assert.assertEquals("bar", jobDatas.get(0).getString("foo"));
 
         Assert.assertEquals("FINISHED", jobDatas.get(1).getString("jobState"));
