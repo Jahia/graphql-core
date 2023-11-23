@@ -121,7 +121,7 @@ public class GraphQLTestSupport extends JahiaTestCase {
         HashMap<String, JSONObject> itemByName = new HashMap<>(items.length());
         for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.getJSONObject(i);
-            itemByName.put(item.getString(key), item);
+            itemByName.put(item.get(key).toString(), item);
         }
         return itemByName;
     }
