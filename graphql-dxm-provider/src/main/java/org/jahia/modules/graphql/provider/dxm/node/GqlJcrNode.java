@@ -304,6 +304,14 @@ public interface GqlJcrNode {
                                           @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
                                           DataFetchingEnvironment environment);
 
+    @GraphQLField
+    @GraphQLDescription("Get node URL")
+    String getUrl();
+
+    @GraphQLField
+    @GraphQLDescription("Get node thumbnail URL")
+    String getThumbnailUrl(@GraphQLName("name") @GraphQLDescription("Thumbnail name") String name);
+
     /**
      * Nodes filter based on their types.
      */
