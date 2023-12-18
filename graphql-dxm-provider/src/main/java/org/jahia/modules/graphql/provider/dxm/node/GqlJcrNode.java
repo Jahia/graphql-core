@@ -303,6 +303,11 @@ public interface GqlJcrNode {
     DXPaginatedData<GqlUsage> getUsages(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
                                           @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
                                           DataFetchingEnvironment environment);
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLName("isExternal")
+    @GraphQLDescription("true if node is under a mounted node")
+    boolean isExternal();
 
     /**
      * Nodes filter based on their types.

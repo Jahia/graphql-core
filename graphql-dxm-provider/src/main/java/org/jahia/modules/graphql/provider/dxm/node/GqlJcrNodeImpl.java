@@ -577,6 +577,15 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         return PaginationHelper.paginate(result, u -> PaginationHelper.encodeCursor(u.getNode().getUuid()), arguments);
     }
 
+
+    @Override
+    @GraphQLNonNull
+    @GraphQLName("isExternal")
+    @GraphQLDescription("true if node is under a mounted node")
+    public boolean isExternal() {
+        return !node.getProvider().isDefault();
+    }
+
     private void collectUsages(PropertyIterator references, Collection<GqlUsage> gqlReferences, DataFetchingEnvironment environment) throws RepositoryException {
         while (references.hasNext()) {
             JCRPropertyWrapper reference = (JCRPropertyWrapper) references.nextProperty();
