@@ -309,6 +309,14 @@ public interface GqlJcrNode {
     @GraphQLDescription("true if node is under a mounted node")
     boolean isExternal();
 
+    @GraphQLField
+    @GraphQLDescription("Get node URL")
+    String getUrl();
+
+    @GraphQLField
+    @GraphQLDescription("Get node thumbnail URL")
+    String getThumbnailUrl(@GraphQLName("name") @GraphQLDescription("Thumbnail name") String name);
+
     /**
      * Nodes filter based on their types.
      */
