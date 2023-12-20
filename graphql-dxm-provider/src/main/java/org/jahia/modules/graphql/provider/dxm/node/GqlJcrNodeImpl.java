@@ -535,5 +535,17 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         return new GqlAcl(node);
     }
 
+    @Override
+    @GraphQLDescription("Get node URL")
+    public String getUrl() {
+        return node.getUrl();
+    }
+
+    @Override
+    @GraphQLDescription("Get node thumbnail URL")
+    public String getThumbnailUrl(@GraphQLName("name") @GraphQLDescription("Thumbnail name") String name) {
+        return node.getThumbnailUrl(name);
+    }
+
 
 }
