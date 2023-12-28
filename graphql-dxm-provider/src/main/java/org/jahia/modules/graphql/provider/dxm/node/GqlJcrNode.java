@@ -294,6 +294,14 @@ public interface GqlJcrNode {
     @GraphQLDescription("Get ACL info for this node")
     public GqlAcl getAcl();
 
+    @GraphQLField
+    @GraphQLDescription("Get node URL")
+    String getUrl();
+
+    @GraphQLField
+    @GraphQLDescription("Get node thumbnail URL")
+    String getThumbnailUrl(@GraphQLName("name") @GraphQLDescription("Thumbnail name") String name);
+
     /**
      * Nodes filter based on their types.
      */
