@@ -18,7 +18,7 @@ describe('Import content', () => {
                 variables: {path: '/sites/digitall/home', file}
             }).then(result => {
                 console.log(JSON.stringify(result));
-                expect(result.graphQLErrors[0].message).to.contain('Zip file being extracted is too big');
+                expect(result.graphQLErrors[0].message).to.contain('FileSizeLimitExceededException');
             });
         });
     });
