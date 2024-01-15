@@ -17,6 +17,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.fileupload.FileUploadBase;
+import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
 import org.apache.commons.io.FileUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
@@ -27,6 +28,8 @@ import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.importexport.DocumentViewImportHandler;
 import org.jahia.services.importexport.ImportExportBaseService;
+import org.jahia.services.importexport.validation.ValidationResults;
+import org.jahia.settings.SettingsBean;
 import org.jahia.utils.EncryptionUtils;
 import org.springframework.core.io.FileSystemResource;
 
@@ -108,7 +111,7 @@ public class GqlJcrMutationSupport {
                 }
             }
             return result;
-        } catch (RepositoryException | FileUploadBase.FileSizeLimitExceededException | IOException e) {
+        } catch (RepositoryException | FileSizeLimitExceededException | IOException e) {
             throw NodeMutationConstraintViolationHandler.transformException(e);
         }
     }
@@ -158,18 +161,27 @@ public class GqlJcrMutationSupport {
                     File fileToImport = File.createTempFile("import", ".zip");
                     try {
                         FileUtils.copyInputStreamToFile(part.getInputStream(), fileToImport);
+                        ValidationResults results = importExportBaseService.validateImportFile(node.getSession(),
+                                FileUtils.openInputStream(fileToImport), "application/zip", null);
+                        if (!results.isSuccessful()) {
+                            throw new DataFetchingException(results.toString());
+                        }
                         importExportBaseService.importZip(node.getPath(), new FileSystemResource(fileToImport), rootBehaviour);
                     } finally {
                         FileUtils.deleteQuietly(fileToImport);
                     }
                     break;
                 case "text/xml":
-                    importExportBaseService.importXML(node.getPath(), part.getInputStream(),
-                            rootBehaviour);
+                    importExportBaseService.importXML(node.getPath(), part.getInputStream(), rootBehaviour);
                     break;
                 default:
                     throw new GqlJcrWrongInputException("Wrong file type");
             }
+        } catch (IllegalStateException e) {
+            // Re-wrap exception for exceeding zip file size
+            Exception ex = (e.getMessage().contains("Zip file being extracted is too big")) ?
+                    new FileSizeLimitExceededException(e.getMessage(), -1, SettingsBean.getInstance().getJahiaFileUploadMaxSize()) : e;
+            throw new DataFetchingException(ex);
         } catch (Exception e) {
             throw new DataFetchingException(e);
         }
