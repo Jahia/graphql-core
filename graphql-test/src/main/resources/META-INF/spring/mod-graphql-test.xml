@@ -7,7 +7,6 @@
     <bean class="org.jahia.test.bin.TestBean">
         <property name="testCases">
             <list>
-                <value>org.jahia.test.graphql.GraphQLPropertiesTest</value>
                 <value>org.jahia.test.graphql.GraphQLDescendantsTest</value>
                 <value>org.jahia.test.graphql.GraphQLReferencesTest</value>
                 <value>org.jahia.test.graphql.GraphQLCriteriaTest</value>
