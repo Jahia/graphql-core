@@ -1,21 +1,21 @@
 import gql from 'graphql-tag';
 import {addNode} from '@jahia/cypress';
 
-let nodeUuid = "null";
-const nodeTitleFR = "text FR";
-const nodeTitleEN = "text EN";
+let nodeUuid = 'null';
+const nodeTitleFR = 'text FR';
+const nodeTitleEN = 'text EN';
 
 describe('Test GraphQL Properties', () => {
     before('setup list with some properties', () => {
         addNode({
-            parentPathOrId: "/",
-            name: "testList",
-            primaryNodeType: "jnt:contentList",
-            mixins: ["jmix:liveProperties"],
+            parentPathOrId: '/',
+            name: 'testList',
+            primaryNodeType: 'jnt:contentList',
+            mixins: ['jmix:liveProperties'],
             properties: [
-                {name:"jcr:title", language: "en", value:nodeTitleEN},
-                {name:"jcr:title", language: "fr", value:nodeTitleFR},
-                {name: "j:liveProperties", values: ["liveProperty1", "liveProperty2"]} ]
+                {name: 'jcr:title', language: 'en', value: nodeTitleEN},
+                {name: 'jcr:title', language: 'fr', value: nodeTitleFR},
+                {name: 'j:liveProperties', values: ['liveProperty1', 'liveProperty2']}]
         }).then((result) => {
             nodeUuid = result.data.jcr.addNode.uuid;
         });
@@ -38,7 +38,7 @@ describe('Test GraphQL Properties', () => {
                     }
                 }
             `
-        }).should( result => {
+        }).should(result => {
             const property = result?.data?.jcr?.nodeByPath?.property;
             expect(property).to.have.property('name', 'jcr:uuid');
             expect(property).to.have.property('type', 'STRING');
@@ -62,7 +62,7 @@ describe('Test GraphQL Properties', () => {
                     }
                 }
             `
-        }).should( result => {
+        }).should(result => {
             const property = result?.data?.jcr?.nodeByPath?.property;
             expect(property).to.have.property('internationalized', false);
             expect(property).to.have.property('language', null);
@@ -87,7 +87,7 @@ describe('Test GraphQL Properties', () => {
                     }
                 }
             `
-        }).should( result => {
+        }).should(result => {
             const property = result?.data?.jcr?.nodeByPath?.property;
             expect(property).to.have.property('internationalized', false);
             expect(property).to.have.property('language', null);
@@ -112,7 +112,7 @@ describe('Test GraphQL Properties', () => {
                     }
                 }
             `
-        }).should( result => {
+        }).should(result => {
             const property = result?.data?.jcr?.nodeByPath?.property;
             expect(property).null;
         });
@@ -134,10 +134,10 @@ describe('Test GraphQL Properties', () => {
                     }
                 }
             `
-        }).should( result => {
+        }).should(result => {
             const property = result?.data?.jcr?.nodeByPath?.property;
             expect(property).to.have.property('internationalized', true);
-            expect(property).to.have.property('language', "fr");
+            expect(property).to.have.property('language', 'fr');
             expect(property).to.have.property('value', nodeTitleFR);
             expect(property).to.have.property('values', null);
         });
@@ -164,7 +164,7 @@ describe('Test GraphQL Properties', () => {
                     }
                 }
             `
-        }).should( result => {
+        }).should(result => {
             const properties = result?.data?.jcr?.nodeByPath?.properties;
             expect(properties).to.have.length(1);
             expect(properties[0]).to.have.property('name', 'jcr:uuid');
@@ -198,11 +198,11 @@ describe('Test GraphQL Properties', () => {
                     }
                 }
             `
-        }).should( result => {
+        }).should(result => {
             const properties = result?.data?.jcr?.nodeByPath?.properties;
             expect(properties).to.have.length(2);
 
-            const uuid = properties.find(p => p.name === "jcr:uuid");
+            const uuid = properties.find(p => p.name === 'jcr:uuid');
             expect(uuid).not.null;
             expect(uuid).to.have.property('type', 'STRING');
             expect(uuid.node).to.have.property('path', '/testList');
@@ -211,12 +211,12 @@ describe('Test GraphQL Properties', () => {
             expect(uuid).to.have.property('value', nodeUuid);
             expect(uuid).to.have.property('values', null);
 
-            const title = properties.find(p => p.name === "jcr:title");
+            const title = properties.find(p => p.name === 'jcr:title');
             expect(title).not.null;
             expect(title).to.have.property('type', 'STRING');
             expect(title.node).to.have.property('path', '/testList');
             expect(title).to.have.property('internationalized', true);
-            expect(title).to.have.property('language', "en");
+            expect(title).to.have.property('language', 'en');
             expect(title).to.have.property('value', nodeTitleEN);
             expect(title).to.have.property('values', null);
         });
@@ -235,25 +235,25 @@ describe('Test GraphQL Properties', () => {
                     }
                 }
             `
-        }).should( result => {
+        }).should(result => {
             const properties = result?.data?.jcr?.nodeByPath?.properties;
             expect(properties).to.have.length(15);
 
-            expect(properties.find(p => p.name === "j:liveProperties")).not.null;
-            expect(properties.find(p => p.name === "j:nodename")).not.null;
-            expect(properties.find(p => p.name === "j:originWS")).not.null;
-            expect(properties.find(p => p.name === "jcr:baseVersion")).not.null;
-            expect(properties.find(p => p.name === "jcr:created")).not.null;
-            expect(properties.find(p => p.name === "jcr:createdBy")).not.null;
-            expect(properties.find(p => p.name === "jcr:isCheckedOut")).not.null;
-            expect(properties.find(p => p.name === "jcr:lastModified")).not.null;
-            expect(properties.find(p => p.name === "jcr:lastModifiedBy")).not.null;
-            expect(properties.find(p => p.name === "jcr:mixinTypes")).not.null;
-            expect(properties.find(p => p.name === "jcr:predecessors")).not.null;
-            expect(properties.find(p => p.name === "jcr:primaryType")).not.null;
-            expect(properties.find(p => p.name === "jcr:uuid")).not.null;
-            expect(properties.find(p => p.name === "jcr:versionHistory")).not.null;
-            expect(properties.find(p => p.name === "jcr:title")).not.null;
+            expect(properties.find(p => p.name === 'j:liveProperties')).not.null;
+            expect(properties.find(p => p.name === 'j:nodename')).not.null;
+            expect(properties.find(p => p.name === 'j:originWS')).not.null;
+            expect(properties.find(p => p.name === 'jcr:baseVersion')).not.null;
+            expect(properties.find(p => p.name === 'jcr:created')).not.null;
+            expect(properties.find(p => p.name === 'jcr:createdBy')).not.null;
+            expect(properties.find(p => p.name === 'jcr:isCheckedOut')).not.null;
+            expect(properties.find(p => p.name === 'jcr:lastModified')).not.null;
+            expect(properties.find(p => p.name === 'jcr:lastModifiedBy')).not.null;
+            expect(properties.find(p => p.name === 'jcr:mixinTypes')).not.null;
+            expect(properties.find(p => p.name === 'jcr:predecessors')).not.null;
+            expect(properties.find(p => p.name === 'jcr:primaryType')).not.null;
+            expect(properties.find(p => p.name === 'jcr:uuid')).not.null;
+            expect(properties.find(p => p.name === 'jcr:versionHistory')).not.null;
+            expect(properties.find(p => p.name === 'jcr:title')).not.null;
         });
     });
 
@@ -271,12 +271,12 @@ describe('Test GraphQL Properties', () => {
                     }
                 }
             `
-        }).should( result => {
+        }).should(result => {
             const property = result?.data?.jcr?.nodeByPath?.property;
             expect(property.value).null;
             expect(property.values).to.have.length(2);
-            expect(property.values.find(v => v === "liveProperty1")).not.null;
-            expect(property.values.find(v => v === "liveProperty2")).not.null;
+            expect(property.values.find(v => v === 'liveProperty1')).not.null;
+            expect(property.values.find(v => v === 'liveProperty2')).not.null;
         });
     });
 
