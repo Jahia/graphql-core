@@ -15,8 +15,9 @@ describe('Test GraphQL Properties', () => {
             properties: [
                 {name: 'jcr:title', language: 'en', value: nodeTitleEN},
                 {name: 'jcr:title', language: 'fr', value: nodeTitleFR},
-                {name: 'j:liveProperties', values: ['liveProperty1', 'liveProperty2']}]
-        }).then((result) => {
+                {name: 'j:liveProperties', values: ['liveProperty1', 'liveProperty2']}
+            ]
+        }).then(result => {
             nodeUuid = result.data.jcr.addNode.uuid;
         });
     });
