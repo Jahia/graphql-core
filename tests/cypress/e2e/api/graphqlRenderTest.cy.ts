@@ -2,7 +2,6 @@ import {addNode, createSite, deleteNode, deleteSite} from '@jahia/cypress';
 
 const sitename = 'graphql_test_render';
 describe('Test graphql rendering', () => {
-
     before('Create a site', () => {
         createSite(sitename);
     });
@@ -20,7 +19,7 @@ describe('Test graphql rendering', () => {
                 {name: 'jcr:title', value: 'page1'},
                 {name: 'j:templateName', value: 'simple'}
             ]
-        })
+        });
         cy.apollo({
             queryFile: 'jcr/displayableNode.graphql',
             variables: {
@@ -38,7 +37,7 @@ describe('Test graphql rendering', () => {
             parentPathOrId: '/sites/' + sitename + '/home',
             name: 'listA',
             primaryNodeType: 'jnt:containerList'
-        })
+        });
         cy.apollo({
             queryFile: 'jcr/displayableNode.graphql',
             variables: {
