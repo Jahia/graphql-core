@@ -49,7 +49,7 @@ public class GqlJcrMutationSupport {
 
     /**
      * Add a child node to the specified one.
-     *
+     * The name will be truncated to the maximum allowed size defined by the property jahia.jcr.maxNameSize.
      * @param parent The JCR node to add a child to
      * @param node   GraphQL representation of the child node to be added
      * @return The child JCR node that was added
@@ -57,7 +57,11 @@ public class GqlJcrMutationSupport {
     public static JCRNodeWrapper addNode(JCRNodeWrapper parent, GqlJcrNodeInput node) {
         JCRNodeWrapper jcrNode;
         try {
-            String nodeName = JCRContentUtils.escapeLocalNodeName(node.getName());
+            String nodeName =  node.getName().length() > SettingsBean.getInstance().getMaxNameSize() ?
+                    node.getName().substring(0, SettingsBean.getInstance().getMaxNameSize()) : node.getName();
+
+            nodeName = JCRContentUtils.escapeLocalNodeName(nodeName);
+
             Boolean useAvailableNodeName = node.useAvailableNodeName();
             if (useAvailableNodeName != null && useAvailableNodeName) {
                 nodeName = JCRContentUtils.findAvailableNodeName(parent, nodeName);

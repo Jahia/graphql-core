@@ -270,10 +270,10 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
 
     /**
      * Copy a single node to a different parent node.
-     *
+
      * @param pathOrId Path or UUID of the node to be copied
      * @param destParentPathOrId Path or UUID of the destination parent node to copy the node to
-     * @param destName The name of the node at the new location or null if its current name should be preserved
+     * @param destName The name of the node at the new location or null if its current name should be preserved. The destName will be truncated to the maximum allowed size defined by the property jahia.jcr.maxNameSize.
      * @return Mutation object representing the copy at the new location
      */
     @GraphQLField
@@ -289,6 +289,8 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         JCRNodeWrapper node = getNodeFromPathOrId(getSession(), pathOrId);
         if (destName == null) {
             destName = node.getName();
+        } else if (destName.length() > SettingsBean.getInstance().getMaxNameSize()){
+            destName = destName.substring(0, SettingsBean.getInstance().getMaxNameSize());
         }
 
         verifyNodeReproductionTarget(node, destParentNode);

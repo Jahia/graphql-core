@@ -33,6 +33,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRVersionService;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
+import org.jahia.settings.SettingsBean;
 
 import javax.inject.Inject;
 import javax.jcr.Repository;
@@ -323,6 +324,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
     /**
      * Renames the current node.
+     * The name will be truncated to the maximum allowed size defined by the property jahia.jcr.maxNameSize.
      *
      * @param newName the new name for the node
      * @return the new full path of the renamed node
@@ -332,7 +334,9 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     @GraphQLDescription("Rename the current node")
     public String rename(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The new name of the node") String newName) throws BaseGqlClientException {
         try {
-            jcrNode.rename(newName);
+            String nodeName =  newName.length() > SettingsBean.getInstance().getMaxNameSize() ?
+                    newName.substring(0, SettingsBean.getInstance().getMaxNameSize()) : newName;
+            jcrNode.rename(nodeName);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
