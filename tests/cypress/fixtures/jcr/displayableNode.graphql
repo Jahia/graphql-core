@@ -1,0 +1,8 @@
+query($path: String!) {
+    jcr {
+        nodeByPath(path: $path) {
+            name
+            isDisplayableNode
+        }
+    }
+}
