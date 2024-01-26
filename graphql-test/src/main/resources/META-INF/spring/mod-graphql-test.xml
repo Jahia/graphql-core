@@ -19,9 +19,7 @@
                 <value>org.jahia.test.graphql.GraphQLWorkflowTest</value>
                 <value>org.jahia.test.graphql.GraphQLSchedulerTest</value>
                 <value>org.jahia.test.graphql.GraphQLi18nTest</value>
-                <value>org.jahia.test.graphql.GraphQLRenderTest</value>
                 <value>org.jahia.test.graphql.GraphQLZipMutationTest</value>
-                <value>org.jahia.test.graphql.GraphQLRenderTest</value>
             </list>
         </property>
     </bean>
