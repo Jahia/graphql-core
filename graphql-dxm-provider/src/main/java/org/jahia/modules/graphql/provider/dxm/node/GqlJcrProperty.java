@@ -19,26 +19,37 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.schema.DataFetchingEnvironment;
+import org.apache.regexp.RE;
+import org.jahia.bin.Render;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRPropertyWrapper;
-import org.jahia.services.content.JCRValueWrapper;
+import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
+import org.jahia.modules.graphql.provider.dxm.render.RenderRequestAttributeInput;
+import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
+import org.jahia.services.content.*;
+import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.initializers.ChoiceListInitializerService;
 import org.jahia.services.content.nodetypes.renderer.ChoiceListRenderer;
 import org.jahia.services.content.nodetypes.renderer.ChoiceListRendererService;
+import org.jahia.services.render.RenderContext;
+import org.jahia.services.render.Resource;
+import org.jahia.services.render.URLGenerator;
+import org.jahia.services.render.filter.ConfiguredURLTraverser;
+import org.jahia.settings.SettingsBean;
 import org.jahia.utils.EncryptionUtils;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
 
+import javax.inject.Inject;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.ValueFormatException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport.DEFAULT_DATE_FORMAT;
 
@@ -50,6 +61,8 @@ import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport.
 public class GqlJcrProperty {
     private JCRPropertyWrapper property;
     private GqlJcrNode node;
+    @Inject
+    @GraphQLOsgiService ConfiguredURLTraverser urlTraverser;
 
     /**
      * Create an instance that represents a JCR property to GraphQL.
@@ -468,6 +481,59 @@ public class GqlJcrProperty {
             throw new DataFetchingException(e);
         }
     }
+
+    /**
+     * @return The values of the JCR property as rendered String in case the property is rich-text, null otherwise
+     */
+    @GraphQLField
+    @GraphQLName("richTextValue")
+    @GraphQLNonNull
+    @GraphQLDescription("The rendered value of a rich text property")
+    public String getRichTextValue(@GraphQLName("requestAttributes") @GraphQLDescription("Additional request attributes") Collection<RenderRequestAttributeInput> requestAttributes, DataFetchingEnvironment environment) {
+        try {
+            //TODO Check that conditions are sufficient but it seems no for instance...
+            if (property.isMultiple() || property.getType() != PropertyType.STRING) {
+                return null;
+            }
+            String value = property.getValue().getString();
+            JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node.getNode(), getLanguage());
+            Resource r = new Resource(node, "html", null, Resource.CONFIGURATION_PAGE);
+            HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
+            HttpServletResponse response = ContextUtil.getHttpServletResponse(environment.getGraphQlContext());
+            if (request == null || response == null) {
+                throw new RuntimeException("No HttpRequest or HttpResponse");
+            }
+            if (request instanceof HttpServletRequestWrapper) {
+                request = (HttpServletRequest) ((HttpServletRequestWrapper) request).getRequest();
+            }
+            if (requestAttributes != null && requestAttributes.size() > 0) {
+                for (RenderRequestAttributeInput requestAttribute : requestAttributes) {
+                    request.setAttribute(requestAttribute.getName(), requestAttribute.getValue());
+                }
+            }
+            if (request.getAttribute("currentLocale") == null) {
+                request.setAttribute("currentLocale", getLanguage());
+            }
+            RenderContext renderContext = new RenderContext(request, response, node.getSession().getUser());
+            renderContext.setWorkspace(node.getSession().getWorkspace().getName());
+            renderContext.setSite(node.getResolveSite());
+            renderContext.setMainResource(r);
+            renderContext.setServletPath("/cms/edit");
+            if (request.getAttribute("currentMode") == null) {
+                request.setAttribute("currentMode", renderContext.getMode());
+            }
+            new URLGenerator(renderContext, r);
+            if (JCRContentUtils.isADisplayableNode(node, renderContext)) {
+                return null;
+            }
+            String result = urlTraverser.traverse(value, renderContext, r);
+            return result;
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
+    }
+
+
 
     /**
      * @return GraphQL representations of the nodes this property references in case the property is multiple-valued, null otherwise
