@@ -518,9 +518,9 @@ public class GqlJcrProperty {
             renderContext.setWorkspace(node.getSession().getWorkspace().getName());
             renderContext.setSite(node.getResolveSite());
             renderContext.setMainResource(r);
-            renderContext.setServletPath("/cms/edit");
+            renderContext.setServletPath("/cms/render");
             if (request.getAttribute("currentMode") == null) {
-                request.setAttribute("currentMode", renderContext.getMode());
+                request.setAttribute("currentMode", renderContext.getMode() + "/" + node.getSession().getWorkspace().getName());
             }
             new URLGenerator(renderContext, r);
             if (JCRContentUtils.isADisplayableNode(node, renderContext)) {
