@@ -21,12 +21,16 @@
     <parent>
         <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>2.20.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>graphql-extension-example</artifactId>
     <name>Jahia GraphQL Extension example</name>
     <packaging>bundle</packaging>
     <description>This is the provider project for the DX GraphQL Core integration project</description>
+
+    <properties>
+        <jahia-module-signature>MCwCFHWxEqchldFpwkJr6ZmFPtWpi7FoAhQ3dFCWiISPvp9zWONphGzNtpyS2g==</jahia-module-signature>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -79,7 +83,6 @@
                             org.glassfish.jersey.server,
                             *
                         </Import-Package>
-                        <jahia-module-signature>MCwCFFKVMxV9By/nvxGYKh6rrFslPR7mAhQ2SHknabRWEAtrpzbVNI4M5EIXwQ==</jahia-module-signature>
                     </instructions>
                 </configuration>
             </plugin>
