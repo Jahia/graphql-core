@@ -17,7 +17,6 @@ package org.jahia.modules.graphql.provider.dxm.predicate;
 
 import graphql.TypeResolutionEnvironment;
 import graphql.execution.*;
-import graphql.language.Argument;
 import graphql.language.FragmentDefinition;
 import graphql.schema.*;
 import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
@@ -27,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -147,12 +145,9 @@ public class FieldEvaluator {
     private static SelectedField getField(Map<String, List<SelectedField>> fieldsByKey, String name) {
         if (fieldsByKey != null && fieldsByKey.containsKey(name)) {
             return fieldsByKey.get(name).stream()
-                    .filter(f -> name.equals(f.getAlias()))
+                    .filter(f -> name.equals(f.getName()))
                     .findFirst()
-                    .orElse(fieldsByKey.get(name).stream()
-                            .filter(f -> name.equals(f.getName()))
-                            .findFirst()
-                            .orElse(null));
+                    .orElse(null);
         }
         return null;
     }
@@ -216,9 +211,6 @@ public class FieldEvaluator {
         // Try to find field in selection set to reuse alias/arguments
         SelectedField field = fieldFinder.find(objectType, fieldName);
         GraphQLFieldDefinition fieldDefinition = objectType.getFieldDefinition((field != null) ? field.getName() : fieldName);
-        if (field != null) {
-            fieldEnvBuilder.arguments(field.getArguments());
-        }
 
         if (fieldDefinition == null) {
             // Definition not present on current type (can be a field in a non-matching fragment), returns null
