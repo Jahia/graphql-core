@@ -16,12 +16,11 @@
 package org.jahia.modules.graphql.provider.dxm.security;
 
 import graphql.language.Field;
-import graphql.schema.GraphQLNamedOutputType;
 import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.util.GqlTypeUtil;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 
@@ -45,7 +44,7 @@ public class GqlJcrPermissionChecker {
      * @throws GqlAccessDeniedException in case of permission denied
      */
     public static void checkPermissions(final GraphQLType type, final List<Field> fields, final Map<String, String> permissions) {
-        if (permissions == null || permissions.size() == 0 || StringUtils.equals(GqlTypeUtil.getTypeName(type), "JCRNodeConnection")) {
+        if (permissions == null || permissions.size() == 0 || StringUtils.equals(type.getName(), "JCRNodeConnection")) {
             // if no permissions configured or the current type is a connection ( because the parent type have already be checked )
             return;
         }
@@ -100,14 +99,14 @@ public class GqlJcrPermissionChecker {
         if (type instanceof GraphQLObjectType) {
             GraphQLObjectType objectType = (GraphQLObjectType) type;
             if (objectType.getInterfaces().size() > 0) {
-                for (GraphQLNamedOutputType graphQLOutputType : objectType.getInterfaces()) {
+                for (GraphQLOutputType graphQLOutputType : objectType.getInterfaces()) {
                     types.add(graphQLOutputType.getName());
                 }
             }
         }
 
         // add exact type at the end of the list
-        types.add(GqlTypeUtil.getTypeName(type));
+        types.add(type.getName());
 
         return types;
     }

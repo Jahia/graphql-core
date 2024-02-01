@@ -15,12 +15,16 @@
  */
 package org.jahia.modules.graphql.provider.dxm;
 
+import graphql.kickstart.execution.GraphQLObjectMapper;
+import graphql.kickstart.execution.GraphQLQueryInvoker;
 import graphql.kickstart.execution.subscriptions.SubscriptionProtocolFactory;
-import graphql.kickstart.servlet.GraphQLConfiguration;
+import graphql.kickstart.execution.subscriptions.apollo.ApolloSubscriptionProtocolFactory;
+import graphql.kickstart.execution.subscriptions.apollo.OperationMessage;
 import graphql.kickstart.servlet.GraphQLWebsocketServlet;
-import graphql.kickstart.servlet.OsgiGraphQLHttpServlet;
+import graphql.kickstart.servlet.input.GraphQLInvocationInputFactory;
 import graphql.kickstart.servlet.subscriptions.WebSocketSubscriptionProtocolFactory;
 import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.util.BeanWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
 import org.osgi.service.component.annotations.Component;
@@ -34,26 +38,30 @@ import javax.websocket.*;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
-import java.util.ArrayList;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.Arrays.asList;
 
 @Component(immediate = true, service = Endpoint.class)
 @ServerEndpoint(value="/graphqlws", subprotocols = {"graphql-ws", "graphql-transport-ws"}, configurator = OsgiGraphQLWsEndpoint.Configurator.class)
 public class OsgiGraphQLWsEndpoint extends Endpoint {
     private Logger logger = LoggerFactory.getLogger(OsgiGraphQLWsEndpoint.class);
-    private static GraphQLWebsocketServlet delegate;
+    private GraphQLWebsocketServlet delegate;
     private WebSocketSubscriptionProtocolFactory subscriptionProtocolFactory;
 
     @Reference(service = HttpServlet.class, target = "(component.name=graphql.kickstart.servlet.OsgiGraphQLHttpServlet)")
     public void setServlet(HttpServlet servlet) {
         try {
-            GraphQLConfiguration configuration = ((OsgiGraphQLHttpServlet)servlet).getSchemaBuilder().getConfiguration();
-            delegate = new GraphQLWebsocketServlet(configuration.getGraphQLInvoker(), configuration.getInvocationInputFactory(), configuration.getObjectMapper());
-            subscriptionProtocolFactory = (WebSocketSubscriptionProtocolFactory) delegate.getSubscriptionProtocolFactory(Collections.singletonList("graphql-ws"));
+            GraphQLQueryInvoker queryInvoker = (GraphQLQueryInvoker) getter(servlet, "getQueryInvoker");
+            GraphQLInvocationInputFactory invocationInputFactory = (GraphQLInvocationInputFactory) getter(servlet, "getInvocationInputFactory");
+            GraphQLObjectMapper graphQLObjectMapper = (GraphQLObjectMapper) getter(servlet, "getGraphQLObjectMapper");
+
+            delegate = new GraphQLWebsocketServlet(queryInvoker.toGraphQLInvoker(), invocationInputFactory, graphQLObjectMapper);
+            subscriptionProtocolFactory = BeanWrapper.wrap(delegate)
+                    .call("getSubscriptionProtocolFactory", new Class[] {List.class}, new Object[] {Collections.singletonList("graphql-ws")})
+                    .unwrap(WebSocketSubscriptionProtocolFactory.class);
         } catch (Exception e) {
             logger.error("Cannot get schema from GQL servlet", e);
         }
@@ -61,8 +69,28 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
 
     @Deactivate
     public void deactivate() {
+        try {
+            BeanWrapper.wrap(subscriptionProtocolFactory)
+                    .get("commandProvider", ApolloSubscriptionProtocolFactory.class)
+                    .call("getByType", new Class[] {OperationMessage.Type.class}, new Object[] {OperationMessage.Type.GQL_START})
+                    .get("connectionListeners")
+                    .call("iterator")
+                    .call("next")
+                    .get("keepAliveRunner")
+                    .get("executor")
+                    .call("shutdown");
+        } catch (ReflectiveOperationException e) {
+            logger.error("Cannot get schema from GQL servlet", e);
+        }
+
         delegate.beginShutDown();
-        delegate = null;
+    }
+
+    @SuppressWarnings("java:S3011")
+    private Object getter(Object object, String getter) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        Method method = object.getClass().getDeclaredMethod(getter);
+        method.setAccessible(true);
+        return method.invoke(object);
     }
 
     @Override
@@ -91,7 +119,6 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     public static class Configurator extends ServerEndpointConfig.Configurator {
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response) {
-            delegate.modifyHandshake(sec, request, response);
             sec.getUserProperties().put(Constants.SESSION_USER, JCRSessionFactory.getInstance().getCurrentUser());
         }
     }

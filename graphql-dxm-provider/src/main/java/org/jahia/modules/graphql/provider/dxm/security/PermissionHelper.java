@@ -18,10 +18,9 @@ package org.jahia.modules.graphql.provider.dxm.security;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
-import org.jahia.modules.graphql.provider.dxm.util.GqlTypeUtil;
+import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.securityfilter.PermissionService;
 
 import javax.jcr.RepositoryException;
 
@@ -31,13 +30,13 @@ public class PermissionHelper {
     }
 
     public static boolean hasPermission(JCRNodeWrapper node, DataFetchingEnvironment environment) {
-        if (ContextUtil.getHttpServletRequest(environment.getGraphQlContext()) != null) {
+        if (ContextUtil.getHttpServletRequest(environment.getContext()) != null) {
             PermissionService permissionService = BundleUtils.getOsgiService(PermissionService.class, null);
             if (permissionService == null) {
                 throw new DataFetchingException("Could not find permission service to validate security access. Blocking access to data.");
             }
             try {
-                return permissionService.hasPermission("graphql." + GqlTypeUtil.getTypeName(environment.getParentType()) + "." + environment.getFieldDefinition().getName(), node);
+                return permissionService.hasPermission("graphql." + environment.getParentType().getName() + "." + environment.getFieldDefinition().getName(), node);
             } catch (RepositoryException e) {
                 throw new DataFetchingException(e);
             }

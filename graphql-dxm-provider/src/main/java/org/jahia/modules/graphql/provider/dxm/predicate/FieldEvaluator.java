@@ -15,9 +15,13 @@
  */
 package org.jahia.modules.graphql.provider.dxm.predicate;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import graphql.TypeResolutionEnvironment;
 import graphql.execution.*;
+import graphql.language.Field;
 import graphql.language.FragmentDefinition;
+import graphql.language.SelectionSet;
 import graphql.schema.*;
 import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
@@ -45,7 +49,7 @@ public class FieldEvaluator {
     private Map<String, Object> variables;
     private DataFetchingEnvironment environment;
 
-    private static final String FIELD_NAME_SEPARATOR_REGEX = "\\.";
+    private static final String FIELD_NAME_SEPARATOR = ".";
 
     private static FieldCollector fieldCollector = new FieldCollector();
 
@@ -58,7 +62,7 @@ public class FieldEvaluator {
 
     @FunctionalInterface
     interface FieldFinder {
-        SelectedField find(GraphQLObjectType outputType, String name);
+        Field find(GraphQLObjectType outputType, String name);
     }
 
     /**
@@ -79,7 +83,7 @@ public class FieldEvaluator {
         // Extract selection set
         FieldFinder fieldFinder = (objectType, name) -> {
             if (environment.getSelectionSet() != null) {
-                return getField(environment.getSelectionSet().getFieldsGroupedByResultKey(), name);
+                return getField(environment.getSelectionSet().get(), name);
             }
             return null;
         };
@@ -114,12 +118,21 @@ public class FieldEvaluator {
                     .build();
 
             // Extract selection set on "{ nodes }" or "{ edges { node } }"
+            Map<String, MergedField> fields = null;
             if (environment.getSelectionSet() != null) {
-                DataFetchingFieldSelectionSet selectionSet = environment.getSelectionSet();
-                if (selectionSet.contains("nodes")) {
-                    return getField(selectionSet.getFieldsGroupedByResultKey("nodes/**"), name);
-                } else if (selectionSet.contains("edges/node/*")) {
-                    return getField(selectionSet.getFieldsGroupedByResultKey("edges/node/**"), name);
+                MergedSelectionSet merged = environment.getSelectionSet().get();
+                fields = merged.getSubFields();
+                if (fields.containsKey("nodes")) {
+                    // First look in { nodes } selection set
+                    MergedField nodeFields = fields.get("nodes");
+                    return getField(fieldCollector.collectFields(parameters, nodeFields), name);
+                } else if (fields.containsKey("edges")) {
+                    // If no "nodes" was found, try to look into { edges { node } } selection set
+                    MergedField edgeFields = fields.get("edges");
+                    fields = fieldCollector.collectFields(parameters, edgeFields).getSubFields();
+                    if (fields.containsKey("node")) {
+                        return getField(fieldCollector.collectFields(parameters, fields.get("node")), name);
+                    }
                 }
             }
             return null;
@@ -129,25 +142,23 @@ public class FieldEvaluator {
     }
 
     private static Map<String, Object> getVariables(DataFetchingEnvironment environment) {
-        HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
+        HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getContext());
         return (request != null) ?
                 (Map<String, Object>) request.getAttribute(GRAPHQL_VARIABLES) :
                 new LinkedHashMap<>();
     }
 
     private static Map<String, FragmentDefinition> getFragmentDefinitions(DataFetchingEnvironment environment) {
-        HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
+        HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getContext());
         return (request != null) ?
                 (Map<String, FragmentDefinition>) request.getAttribute(FRAGMENTS_BY_NAME) :
                 new LinkedHashMap<>();
     }
 
-    private static SelectedField getField(Map<String, List<SelectedField>> fieldsByKey, String name) {
-        if (fieldsByKey != null && fieldsByKey.containsKey(name)) {
-            return fieldsByKey.get(name).stream()
-                    .filter(f -> name.equals(f.getName()))
-                    .findFirst()
-                    .orElse(null);
+    private static Field getField(MergedSelectionSet mergedSet, String name) {
+        Map<String, MergedField> fields = mergedSet.getSubFields();
+        if (fields != null && fields.containsKey(name)) {
+            return fields.get(name).getSingleField();
         }
         return null;
     }
@@ -160,7 +171,7 @@ public class FieldEvaluator {
             return (GraphQLObjectType) type;
         } else if (type instanceof GraphQLInterfaceType) {
             TypeResolver typeResolver = environment.getGraphQLSchema().getCodeRegistry().getTypeResolver((GraphQLInterfaceType) type);
-            return typeResolver.getType(new TypeResolutionParameters.Builder().value(object).build());
+            return typeResolver.getType(new TypeResolutionEnvironment(object, null, null, null, null, null));
         } else {
             return null;
         }
@@ -177,12 +188,11 @@ public class FieldEvaluator {
         if (source == null) {
             return null;
         }
-
-        String[] splitFields = fieldName.split(FIELD_NAME_SEPARATOR_REGEX, 2);
+        List<String> fields = Splitter.on(FIELD_NAME_SEPARATOR).splitToList(fieldName);
         String nextField = null;
-        if (splitFields.length > 1) {
-            fieldName = splitFields[0];
-            nextField = splitFields[1];
+        if (fields.size() > 1) {
+            fieldName = fields.get(0);
+            nextField = Joiner.on(FIELD_NAME_SEPARATOR).join(fields.subList(1, fields.size()));
         }
 
         GraphQLObjectType objectType = getObjectType(source);
@@ -200,17 +210,27 @@ public class FieldEvaluator {
         DataFetchingEnvironmentImpl.Builder fieldEnvBuilder = newDataFetchingEnvironment()
                 .source(source)
                 .parentType(objectType)
-                .graphQLContext(environment.getGraphQlContext())
+                .context(environment.getContext())
                 .root(environment.getRoot())
                 .executionId(environment.getExecutionId())
                 .fragmentsByName(environment.getFragmentsByName())
                 .graphQLSchema(environment.getGraphQLSchema())
-                .arguments(environment.getArguments())
                 .executionStepInfo(environment.getExecutionStepInfo());
 
         // Try to find field in selection set to reuse alias/arguments
-        SelectedField field = fieldFinder.find(objectType, fieldName);
-        GraphQLFieldDefinition fieldDefinition = objectType.getFieldDefinition((field != null) ? field.getName() : fieldName);
+        Field field = fieldFinder.find(objectType, fieldName);
+        GraphQLFieldDefinition fieldDefinition;
+        if (field != null) {
+            fieldDefinition = objectType.getFieldDefinition(field.getName());
+            if (fieldDefinition != null) {
+                ValuesResolver valuesResolver = new ValuesResolver();
+                Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), variables);
+                fieldEnvBuilder.arguments(argumentValues);
+            }
+        } else {
+            // Otherwise, directly look in field definitions
+            fieldDefinition = objectType.getFieldDefinition(fieldName);
+        }
 
         if (fieldDefinition == null) {
             // Definition not present on current type (can be a field in a non-matching fragment), returns null
@@ -238,7 +258,7 @@ public class FieldEvaluator {
         }
     }
 
-    private FieldEvaluator forSubField(GraphQLOutputType fieldType, DataFetchingFieldSelectionSet selectionSet) {
+    private FieldEvaluator forSubField(GraphQLOutputType fieldType, SelectionSet selectionSet) {
         if (fieldType instanceof GraphQLNonNull) {
             fieldType = (GraphQLOutputType) ((GraphQLNonNull) fieldType).getWrappedType();
         }
@@ -253,7 +273,7 @@ public class FieldEvaluator {
                         .schema(environment.getGraphQLSchema())
                         .build();
 
-                return getField(selectionSet.getFieldsGroupedByResultKey(), name);
+                return getField(fieldCollector.collectFields(parameters, selectionSet), name);
             }
             return null;
         };
