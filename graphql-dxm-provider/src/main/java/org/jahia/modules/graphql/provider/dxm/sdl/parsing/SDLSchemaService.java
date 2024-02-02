@@ -23,6 +23,7 @@ import graphql.schema.*;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLExtensionsProvider;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
@@ -145,7 +146,7 @@ public class SDLSchemaService {
     }
 
     private void cleanObjectExtensions(ObjectTypeExtensionDefinition e, Map<TypeDefinition, String> sources, TypeDefinitionRegistry cleanedTypeRegistry) {
-        List<FieldDefinition> fieldDefinitions = e.getFieldDefinitions().stream().filter(f -> {
+        List<FieldDefinition> invalidFieldDefinitions = e.getFieldDefinitions().stream().filter(f -> {
             if (f.getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX) && (f.getName().contains(FinderFetchersFactory.FetcherType.PATH.getSuffix()) || f.getName().contains(FinderFetchersFactory.FetcherType.ID.getSuffix()))) {
                 //Remove extensions that are not compatible with a connection type
                 String bundleName = sources.get(e);
@@ -155,10 +156,12 @@ public class SDLSchemaService {
             }
             return false;
         }).collect(Collectors.toList());
-        e.getFieldDefinitions().removeAll(fieldDefinitions);
-        if (!e.getFieldDefinitions().isEmpty()) {
-            //Add extensions that still have valid field definitions defined
-            cleanedTypeRegistry.add(e);
+
+        List<FieldDefinition> validFieldDefs = ListUtils.subtract(e.getFieldDefinitions(), invalidFieldDefinitions);
+        if (!validFieldDefs.isEmpty()) {
+            // Recreate extension def only with valid field definitions
+            ObjectTypeExtensionDefinition cleanedObjectExtension = e.transformExtension(builder -> builder.fieldDefinitions(validFieldDefs));
+            cleanedTypeRegistry.add(cleanedObjectExtension);
         }
     }
 
