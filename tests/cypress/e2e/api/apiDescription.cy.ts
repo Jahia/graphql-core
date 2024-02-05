@@ -43,7 +43,10 @@ describe('Test if every type in graphQL API has description', () => {
                     'type=Category/field=path',
                     'type=Query/field=categoryByPath/arg=path',
                     'type=GqlNpmHelper',
-                    'type=GqlHealthCheck'
+                    'type=GqlHealthCheck',
+                    'type=GqlProbe',
+                    'type=JahiaAdminQuery/field=healthCheck',
+                    'type=LoadValue/field=healthCheck'
                 ];
                 noDescBlacklist.forEach(n => noDesc.delete(n));
 
