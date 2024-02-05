@@ -21,24 +21,28 @@
     <parent>
         <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>2.20.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>graphql-test</artifactId>
     <groupId>org.jahia.test</groupId>
     <name>Jahia GraphQL Test Module</name>
     <packaging>bundle</packaging>
 
+    <properties>
+        <jahia-module-signature>MCwCFCyaKhNKLLhHt0XUvZi5UJT15BB6AhQgkJkrQ3c4KBIF7JdwvAKTNN3W8g==</jahia-module-signature>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.jahia.server</groupId>
             <artifactId>jahia-impl</artifactId>
-            <version>8.1.1.0</version>
+            <version>8.2.0.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jahia.test</groupId>
             <artifactId>jahia-test-module</artifactId>
-            <version>8.1.0.0</version>
+            <version>8.2.0.0-SNAPSHOT</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -50,7 +54,7 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>graphql-dxm-provider</artifactId>
-            <version>2.20.0-SNAPSHOT</version>
+            <version>3.0.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -104,7 +108,6 @@
                 <configuration>
                     <instructions>
                         <Import-Package>${jahia.plugin.projectPackageImport},javax.jcr,*</Import-Package>
-                        <jahia-module-signature>MCwCFCMl3udP9hN6kRh5nISfleEU9MixAhR0ievhUO7y1+TjJp1+oOkmXdXCeQ==</jahia-module-signature>
                         <Require-Capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</Require-Capability>
                     </instructions>
                 </configuration>
