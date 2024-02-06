@@ -24,7 +24,7 @@ jobs:
     env:
       NEXUS_INTERNAL_URL: ${{ secrets.NEXUS_INTERNAL_URL }}
     container:
-      image: jahia/cimg-mvn-cache:ga_cimg_openjdk_11.0.20-node
+      image: jahia/cimg-mvn-cache:ga_cimg_openjdk_8.0.312-node
       credentials:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: jahia/jahia-modules-action/sonar-analysis@v2
         with:
-          primary_release_branch: master
+          primary_release_branch: 2_x
           github_pr_id: ${{github.event.number}}
           sonar_url: ${{ secrets.SONAR_URL }}
           sonar_token: ${{ secrets.SONAR_TOKEN }}
@@ -72,7 +72,7 @@ jobs:
           module_id: graphql-dxm-provider
           testrail_project: GraphQL Core module
           tests_manifest: provisioning-manifest-build.yml
-          jahia_image: jahia/jahia-discovery-dev:8-SNAPSHOT
+          jahia_image: jahia/jahia-discovery-dev:8.1-SNAPSHOT
           jahia_license: ${{ secrets.JAHIA_LICENSE_8X_FULL }}
           should_use_build_artifacts: true
           github_artifact_name: gql-core-standalone-${{ github.run_number }}

@@ -61,8 +61,10 @@ public class RenderNodeExtensions {
     @GraphQLField
     @GraphQLDescription("Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned.")
     public GqlJcrNode getDisplayableNode(DataFetchingEnvironment environment) {
-        HttpServletRequest httpServletRequest = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
-        HttpServletResponse httpServletResponse = ContextUtil.getHttpServletResponse(environment.getGraphQlContext());
+        GraphQLServletContext gqlContext = environment.getContext();
+
+        HttpServletRequest httpServletRequest = ContextUtil.getHttpServletRequest(environment.getContext());
+        HttpServletResponse httpServletResponse = ContextUtil.getHttpServletResponse(environment.getContext());
 
         if (httpServletRequest == null || httpServletResponse == null) {
             return null;
@@ -134,8 +136,8 @@ public class RenderNodeExtensions {
                 }
             }
 
-            HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
-            HttpServletResponse response = ContextUtil.getHttpServletResponse(environment.getGraphQlContext());
+            HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getContext());
+            HttpServletResponse response = ContextUtil.getHttpServletResponse(environment.getContext());
             if (request == null || response == null) {
                 throw new RuntimeException("No HttpRequest or HttpResponse");
             }

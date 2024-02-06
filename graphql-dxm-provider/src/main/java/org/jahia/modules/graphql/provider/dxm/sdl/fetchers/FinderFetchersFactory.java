@@ -18,7 +18,6 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 import graphql.schema.*;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
-import org.jahia.modules.graphql.provider.dxm.util.GqlTypeUtil;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.ExtendedPropertyType;
@@ -107,12 +106,12 @@ public class FinderFetchersFactory {
         if (fd == null) return null;
         GraphQLDirective directive = fd.getDirective(SDLConstants.MAPPING_DIRECTIVE);
         if (directive == null) return null;
-        return fd.getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE).getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue().toString();
+        return fd.getDirective(SDLConstants.MAPPING_DIRECTIVE).getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue().toString();
     }
 
     private static String getMappedType(String definitionPropertyName, String propertyNameInJcr, GraphQLFieldDefinition fieldDefinition) {
         GraphQLObjectType graphQLType = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
-        GraphQLAppliedDirective mappingDirective = graphQLType.getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE);
+        GraphQLDirective mappingDirective = graphQLType.getDirective(SDLConstants.MAPPING_DIRECTIVE);
         if (mappingDirective != null) {
             String nodeType = mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
             ExtendedNodeType type = null;
@@ -126,9 +125,7 @@ public class FinderFetchersFactory {
                 logger.error("Node type is not found due to", e);
             }
         }
-
-        GraphQLType type = graphQLType.getFieldDefinition(definitionPropertyName).getType();
-        return GqlTypeUtil.getTypeName(type);
+        return graphQLType.getFieldDefinition(definitionPropertyName).getType().getName();
     }
 
     private static WeakreferenceFinder getWeakreferenceFinder(Finder finder, GraphQLFieldDefinition fieldDefinition, String definitionPropertyName) {
@@ -137,25 +134,24 @@ public class FinderFetchersFactory {
         GraphQLObjectType graphQLType = (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType();
         GraphQLFieldDefinition field = graphQLType.getFieldDefinition(definitionPropertyName);
         GraphQLOutputType fieldType = field.getType();
-// TODO
-//        GraphQLDirective directive = (GraphQLDirective) fieldType.getChildren()
-//                .stream()
-//                .filter(type -> type instanceof GraphQLDirective && ((GraphQLDirective) type).getName().equals(SDLConstants.MAPPING_DIRECTIVE) && ((GraphQLDirective) type).getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE) != null)
-//                .findFirst()
-//                .orElse(null);
-//
-//        if (directive != null) {
-//            String nodeTypeOfWeakreference = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
-//            weakrefFinder.setReferencedType(nodeTypeOfWeakreference);
-//            Map<String, String> referenceProps = fieldType.getChildren()
-//                    .stream()
-//                    .filter(type -> type instanceof GraphQLFieldDefinition
-//                            && ((GraphQLFieldDefinition) type).getType() instanceof GraphQLScalarType
-//                            && ((GraphQLFieldDefinition) type).getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE) != null)
-//                    .collect(Collectors.toMap(type -> ((GraphQLFieldDefinition) type).getName(), type -> ((GraphQLFieldDefinition) type).getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE).getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue().toString()));
-//            weakrefFinder.setReferenceTypeProps(referenceProps);
-//            weakrefFinder.setReferencedTypeSDLName(GqlTypeUtil.getTypeName(fieldType));
-//        }
+        GraphQLDirective directive = (GraphQLDirective) fieldType.getChildren()
+                .stream()
+                .filter(type -> type instanceof GraphQLDirective && type.getName().equals(SDLConstants.MAPPING_DIRECTIVE) && ((GraphQLDirective) type).getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE) != null)
+                .findFirst()
+                .orElse(null);
+
+        if (directive != null) {
+            String nodeTypeOfWeakreference = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
+            weakrefFinder.setReferencedType(nodeTypeOfWeakreference);
+            Map<String, String> referenceProps = fieldType.getChildren()
+                    .stream()
+                    .filter(type -> type instanceof GraphQLFieldDefinition
+                            && ((GraphQLFieldDefinition) type).getType() instanceof GraphQLScalarType
+                            && ((GraphQLFieldDefinition) type).getDirective(SDLConstants.MAPPING_DIRECTIVE) != null)
+                    .collect(Collectors.toMap(type -> type.getName(), type -> ((GraphQLFieldDefinition) type).getDirective(SDLConstants.MAPPING_DIRECTIVE).getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).getValue().toString()));
+            weakrefFinder.setReferenceTypeProps(referenceProps);
+            weakrefFinder.setReferencedTypeSDLName(fieldType.getName());
+        }
 
         return weakrefFinder;
     }

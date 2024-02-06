@@ -36,7 +36,6 @@ import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.services.securityfilter.ScopeDefinition;
 import org.jahia.services.usermanager.JahiaUser;
-import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +49,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 @Component(service = GraphQLProvider.class, immediate = true)
-public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLSubscriptionProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider {
+public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider, GraphQLSubscriptionProvider {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
@@ -68,8 +67,6 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     private DXGraphQLConfig dxGraphQLConfig;
 
     private ProcessingElementsContainer container;
-
-    private BundleContext bundleContext;
 
     private static Map<String, URL> sdlResources = new ConcurrentHashMap<>();
 
@@ -172,13 +169,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     }
 
     @Activate
-    public void activate(BundleContext bundleContext) {
+    public void activate() {
         if (logger.isDebugEnabled()) {
             logger.debug("Activating GraphQL API schema with extensions {}", extensionsProviders.stream().map(dxGraphQLExtensionsProvider -> dxGraphQLExtensionsProvider.getClass().getSimpleName()).collect(Collectors.joining(",")));
         }
-
         instance = this;
-        this.bundleContext = bundleContext;
 
         // Initialize thread pool
         pool = new ForkJoinPool(50);
@@ -367,4 +362,5 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
     public void unsetUnboxingTypeFunction(TypeFunction unboxingTypeFunction) {
         this.defaultTypeFunction = null;
     }
+
 }

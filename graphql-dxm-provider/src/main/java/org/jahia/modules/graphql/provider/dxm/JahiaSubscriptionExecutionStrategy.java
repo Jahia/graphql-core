@@ -24,7 +24,6 @@ import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
 
 import javax.servlet.http.HttpSession;
-import javax.websocket.Session;
 import java.util.concurrent.CompletableFuture;
 
 public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStrategy {
@@ -36,8 +35,8 @@ public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStr
     @Override
     public CompletableFuture<ExecutionResult> execute(ExecutionContext executionContext, ExecutionStrategyParameters parameters) throws NonNullableFieldWasNullException {
         try {
-            Session session = executionContext.getGraphQLContext().get(Session.class);
-            JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) session.getUserProperties().get(Constants.SESSION_USER));
+            DefaultGraphQLWebSocketContext context = (DefaultGraphQLWebSocketContext) executionContext.getContext();
+            JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) context.getSession().getUserProperties().get(Constants.SESSION_USER));
 
             return super.execute(executionContext, parameters);
         } finally {
@@ -49,8 +48,8 @@ public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStr
     protected FieldValueInfo completeField(ExecutionContext executionContext, ExecutionStrategyParameters parameters, FetchedValue fetchedValue) {
         boolean resetUser = false;
         if (JCRSessionFactory.getInstance().getCurrentUser() == null) {
-            Session session = executionContext.getGraphQLContext().get(Session.class);
-            JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) session.getUserProperties().get(Constants.SESSION_USER));
+            DefaultGraphQLWebSocketContext context = (DefaultGraphQLWebSocketContext) executionContext.getContext();
+            JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) context.getSession().getUserProperties().get(Constants.SESSION_USER));
             resetUser = true;
         }
 

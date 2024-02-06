@@ -45,7 +45,6 @@ package org.jahia.modules.graphql.provider.dxm.workflow;
 
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.SelectedField;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
@@ -58,7 +57,6 @@ import org.reactivestreams.Publisher;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @GraphQLTypeExtension(DXGraphQLProvider.Subscription.class)
 public class GqlWorkflowSubscriptionExtension {
@@ -68,7 +66,7 @@ public class GqlWorkflowSubscriptionExtension {
     public static Publisher<GqlWorkflowEvent> workflowEvent(DataFetchingEnvironment environment) {
         return Flowable.create(obs -> {
             WorkflowService workflowService = BundleUtils.getOsgiService(WorkflowService.class, null);
-            GqlWfListener wfListener = new GqlWfListener(workflowService, obs, environment.getSelectionSet().getFields().stream().map(SelectedField::getName).collect(Collectors.toSet()));
+            GqlWfListener wfListener = new GqlWfListener(workflowService, obs, environment.getSelectionSet().get().keySet());
             workflowService.addWorkflowListener(wfListener);
 
             obs.setCancellable(() -> {
