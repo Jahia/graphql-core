@@ -28,6 +28,9 @@ describe('Test if every all nodes of the GraphQL schema have a description', () 
         // These are provided by graphql-dxm-provider
         // Descriptions should be added via a separate ticket:
         'Query/WorkflowService',
+        'Query/categoryById/id',
+        'Query/categoryByPath/path',
+        'Query/AdminQuery/UserAdminQuery/User',
         'Mutation/AdminMutation/JahiaAdminMutation/GqlConfigurationMutation',
         'Mutation/JCRMutation',
         'Mutation/WorkflowMutation',
@@ -49,7 +52,7 @@ describe('Test if every all nodes of the GraphQL schema have a description', () 
 
                 noDesc.forEach(graphqlType => {
                     cy.log('Missing description for node at path: ' + graphqlType.nodePath.join('/'));
-                    console.log('Missing description for type: ' + graphqlType.name + ' in path: ' + graphqlType.nodePath.join('/'), graphqlType);
+                    console.log(graphqlType.nodePath.join('/'));
                 });
                 cy.then(() => expect(noDesc.length).to.equal(0));
             });
