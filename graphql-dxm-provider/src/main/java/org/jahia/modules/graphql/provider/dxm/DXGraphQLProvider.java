@@ -50,7 +50,10 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 @Component(service = GraphQLProvider.class, immediate = true)
-public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLSubscriptionProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider {
+public class DXGraphQLProvider implements
+        GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLDirectiveProvider,
+        GraphQLSubscriptionProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider
+{
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
@@ -302,6 +305,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         types.addAll(specializedTypesHandler.getKnownTypes().values());
         types.addAll(sdlSchemaService.getSDLTypes());
         return types;
+    }
+
+    @Override
+    public Collection<GraphQLDirective> getDirectives() {
+        return sdlSchemaService.getDirectives();
     }
 
     @Override

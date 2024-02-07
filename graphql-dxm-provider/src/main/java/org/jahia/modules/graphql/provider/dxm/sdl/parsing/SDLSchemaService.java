@@ -52,10 +52,12 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLString;
+import static org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants.*;
 
 @Component(service = SDLSchemaService.class, immediate = true)
 public class SDLSchemaService {
@@ -198,17 +200,16 @@ public class SDLSchemaService {
 
             List<GraphQLFieldDefinition> fieldDefinitions = graphQLSchema.getQueryType().getFieldDefinitions();
             for (GraphQLFieldDefinition fieldDefinition : fieldDefinitions) {
-                GraphQLObjectType objectType = fieldDefinition.getType() instanceof GraphQLList ?
-                        (GraphQLObjectType) ((GraphQLList) fieldDefinition.getType()).getWrappedType() : (GraphQLObjectType) fieldDefinition.getType();
+                GraphQLDirectiveContainer directiveContainer = fieldDefinition.getType() instanceof GraphQLList ?
+                        (GraphQLDirectiveContainer) ((GraphQLList) fieldDefinition.getType()).getWrappedType() :
+                        (GraphQLDirectiveContainer) fieldDefinition.getType();
 
-                GraphQLAppliedDirective directive = objectType.getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE);
-
+                GraphQLAppliedDirective directive = directiveContainer.getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE);
                 if (directive == null) {
                     continue;
                 }
 
                 String nodeType = directive.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getValue().toString();
-
                 //Handle connections
                 if (fieldDefinition.getName().contains(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
                     String queryFieldName = fieldDefinition.getName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
@@ -254,6 +255,17 @@ public class SDLSchemaService {
             }
         }
         return types;
+    }
+
+    public Set<GraphQLDirective> getDirectives() {
+        if (graphQLSchema == null) {
+            generateSchema();
+        }
+
+        if (graphQLSchema != null) {
+            return new HashSet<>(graphQLSchema.getDirectives());
+        }
+        return null;
     }
 
     public GraphQLSchema getGraphQLSchema() {
@@ -334,27 +346,27 @@ public class SDLSchemaService {
 
     private TypeDefinitionRegistry prepareTypeRegistryDefinition() {
         TypeDefinitionRegistry typeDefinitionRegistry = new TypeDefinitionRegistry();
-        typeDefinitionRegistry.add(new ObjectTypeDefinition("Query"));
+        Function<GraphQLScalarType, TypeName> newType = scalar -> new TypeName(scalar.getName());
+
+        typeDefinitionRegistry.add(ObjectTypeDefinition.newObjectTypeDefinition().name("Query")
+                .fieldDefinition(new FieldDefinition("_empty", newType.apply(GraphQLBoolean)))
+                .build());
         typeDefinitionRegistry.add(new ScalarTypeDefinition("Date"));
         typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
                 .name(SDLConstants.MAPPING_DIRECTIVE)
                 .directiveLocations(Arrays.asList(
-                        DirectiveLocation.newDirectiveLocation().name("OBJECT").build(),
-                        DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
+                        new DirectiveLocation("OBJECT"),
+                        new DirectiveLocation("FIELD_DEFINITION") ))
                 .inputValueDefinitions(Arrays.asList(
-                        InputValueDefinition.newInputValueDefinition().name(SDLConstants.MAPPING_DIRECTIVE_NODE).type(TypeName.newTypeName(GraphQLString.getName()).build()).build(),
-                        InputValueDefinition.newInputValueDefinition().name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY).type(TypeName.newTypeName(GraphQLString.getName()).build()).build(),
-                        InputValueDefinition.newInputValueDefinition().name(SDLConstants.MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES).type(TypeName.newTypeName(GraphQLBoolean.getName()).build()).build()))
+                        new InputValueDefinition(MAPPING_DIRECTIVE_NODE, newType.apply(GraphQLString)),
+                        new InputValueDefinition(MAPPING_DIRECTIVE_PROPERTY, newType.apply(GraphQLString)),
+                        new InputValueDefinition(MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES, newType.apply(GraphQLBoolean)) ))
                 .build());
-
         typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
-                .name(SDLConstants.FETCHER_DIRECTIVE)
-                .directiveLocations(Arrays.asList(
-                        DirectiveLocation.newDirectiveLocation().name("FIELD_DEFINITION").build()))
-                .inputValueDefinitions(Arrays.asList(
-                        InputValueDefinition.newInputValueDefinition().name(SDLConstants.FETCHER_DIRECTIVE_NAME).type(TypeName.newTypeName(GraphQLString.getName()).build()).build()))
+                .name(FETCHER_DIRECTIVE)
+                .directiveLocation(new DirectiveLocation("FIELD_DEFINITION"))
+                .inputValueDefinition(new InputValueDefinition(FETCHER_DIRECTIVE_NAME, newType.apply(GraphQLString)))
                 .build());
-
         return typeDefinitionRegistry;
     }
 
@@ -365,7 +377,7 @@ public class SDLSchemaService {
             ObjectTypeExtensionDefinition query = typeDefinitionRegistry.objectTypeExtensions().get("Query").get(queryIndex);
             List<FieldDefinition> fields = query.getFieldDefinitions();
 
-            //Collect connection fields i. e. ones that map to <TypeName>Connection
+            //Collect connection fields i.e. ones that map to <TypeName>Connection
             for (FieldDefinition f : fields) {
                 if (f.getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX) && f.getType() instanceof TypeName) {
                     String connectionName = ((TypeName) f.getType()).getName();
