@@ -9,7 +9,7 @@ describe('Test if every all nodes of the GraphQL schema have a description', () 
         // Missing but provided by: https://github.com/Jahia/npm-modules-engine
         'GqlNpmHelper',
 
-        // Missing but provided by:  https://github.com/Jahia/content-editor or https://github.com/Jahia/jcontent
+        // // Missing but provided by:  https://github.com/Jahia/content-editor or https://github.com/Jahia/jcontent
         'GqlEditorForms',
         'GqlEditorForm',
 
@@ -27,15 +27,18 @@ describe('Test if every all nodes of the GraphQL schema have a description', () 
 
         // These are provided by graphql-dxm-provider
         // Descriptions should be added via a separate ticket:
-        'Query/WorkflowService',
         'Query/categoryById/id',
         'Query/categoryByPath/path',
-        'Query/AdminQuery/UserAdminQuery/User',
+        'findAvailableNodeName',
+        'MulticriteriaEvaluation',
+        'SortType',
+        'WipStatus',
         'Mutation/AdminMutation/JahiaAdminMutation/GqlConfigurationMutation',
         'Mutation/JCRMutation',
         'Mutation/WorkflowMutation',
         'Mutation/mutateWorkflows',
-        'Subscription/GqlWorkflowEvent'
+        'Subscription/workflowEvent/GqlWorkflowEvent',
+        'Subscription/backgroundJobSubscription'
     ];
 
     const entryNodes = ['Query', 'Mutation', 'Subscription'];
@@ -50,9 +53,9 @@ describe('Test if every all nodes of the GraphQL schema have a description', () 
                     .filter((graphqlType => graphqlType.description === null || graphqlType.description.length === 0))
                     .filter((graphqlType => !noDescBlacklist.some(t => graphqlType.nodePath.join('/').includes(t))));
 
-                noDesc.forEach(graphqlType => {
-                    cy.log('Missing description for node at path: ' + graphqlType.nodePath.join('/'));
-                    console.log(graphqlType.nodePath.join('/'));
+                noDesc.forEach(description => {
+                    cy.log(`Missing description for ${description.schemaType} at path: ${description.nodePath.join('/')}`);
+                    console.log(`Missing description for ${description.schemaType} at path: ${description.nodePath.join('/')}`);
                 });
                 cy.then(() => expect(noDesc.length).to.equal(0));
             });
