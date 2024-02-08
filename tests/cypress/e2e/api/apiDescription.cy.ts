@@ -2,7 +2,7 @@
 
 import {getDescriptions} from '@jahia/cypress';
 
-describe('Test if every all nodes of the GraphQL schema have a description', () => {
+describe('Test for GraphQL schema description', () => {
     // The blacklist is used to ignore nodes that are not registered directly by graphql-core
     // These descriptions should be added in their respective codebases
     const noDescBlacklist = [
@@ -43,7 +43,7 @@ describe('Test if every all nodes of the GraphQL schema have a description', () 
 
     const entryNodes = ['Query', 'Mutation', 'Subscription'];
     entryNodes.forEach(entryNode => {
-        it(`Verify presence of a description all nodes under ${entryNode}`, () => {
+        it(`Description for all nodes under ${entryNode}`, () => {
             getDescriptions(entryNode).then(result => {
                 console.log(result);
 
