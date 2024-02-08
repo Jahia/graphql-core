@@ -26,7 +26,7 @@ describe('Test for GraphQL schema description', () => {
         'jwtToken',
 
         // These are provided by graphql-dxm-provider
-        // Descriptions should be added via a separate ticket:
+        // Descriptions should be added via a separate ticket: BACKLOG-22338
         'Query/categoryById/id',
         'Query/categoryByPath/path',
         'findAvailableNodeName',
