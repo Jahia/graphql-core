@@ -39,6 +39,8 @@ jobs:
         with:
           module_id: graphql-dxm-provider
           mvn_settings_filepath: '.github/maven.settings.xml'
+          nexus_username: ${{ secrets.NEXUS_USERNAME }}
+          nexus_password: ${{ secrets.NEXUS_PASSWORD }}
           
   sbom:
     name: SBOM processing
@@ -103,7 +105,7 @@ jobs:
 
   publish:
     name: Publish module
-    needs: [integration-tests-standalone]
+    needs: [build]
     if: github.ref == 'refs/heads/2_x'
     runs-on: self-hosted
     container:
