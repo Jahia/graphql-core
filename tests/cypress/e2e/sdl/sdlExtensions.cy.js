@@ -20,10 +20,10 @@ describe('SDL extensions', () => {
         cy.apollo({query: getExampleSdlExtensions}).then((response) => {
             const {newsSdl, images, queries} = response?.data || {};
             expect(newsSdl?.fields?.map(f => f.name)).to.deep.eq(
-                ['metadata', 'description', 'title']
+                ['title', 'description', 'checked', 'date']
             );
             expect(images?.fields?.map(f => f.name)).to.deep.eq(
-                ['metadata', 'type', 'size', 'height', 'width']
+                ['height']
             );
             ['newsByChecked', 'myNewsByDate', 'myImagesByHeight'].forEach(queryField => {
                 expect(queries?.fields?.find(f => f.name === queryField)).to.exist;
