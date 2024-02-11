@@ -258,14 +258,18 @@ public class SDLSchemaService {
     }
 
     public Set<GraphQLDirective> getDirectives() {
+        Set<GraphQLDirective> result = new HashSet<>();
         if (graphQLSchema == null) {
             generateSchema();
         }
 
         if (graphQLSchema != null) {
-            return new HashSet<>(graphQLSchema.getDirectives());
+            List<GraphQLDirective> directives = graphQLSchema.getDirectives();
+            if (directives != null) {
+                result.addAll(directives);
+            }
         }
-        return null;
+        return result;
     }
 
     public GraphQLSchema getGraphQLSchema() {
