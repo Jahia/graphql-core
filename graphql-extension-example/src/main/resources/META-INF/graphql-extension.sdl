@@ -1,5 +1,3 @@
-directive @mapping(node : String, property: String, ignoreDefaultQueries: Boolean) on FIELD_DEFINITION
-
 """This is news"""
 type NewsSDL @mapping(node:"jnt:news", ignoreDefaultQueries: true) {
     """This is title"""
