@@ -32,6 +32,8 @@ describe('Test for GraphQL schema description', () => {
         // These are provided by graphql-dxm-provider
         // Descriptions should be added via a separate ticket: BACKLOG-22338
         'findAvailableNodeName',
+        'categoryById/id',
+        'categoryByPath/path',
         'InputFieldFiltersInput/multi/MulticriteriaEvaluation',
         'InputFieldSorterInput/sortType/SortType',
         'InputFieldGroupingInput/groupingType/GroupingType',
