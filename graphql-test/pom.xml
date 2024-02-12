@@ -54,7 +54,7 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>graphql-dxm-provider</artifactId>
-            <version>3.0.0-SNAPSHOT</version>
+            <version>${parent.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -107,7 +107,17 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Import-Package>${jahia.plugin.projectPackageImport},javax.jcr,*</Import-Package>
+                        <Import-Package>
+                            ${jahia.plugin.projectPackageImport},
+                            javax.jcr,
+                            org.bouncycastle.asn1.x500;resolution:=optional,
+                            org.bouncycastle.cert;resolution:=optional,
+                            org.bouncycastle.cert.jcajce;resolution:=optional,
+                            org.bouncycastle.jce.provider;resolution:=optional,
+                            org.bouncycastle.operator;resolution:=optional,
+                            org.bouncycastle.operator.jcajce;resolution:=optional,
+                            *
+                        </Import-Package>
                         <Require-Capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</Require-Capability>
                     </instructions>
                 </configuration>
