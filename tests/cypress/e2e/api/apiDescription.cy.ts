@@ -17,6 +17,7 @@ describe('Test for GraphQL schema description', () => {
         'GqlDashboard',
 
         // Missing but provided by: https://github.com/Jahia/server-availability-manager
+
         'AdminQuery/jahia/JahiaAdminQuery/healthCheck',
         'AdminQuery/jahia/JahiaAdminQuery/GqlHealthCheck',
         'AdminQuery/jahia/JahiaAdminQuery/load',
@@ -77,7 +78,7 @@ describe('Test for GraphQL schema description', () => {
                     cy.log(`Deprecated ${description.schemaType} missing explanation at path: ${description.nodePath.join('/')}`);
                     console.log(`Deprecated ${description.schemaType} missing explanation at path: ${description.nodePath.join('/')}`);
                 });
-                cy.then(() => expect(noDesc.length).to.equal(0));                
+                cy.then(() => expect(noDesc.length).to.equal(0));
             });
         });
     });

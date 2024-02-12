@@ -21,7 +21,7 @@
     <parent>
         <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>2.20.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>graphql-dxm-provider</artifactId>
     <name>Jahia GraphQL Core Provider</name>
@@ -52,7 +52,7 @@
             org.apache.tika;version="[1.27,3)"
         </import-package>
         <jahia-module-type>system</jahia-module-type>
-        <jahia-module-signature>MCwCFF+OA2JTSs4XZqAlfoP157UxsrxYAhQbILGqUYsZyQ0ZdSM9hZzA0S4z+g==</jahia-module-signature>
+        <jahia-module-signature>MCwCFH3Jo1W5aXYk+kW7A2dRUBxOg2q3AhR15zsTLj2EyRodLNbRf9JFkKK2aw==</jahia-module-signature>
         <mockito.version>2.21.0</mockito.version>
         <powermock.version>2.0.9</powermock.version>
         <yarn.arguments>build:production</yarn.arguments>

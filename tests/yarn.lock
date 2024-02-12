@@ -1940,6 +1940,7 @@
   version "3.17.9"
   resolved "https://registry.yarnpkg.com/@jahia/cypress/-/cypress-3.17.9.tgz#b18d3a0bae8855afce77f09176d8c086d6148111"
   integrity sha512-K4ZvC8b9PfI9/HH4DBGu4TAdO26embE8GAkIEkd0QqR9xONBfQRgBiYf6I6IHoj9InYFSYeG7gSJrng5NzoH6A==
+
   dependencies:
     "@apollo/client" "^3.4.9"
     cypress-real-events "^1.11.0"
