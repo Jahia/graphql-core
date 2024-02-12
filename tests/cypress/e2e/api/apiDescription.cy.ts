@@ -17,9 +17,12 @@ describe('Test for GraphQL schema description', () => {
         'GqlDashboard',
 
         // Missing but provided by: https://github.com/Jahia/server-availability-manager
-        'AdminQuery/JahiaAdminQuery/healthCheck',
-        'AdminQuery/JahiaAdminQuery/GqlHealthCheck',
-        'AdminQuery/JahiaAdminQuery/Load',
+        'AdminQuery/jahia/JahiaAdminQuery/healthCheck',
+        'AdminQuery/jahia/JahiaAdminQuery/GqlHealthCheck',
+        'AdminQuery/jahia/JahiaAdminQuery/load',
+
+        // Missing but provided by: https://github.com/Jahia/personal-api-tokens
+        'AdminQuery/personalApiTokens/PersonalApiTokensQuery',
 
         // Missing but provided by: https://github.com/Jahia/security-filter-tools
         'JWTToken',
@@ -27,18 +30,22 @@ describe('Test for GraphQL schema description', () => {
 
         // These are provided by graphql-dxm-provider
         // Descriptions should be added via a separate ticket: BACKLOG-22338
-        'Query/categoryById/id',
-        'Query/categoryByPath/path',
-        'findAvailableNodeName',
-        'MulticriteriaEvaluation',
-        'SortType',
-        'WipStatus',
-        'Mutation/AdminMutation/JahiaAdminMutation/GqlConfigurationMutation',
-        'Mutation/JCRMutation',
-        'Mutation/WorkflowMutation',
+        'jcr/JCRQuery/nodeById/JCRNode/findAvailableNodeName/',
+        'InputFieldFiltersInput/multi/MulticriteriaEvaluation',
+        'InputFieldSorterInput/sortType/SortType',
+        'InputFieldGroupingInput/groupingType/GroupingType',
+        'JCRProperty/type/JCRPropertyType',
+        'GqlPublicationInfo/publicationStatus/PublicationStatus',
+        'wipInfo/status/WipStatus',
+        'GqlBackgroundJob/jobState/GqlBackgroundJobState',
+        'GqlBackgroundJob/jobStatus/GqlBackgroundJobStatus',
+
         'Mutation/mutateWorkflows',
-        'Subscription/workflowEvent/GqlWorkflowEvent',
-        'Subscription/backgroundJobSubscription'
+        'configuration/GqlConfigurationMutation',
+        'AdminMutation/personalApiTokens',
+        'Mutation/jcr/JCRMutation',
+
+        'Subscription/workflowEvent/GqlWorkflowEvent'
     ];
 
     const entryNodes = ['Query', 'Mutation', 'Subscription'];
@@ -58,6 +65,19 @@ describe('Test for GraphQL schema description', () => {
                     console.log(`Missing description for ${description.schemaType} at path: ${description.nodePath.join('/')}`);
                 });
                 cy.then(() => expect(noDesc.length).to.equal(0));
+
+                // Get the list of nodes that are deprecated and ensure an explanation is present (deprecationReason)*
+                // "Deprecated" (in all its forms) is not considered a valid deprecationReason
+                // Remove the nodes that are in the blacklist 
+                const noDeprecateReason = result
+                    .filter((graphqlType => (graphqlType.isDeprecated === true && (!graphqlType.deprecationReason || graphqlType.deprecationReason.length === 0 || (graphqlType.deprecationReason instanceof String && graphqlType.deprecationReason.toLowercase() === ("Deprecated").toLowerCase())))))
+                    .filter((graphqlType => !noDescBlacklist.some(t => graphqlType.nodePath.join('/').includes(t))));
+
+                    noDeprecateReason.forEach(description => {
+                    cy.log(`Deprecated ${description.schemaType} missing explanation at path: ${description.nodePath.join('/')}`);
+                    console.log(`Deprecated ${description.schemaType} missing explanation at path: ${description.nodePath.join('/')}`);
+                });
+                cy.then(() => expect(noDesc.length).to.equal(0));                
             });
         });
     });
