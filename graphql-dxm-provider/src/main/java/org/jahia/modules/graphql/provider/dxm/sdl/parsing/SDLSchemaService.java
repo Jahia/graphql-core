@@ -136,13 +136,20 @@ public class SDLSchemaService {
             typeDefinitionRegistry.objectTypeExtensions().forEach((k, t) -> t.forEach(e -> cleanObjectExtensions(e, sources, cleanedTypeRegistry)));
             typeDefinitionRegistry.scalars().forEach((k, t) -> cleanedTypeRegistry.add(t));
             typeDefinitionRegistry.getDirectiveDefinitions().forEach((k, t) -> cleanedTypeRegistry.add(t));
+
+            GraphQLSchema tempSchema = null;
             try {
-                graphQLSchema = schemaGenerator.makeExecutableSchema(
+                tempSchema = schemaGenerator.makeExecutableSchema(
                         cleanedTypeRegistry,
                         SDLRuntimeWiring.runtimeWiring()
                 );
             } catch (Exception e) {
                 logger.warn("Invalid type definition(s) detected during schema generation {} ", e.getMessage());
+            }
+
+            // Overwrite schema only if no issues were detected
+            if (tempSchema != null) {
+                graphQLSchema = tempSchema;
             }
         }
     }
@@ -216,7 +223,7 @@ public class SDLSchemaService {
                     String typeName = queryFieldName;
 
                     if (connectionFieldNameToSDLType.containsKey(fieldDefinition.getName())) {
-                        typeName = connectionFieldNameToSDLType.get(fieldDefinition.getName()).getConnectionName().replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
+                        typeName = connectionFieldNameToSDLType.get(fieldDefinition.getName()).getMappedToType();
                     }
                     GraphQLNamedOutputType node = (GraphQLNamedOutputType) GqlTypeUtil.unwrapType(fieldDefinition.getType());
                     GraphQLObjectType connectionType = ConnectionHelper.getOrCreateConnection(this, node, typeName);
@@ -375,64 +382,74 @@ public class SDLSchemaService {
     }
 
     private void handleCustomConnectionTypes(TypeDefinitionRegistry typeDefinitionRegistry) {
-        int queryIndex = 0;
-        //Handle Query extension - clone/replace extension with new fields
-        if (typeDefinitionRegistry.objectTypeExtensions().containsKey("Query")) {
-            ObjectTypeExtensionDefinition query = typeDefinitionRegistry.objectTypeExtensions().get("Query").get(queryIndex);
-            List<FieldDefinition> fields = query.getFieldDefinitions();
 
-            //Collect connection fields i.e. ones that map to <TypeName>Connection
-            for (FieldDefinition f : fields) {
-                if (f.getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX) && f.getType() instanceof TypeName) {
-                    String connectionName = ((TypeName) f.getType()).getName();
-                    String type = connectionName.replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
-                    connectionFieldNameToSDLType.put(f.getName(), new ConnectionHelper.ConnectionTypeInfo(type, connectionName));
+        // Handle Query extension - clone/replace extension with new fields
+        List<ObjectTypeExtensionDefinition> extDefs = typeDefinitionRegistry.objectTypeExtensions().get("Query");
+        if (extDefs != null) {
+            List<ObjectTypeExtensionDefinition> queryToRemove = new LinkedList<>();
+            List<ObjectTypeExtensionDefinition> queryToAdd = new LinkedList<>();
+            for (ObjectTypeExtensionDefinition query: extDefs) {
+                for (FieldDefinition field : query.getFieldDefinitions()) {
+                    if (field.getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX) && field.getType() instanceof TypeName) {
+                        String connectionName = ((TypeName) field.getType()).getName();
+                        connectionFieldNameToSDLType.put(field.getName(), new ConnectionHelper.ConnectionTypeInfo(connectionName));
+                    }
+                }
+
+                // Transform query to handle connections. The transformation replaces "someConnection" : <TypeName>Connection
+                // with "someConnection": [<TypeName>] as it needs to return a list in order for graphql to handle it
+                if (!connectionFieldNameToSDLType.isEmpty()) {
+                    ObjectTypeExtensionDefinition newQuery = ConnectionHelper.transformQueryExtensions(query, connectionFieldNameToSDLType);
+                    // We need to keep track with temp lists, so we don't run into concurrent modification in typeDefinitionRegistry
+                    queryToRemove.add(query);
+                    queryToAdd.add(newQuery);
                 }
             }
-
-            //Transform query to handle connections. The transformation replaces "someConnection" : <TypeName>Connection
-            //with "someConnection": [<TypeName>] as it needs to return a list in order for graphql to handle it
-            if (!connectionFieldNameToSDLType.isEmpty()) {
-                ObjectTypeExtensionDefinition newQuery = ConnectionHelper.newQueryWithoutConnections(query, connectionFieldNameToSDLType);
-                newQuery = newQuery.transformExtension(new ConnectionHelper.TransformQueryExtension(connectionFieldNameToSDLType));
-                typeDefinitionRegistry.objectTypeExtensions().get("Query").remove(queryIndex);
-                typeDefinitionRegistry.add(newQuery);
-            }
+            queryToRemove.forEach(typeDefinitionRegistry::remove);
+            queryToAdd.forEach(typeDefinitionRegistry::add);
         }
 
         //Handle individual types with connections. Any type with 'fieldName : <Type name>Connection' signature
         //will be transformed to 'fieldName' : [<Type name>]
         for (ObjectTypeDefinition objectType : typeDefinitionRegistry.getTypes(ObjectTypeDefinition.class)) {
-            Iterator<FieldDefinition> fields = objectType.getFieldDefinitions().iterator();
-
-            while (fields.hasNext()) {
-                FieldDefinition field = fields.next();
-                if (field.getType() instanceof TypeName && ((TypeName) field.getType()).getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
-                    fields.remove();
+            List<FieldDefinition> fieldsToRemove = new LinkedList<>();
+            for (FieldDefinition field : objectType.getFieldDefinitions()) {
+                if (field.getType() instanceof TypeName && ((TypeName) field.getType()).getName()
+                        .endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX)) {
+                    fieldsToRemove.add(field);
                     String connectionName = ((TypeName) field.getType()).getName();
-                    String type = connectionName.replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
-                    connectionFieldNameToSDLType.put(objectType.getName() + "." + field.getName(), new ConnectionHelper.ConnectionTypeInfo(type, connectionName));
+                    connectionFieldNameToSDLType.put(objectType.getName() + "." + field.getName(),
+                            new ConnectionHelper.ConnectionTypeInfo(connectionName));
                 }
             }
 
+            List<FieldDefinition> fieldsToAdd = new LinkedList<>();
             for (Map.Entry<String, ConnectionHelper.ConnectionTypeInfo> entry : connectionFieldNameToSDLType.entrySet()) {
                 if (!entry.getKey().startsWith(objectType.getName() + ".")) {
                     continue;
                 }
 
                 //Add new field with directive to trigger custom fetcher loading in directive wiring
-                String name = StringUtils.substringAfter(entry.getKey(), ".");
-                objectType.getFieldDefinitions().add(FieldDefinition.newFieldDefinition()
+                fieldsToAdd.add(FieldDefinition.newFieldDefinition()
+                        .name(StringUtils.substringAfter(entry.getKey(), "."))
                         .directive(Directive.newDirective()
                                 .name(SDLConstants.MAPPING_DIRECTIVE)
-                                .arguments(Arrays.asList(Argument.newArgument()
+                                .argument(Argument.newArgument()
                                         .name(SDLConstants.MAPPING_DIRECTIVE_PROPERTY)
                                         .value(new StringValue(SDLConstants.MAPPING_DIRECTIVE_FAKE_PROPERTY))
-                                        .build()))
+                                        .build())
                                 .build())
-                        .name(name)
                         .type(new ListType(TypeName.newTypeName(entry.getValue().getMappedToType()).build()))
                         .build());
+            }
+
+            // recreate object type with modified fields
+            if (!fieldsToRemove.isEmpty() || !fieldsToAdd.isEmpty()) {
+                List<FieldDefinition> newFields = ListUtils.subtract(objectType.getFieldDefinitions(), fieldsToRemove);
+                newFields.addAll(fieldsToAdd);
+                ObjectTypeDefinition newObjectType = objectType.transform(builder -> builder.fieldDefinitions(newFields));
+                typeDefinitionRegistry.remove(objectType);
+                typeDefinitionRegistry.add(newObjectType);
             }
         }
     }

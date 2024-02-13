@@ -15,10 +15,8 @@
  */
 package org.jahia.modules.graphql.provider.dxm.sdl.parsing;
 
-import graphql.Scalars;
 import graphql.language.ListType;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.*;
 import graphql.schema.idl.*;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.ListDataFetcher;
@@ -39,7 +37,8 @@ public class SDLRuntimeWiring {
                 .wiringFactory(new NoopWiringFactory() {
                     @Override
                     public DataFetcher getDefaultDataFetcher(FieldWiringEnvironment environment) {
-                        if (environment.getFieldDefinition().getType() instanceof ListType) {
+                        if (environment.getFieldDefinition().getType() instanceof ListType ||
+                                environment.getFieldDefinition().getType() instanceof GraphQLList) {
                             //Handle case when mapping directive is absent i. e. field: [MyType]
                             return new ListDataFetcher(null);
                         }
