@@ -331,6 +331,21 @@ public class DXGraphQLProvider implements
 
     @Override
     public GraphQLCodeRegistry getCodeRegistry() {
+//        return codeRegistry.transform(builder -> builder.defaultDataFetcher(env -> {
+//            if (env.getFieldDefinition().getName().equals("nodes") || env.getFieldDefinition().getName().equals("edges")) {
+//                return PropertyDataFetcher.fetching(env.getFieldDefinition().getName());
+//            }
+//            if (env.getFieldDefinition().getType() instanceof ListType ||
+//                    env.getFieldDefinition().getType() instanceof GraphQLList) {
+//                //Handle case when mapping directive is absent i. e. field: [MyType]
+//                return new ListDataFetcher(null);
+//            }
+//            return DataFetchingEnvironment::getSource;
+//        }));
+
+//        GraphQLCodeRegistry sdlRegistry = CodeRegistryFetcher.fromSchema(sdlSchemaService.getGraphQLSchema());
+//        return codeRegistry.transform(builder -> builder.dataFetchers(sdlRegistry));
+
         return codeRegistry;
     }
 
