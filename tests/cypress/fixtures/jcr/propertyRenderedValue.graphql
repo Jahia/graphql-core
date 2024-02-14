@@ -1,0 +1,13 @@
+query($path: String!, $property: String!, $language: String!) {
+    jcr {
+        nodeByPath(path: $path) {
+            property(name: $property, language: $language) {
+                name,
+                value,
+                values,
+                renderedValue,
+                renderedValues
+            }
+        }
+    }
+}

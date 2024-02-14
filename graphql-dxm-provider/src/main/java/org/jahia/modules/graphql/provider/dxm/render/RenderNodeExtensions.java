@@ -121,7 +121,7 @@ public class RenderNodeExtensions {
             RenderService renderService = (RenderService) SpringContextSingleton.getBean("RenderService");
 
             if (contextConfiguration == null) {
-                contextConfiguration = "preview";
+                contextConfiguration = "module";
             }
             if (templateType == null) {
                 templateType = "html";
@@ -144,7 +144,7 @@ public class RenderNodeExtensions {
                 request = (HttpServletRequest) ((HttpServletRequestWrapper) request).getRequest();
             }
 
-            if (requestAttributes != null && requestAttributes.size() > 0) {
+            if (requestAttributes != null && !requestAttributes.isEmpty()) {
                 for (RenderRequestAttributeInput requestAttribute : requestAttributes) {
                     request.setAttribute(requestAttribute.getName(), requestAttribute.getValue());
                 }
@@ -173,8 +173,7 @@ public class RenderNodeExtensions {
             renderContext.setSite(site);
 
             response.setCharacterEncoding(SettingsBean.getInstance().getCharacterEncoding());
-            String res = renderService.render(r, renderContext);
-
+            String res = RenderExtensionsHelper.clean(renderService.render(r, renderContext));
             return new RenderedNode(res, renderContext);
         } catch (Exception e) {
             throw new RuntimeException(e);
