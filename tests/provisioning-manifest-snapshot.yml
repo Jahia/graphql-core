@@ -1,6 +1,7 @@
 - include: 'mvn:org.jahia.packages/jahia-additional-modules/${const:org.jahia.api.Constants.JAHIA_PROJECT_VERSION}/yaml/provisioning'
 - installBundle:
   - 'mvn:org.jahia.modules/graphql-dxm-provider'
+  - 'mvn:org.jahia.test/graphql-test-module/0.0.1-SNAPSHOT'
   - 'mvn:org.jahia.modules/graphql-extension-example'
   autoStart: true
   uninstallPreviousVersion: true

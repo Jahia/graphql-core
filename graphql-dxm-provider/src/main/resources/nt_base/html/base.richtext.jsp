@@ -4,7 +4,6 @@
 <%@ taglib prefix="functions" uri="http://www.jahia.org/tags/functions" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="template" uri="http://www.jahia.org/tags/templateLib" %>
-<%--@elvariable id="currentNode" type="org.jahia.services.content.JCRNodeWrapper"--%>
-<%--@elvariable id="propertyName" type="java.lang.String"--%>
+<%--@elvariable id="value" type="java.lang.String"--%>
 
-${currentNode.properties[propertyName].string}
+${value}
