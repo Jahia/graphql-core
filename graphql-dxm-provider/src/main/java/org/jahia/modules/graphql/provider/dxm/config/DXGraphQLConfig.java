@@ -92,7 +92,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 }
             } else if (key.equals(CORS_ORIGINS)) {
                 corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split(value," ,"))));
-            } else if (key.equals(NODE_LIMIT)) {
+            } else if (key.equals(NODE_LIMIT) && properties.get("felix.fileinstall.filename") != null && properties.get("felix.fileinstall.filename").toString().endsWith("org.jahia.modules.graphql.provider-default.cfg")) {
                 try {
                     int newNodeLimit = Integer.parseInt(value);
                     if (newNodeLimit < 0) {
