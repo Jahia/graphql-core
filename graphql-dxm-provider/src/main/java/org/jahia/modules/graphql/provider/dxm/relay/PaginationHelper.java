@@ -20,16 +20,26 @@ import org.apache.commons.collections.iterators.IteratorChain;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.commons.lang.mutable.MutableObject;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.modules.graphql.provider.dxm.util.StreamUtils;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
+import org.slf4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static java.util.Base64.getEncoder;
 
 public class PaginationHelper {
+
+    private static Logger logger = org.slf4j.LoggerFactory.getLogger(PaginationHelper.class);
+    private static AtomicInteger nodeLimit = new AtomicInteger(5000);
 
     private PaginationHelper() {
     }
@@ -97,7 +107,6 @@ public class PaginationHelper {
             // Drop first elements until the offset is reached
             source = StreamUtils.dropUntil(source, t -> count.intValue() == arguments.offset, count).skip(1);
         }
-
         Iterator<T> it = source.iterator();
 
         // Execute, collect items until condition is met
@@ -130,6 +139,7 @@ public class PaginationHelper {
     }
 
     private static <T> List<T> collectItems(Iterator<T> it, Arguments arguments, CursorSupport<T> cursorSupport, MutableInt count, MutableObject last) {
+        int nodeLimit = getNodeLimit();
         // Elements collected in dedicated list, depending on last/before combination
         Collection<T> items;
         if (arguments.last == null) {
@@ -152,8 +162,25 @@ public class PaginationHelper {
             if (arguments.before != null && cursorSupport.getCursor(value).equals(arguments.before)) {
                 break;
             }
+
+            //Adding a limit of 1000 to avoid OOM
+            if(count.intValue() == 500) {
+                logger.warn("The current paginated query is returning more than 500 items. This may cause a memory leak.");
+            } else if(count.intValue() == nodeLimit && logger.isWarnEnabled()) {
+                logger.warn("The current paginated query is returning more than {} items. Stopping the query.", nodeLimit, new DataFetchingException("The current paginated query is returning more than " + nodeLimit + " items. Stopping the query here."));
+                break;
+            }
         }
         return new ArrayList<>(items);
+    }
+
+    public static void updateLimit(int limit) {
+        logger.info("Node limit has been updated to {}", limit);
+        nodeLimit.set(limit);
+    }
+
+    public static int getNodeLimit() {
+        return nodeLimit.get();
     }
 
     public static Arguments parseArguments(DataFetchingEnvironment environment) {

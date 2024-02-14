@@ -16,6 +16,7 @@
 package org.jahia.modules.graphql.provider.dxm.config;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.service.component.ComponentContext;
@@ -39,12 +40,15 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private final static String TYPE_PREFIX = "type.";
 
     private final static String CORS_ORIGINS = "http.cors.allow-origin";
+    private final static String NODE_LIMIT = "graphql.fields.node.limit";
 
     private Map<String, List<String>> keysByPid = new HashMap<>();
     private Map<String, String> permissions = new HashMap<>();
 
     private Set<String> corsOrigins = new HashSet<>();
     private Map<String, Set<String>> corsOriginByPid = new HashMap<>();
+
+    private int nodeLimit = 5000;
 
     private ComponentContext componentContext;
 
@@ -88,6 +92,20 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 }
             } else if (key.equals(CORS_ORIGINS)) {
                 corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split(value," ,"))));
+            } else if (key.equals(NODE_LIMIT) && properties.get("felix.fileinstall.filename") != null && properties.get("felix.fileinstall.filename").toString().endsWith("org.jahia.modules.graphql.provider-default.cfg")) {
+                try {
+                    int newNodeLimit = Integer.parseInt(value);
+                    if (newNodeLimit < 0) {
+                        throw new ConfigurationException(key, "Node limit must be a positive integer");
+                    }
+                    if (newNodeLimit != nodeLimit) {
+                        logger.info("Node limit has been updated to {} by pid {} (file/config) {}.cfg", newNodeLimit, pid, pid);
+                        nodeLimit = newNodeLimit;
+                        PaginationHelper.updateLimit(nodeLimit);
+                    }
+                } catch (NumberFormatException e) {
+                    throw new ConfigurationException(key, "Node limit must be a positive integer");
+                }
             } else {
                 // store other properties than permission configuration
                 keysForPid.add(key);
@@ -120,5 +138,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     public Set<String> getCorsOrigins() {
         return corsOrigins;
+    }
+
+    public int getNodeLimit() {
+        return nodeLimit;
     }
 }
