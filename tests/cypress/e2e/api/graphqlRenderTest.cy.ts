@@ -324,7 +324,6 @@ describe('Test graphql rendering', () => {
             expect(propertyRenderedValues.length).eq(2);
             expect(propertyRenderedValues[0]).not.contains('##creationdate##');
             expect(propertyRenderedValues[1]).not.contains('##authorname##');
-
         });
         deleteNode('/sites/' + sitename + '/home/news5');
     });
