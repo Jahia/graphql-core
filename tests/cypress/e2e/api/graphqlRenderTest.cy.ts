@@ -220,25 +220,50 @@ describe('Test graphql rendering', () => {
     it('Check if renderedValue and renderedValues vanityUrls are filtered correctly', () => {
         addNode({
             parentPathOrId: '/sites/' + sitename + '/home',
+            name: 'page1',
+            primaryNodeType: 'jnt:page',
+            properties: [
+                {name: 'jcr:title', value: 'page1'},
+                {name: 'j:templateName', value: 'simple'}
+            ]
+        });
+        addNode({
+            parentPathOrId: '/sites/' + sitename + '/home',
             name: 'news4',
             primaryNodeType: 'gqltest:news',
             properties: [
                 {name: 'title', language: 'en', value: 'My Test News Four'},
                 {name: 'description', values: [
-                        '<p>Richtext1</p>\\n\\n<p>Back to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/home.html\\">Home</a></p>\\n',
-                        '<p>Richtext2</p>\\n\\n<p>Go to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/other.html\\">Other</a></p>\\n'
+                        '<p>Richtext1</p>\\n\\n<p>Back to <a href=\'/cms/{mode}/{lang}/sites/' + sitename + '/home.html\'>Home</a></p>\\n',
+                        '<p>Richtext2</p>\\n\\n<p>Go to <a href=\'/cms/{mode}/{lang}/sites/' + sitename + '/home/page1.html\'>Other</a></p>\\n'
                     ]},
                 {name: 'author', value: 'Sheldon'},
                 {name: 'author_bio', language: 'en', value: 'Sheldon Lee Cooper, Ph.D., Sc.D., is a fictional character in the CBS television' +
                         ' series The Big Bang Theory and its spinoff series Young Sheldon, portrayed by actors Jim Parsons and Iain ' +
-                        'Armitage respectively (with Parsons as the latter series\' narrator).'}
+                        'Armitage respectively (with Parsons as the latter series\' narrator).' +
+                        '<p>Back to <a href=\'/cms/{mode}/{lang}/sites/' + sitename + '/home/page1.html\'>Home</a></p>'}
             ]
         });
         addVanityUrl(
-            '/sites/' + sitename + '/home.html',
+            '/sites/' + sitename + '/home/page1',
             'en',
-            '/welcome'
+            '/thepage'
         );
+        cy.apollo({
+            queryFile: 'jcr/propertyRenderedValue.graphql',
+            variables: {
+                path: '/sites/' + sitename + '/home/news4',
+                property: 'author_bio',
+                language: 'en'
+            }
+        }).should(result => {
+            const propertyValue = result?.data?.jcr?.nodeByPath?.property.value;
+            const propertyRenderedValue = result?.data?.jcr?.nodeByPath?.property.renderedValue;
+            expect(propertyValue).not.null;
+            expect(propertyValue).not.contains('/thepage');
+            expect(propertyRenderedValue).not.null;
+            expect(propertyRenderedValue).contains('/thepage');
+        });
         cy.apollo({
             queryFile: 'jcr/propertyRenderedValue.graphql',
             variables: {
@@ -251,15 +276,16 @@ describe('Test graphql rendering', () => {
             const propertyRenderedValues = result?.data?.jcr?.nodeByPath?.property.renderedValues;
             expect(propertyValues).not.null;
             expect(propertyValues.length).eq(2);
-            expect(propertyValues[0]).not.contains('/welcome');
+            expect(propertyValues[1]).not.contains('/thepage');
             expect(propertyRenderedValues).not.null;
             expect(propertyRenderedValues.length).eq(2);
-            expect(propertyRenderedValues[0]).contains('/welcome');
+            expect(propertyRenderedValues[1]).contains('/thepage');
         });
         removeVanityUrl(
-            '/sites/' + sitename + '/home.html',
-            '/welcome'
+            '/sites/' + sitename + '/home/page1',
+            '/thepage'
         );
+        deleteNode('/sites/' + sitename + '/home/page1');
         deleteNode('/sites/' + sitename + '/home/news4');
     });
 
