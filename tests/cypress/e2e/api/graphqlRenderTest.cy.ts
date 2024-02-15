@@ -1,4 +1,4 @@
-import {addNode, createSite, deleteNode, deleteSite} from '@jahia/cypress';
+import {addNode, addVanityUrl, createSite, deleteNode, deleteSite} from '@jahia/cypress';
 
 const sitename = 'graphql_test_render';
 describe('Test graphql rendering', () => {
@@ -58,9 +58,9 @@ describe('Test graphql rendering', () => {
             properties: [
                 {name: 'title', language: 'en', value: 'My Test News One'},
                 {name: 'description', values: [
-                        '<p>Richtext1</p>\\n\\n<p>Back to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/home.html\\">Home</a></p>\\n',
-                        '<p>Richtext2</p>\\n\\n<p>Go to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/other.html\\">Other</a></p>\\n'
-                    ]}
+                    '<p>Richtext1</p>\\n\\n<p>Back to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/home.html\\">Home</a></p>\\n',
+                    '<p>Richtext2</p>\\n\\n<p>Go to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/other.html\\">Other</a></p>\\n'
+                ]}
             ]
         });
         cy.apollo({
@@ -71,9 +71,9 @@ describe('Test graphql rendering', () => {
             }
         }).should(result => {
             const output = result?.data?.jcr?.nodeByPath?.renderedContent.output;
-            expect(output).not.contains("{lang}");
-            expect(output).not.contains("{workspace}");
-            expect(output).not.contains("{mode}");
+            expect(output).not.contains('{lang}');
+            expect(output).not.contains('{workspace}');
+            expect(output).not.contains('{mode}');
         });
         deleteNode('/sites/' + sitename + '/home/news1');
     });
@@ -86,15 +86,20 @@ describe('Test graphql rendering', () => {
             properties: [
                 {name: 'title', language: 'en', value: 'My Test News One'},
                 {name: 'description', values: [
-                        '<p>Richtext1</p>\\n\\n<p>Back to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/home.html\\">Home</a></p>\\n',
-                        '<p>Richtext2</p>\\n\\n<p>Go to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/other.html\\">Other</a></p>\\n'
-                        ]},
+                    '<p>Richtext1</p>\\n\\n<p>Back to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/home.html\\">Home</a></p>\\n',
+                    '<p>Richtext2</p>\\n\\n<p>Go to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/other.html\\">Other</a></p>\\n'
+                    ]},
                 {name: 'author', value: 'Sheldon'},
                 {name: 'author_bio', language: 'en', value: 'Sheldon Lee Cooper, Ph.D., Sc.D., is a fictional character in the CBS television' +
                         ' series The Big Bang Theory and its spinoff series Young Sheldon, portrayed by actors Jim Parsons and Iain ' +
-                        'Armitage respectively (with Parsons as the latter series\' narrator).'},
+                        'Armitage respectively (with Parsons as the latter series\' narrator).'}
             ]
         });
+        addVanityUrl(
+            '/cms/{mode}/{lang}/sites/' + sitename + '/home.html',
+            'en',
+            '/welcome'
+        );
         cy.apollo({
             queryFile: 'jcr/propertyRenderedValue.graphql',
             variables: {
@@ -167,19 +172,21 @@ describe('Test graphql rendering', () => {
             expect(propertyValue).null;
             expect(propertyValues).not.null;
             expect(propertyValues.length).eq(2);
-            expect(propertyValues[0]).contains("{lang}");
-            expect(propertyValues[0]).contains("{mode}");
-            expect(propertyValues[1]).contains("{lang}");
-            expect(propertyValues[1]).contains("{mode}");
+            expect(propertyValues[0]).contains('{lang}');
+            expect(propertyValues[0]).contains('{mode}');
+            expect(propertyValues[1]).contains('{lang}');
+            expect(propertyValues[1]).contains('{mode}');
+            expect(propertyValues[1]).not.contains('/welcome');
             expect(propertyRenderedValue).null;
             expect(propertyRenderedValues).not.null;
             expect(propertyRenderedValues.length).eq(2);
-            expect(propertyRenderedValues[0]).not.contains("{lang}");
-            expect(propertyRenderedValues[0]).not.contains("{workspace}");
-            expect(propertyRenderedValues[0]).not.contains("{mode}");
-            expect(propertyRenderedValues[1]).not.contains("{lang}");
-            expect(propertyRenderedValues[1]).not.contains("{workspace}");
-            expect(propertyRenderedValues[1]).not.contains("{mode}");
+            expect(propertyRenderedValues[0]).not.contains('{lang}');
+            expect(propertyRenderedValues[0]).not.contains('{workspace}');
+            expect(propertyRenderedValues[0]).not.contains('{mode}');
+            expect(propertyRenderedValues[1]).not.contains('{lang}');
+            expect(propertyRenderedValues[1]).not.contains('{workspace}');
+            expect(propertyRenderedValues[1]).not.contains('{mode}');
+            expect(propertyRenderedValues[1]).contains('/welcome');
         });
         deleteNode('/sites/' + sitename + '/home/news1');
     });
