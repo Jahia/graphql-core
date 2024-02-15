@@ -182,9 +182,9 @@ describe('Test graphql rendering', () => {
             properties: [
                 {name: 'title', language: 'en', value: 'My Test News Three'},
                 {name: 'description', values: [
-                        '<p>Richtext1</p>\\n\\n<p>Back to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/home.html\\">Home</a></p>\\n',
-                        '<p>Richtext2</p>\\n\\n<p>Go to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/other.html\\">Other</a></p>\\n'
-                    ]},
+                    '<p>Richtext1</p>\\n\\n<p>Back to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/home.html\\">Home</a></p>\\n',
+                    '<p>Richtext2</p>\\n\\n<p>Go to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/other.html\\">Other</a></p>\\n'
+                ]},
                 {name: 'author', value: 'Sheldon'},
                 {name: 'author_bio', language: 'en', value: 'Sheldon Lee Cooper, Ph.D., Sc.D., is a fictional character in the CBS television' +
                         ' series The Big Bang Theory and its spinoff series Young Sheldon, portrayed by actors Jim Parsons and Iain ' +
@@ -234,9 +234,9 @@ describe('Test graphql rendering', () => {
             properties: [
                 {name: 'title', language: 'en', value: 'My Test News Four'},
                 {name: 'description', values: [
-                        '<p>Richtext1</p>\\n\\n<p>Back to <a href=\'/cms/{mode}/{lang}/sites/' + sitename + '/home.html\'>Home</a></p>\\n',
-                        '<p>Richtext2</p>\\n\\n<p>Go to <a href=\'/cms/{mode}/{lang}/sites/' + sitename + '/home/page1.html\'>Other</a></p>\\n'
-                    ]},
+                    '<p>Richtext1</p>\\n\\n<p>Back to <a href=\'/cms/{mode}/{lang}/sites/' + sitename + '/home.html\'>Home</a></p>\\n',
+                    '<p>Richtext2</p>\\n\\n<p>Go to <a href=\'/cms/{mode}/{lang}/sites/' + sitename + '/home/page1.html\'>Other</a></p>\\n'
+                ]},
                 {name: 'author', value: 'Sheldon'},
                 {name: 'author_bio', language: 'en', value: 'Sheldon Lee Cooper, Ph.D., Sc.D., is a fictional character in the CBS television' +
                         ' series The Big Bang Theory and its spinoff series Young Sheldon, portrayed by actors Jim Parsons and Iain ' +
@@ -297,9 +297,9 @@ describe('Test graphql rendering', () => {
             properties: [
                 {name: 'title', language: 'en', value: 'My Test News Five'},
                 {name: 'description', values: [
-                        '<p>Richtext1</p>\\n\\n<p>Created on ##creationdate##\\n',
-                        '<p>Richtext2</p>\\n\\n<p>Authored by ##authorname##\\n'
-                    ]},
+                    '<p>Richtext1</p>\\n\\n<p>Created on ##creationdate##\\n',
+                    '<p>Richtext2</p>\\n\\n<p>Authored by ##authorname##\\n'
+                ]},
                 {name: 'author', value: 'Sheldon'},
                 {name: 'author_bio', language: 'en', value: 'Sheldon Lee Cooper, Ph.D., Sc.D., is a fictional character in the CBS television' +
                         ' series The Big Bang Theory and its spinoff series Young Sheldon, portrayed by actors Jim Parsons and Iain ' +
