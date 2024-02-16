@@ -26,13 +26,13 @@ import graphql.schema.idl.TypeDefinitionRegistry;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLExtensionsProvider;
-import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
-import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderMixinInterface;
 import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderAdapter;
+import org.jahia.modules.graphql.provider.dxm.sdl.extension.FinderMixinInterface;
 import org.jahia.modules.graphql.provider.dxm.sdl.extension.PropertyFetcherExtensionInterface;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.*;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.status.SDLDefinitionStatus;
@@ -75,6 +75,7 @@ public class SDLSchemaService {
     private Map<String, ConnectionHelper.ConnectionTypeInfo> connectionFieldNameToSDLType = new HashMap<>();
     private Map<String, GraphQLObjectType> edges = new HashMap<>();
     private Map<String, GraphQLObjectType> connections = new HashMap<>();
+    private GraphQLCodeRegistry codeRegistry;
 
     public enum SpecialInputTypes {
 
@@ -104,7 +105,7 @@ public class SDLSchemaService {
     }
 
     public void generateSchema() {
-        if (sdlRegistrationService != null && sdlRegistrationService.getSDLResources().size() > 0) {
+        if (sdlRegistrationService != null && !sdlRegistrationService.getSDLResources().isEmpty()) {
             graphQLSchema = null;
             bundlesSDLSchemaStatus.clear();
             sdlDefinitionStatusMap.clear();
@@ -141,7 +142,7 @@ public class SDLSchemaService {
             try {
                 tempSchema = schemaGenerator.makeExecutableSchema(
                         cleanedTypeRegistry,
-                        SDLRuntimeWiring.runtimeWiring()
+                        SDLRuntimeWiring.runtimeWiring(codeRegistry)
                 );
             } catch (Exception e) {
                 logger.warn("Invalid type definition(s) detected during schema generation {} ", e.getMessage());
@@ -367,11 +368,11 @@ public class SDLSchemaService {
                 .name(SDLConstants.MAPPING_DIRECTIVE)
                 .directiveLocations(Arrays.asList(
                         new DirectiveLocation("OBJECT"),
-                        new DirectiveLocation("FIELD_DEFINITION") ))
+                        new DirectiveLocation("FIELD_DEFINITION")))
                 .inputValueDefinitions(Arrays.asList(
                         new InputValueDefinition(MAPPING_DIRECTIVE_NODE, newType.apply(GraphQLString)),
                         new InputValueDefinition(MAPPING_DIRECTIVE_PROPERTY, newType.apply(GraphQLString)),
-                        new InputValueDefinition(MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES, newType.apply(GraphQLBoolean)) ))
+                        new InputValueDefinition(MAPPING_DIRECTIVE_IGNORE_DEFAULT_QUERIES, newType.apply(GraphQLBoolean))))
                 .build());
         typeDefinitionRegistry.add(DirectiveDefinition.newDirectiveDefinition()
                 .name(FETCHER_DIRECTIVE)
@@ -388,7 +389,7 @@ public class SDLSchemaService {
         if (extDefs != null) {
             List<ObjectTypeExtensionDefinition> queryToRemove = new LinkedList<>();
             List<ObjectTypeExtensionDefinition> queryToAdd = new LinkedList<>();
-            for (ObjectTypeExtensionDefinition query: extDefs) {
+            for (ObjectTypeExtensionDefinition query : extDefs) {
                 for (FieldDefinition field : query.getFieldDefinitions()) {
                     if (field.getName().endsWith(SDLConstants.CONNECTION_QUERY_SUFFIX) && field.getType() instanceof TypeName) {
                         String connectionName = ((TypeName) field.getType()).getName();
@@ -514,4 +515,9 @@ public class SDLSchemaService {
     private void clearPropertyFetcherExtensions() {
         this.propertyFetcherExtensions.clear();
     }
+
+    public void setCodeRegistry(GraphQLCodeRegistry codeRegistry) {
+        this.codeRegistry = codeRegistry;
+    }
+
 }

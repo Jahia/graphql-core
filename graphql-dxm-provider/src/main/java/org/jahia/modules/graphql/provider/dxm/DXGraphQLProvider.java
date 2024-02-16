@@ -24,12 +24,17 @@ import graphql.annotations.processor.retrievers.*;
 import graphql.annotations.processor.searchAlgorithms.SearchAlgorithm;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.kickstart.servlet.osgi.*;
+import graphql.language.StringValue;
 import graphql.schema.*;
 import org.jahia.bin.filters.jcr.JcrSessionFilter;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Field;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.ListDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.ObjectDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
 import org.jahia.modules.graphql.provider.dxm.security.JahiaGraphQLFieldRetriever;
 import org.jahia.services.content.JCRSessionFactory;
@@ -52,8 +57,7 @@ import java.util.stream.Collectors;
 @Component(service = GraphQLProvider.class, immediate = true)
 public class DXGraphQLProvider implements
         GraphQLTypesProvider, GraphQLQueryProvider, GraphQLMutationProvider, GraphQLDirectiveProvider,
-        GraphQLSubscriptionProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider
-{
+        GraphQLSubscriptionProvider, GraphQLCodeRegistryProvider, DXGraphQLExtensionsProvider {
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLProvider.class);
 
     private static DXGraphQLProvider instance;
@@ -274,7 +278,7 @@ public class DXGraphQLProvider implements
         queryType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Query.class, container);
         mutationType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Mutation.class, container);
         subscriptionType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Subscription.class, container);
-        codeRegistry = container.getCodeRegistryBuilder().build();
+        transformCodeRegistryWithSDLDefaultFetcherFactory();
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
                 if (aClass.isAnnotationPresent(GraphQLTypeExtension.class)) {
@@ -331,21 +335,6 @@ public class DXGraphQLProvider implements
 
     @Override
     public GraphQLCodeRegistry getCodeRegistry() {
-//        return codeRegistry.transform(builder -> builder.defaultDataFetcher(env -> {
-//            if (env.getFieldDefinition().getName().equals("nodes") || env.getFieldDefinition().getName().equals("edges")) {
-//                return PropertyDataFetcher.fetching(env.getFieldDefinition().getName());
-//            }
-//            if (env.getFieldDefinition().getType() instanceof ListType ||
-//                    env.getFieldDefinition().getType() instanceof GraphQLList) {
-//                //Handle case when mapping directive is absent i. e. field: [MyType]
-//                return new ListDataFetcher(null);
-//            }
-//            return DataFetchingEnvironment::getSource;
-//        }));
-
-//        GraphQLCodeRegistry sdlRegistry = CodeRegistryFetcher.fromSchema(sdlSchemaService.getGraphQLSchema());
-//        return codeRegistry.transform(builder -> builder.dataFetchers(sdlRegistry));
-
         return codeRegistry;
     }
 
@@ -389,5 +378,29 @@ public class DXGraphQLProvider implements
 
     public void unsetUnboxingTypeFunction(TypeFunction unboxingTypeFunction) {
         this.defaultTypeFunction = null;
+    }
+
+    private void transformCodeRegistryWithSDLDefaultFetcherFactory() {
+        codeRegistry = container.getCodeRegistryBuilder().defaultDataFetcher(environment -> {
+            GraphQLFieldDefinition fieldDefinition = environment.getFieldDefinition();
+            if (fieldDefinition.getName().equals("nodes") || fieldDefinition.getName().equals("edges")) {
+                return PropertyDataFetcher.fetching(environment.getFieldDefinition().getName());
+            }
+            logger.debug("No default data fetcher found for field {} of type {} in Code registry", fieldDefinition.getName(), fieldDefinition.getType());
+            GraphQLOutputType type = environment.getFieldDefinition().getType();
+            if (type instanceof GraphQLObjectType) {
+                GraphQLAppliedDirective mappingDirective = ((GraphQLObjectType) type).getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE);
+                if (mappingDirective != null && mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getArgumentValue().isSet()) {
+                    Field field = new Field(fieldDefinition.getName());
+                    StringValue value = (StringValue) mappingDirective.getArgument(SDLConstants.MAPPING_DIRECTIVE_NODE).getArgumentValue().getValue();
+                    field.setNodeType(value.getValue());
+                    return new ObjectDataFetcher(field);
+                }
+            } else if (type instanceof GraphQLList && ((GraphQLList) type).getOriginalWrappedType() instanceof GraphQLObjectType) {
+                return new ListDataFetcher();
+            }
+            return PropertyDataFetcher.fetching(environment.getFieldDefinition().getName());
+        }).build();
+        sdlSchemaService.setCodeRegistry(codeRegistry);
     }
 }

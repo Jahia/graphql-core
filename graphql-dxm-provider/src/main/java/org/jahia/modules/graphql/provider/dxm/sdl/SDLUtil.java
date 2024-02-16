@@ -89,7 +89,7 @@ public class SDLUtil {
             //In this case we are handling default arguments
             if (argObject instanceof GraphQLInputObjectType) {
                 GraphQLInputObjectField field = ((GraphQLInputObjectType) argObject).getField(argName);
-                return field != null ? field.getInputFieldDefaultValue() : null;
+                return field != null ? field.getInputFieldDefaultValue().getValue() : null;
             }
 
             return ((Map<String, Object>) args.get(name)).get(argName);
