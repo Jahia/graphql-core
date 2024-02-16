@@ -65,18 +65,10 @@ public class MappingDirectiveWiring implements SchemaDirectiveWiring {
                 List<GraphQLArgument> args = service.getRelay().getConnectionFieldArguments();
                 SDLPaginatedDataConnectionFetcher<GqlJcrNode> fetcher = new SDLPaginatedDataConnectionFetcher<>((FinderListDataFetcher) typeFetcher);
 
-                def.getDirectives().remove(0);
-
-                return GraphQLFieldDefinition.newFieldDefinition(def)
-                        .type(connectionType)
-                        .dataFetcher(fetcher)
-                        .argument(args)
-                        .build();
+                return def.transform(builder -> builder.type(connectionType).dataFetcher(fetcher).argument(args));
             }
         }
 
-        return GraphQLFieldDefinition.newFieldDefinition(def)
-                .dataFetcher(PropertiesDataFetcherFactory.getFetcher(def, field))
-                .build();
+        return def.transform(builder -> builder.dataFetcher(PropertiesDataFetcherFactory.getFetcher(def, field)));
     }
 }

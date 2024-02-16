@@ -20,6 +20,7 @@ public class Field {
     private String name;
     private String property;
     private String type;
+    private String nodeType;
 
     public Field(String name) {
         this.name = name;
@@ -45,4 +46,11 @@ public class Field {
         this.type = type;
     }
 
+    public void setNodeType(String nodeType) {
+        this.nodeType = nodeType;
+    }
+
+    public String getNodeType() {
+        return nodeType;
+    }
 }

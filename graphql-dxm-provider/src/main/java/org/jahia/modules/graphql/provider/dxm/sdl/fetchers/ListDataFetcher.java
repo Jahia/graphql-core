@@ -45,8 +45,12 @@ public class ListDataFetcher extends FinderListDataFetcher {
     private Field field;
 
     public ListDataFetcher(Field field) {
-        super("", null);
+        this();
         this.field = field;
+    }
+
+    public ListDataFetcher() {
+        super("", null);
     }
 
     @Override
@@ -59,7 +63,7 @@ public class ListDataFetcher extends FinderListDataFetcher {
         GqlJcrNode node = environment.getSource();
         JCRNodeWrapper jcrNode = node.getNode();
         if (environment.getFieldDefinition().getType() instanceof GraphQLObjectType) {
-            //In this case we are dealing with connection at field level of a type i. e. text : TextConnection etc.
+            //In this case we are dealing with connection at field level of a type i.e. text : TextConnection etc.
             GraphQLObjectType obj = (GraphQLObjectType) ((GraphQLList) ((GraphQLObjectType) environment.getFieldDefinition().getType()).getFieldDefinition("nodes").getType()).getWrappedType();
             GraphQLAppliedDirective mappingDirective = obj.getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE);
             if (mappingDirective != null) {
@@ -102,7 +106,7 @@ public class ListDataFetcher extends FinderListDataFetcher {
                     return null;
             }
         } catch (RepositoryException ex) {
-            logger.error("Failed to retrieve node property {}", ex);
+            logger.error("Failed to retrieve value of property", ex);
             return null;
         }
     }

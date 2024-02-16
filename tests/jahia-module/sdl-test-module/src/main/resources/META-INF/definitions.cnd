@@ -1,0 +1,9 @@
+<jmix = 'http://www.jahia.org/jahia/mix/1.0'>
+<jnt = 'http://www.jahia.org/jahia/nt/1.0'>
+<mix = 'http://www.jcp.org/jcr/mix/1.0'>
+
+[jnt:offer] > jnt:content, jmix:editorialContent, jmix:basicContent, mix:title
+ - subTitle (string)
+ + * (jnt:coverageOffer)
+
+[jnt:coverageOffer] > jnt:content, jmix:editorialContent, jmix:basicContent, mix:title

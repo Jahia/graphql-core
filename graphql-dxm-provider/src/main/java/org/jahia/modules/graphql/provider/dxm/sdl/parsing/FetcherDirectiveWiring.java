@@ -77,8 +77,6 @@ public class FetcherDirectiveWiring implements SchemaDirectiveWiring {
                 List<GraphQLArgument> args = service.getRelay().getConnectionFieldArguments();
                 SDLPaginatedDataConnectionFetcher<GqlJcrNode> fetcher = new SDLPaginatedDataConnectionFetcher<>((FinderListDataFetcher) typeFetcher);
 
-                def.getDirectives().remove(0);
-
                 return GraphQLFieldDefinition.newFieldDefinition(def)
                         .type(connectionType)
                         .dataFetcher(fetcher)

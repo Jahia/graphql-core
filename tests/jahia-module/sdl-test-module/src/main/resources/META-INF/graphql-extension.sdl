@@ -1,0 +1,35 @@
+"""
+Coverage associated with an offer
+"""
+type CoverageOffer @mapping(node: "jnt:coverageOffer", ignoreDefaultQueries: true) {
+    "Metadata is a special type that is used to map the metadata of a node"
+	metadata: Metadata
+	"Title of the coverage"
+	coverageTitle: String @mapping(property: "jcr:title")
+}
+
+"""
+Offer type
+"""
+type Offer @mapping(node: "jnt:offer") {
+    "Metadata is a special type that is used to map the metadata of a node"
+	metadata: Metadata
+	"List of coverages associated with this offer"
+	coverages: [CoverageOffer]
+	"Title of the offer"
+	title: String @mapping(property: "jcr:title")
+	"Sub title of the offer"
+	subTitle: String @mapping(property: "subTitle")
+}
+
+extend type Query {
+    """
+    Get all offers
+    """
+	allOffers: [Offer]
+
+	"""
+	Get all offers with pagination
+	"""
+	allOffersConnection: OfferConnection
+}

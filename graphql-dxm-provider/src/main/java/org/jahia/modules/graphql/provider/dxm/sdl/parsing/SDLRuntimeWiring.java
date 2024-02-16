@@ -15,13 +15,9 @@
  */
 package org.jahia.modules.graphql.provider.dxm.sdl.parsing;
 
-import graphql.Scalars;
-import graphql.language.ListType;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.idl.*;
+import graphql.schema.GraphQLCodeRegistry;
+import graphql.schema.idl.RuntimeWiring;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
-import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.ListDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.types.CustomScalars;
 
 import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
@@ -31,22 +27,13 @@ public class SDLRuntimeWiring {
     private SDLRuntimeWiring() {
     }
 
-    public static RuntimeWiring runtimeWiring() {
+    public static RuntimeWiring runtimeWiring(GraphQLCodeRegistry codeRegistry) {
         return RuntimeWiring.newRuntimeWiring()
                 .type(newTypeWiring("Query").build())
                 .directive(SDLConstants.MAPPING_DIRECTIVE, new MappingDirectiveWiring())
                 .directive(SDLConstants.FETCHER_DIRECTIVE, new FetcherDirectiveWiring())
-                .wiringFactory(new NoopWiringFactory() {
-                    @Override
-                    public DataFetcher getDefaultDataFetcher(FieldWiringEnvironment environment) {
-                        if (environment.getFieldDefinition().getType() instanceof ListType) {
-                            //Handle case when mapping directive is absent i. e. field: [MyType]
-                            return new ListDataFetcher(null);
-                        }
-                        return DataFetchingEnvironment::getSource;
-                    }
-                })
-                .scalar(CustomScalars.DATE)
+                .codeRegistry(codeRegistry).scalar(CustomScalars.DATE)
                 .build();
     }
+
 }

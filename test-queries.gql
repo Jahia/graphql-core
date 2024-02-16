@@ -1,0 +1,51 @@
+
+query test {
+    admin {
+        jahia {
+            version {
+                release
+            }
+        }
+    }
+}
+
+query coreSdlExtensions {
+    category: __type(name: "Category") {
+        fields {name}
+    },
+    imageAsset: __type(name: "ImageAsset") {
+        fields {name}
+    }
+}
+
+query jcontent {
+  allOffreCollectif(preview: true) {
+    titre
+    subTitre
+    metadata {
+      created
+      createdBy
+      lastModified
+      lastModifiedBy
+      lastPublished
+      lastPublishedBy
+    }
+    couvertures {
+      edges {
+        node {
+          couvertureTitre
+        }
+      }
+      nodes {
+        couvertureTitre
+      }
+    }
+    testCouvertures {
+      couvertureTitre
+    }
+  }
+  
+  allCouvertureCollectif(preview: true) {
+    couvertureTitre
+  }
+}
