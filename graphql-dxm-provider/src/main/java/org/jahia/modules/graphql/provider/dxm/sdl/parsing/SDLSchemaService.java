@@ -232,17 +232,16 @@ public class SDLSchemaService {
                     List<GraphQLArgument> args = relay.getConnectionFieldArguments();
                     args.add(SDLUtil.wrapArgumentsInType(String.format("%s%s", queryFieldName, SDLConstants.CONNECTION_ARGUMENTS_SUFFIX), typeFetcher.getArguments()));
                     SDLPaginatedDataConnectionFetcher<GqlJcrNode> fetcher = new SDLPaginatedDataConnectionFetcher<>((FinderListDataFetcher) typeFetcher);
-                    GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
+                    GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition).description("Connection query for " + typeName)
                             .dataFetcher(fetcher)
-                            .type(connectionType)
-                            .argument(args)
+                            .type(connectionType).arguments(args)
                             .build();
                     defs.add(sdlDef);
                 } else {
                     FinderBaseDataFetcher fetcher = FinderFetchersFactory.getFetcher(fieldDefinition, nodeType);
                     GraphQLFieldDefinition sdlDef = GraphQLFieldDefinition.newFieldDefinition(fieldDefinition)
                             .dataFetcher(fetcher)
-                            .argument(fetcher.getArguments())
+                            .arguments(fetcher.getArguments())
                             .build();
                     defs.add(sdlDef);
                 }

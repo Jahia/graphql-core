@@ -41,6 +41,7 @@ public class SDLUtil {
         args.forEach(arg -> {
             newObject
                     .name(String.format("%s%s", typeName, SDLConstants.CONNECTION_ARGUMENTS_INPUT_SUFFIX))
+                    .description("Available arguments")
                     .field(GraphQLInputObjectField.newInputObjectField()
                             .name(arg.getName())
                             .description(arg.getDescription())
@@ -52,6 +53,7 @@ public class SDLUtil {
             if (arg.getArgumentDefaultValue().getValue() != null) {
                 defaultObject
                         .name(String.format("%s%s", typeName, SDLConstants.CONNECTION_ARGUMENTS_INPUT_SUFFIX))
+                        .description("Available arguments")
                         .field(GraphQLInputObjectField.newInputObjectField()
                                 .name(arg.getName())
                                 .description(arg.getDescription())
