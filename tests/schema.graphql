@@ -1,10 +1,17 @@
-# This file was generated based on ".graphqlconfig". Do not edit manually.
+# This file was generated. Do not edit manually.
 
 schema {
     query: Query
     mutation: Mutation
     subscription: Subscription
 }
+
+directive @fetcher(name: String) on FIELD_DEFINITION
+
+directive @mapping(ignoreDefaultQueries: Boolean, node: String, property: String) on OBJECT | FIELD_DEFINITION
+
+"Indicates an Input Object is a OneOf Input Object."
+directive @oneOf on INPUT_OBJECT
 
 "GraphQL representation of a JCR item definition"
 interface JCRItemDefinition {
@@ -24,6 +31,8 @@ interface JCRItemDefinition {
 
 "GraphQL representation of a JCR node"
 interface JCRNode {
+    "Get ACL info for this node"
+    acl: GqlAcl
     "Get the last modified date of this node and its descendants. The recursion in descendants can be controlled by recursionTypesFilter. If no filter is passed, recursion will stop by default on sub pages."
     aggregatedLastModifiedDate(
         "The language to use to get the last modified date, if not specified, returns last modification date in any language"
@@ -143,6 +152,8 @@ interface JCRNode {
     ): Boolean
     "Check if the node as a renderable template associated with it (not a view a template)."
     isDisplayableNode: Boolean
+    "true if node is under a mounted node"
+    isExternal: Boolean!
     "Reports if the current node matches the nodetype(s) passed in parameter"
     isNodeType(
         "Node type name"
@@ -187,7 +198,7 @@ interface JCRNode {
         language: String,
         "The names of the JCR properties; null to obtain all properties"
         names: [String],
-        "Consider the default locale of the site of the node"
+        "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): [JCRProperty]!
     "The GraphQL representation of the property in the requested language; null if the property does not exist"
@@ -196,7 +207,7 @@ interface JCRNode {
         language: String,
         "The name of the JCR property"
         name: String!,
-        "Consider the default locale of the site of the node"
+        "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): JCRProperty
     "GraphQL representations of the reference properties that target the current JCR Node"
@@ -207,6 +218,8 @@ interface JCRNode {
         before: String,
         "Filter by graphQL fields values"
         fieldFilter: InputFieldFiltersInput,
+        "Sort by graphQL fields values"
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
         first: Int,
         "fetching only the last certain number of nodes"
@@ -235,6 +248,37 @@ interface JCRNode {
     ): RenderedNode
     "GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site"
     site: JCRSite
+    "Get node thumbnail URL"
+    thumbnailUrl(
+        "Thumbnail name"
+        name: String
+    ): String
+    "Returns languages of available translations for this node"
+    translationLanguages(
+        "Optional: Return languages only if it is active for the site"
+        isActiveOnly: Boolean
+    ): [String]
+    "Get node URL"
+    url: String
+    "GraphQL representations of the reference properties that target the current JCR Node"
+    usages(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "Filter by graphQL fields values"
+        fieldFilter: InputFieldFiltersInput,
+        "Sort by graphQL fields values"
+        fieldSorter: InputFieldSorterInput,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int
+    ): UsageConnection!
     "The UUID of the JCR node this object represents"
     uuid: String!
     "Get vanity URLs from the current node filtered by the parameters"
@@ -288,26 +332,161 @@ interface Principal {
     name: String!
     "Get the corresponding JCR node"
     node: JCRNode
+    "Get principal type for this principal"
+    principalType: PrincipalType
     "Site where the principal is defined"
     site: JCRSite
+}
+
+"Function score mutations"
+type ASAdminFunctionScoreMutations {
+    "Remove function score specification"
+    removeFunction(
+        "Function score id to be removed"
+        id: String!
+    ): Boolean
+    "Upload function score specification"
+    uploadFunction(
+        "Describes what this function score does."
+        description: String,
+        "Function score file"
+        file: String!,
+        "Function score id, will be used as reference at query time."
+        id: String!
+    ): Boolean
+}
+
+"Function score admin entry point"
+type ASAdminFunctionScoreQueries {
+    "List available function score functions"
+    functions(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int
+    ): FunctionScoreConnection
+}
+
+"Generic object with admin mutation results"
+type ASAdminMutations {
+    "Add site to the list of indexed sites"
+    addSite(
+        "Site key"
+        siteKey: String!
+    ): String
+    "Clear the database connection to use with Augmented Search (indexation and querying)"
+    clearDbConnection: String
+    "Function score mutations"
+    functionScore: ASAdminFunctionScoreMutations
+    "Remove site from the list of indexed sites"
+    removeSite(
+        "Site key"
+        siteKey: String!
+    ): String
+    "Set the database connection to use with Augmented Search (indexation and querying)"
+    setDbConnection(
+        "DB connection id"
+        connectionId: String!
+    ): String
+    "Given a list of sites, trigger bulk indexing. If no sites are provided, triggers a full reindex."
+    startIndex(
+        "Force start indexation for when job has already been started"
+        force: Boolean = false,
+        "List of siteKeys to index"
+        siteKeys: [String],
+        "Can be LIVE or EDIT or null for both"
+        workspace: Workspace
+    ): indexMutationResult
+    "Given a list of nodes, trigger bulk indexing of those nodes and its descendants."
+    startNodeIndex(
+        "Re-index descendants (Optional; default=false)"
+        inclDescendants: Boolean,
+        "List of node paths to index"
+        nodePaths: [String],
+        "Can be LIVE or EDIT, or both if not specified"
+        workspace: Workspace
+    ): indexMutationResult
+}
+
+"List of indexed sites entry point"
+type ASAdminQueries {
+    "Current database connection ID used by Augmented Search"
+    currentConnection: String
+    "Get current shard configuration"
+    currentShardConfiguration: GqlShardConfiguration
+    "List of available database connections"
+    dbConnections: [GqlAvailableConnection]
+    "Function score queries"
+    functionScore: ASAdminFunctionScoreQueries
+    "Get index sizes"
+    indexSizes: [GqlIndexSize]
+    "List sites configured for Augmented Search"
+    listSites: siteList
+    "Get optimal shard configurations"
+    optimalShardConfigurations(
+        "Maximum average shard size allowed, in Gb"
+        maxShardSizeInGb: Float,
+        "Minimum amount of heap memory for each shard, in Mb"
+        minHeapPerShardInMb: Float
+    ): [GqlShardConfiguration]
+}
+
+"GraphQL representation of a Jahia ACL role"
+type AclRole {
+    "List of dependencies for a given role"
+    dependencies: [AclRole]
+    "Role description for a given locale"
+    description(
+        "locale"
+        locale: String
+    ): String
+    "Role label for a given locale"
+    label(
+        "locale"
+        locale: String
+    ): String
+    "Role name"
+    name: String
+    "Role group"
+    roleGroup: String
 }
 
 "Admin mutations"
 type AdminMutation {
     "Get Jahia admin mutation"
     jahia: JahiaAdminMutation!
+    "Mount point mutation extension API"
+    mountPoint: GqlMountPointMutation
     "Personal API tokens mutations"
     personalApiTokens: PersonalApiTokensMutation
+    "Augmented Search administrative mutations"
+    search: ASAdminMutations
 }
 
 "Admin queries root"
 type AdminQuery {
+    "Details about the Jahia cluster"
+    cluster: Cluster
     "Current datetime"
     datetime: String
     "Get Jahia admin query"
     jahia: JahiaAdminQuery!
+    "Mount point mutation extension API"
+    mountPoint: GqlMountPointQuery
     "Personal API tokens queries"
     personalApiTokens: PersonalApiTokensQuery
+    "Get available ACL roles; does not include any hidden or privileged roles"
+    roles: [AclRole]
+    "Augmented Search administrative queries"
+    search: ASAdminQueries
     "Get user administration endpoint"
     userAdmin: UserAdminQuery
     "Get user group endpoint"
@@ -321,7 +500,7 @@ type Asset {
     "Asset metadata"
     metadata: Metadata
     "Asset size"
-    size: Long
+    size: Float
     "Mime type of the asset"
     type: String
 }
@@ -334,6 +513,14 @@ type Category {
     metadata: Metadata
     "Title"
     title: String
+}
+
+"Details about the Jahia Cluster"
+type Cluster {
+    "Is the cluster mode activated on this Jahia instance"
+    isActivated: Boolean
+    "Query operation on Jahia's journal across all nodes of a cluster"
+    journal: Journal
 }
 
 "Mutation for configuration value object"
@@ -417,6 +604,11 @@ type CountAggregation {
     ): Int
 }
 
+type CoverageOffer {
+    coverageTitle: String
+    metadata: Metadata
+}
+
 "GraphQL representation of a Jahia current user"
 type Current_32_user {
     "Full display name"
@@ -455,113 +647,40 @@ type Current_32_user {
     username: String!
 }
 
-type EditorForm {
-    "Retrieve a description text for the form, might contain explanations on how to use the form"
+"Functions score representation"
+type FunctionScore {
+    "Function score description"
     description: String
-    "Retrieve the displayable name of the form (in a specific language)"
-    displayName: String
-    "Returns the preview status of the form. If true, the form can display a preview."
-    hasPreview: Boolean
-    "Retrieve the name (aka identifier) of the form"
-    name: String
-    "Retrieve the sections that make up the form"
-    sections: [EditorFormSection]
+    "Function score id"
+    id: String
+    "JSON string "
+    json: String
 }
 
-type EditorFormField {
-    "This value contains the current existing values for the field."
-    currentValues: [EditorFormFieldValue]
-    "The declaring node type for the field"
-    declaringNodeType: String
-    "This value contains the default values for the field."
-    defaultValues: [EditorFormFieldValue]
-    "The description of the field"
-    description: String
-    "The displayable name of the field"
-    displayName: String
-    "The error message of the field"
-    errorMessage: String
-    "This value is true if the field allows for internationalized values"
-    i18n: Boolean
-    "This value is true if the field is mandatory"
-    mandatory: Boolean
-    "This value is true if the field value is multi-valued."
-    multiple: Boolean
-    "The name of the field"
-    name: String
-    "This value is true if the field is readonly. This could be due to locks or permissions"
-    readOnly: Boolean
-    "The required type for the field"
-    requiredType: JCRPropertyType
-    "Options for the selector type. For JCR definitions, this will usually include choicelist initializer name and properties."
-    selectorOptions: [EditorFormProperty]
-    "The selector type for the field. In the case of fields generated from node types, this is actually the SelectorType."
-    selectorType: String
-    "This array contains the list of possible values to choose from"
-    valueConstraints: [EditorFormFieldValueConstraint]
+"A connection to a list of items."
+type FunctionScoreConnection {
+    "a list of edges"
+    edges: [FunctionScoreEdge]
+    "a list of nodes"
+    nodes: [FunctionScore]
+    "details about this specific page"
+    pageInfo: PageInfo!
 }
 
-type EditorFormFieldSet {
-    "Only used in the case of a dynamic field set. Set to true if it is activated"
-    activated: Boolean
-    "Get the internationalized description of the field set"
-    description: String
-    "Get the internationalized displayable name of the field set"
-    displayName: String
-    "Defines if the field has to be displayed or not"
-    displayed: Boolean
-    "True if this is dynamic field set (meaningin it can be activated or not)"
-    dynamic: Boolean
-    "Get the fields contained in the target"
-    fields: [EditorFormField]
-    "Get the name of the field set"
-    name: String
-    "This value is true if the fieldset is readonly. This could be due to locks or permissions"
-    readOnly: Boolean
-}
-
-type EditorFormFieldValue {
-    "This value's string representation"
-    string: String
-    "The type of this value"
-    type: String
-}
-
-type EditorFormFieldValueConstraint {
-    "The value as it is intended to be displayed in UIs"
-    displayValue: String
-    "The properties for the value"
-    properties: [EditorFormProperty]
-    "The actual value to be used in storage"
-    value: EditorFormFieldValue
-}
-
-type EditorFormProperty {
-    "Property name"
-    name: String
-    "Property value"
-    value: String
-    "Property values"
-    values: [String]
-}
-
-type EditorFormSection {
-    "Returns the description of the section"
-    description: String
-    "Retrieve the displayable name of the section"
-    displayName: String
-    "Is the section expanded"
-    expanded: Boolean
-    "Returns the field sets contained in this section"
-    fieldSets: [EditorFormFieldSet]
-    "Check if this section should be hide"
-    hide: Boolean
-    "Retrieve the name (aka identifier) of the section"
-    name: String
+"An edge in a connection"
+type FunctionScoreEdge {
+    "cursor marks a unique position or index into the connection"
+    cursor: String!
+    "index in the connection"
+    index: Int
+    "The item at the end of the edge"
+    node: FunctionScore
 }
 
 "GraphQL representation of a generic JCR node"
 type GenericJCRNode implements JCRNode {
+    "Get ACL info for this node"
+    acl: GqlAcl
     "Get the last modified date of this node and its descendants. The recursion in descendants can be controlled by recursionTypesFilter. If no filter is passed, recursion will stop by default on sub pages."
     aggregatedLastModifiedDate(
         "The language"
@@ -681,6 +800,8 @@ type GenericJCRNode implements JCRNode {
     ): Boolean
     "Check if the node as a renderable template associated with it (not a view a template)."
     isDisplayableNode: Boolean
+    "true if node is under a mounted node"
+    isExternal: Boolean!
     "Reports if the current node matches the nodetype(s) passed in parameter"
     isNodeType(
         "Node type name"
@@ -725,7 +846,7 @@ type GenericJCRNode implements JCRNode {
         language: String,
         "The names of the JCR properties; null to obtain all properties"
         names: [String],
-        "Consider the default locale of the site of the node"
+        "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): [JCRProperty]!
     "The GraphQL representation of the property in the requested language; null if the property does not exist"
@@ -734,7 +855,7 @@ type GenericJCRNode implements JCRNode {
         language: String,
         "The name of the JCR property"
         name: String!,
-        "Consider the default locale of the site of the node"
+        "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): JCRProperty
     "GraphQL representations of the reference properties that target the current JCR Node"
@@ -745,6 +866,8 @@ type GenericJCRNode implements JCRNode {
         before: String,
         "Filter by graphQL fields values"
         fieldFilter: InputFieldFiltersInput,
+        "Sort by graphQL fields values"
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
         first: Int,
         "fetching only the last certain number of nodes"
@@ -773,6 +896,37 @@ type GenericJCRNode implements JCRNode {
     ): RenderedNode
     "GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site"
     site: JCRSite
+    "Get node thumbnail URL"
+    thumbnailUrl(
+        "Thumbnail name"
+        name: String
+    ): String
+    "Returns languages of available translations for this node"
+    translationLanguages(
+        "Optional: Return languages only if it is active for the site"
+        isActiveOnly: Boolean
+    ): [String]
+    "Get node URL"
+    url: String
+    "GraphQL representations of the reference properties that target the current JCR Node"
+    usages(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "Filter by graphQL fields values"
+        fieldFilter: InputFieldFiltersInput,
+        "Sort by graphQL fields values"
+        fieldSorter: InputFieldSorterInput,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int
+    ): UsageConnection!
     "The UUID of the JCR node this object represents"
     uuid: String!
     "Get vanity URLs from the current node filtered by the parameters"
@@ -788,29 +942,95 @@ type GenericJCRNode implements JCRNode {
     workspace: Workspace!
 }
 
+"ACL properties and list of access control entry"
+type GqlAcl {
+    "Get list of access control entries for this ACL"
+    aclEntries(
+        "The languages to check"
+        inclInherited: Boolean,
+        "Fetch ACL entry only for this principal"
+        principalFilter: InputPrincipalInput
+    ): [GqlAclEntry]
+    "Get inheritance break attribute for this node"
+    inheritanceBreak: Boolean
+    "Get parent node for this ACL"
+    parentNode: JCRNode
+}
+
+"ACL entry"
+type GqlAclEntry {
+    "Type of access for this ACL entry - one of GRANT, DENY or EXTERNAL"
+    aclEntryType: String
+    "External permissions name "
+    externalPermissionsName: String
+    "Return true if this ACL entry did not originate from this ACL's parent node"
+    inherited: Boolean
+    "Get node where this ACL entry originated from"
+    inheritedFrom: JCRNode
+    "Get principal for this entry"
+    principal: Principal
+    "Get role for this entry"
+    role: AclRole
+}
+
+"Elasticsearch connection model"
+type GqlAvailableConnection {
+    "Id of the connection"
+    connectionId: String
+    "List of plugins if any"
+    plugins: [GqlPlugin]
+}
+
+"Background job"
 type GqlBackgroundJob {
     "The amount of time the job ran for (in milliseconds). The returned value will be -1 until the job has actually completed"
     duration: Long
     "The job group name"
     group: String
     "The job (Boolean) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
-    jobBooleanProperty(name: String): Boolean
+    jobBooleanProperty(
+        "The job name"
+        name: String
+    ): Boolean
     "The job (Int) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
-    jobIntegerProperty(name: String): Int
+    jobIntegerProperty(
+        "The job name"
+        name: String
+    ): Int
     "The job (Long) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
-    jobLongProperty(name: String): Long
+    jobLongProperty(
+        "The job name"
+        name: String
+    ): Long
     "The job state is different from the status, it reflect the last action done on the job instance (Started, Vetoed, Finished)"
     jobState: GqlBackgroundJobState
     "The job status"
     jobStatus: GqlBackgroundJobStatus
     "The job (String) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
-    jobStringProperty(name: String): String
+    jobStringProperty(
+        "The job name"
+        name: String
+    ): String
     "The job name"
     name: String
+    "GraphQL representation of publication job"
+    publicationJob: GqlPublicationBackgroundJob
     "The site key. The returned value will be null in case the job doesn't have associated site key"
     siteKey: String
     "The user key. The returned value will be null in case the job doesn't have associated user key"
     userKey: String
+}
+
+"Condition for override item"
+type GqlCondition {
+    "Item will apply only on this nodetype"
+    nodeType: String
+    "Item will apply only if node has orderable children"
+    orderable: Boolean
+    "Item will apply only if user has permissions"
+    withPermission: String
+    "Item will apply only if user has not permissions"
+    withoutPermission: String
 }
 
 "Mutation for OSGi configuration"
@@ -880,6 +1100,79 @@ type GqlDashboard {
     toolsAccess: Boolean
 }
 
+type GqlEditorForm {
+    "Retrieve a description text for the form, might contain explanations on how to use the form"
+    description: String
+    "Retrieve the displayable name of the form (in a specific language)"
+    displayName: String
+    "Returns the preview status of the form. If true, the form can display a preview."
+    hasPreview: Boolean
+    "Get list of merged forms."
+    mergedItems(
+        "Filter on field values"
+        filter: InputFieldFiltersInput
+    ): [GqlMergedItem]
+    "Retrieve the name (aka identifier) of the form"
+    name: String
+    "Retrieve the sections that make up the form"
+    sections: [GqlEditorFormSection]
+    "Returns the advanced mode status of the form. If true advanced mode is available."
+    showAdvancedMode: Boolean
+}
+
+type GqlEditorFormField {
+    "The declaring node type for the field"
+    declaringNodeType: String
+    "This value contains the default values for the field."
+    defaultValues: [GqlEditorFormValue]
+    "The description of the field"
+    description: String
+    "The displayable name of the field"
+    displayName: String
+    "The error message of the field"
+    errorMessage: String
+    "This value is true if the field allows for internationalized values"
+    i18n: Boolean
+    "This value is true if the field is mandatory"
+    mandatory: Boolean
+    "This value is true if the field value is multi-valued."
+    multiple: Boolean
+    "The name of the field"
+    name: String
+    "This value is true if the field is readonly. This could be due to locks or permissions"
+    readOnly: Boolean
+    "The required type for the field"
+    requiredType: JCRPropertyType
+    "Options for the selector type. For JCR definitions, this will usually include choicelist initializer name and properties."
+    selectorOptions: [GqlEditorFormProperty]
+    "The selector type for the field. In the case of fields generated from node types, this is actually the SelectorType."
+    selectorType: String
+    "This array contains the list of possible values to choose from"
+    valueConstraints: [GqlEditorFormValueConstraint]
+    "This fields set is visible"
+    visible: Boolean
+}
+
+type GqlEditorFormFieldSet {
+    "Only used in the case of a dynamic field set. Set to true if it is activated"
+    activated: Boolean
+    "Get the internationalized description of the field set"
+    description: String
+    "Get the internationalized displayable name of the field set"
+    displayName: String
+    "True if this is dynamic field set (meaning it can be activated or not)"
+    dynamic: Boolean
+    "Get the fields contained in the target"
+    fields: [GqlEditorFormField]
+    "Only used in the case of a dynamic field set. Set to true if it is activated"
+    hasEnableSwitch: Boolean
+    "Get the name of the field set"
+    name: String
+    "This value is true if the fieldset is readonly. This could be due to locks or permissions"
+    readOnly: Boolean
+    visible: Boolean
+}
+
 type GqlEditorFormMutations {
     "Publish the edited node with the associated technical sub nodes (visibility conditions, vanity urls, ACLs)"
     publishForm(
@@ -893,6 +1186,48 @@ type GqlEditorFormMutations {
         "An ID generated client side used to identify the lock"
         editorID: String!
     ): Boolean
+}
+
+type GqlEditorFormProperty {
+    "Property name"
+    name: String
+    "Property value"
+    value: String
+    "Property values"
+    values: [String]
+}
+
+type GqlEditorFormSection {
+    "Returns the description of the section"
+    description: String
+    "Retrieve the displayable name of the section"
+    displayName: String
+    "Is the section expanded"
+    expanded: Boolean
+    "Returns the field sets contained in this section"
+    fieldSets: [GqlEditorFormFieldSet]
+    "Retrieve the name (aka identifier) of the section"
+    name: String
+    "This section is visible"
+    visible: Boolean
+}
+
+type GqlEditorFormValue {
+    "This value's string representation"
+    string: String
+    "The type of this value"
+    type: String
+}
+
+type GqlEditorFormValueConstraint {
+    "The value as it is intended to be displayed in UIs"
+    displayValue: String
+    "The key of the value to get the translated value from the client side"
+    displayValueKey: String
+    "The properties for the value"
+    properties: [GqlEditorFormProperty]
+    "The actual value to be used in storage"
+    value: GqlEditorFormValue
 }
 
 type GqlEditorForms {
@@ -914,14 +1249,14 @@ type GqlEditorForms {
         excludedNodeTypes: [String],
         "if true, retrieves all the sub types of the given node types, if false, returns the type only. Default value is true"
         includeSubTypes: Boolean = true,
-        "thPath of an existing node under with the new content will be created."
-        nodePath: String!,
         "List of types we want to retrieve, null for all"
         nodeTypes: [String],
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
         uiLocale: String!,
         "if true, check the contribute property of the node. Default value is true"
-        useContribute: Boolean = true
+        useContribute: Boolean = true,
+        "Path or id of an existing node under with the new content will be created."
+        uuidOrPath: String!
     ): [NodeTypeTreeEntry]
     "Get a editor form to create a new content from its nodetype and parent"
     createForm(
@@ -933,7 +1268,7 @@ type GqlEditorForms {
         uiLocale: String!,
         "uuid or path of an existing node under with the new content will be created."
         uuidOrPath: String!
-    ): EditorForm
+    ): GqlEditorForm
     "Get a editor form from a locale and an existing node"
     editForm(
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
@@ -942,7 +1277,7 @@ type GqlEditorForms {
         uiLocale: String!,
         "UUID or path of an existing node under with the new content will be created."
         uuidOrPath: String!
-    ): EditorForm
+    ): GqlEditorForm
     "Get field constraints"
     fieldConstraints(
         "Object contains additional information of the node"
@@ -961,7 +1296,7 @@ type GqlEditorForms {
         primaryNodeType: String!,
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
         uiLocale: String!
-    ): [EditorFormFieldValueConstraint]
+    ): [GqlEditorFormValueConstraint]
     "Retrieve the number of sub contents under the node for given types"
     subContentsCount(
         "List of node types to check for"
@@ -971,6 +1306,22 @@ type GqlEditorForms {
         "node path"
         nodePath: String
     ): Int
+}
+
+"Server healthCheck"
+type GqlHealthCheck {
+    "Probes registered in SAM for the requested severity"
+    probes: [GqlProbe]
+    "Highest reported status across all probes"
+    status: GqlProbeStatus
+}
+
+"Index size"
+type GqlIndexSize {
+    "Index name"
+    name: String
+    "Index size in bytes"
+    size: Long
 }
 
 type GqlJcrImageTransformMutation {
@@ -1011,6 +1362,31 @@ type GqlLockDetail {
     type: String
 }
 
+"Override item"
+type GqlMergedItem {
+    "Name of the bundle owning this file"
+    bundleName: String
+    "Conditions set on this form/fieldset"
+    condition: GqlCondition
+    "Get field set detail, if item is a field set"
+    fieldSet: GqlEditorFormFieldSet
+    "File name and path"
+    filename: String
+    "Get form detail, if item is a form"
+    form: GqlEditorForm
+    "Override priority"
+    priority: Float
+}
+
+type GqlMetricsFacetResult {
+    "The field that was used to run the aggregation"
+    field: String
+    "Maximum value within the filtered dataset"
+    max: Float
+    "Minimum value within the filtered dataset"
+    min: Float
+}
+
 type GqlModule {
     "User facing description for the module"
     description: String
@@ -1026,6 +1402,118 @@ type GqlModule {
     version: String
 }
 
+"Mount point object"
+type GqlMountPoint {
+    "Mount point name"
+    mountName: String
+    "Mount point local reference path"
+    mountPointRefPath: String
+    "Mount status"
+    mountStatus: String
+    "Mount node type"
+    nodeType: String
+    "Mount point additional properties"
+    properties: [GqlMountPointProperty]
+    "Mount point property"
+    property(
+        "The name of the property"
+        name: String!
+    ): String
+    "Mount point node uuid"
+    uuid: String
+}
+
+"Mount point mutation object"
+type GqlMountPointMutation {
+    "Create a mounted mount point node in /mounts"
+    add(
+        "Target local mount point"
+        mountPointRefPath: String,
+        "Mount point name"
+        name: String!
+    ): String
+    "Create a mounted VFS mount point node in /mounts"
+    addVfs(
+        "Target local mount point"
+        mountPointRefPath: String,
+        "Name for the mount point"
+        name: String!,
+        "VFS root mount point"
+        rootPath: String
+    ): String
+    "Modify an existing mount point node"
+    modify(
+        "Change local mount point, or set to empty string to remove"
+        mountPointRefPath: String,
+        "Rename existing mount point"
+        name: String,
+        "Mount point path or ID to modify"
+        pathOrId: String!
+    ): Boolean
+    "Modify an existing mount point node"
+    modifyVfs(
+        "Change target local mount point, or set to empty string to remove"
+        mountPointRefPath: String,
+        "Rename existing mount point"
+        name: String,
+        "Mount point path or ID to modify"
+        pathOrId: String!,
+        "VFS root mount point"
+        rootPath: String
+    ): Boolean
+    "Mount an existing mount point"
+    mount(
+        "Mount point path or ID to mount"
+        pathOrId: String!
+    ): Boolean
+    "Unmount an existing mount point"
+    unmount(
+        "Mount point path or ID to unmount"
+        pathOrId: String!
+    ): Boolean
+}
+
+"Mount point property"
+type GqlMountPointProperty {
+    "The property key"
+    key: String
+    "The property value"
+    value: String
+}
+
+"Mount point queries object"
+type GqlMountPointQuery {
+    "Get mount point with given name, or null if it doesn't exists"
+    mountPoint(
+        "Name for the mount point"
+        name: String!
+    ): GqlMountPoint
+    "Get list of mount points, or empty list if no mounts exist"
+    mountPoints: [GqlMountPoint]
+}
+
+type GqlNpmHelper {
+    "Render a compoment according to the parameters"
+    renderedComponent(
+        "Rendering context configuration"
+        contextConfiguration: String,
+        "Edit mode"
+        isEditMode: Boolean,
+        "Language"
+        language: String,
+        "Main resource path"
+        mainResourcePath: String,
+        "Input containing the primary node type, the name, the properties and other fields of a JCR Node of a node to render"
+        node: InputJCRNode,
+        "Path of the node"
+        path: String,
+        "Template type"
+        templateType: String,
+        "Name of the view"
+        view: String
+    ): SimpleRenderedNode
+}
+
 "Possible operations on a node"
 type GqlOperationsSupport {
     "Can node be locked"
@@ -1034,6 +1522,76 @@ type GqlOperationsSupport {
     markForDeletion: Boolean
     "does the node supports publication"
     publication: Boolean!
+}
+
+"Model of a plugin information (name,description,version)"
+type GqlPlugin {
+    "Full description of the plugin"
+    description: String
+    "Full name of the plugin"
+    name: String
+    "version of the plugin"
+    version: String
+}
+
+"Probes registered with SAM"
+type GqlProbe {
+    "Description specified by the developer of the probe"
+    description: String
+    "Name of the probe"
+    name: String
+    "Severity of the probe (LOW to CRITICAL)"
+    severity: GqlProbeSeverity
+    "Status reported by the probe (GREEN to RED)"
+    status: GqlProbeStatus
+}
+
+"Probe status"
+type GqlProbeStatus {
+    "Health of the probe"
+    health: GqlProbeHealth
+    "Message explaining probe status"
+    message: String
+}
+
+"Publication background job"
+type GqlPublicationBackgroundJob {
+    "The amount of time the job ran for (in milliseconds). The returned value will be -1 until the job has actually completed"
+    duration: Long
+    "The job group name"
+    group: String
+    "The job (Boolean) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
+    jobBooleanProperty(
+        "The job name"
+        name: String
+    ): Boolean
+    "The job (Int) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
+    jobIntegerProperty(
+        "The job name"
+        name: String
+    ): Int
+    "The job (Long) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
+    jobLongProperty(
+        "The job name"
+        name: String
+    ): Long
+    "The job state is different from the status, it reflect the last action done on the job instance (Started, Vetoed, Finished)"
+    jobState: GqlBackgroundJobState
+    "The job status"
+    jobStatus: GqlBackgroundJobStatus
+    "The job (String) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
+    jobStringProperty(
+        "The job name"
+        name: String
+    ): String
+    "Publication language"
+    language: String
+    "The job name"
+    name: String
+    "The site key. The returned value will be null in case the job doesn't have associated site key"
+    siteKey: String
+    "The user key. The returned value will be null in case the job doesn't have associated user key"
+    userKey: String
 }
 
 "Publication status information for a JCR node"
@@ -1050,6 +1608,23 @@ type GqlPublicationInfo {
     workInProgress: Boolean
 }
 
+"Representation of range facet aggregation buckets"
+type GqlRangeFacetData {
+    "Number of documents matching the range"
+    count: Int
+    "Name provided for the range"
+    name: String
+}
+
+"Result of aggregation based on field and ranges"
+type GqlRangeFacetResult {
+    "Data based on facets specified in the search"
+    data: [GqlRangeFacetData]
+    "The field that was used to run the aggregation"
+    field: String
+}
+
+"Scheduler object which allows to access to background jobs"
 type GqlScheduler {
     "List of active jobs"
     jobs: [GqlBackgroundJob]
@@ -1061,6 +1636,64 @@ type GqlScope {
     description: String
     "The name of the scope"
     name: String
+}
+
+"Sharding configuration details"
+type GqlShardConfiguration {
+    "Average shard size, based on the current index size"
+    averageShardSize: Long
+    "Is the number of shards evenly divisible by number of data nodes"
+    divisible: Boolean
+    "Available heap memory per shard"
+    heapPerShard: Long
+    "Number of primary shards"
+    primaryCount: Int
+    "Number of replicas"
+    replicas: Int
+}
+
+"Aggregation bucket representation"
+type GqlTermFacetData {
+    "The aggregation bucket value"
+    count: Int
+    "The aggregation bucket value"
+    value: String
+}
+
+"Result of aggregation based on field"
+type GqlTermFacetResult {
+    "Data based on facets specified in the search"
+    data: [GqlTermFacetData]
+    "The field that was used to run the aggregation"
+    field: String
+}
+
+"Children data of tree facet root value"
+type GqlTreeFacetData {
+    "Number of documents"
+    count: Int
+    "Filter expression to find matching results for this path"
+    filter: String
+    "Indicate whether the tree element has any children"
+    hasChildren: Boolean
+    "Human Readable path"
+    humanPath: String
+    "key of this facet"
+    key: String
+    "System path to be used in root path for tree facets"
+    rootPath: String
+    "The aggregation bucket value"
+    value: String
+}
+
+"Result of hierarchical facet aggregation"
+type GqlTreeFacetResult {
+    "Data based on facets specified in the search"
+    data: [GqlTreeFacetData]
+    "The field that was used to run the aggregation"
+    field: String
+    "rootPath passed as a parameter"
+    rootPath: String
 }
 
 type GqlWorkflowEvent {
@@ -1135,6 +1768,8 @@ type Group implements Principal {
     name: String!
     "Get the corresponding JCR node"
     node: JCRNode
+    "Return GROUP principal type"
+    principalType: PrincipalType
     "Group property"
     property(
         "The name of the property"
@@ -1167,15 +1802,15 @@ type GroupEdge {
 "Asset type for image"
 type ImageAsset {
     "Image height"
-    height: Long
+    height: Float
     "Asset metadata"
     metadata: Metadata
     "Image size"
-    size: Long
+    size: Float
     "Mime type of image"
     type: String
     "Image width"
-    width: Long
+    width: Float
 }
 
 "JCR Mutations"
@@ -1202,6 +1837,8 @@ type JCRMutation {
     ): [JCRNodeMutation]
     "Copy a single node to a different parent node"
     copyNode(
+        "The child node types that should be skipped during copy"
+        childNodeTypesToSkip: [String],
         "The name of the node at the new location or null if its current name should be preserved"
         destName: String,
         "Path or UUID of the destination parent node to copy the node to"
@@ -1210,7 +1847,11 @@ type JCRMutation {
         pathOrId: String!
     ): JCRNodeMutation
     "Copy multiple nodes to different parent node(s)"
-    copyNodes(nodes: [InputCarriedJCRNode!]!): [JCRNodeMutation]
+    copyNodes(
+        "The child node types that should be skipped during copy"
+        childNodeTypesToSkip: [String],
+        nodes: [InputCarriedJCRNode!]!
+    ): [JCRNodeMutation]
     "Delete an existing node and all its children"
     deleteNode(
         "The path or id of the node to delete"
@@ -1273,6 +1914,8 @@ type JCRMutation {
     ): [VanityUrlMappingMutation]
     "Paste a single node to a different parent node"
     pasteNode(
+        "The child node types that should be skipped during copy"
+        childNodeTypesToSkip: [String],
         "The name of the node at the new location or null if its current name should be preserved"
         destName: String,
         "Path or UUID of the destination parent node to paste the node to"
@@ -1286,6 +1929,8 @@ type JCRMutation {
     ): JCRNodeMutation
     "Paste multiple nodes to different parent node(s)"
     pasteNodes(
+        "The child node types that should be skipped during copy"
+        childNodeTypesToSkip: [String],
         "Paste mode, either COPY or MOVE"
         mode: PasteMode!,
         "The way to deal with duplicate node names when they are not allowed, either FAIL or RENAME"
@@ -1390,6 +2035,8 @@ type JCRNodeMutation {
     ): [VanityUrlMappingMutation]
     "Unlock all nodes under the specified node"
     clearAllLocks: Boolean
+    "Create new version for the node if the node supports versioning"
+    createVersion: Boolean
     "Add wip information"
     createWipInfo(
         "Work in progress information to save"
@@ -1397,6 +2044,15 @@ type JCRNodeMutation {
     ): Boolean
     "Delete the current node (and its subgraph)"
     delete: Boolean
+    "Grant role permissions to specified principal user/group for the given node"
+    grantRoles(
+        "Name of principal (user/group)"
+        principalName: String!,
+        "Type of principal (user/group) specified"
+        principalType: PrincipalType!,
+        "Roles to grant user/group for this node"
+        roleNames: [String]!
+    ): Boolean
     "Import a file under the current node"
     importContent(
         "Name of the request part that contains desired import file body"
@@ -1417,7 +2073,9 @@ type JCRNodeMutation {
         "The target node path of the current node after the move operation"
         destPath: String,
         "The parent node path or id under which the current node will be moved to"
-        parentPathOrId: String
+        parentPathOrId: String,
+        "Renames current node before moving if the name exists under destination node"
+        renameOnConflict: Boolean
     ): String
     "Mutates a set of existing direct sub nodes, based on filters passed as parameter"
     mutateChildren(
@@ -1496,6 +2154,15 @@ type JCRNodeMutation {
         names: [String]!,
         "The target position of reordered child nodes. The default value is inplace."
         position: ReorderedChildrenPosition = INPLACE
+    ): Boolean
+    "Remove/deny roles to specified principal user/group for the given node"
+    revokeRoles(
+        "Name of principal (user/group)"
+        principalName: String!,
+        "Type of principal (user/group) specified"
+        principalType: PrincipalType!,
+        "Roles to grant user/group for this node"
+        roleNames: [String]!
     ): Boolean
     "Mutates or creates a set of properties on the current node"
     setPropertiesBatch(
@@ -1898,6 +2565,8 @@ type JCRQuery {
 
 "GraphQL representation of a site node"
 type JCRSite implements JCRNode {
+    "Get ACL info for this node"
+    acl: GqlAcl
     "Get the last modified date of this node and its descendants. The recursion in descendants can be controlled by recursionTypesFilter. If no filter is passed, recursion will stop by default on sub pages."
     aggregatedLastModifiedDate(
         "The language"
@@ -2027,6 +2696,8 @@ type JCRSite implements JCRNode {
     installedModulesWithAllDependencies: [String]
     "Check if the node as a renderable template associated with it (not a view a template)."
     isDisplayableNode: Boolean
+    "true if node is under a mounted node"
+    isExternal: Boolean!
     "Reports if the current node matches the nodetype(s) passed in parameter"
     isNodeType(
         "Node type name"
@@ -2073,7 +2744,7 @@ type JCRSite implements JCRNode {
         language: String,
         "The names of the JCR properties; null to obtain all properties"
         names: [String],
-        "Consider the default locale of the site of the node"
+        "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): [JCRProperty]!
     "The GraphQL representation of the property in the requested language; null if the property does not exist"
@@ -2082,7 +2753,7 @@ type JCRSite implements JCRNode {
         language: String,
         "The name of the JCR property"
         name: String!,
-        "Consider the default locale of the site of the node"
+        "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): JCRProperty
     "GraphQL representations of the reference properties that target the current JCR Node"
@@ -2093,6 +2764,8 @@ type JCRSite implements JCRNode {
         before: String,
         "Filter by graphQL fields values"
         fieldFilter: InputFieldFiltersInput,
+        "Sort by graphQL fields values"
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
         first: Int,
         "fetching only the last certain number of nodes"
@@ -2125,6 +2798,37 @@ type JCRSite implements JCRNode {
     site: JCRSite
     "Site key"
     sitekey: String
+    "Get node thumbnail URL"
+    thumbnailUrl(
+        "Thumbnail name"
+        name: String
+    ): String
+    "Returns languages of available translations for this node"
+    translationLanguages(
+        "Optional: Return languages only if it is active for the site"
+        isActiveOnly: Boolean
+    ): [String]
+    "Get node URL"
+    url: String
+    "GraphQL representations of the reference properties that target the current JCR Node"
+    usages(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "Filter by graphQL fields values"
+        fieldFilter: InputFieldFiltersInput,
+        "Sort by graphQL fields values"
+        fieldSorter: InputFieldSorterInput,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int
+    ): UsageConnection!
     "The UUID of the JCR node this object represents"
     uuid: String!
     "Get vanity URLs from the current node filtered by the parameters"
@@ -2197,8 +2901,33 @@ type JahiaAdminMutation {
         "If factory pid, configiration identifier (filename suffix)"
         identifier: String,
         "Configuration pid ot factory pid"
-        pid: String!
+        pid: String!,
+        "Do not create new configuration, update existing one"
+        updateOnly: Boolean = false
     ): GqlConfigurationMutation
+    "Create a task"
+    createTask(
+        "Task name"
+        name: String!,
+        "Service name"
+        service: String!
+    ): Boolean
+    "Delete a task"
+    deleteTask(
+        "Task name"
+        name: String!,
+        "Service name"
+        service: String!
+    ): Boolean
+    "Shutdown the server"
+    shutdown(
+        "Do not send the shutdown event"
+        dryRun: Boolean,
+        "Force immediate shutdown even if server is busy"
+        force: Boolean,
+        "In seconds, maximum time to wait for server to be ready to shutdown"
+        timeout: Int
+    ): Boolean
 }
 
 "Jahia admin queries root"
@@ -2210,10 +2939,67 @@ type JahiaAdminQuery {
         "Configuration pid ot factory pid"
         pid: String!
     ): GqlConfigurationQuery
+    "Details about the database Jahia is connected to"
+    database: JahiaDatabase
+    "HealthCheck node"
+    healthCheck(
+        "Returns SAM probes with this severity or higher"
+        severity: GqlProbeSeverity
+    ): GqlHealthCheck
+    "Get server load"
+    load: Load
     "Get jobs scheduler"
     scheduler: GqlScheduler
+    "Details about the system hosting Jahia"
+    system: JahiaSystem
+    "Lists tasks running on the Jahia server. A server should not be stopped/restarted when any of these tasks are present. These tasks are specific to the server being queried and are not shared accorss a cluster"
+    tasks: [task]
     "Version of the running Jahia instance"
     version: JahiaVersion
+}
+
+"Details about the database Jahia is connected to"
+type JahiaDatabase {
+    "Name of the driver used to connect to the database"
+    driverName: String
+    "Version of the driver used to connect to the database"
+    driverVersion: String
+    "Name of the database vendor"
+    name: String
+    "Type of database specified in Jahia configuration"
+    type: String
+    "Version of the database"
+    version: String
+}
+
+"Details about the system used to run Jahia"
+type JahiaSystem {
+    "Details about the operating system"
+    java: JahiaSystemJava
+    "Details about the operating system"
+    os: JahiaSystemOs
+}
+
+"Details about the system OS used to run Jahia"
+type JahiaSystemJava {
+    "Java Runtime name"
+    runtimeName: String
+    "Java Runtime version"
+    runtimeVersion: String
+    "Java vendor"
+    vendor: String
+    "Java vendor version"
+    vendorVersion: String
+}
+
+"Details about the system OS used to run Jahia"
+type JahiaSystemOs {
+    "Operating System Architecture (amd64, arm64, ...)"
+    architecture: String
+    "Operating System Name"
+    name: String
+    "Operating System Version"
+    version: String
 }
 
 "Version of the running Jahia instance"
@@ -2226,6 +3012,45 @@ type JahiaVersion {
     isSnapshot: Boolean
     "Release of the running Jahia instance"
     release: String
+}
+
+"Details about the Jahia cluster journal"
+type Journal {
+    "The latest revision of the journal on the cluster"
+    globalRevision: Long
+    "Is the journal in sync across all nodes of a cluster"
+    isClusterSync: Boolean
+    "The latest revision of the journal on the current node"
+    localRevision: JournalRevision
+    "The latest revisions of the journal for all cluster nodes"
+    revisions: [JournalRevision]
+}
+
+"Details about one journal revision"
+type JournalRevision {
+    "The revision"
+    revision: Long
+    "The cluster node server Id"
+    serverId: String
+}
+
+"Server load"
+type Load {
+    "Get requests load"
+    requests: LoadValue
+    "Get JCR Sessions load"
+    sessions: LoadValue
+}
+
+"Load value"
+type LoadValue {
+    "Exponential moving average"
+    average(
+        "Interval between collection of load metrics"
+        interval: LoadInterval
+    ): Float
+    "Instantaneous count"
+    count: Int
 }
 
 "Information on node lock"
@@ -2296,6 +3121,33 @@ type NodeTypeTreeEntry {
     nodeType: JCRNodeType
     "Return the parent tree entry (if any)"
     parent: NodeTypeTreeEntry
+}
+
+type Offer {
+    coverages: [CoverageOffer]
+    metadata: Metadata
+    subTitle: String
+    title: String
+}
+
+"A connection to a list of items."
+type OfferConnection {
+    "a list of edges"
+    edges: [OfferEdge]
+    "a list of nodes"
+    nodes: [Offer]
+    "details about this specific page"
+    pageInfo: PageInfo!
+}
+
+"An edge in a connection"
+type OfferEdge {
+    "cursor marks a unique position or index into the connection"
+    cursor: String!
+    "index in the connection"
+    index: Int
+    "The item at the end of the edge"
+    node: Offer
 }
 
 "Information about pagination in a connection."
@@ -2457,6 +3309,30 @@ type PrincipalEdge {
 type Query {
     "Admin Queries"
     admin: AdminQuery!
+    allOffers(
+        "Content language, defaults to English"
+        language: String = "en",
+        "Return content from live or default workspace"
+        preview: Boolean = false,
+        "Sort filter object"
+        sortBy: InputFieldSorterInput
+    ): [Offer]
+    allOffersConnection(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "Available arguments"
+        allOffersArgs: allOffersArgsInput = {preview: false, language: "en"},
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int
+    ): OfferConnection
     "default finder for categoryById"
     categoryById(
         id: String,
@@ -2484,6 +3360,43 @@ type Query {
         "The name of the workspace to fetch the node from; either EDIT, LIVE, or null to use EDIT by default"
         workspace: Workspace
     ): JCRQuery!
+    "Main access field to the NPM helpers"
+    npm: GqlNpmHelper
+    "default finder for offerById"
+    offerById(
+        id: String,
+        "Content language, defaults to English"
+        language: String = "en",
+        "Return content from live or default workspace"
+        preview: Boolean = false
+    ): Offer
+    "default finder for offerByPath"
+    offerByPath(
+        "Content language, defaults to English"
+        language: String = "en",
+        path: String,
+        "Return content from live or default workspace"
+        preview: Boolean = false
+    ): Offer
+    "Search in Jahia using Augmented Search"
+    search(
+        "Boost specification"
+        boosts: Inputboost,
+        "Filtering specification"
+        filters: Inputfilter,
+        "Function score id"
+        functionScoreId: String,
+        "Language to search in"
+        language: String = "en",
+        "Search query"
+        q: String!,
+        "Where to search, can be CONTENT or FILES"
+        searchIn: [SearchIn],
+        "List of unique site identifiers. Search across all sites if not provided"
+        siteKeys: [String],
+        "Can be LIVE or EDIT"
+        workspace: Workspace = LIVE
+    ): augmentedSearchResult
     "Tag Queries"
     tag: JCRTags
     "Retrieves the number of active workflow tasks for the current user"
@@ -2501,6 +3414,14 @@ type RenderedNode {
         "Assets type"
         type: String!
     ): [StaticAsset]
+}
+
+"Rendering result for a node"
+type SimpleRenderedNode {
+    "Id of of the rendering node"
+    id: String
+    "Rendering output"
+    output: String
 }
 
 "Simple numeric aggregation on properties values"
@@ -2551,6 +3472,8 @@ type Subscription {
         filterByJobStatuses: [GqlBackgroundJobStatus],
         "Subscribe only to job with matching names"
         filterByNames: [String],
+        "Subscribe only to job with matching user keys"
+        filterByUserKey: [String],
         "The target scheduler for listening jobs"
         targetScheduler: TargetScheduler = BOTH
     ): GqlBackgroundJob
@@ -2599,6 +3522,34 @@ type TaskEdge {
     index: Int
     "The item at the end of the edge"
     node: Task
+}
+
+"GraphQL representation of a usage (node holding the reference + list of properties referencing the caller)"
+type Usage {
+    "The GraphQL representation of the JCR node the property belongs to."
+    node: JCRNode!
+    "The GraphQL representation of the references on this node."
+    properties: [JCRProperty]!
+}
+
+"A connection to a list of items."
+type UsageConnection {
+    "a list of edges"
+    edges: [UsageEdge]
+    "a list of nodes"
+    nodes: [Usage]
+    "details about this specific page"
+    pageInfo: PageInfo!
+}
+
+"An edge in a connection"
+type UsageEdge {
+    "cursor marks a unique position or index into the connection"
+    cursor: String!
+    "index in the connection"
+    index: Int
+    "The item at the end of the edge"
+    node: Usage
 }
 
 "GraphQL representation of a Jahia user"
@@ -2651,6 +3602,8 @@ type User implements Principal {
     node: JCRNode
     "User organization"
     organization: String
+    "Return USER principal type"
+    principalType: PrincipalType
     "User property"
     property(
         "The name of the property"
@@ -2727,6 +3680,8 @@ type UserGroupQuery {
 
 "GraphQL representation of a vanity URL"
 type VanityUrl implements JCRNode {
+    "Get ACL info for this node"
+    acl: GqlAcl
     "true if the URL mapping is activated or false if it is not activated"
     active: Boolean
     "Get the last modified date of this node and its descendants. The recursion in descendants can be controlled by recursionTypesFilter. If no filter is passed, recursion will stop by default on sub pages."
@@ -2850,6 +3805,8 @@ type VanityUrl implements JCRNode {
     ): Boolean
     "Check if the node as a renderable template associated with it (not a view a template)."
     isDisplayableNode: Boolean
+    "true if node is under a mounted node"
+    isExternal: Boolean!
     "Reports if the current node matches the nodetype(s) passed in parameter"
     isNodeType(
         "Node type name"
@@ -2896,7 +3853,7 @@ type VanityUrl implements JCRNode {
         language: String,
         "The names of the JCR properties; null to obtain all properties"
         names: [String],
-        "Consider the default locale of the site of the node"
+        "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): [JCRProperty]!
     "The GraphQL representation of the property in the requested language; null if the property does not exist"
@@ -2905,7 +3862,7 @@ type VanityUrl implements JCRNode {
         language: String,
         "The name of the JCR property"
         name: String!,
-        "Consider the default locale of the site of the node"
+        "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): JCRProperty
     "GraphQL representations of the reference properties that target the current JCR Node"
@@ -2916,6 +3873,8 @@ type VanityUrl implements JCRNode {
         before: String,
         "Filter by graphQL fields values"
         fieldFilter: InputFieldFiltersInput,
+        "Sort by graphQL fields values"
+        fieldSorter: InputFieldSorterInput,
         "fetching only the first certain number of nodes"
         first: Int,
         "fetching only the last certain number of nodes"
@@ -2946,8 +3905,37 @@ type VanityUrl implements JCRNode {
     site: JCRSite
     "The node targeted by this vanity URL"
     targetNode: JCRNode
+    "Get node thumbnail URL"
+    thumbnailUrl(
+        "Thumbnail name"
+        name: String
+    ): String
+    "Returns languages of available translations for this node"
+    translationLanguages(
+        "Optional: Return languages only if it is active for the site"
+        isActiveOnly: Boolean
+    ): [String]
     "The vanity URL"
     url: String
+    "GraphQL representations of the reference properties that target the current JCR Node"
+    usages(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "Filter by graphQL fields values"
+        fieldFilter: InputFieldFiltersInput,
+        "Sort by graphQL fields values"
+        fieldSorter: InputFieldSorterInput,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int
+    ): UsageConnection!
     "The UUID of the JCR node this object represents"
     uuid: String!
     "Get vanity URLs from the current node filtered by the parameters"
@@ -3037,6 +4025,170 @@ type ZipFileMutation {
     ): Boolean
 }
 
+"Generic object with search results which contains facets and results"
+type augmentedSearchResult {
+    "Provides access to min and max values for a specific field across the selected dataset"
+    numberRange(
+        "Defines the field to operate on, this field is required."
+        field: String!
+    ): GqlMetricsFacetResult
+    "Retrieves aggregations for range facet"
+    rangeFacet(
+        "Defines the field to aggregate on, this field is required."
+        field: String!,
+        "List of available ranges to be used"
+        ranges: [InputRange]
+    ): GqlRangeFacetResult
+    "Retrieves nodes matching a search"
+    results(
+        "Page count to offset the results window"
+        page: Int,
+        "Number of documents in the results window"
+        size: Int = 25,
+        "Sort object, by default, doesn’t do any sorting and return the results by weight."
+        sortBy: [InputsortV2]
+    ): searchResultsV2
+    "Retrieves aggregations for term facet"
+    termFacet(
+        "Defines whether the facet aggregation should be executed on the exact search filter (disjunctive: false) or on a modified version of the filter without the current facet field."
+        disjunctive: Boolean = false,
+        "Defines the field to aggregate on, this field is required."
+        field: String!,
+        "Maximum number of facet groups returned."
+        max: Int = 10,
+        "Minimum number of documents for a value to return as a facet."
+        minDocCount: Int = 1,
+        "Label to be used for missing values on this field. If not specified, missing fields will not be counted"
+        missingValue: String
+    ): GqlTermFacetResult
+    "Retrieves aggregations for tree facet"
+    treeFacet(
+        "Defines whether the facet aggregation should be executed on the exact search filter (disjunctive: false) or on a modified version of the filter without the current facet field."
+        disjunctive: Boolean = false,
+        "Defines the field to aggregate on, this field is required."
+        field: String!,
+        "Maximum number of facet groups returned."
+        max: Int = 10,
+        "Minimum number of documents for a value to return as a facet."
+        minDocCount: Int = 1,
+        "Label to be used for missing values on this field. If not specified, missing fields will not be counted"
+        missingValue: String,
+        "The root path to fetch children from"
+        rootPath: String!
+    ): GqlTreeFacetResult
+}
+
+"Information related to specific indexing job"
+type indexJob {
+    "The ID of the job that was just started"
+    id: String
+    "Relation to a Jahia project object"
+    project: project
+    "Indexing job status"
+    status: jobStatus
+}
+
+"Information about indexing jobs"
+type indexMutationResult {
+    "Information about indexing jobs, one per site indexed"
+    jobs: [indexJob]
+}
+
+"Representation of indexed site"
+type indexedSite {
+    "End time of most recent indexation as ISO string"
+    indexationEnd: String
+    "Scheduled time of most recent indexation as ISO string"
+    indexationScheduled: String
+    "Start time of most recent indexation as ISO string"
+    indexationStart: String
+    "Status of indexation"
+    indexationStatus: indexationStatus
+    "Site key"
+    siteKey: String
+}
+
+"Site specific information "
+type project {
+    "Unique site identifier"
+    siteKey: String
+}
+
+"Detailed information about search hit"
+type searchHitV2 {
+    "Date when node was created"
+    created: String
+    "User who created the node"
+    createdBy: String
+    "Prettified displayable name of the node"
+    displayableName: String
+    "Short extract from the hit"
+    excerpt: String
+    "ID of the node"
+    id: String
+    "Keywords associated with this hit"
+    keywords: [String]
+    "Date and time of last modification"
+    lastModified: String
+    "User who modified the node last"
+    lastModifiedBy: String
+    "Date and time of last publication"
+    lastPublished: String
+    "User who published the node last"
+    lastPublishedBy: String
+    "Formatted link to the node"
+    link: String
+    "Mime type of the node"
+    mimeType: String
+    "Main type of the node, e.g jnt:page"
+    nodeType: String
+    "Path of the node"
+    path: String
+    "Fetch the value of the requested property, property name can be pass as an alias or as an argument"
+    property(
+        "Name of the property to return"
+        name: String
+    ): String
+    "Determines how relevant a match is to the query"
+    score: Float
+    "Tags associated with this hit"
+    tags: [String]
+}
+
+"Object with search results"
+type searchResultsV2 {
+    "This flag indicates that more data is available by using different filters"
+    hasMore: Boolean
+    "Array of hits based on the search query"
+    hits: [searchHitV2]
+    "Number of hits on page"
+    hitsOnPage: Long
+    "Time taken by query"
+    took: String
+    "Total number of hits"
+    totalHits: Long
+}
+
+"List of indexed sites"
+type siteList {
+    "Database connection id"
+    connectionId: String
+    "Indexed sites"
+    sites: [indexedSite]
+    "Total number of indexed sites"
+    totalCount: Int
+}
+
+"Task that prevents server from shutdown"
+type task {
+    "The name of the task associated with the service"
+    name: String
+    "Service attached to the task being monitored"
+    service: String
+    "Datetime at which the task was started or registered"
+    started: String
+}
+
 "Work in progress information"
 type wipInfo {
     "The languages set for Work in progress"
@@ -3086,6 +4238,28 @@ enum GqlBackgroundJobStatus {
     SUCCESSFUL
 }
 
+"Available health statuses for a probe"
+enum GqlProbeHealth {
+    "GREEN"
+    GREEN
+    "RED"
+    RED
+    "YELLOW"
+    YELLOW
+}
+
+"Available severity levels for SAM probes"
+enum GqlProbeSeverity {
+    "CRITICAL"
+    CRITICAL
+    "HIGH"
+    HIGH
+    "LOW"
+    LOW
+    "MEDIUM"
+    MEDIUM
+}
+
 enum GroupingType {
     "Put grouped items at the end in the order groups appear in the 'groups' list"
     END
@@ -3129,6 +4303,16 @@ enum JCRPropertyType {
     WEAKREFERENCE
 }
 
+"Interval expressed in minutes"
+enum LoadInterval {
+    "FIFTEEN"
+    FIFTEEN
+    "FIVE"
+    FIVE
+    "ONE"
+    ONE
+}
+
 enum MulticriteriaEvaluation {
     "The result criteria evaluates positive if all sub-criteria evaluate positive"
     ALL
@@ -3143,6 +4327,21 @@ enum NodeNamingConflictResolutionStrategy {
     FAIL
     "RENAME"
     RENAME
+}
+
+enum Operation {
+    "AND"
+    AND
+    "OR"
+    OR
+}
+
+"Direction of sort"
+enum OrderDirection {
+    "Ascendant order"
+    ASC
+    "Descendant order"
+    DESC
 }
 
 enum OrderType {
@@ -3166,6 +4365,14 @@ enum PathType {
     OWN
     "The specified path is a parent, so all its direct children will be considered in the query"
     PARENT
+}
+
+"Principal type"
+enum PrincipalType {
+    "Group principal type"
+    GROUP
+    "User principal type"
+    USER
 }
 
 enum PropertyEvaluation {
@@ -3233,6 +4440,14 @@ enum ReorderedChildrenPosition {
     LAST
 }
 
+"Index in which search should be performed"
+enum SearchIn {
+    "content index"
+    CONTENT
+    "files index"
+    FILES
+}
+
 enum SortType {
     "Ascendant order"
     ASC
@@ -3274,10 +4489,28 @@ enum Workspace {
     LIVE
 }
 
+"Status of indexation"
+enum indexationStatus {
+    "Indexation has completed"
+    COMPLETED
+    "Indexation has been scheduled"
+    SCHEDULED
+    "Indexation has started"
+    STARTED
+}
+
+"Status of job"
+enum jobStatus {
+    "Job has completed"
+    COMPLETED
+    "Job has started"
+    STARTED
+}
+
 "Date type"
 scalar Date
 
-"Long type"
+"A 64-bit signed integer"
 scalar Long
 
 "Info about a node to be reproduced at (moved or copied to) another parent node"
@@ -3493,6 +4726,24 @@ input InputNodeTypesListInput {
     siteKey: String
 }
 
+"Describes input using name and with principal type (user/group)"
+input InputPrincipalInput {
+    "Get principal name"
+    name: String
+    "Get principal type (user/group)"
+    type: PrincipalType
+}
+
+"Number Range Input Object"
+input InputRange {
+    "From value [used in Range facet]"
+    from: String
+    "Name to describe the facet"
+    name: String!
+    "To value [used in Range facet]"
+    to: String
+}
+
 "Request attribute that can be use by rendering API"
 input InputRenderRequestAttributeInput {
     "The name of the request attribute"
@@ -3512,10 +4763,169 @@ input InputVanityUrl {
     url: String!
 }
 
+"Boost fields for document matching"
+input Inputboost {
+    "Boost configuration for fields and subfields. Overrides content, main and metadata boosts if present. Unspecified fields receive a default value as specified in .cfg file."
+    boosts: InputboostConfig
+    "Boost document based on their content(rich text, simple text) matching"
+    content: Float
+    "Boost document based on their main field (displayableName, title) matching"
+    main: Float
+    "Boost document based on their metadata field (tags, keywords, categories) matching"
+    metadata: Float
+}
+
+"Boost configuration for fields and their subfields"
+input InputboostConfig {
+    "Boost for jgql:content field multimatch query"
+    content: InputboostSpec
+    "Boost for jgql:file_content field multimatch query. Note that stem and ngram field boosts are not taken into account."
+    file: InputboostSpec
+    "Boost for jgql:main field multimatch query"
+    main: InputboostSpec
+    "Boost for jgql:metadata field multimatch query"
+    metadata: InputboostSpec
+}
+
+"Boost specification for multimatch query against a field"
+input InputboostSpec {
+    "Boost for default field"
+    defaultField: Float
+    "Boost for ngram field"
+    ngram: Float
+    "Boost for phrase field"
+    phrase: Float
+    "Overall boost for multimatch query (default field and subfields as a group)"
+    query: Float
+    "Boost for stem field"
+    stem: Float
+}
+
+"Search filter"
+input Inputfilter {
+    "Author filter"
+    author: String
+    "Created filter"
+    created: InputfilterRange
+    "Custom filters"
+    custom: InputfilterGroups
+    "Modified filter"
+    modified: InputfilterRange
+    "Node type filter"
+    nodeType: InputnodeTypeFilter
+    "Node path filter"
+    path: String
+    "Published filter"
+    published: InputfilterRange
+}
+
+"Custom term input object"
+input InputfilterCustomTerm {
+    "Mapped field to filter on"
+    field: String!
+    "Value to filter"
+    value: String!
+}
+
+"Custom date range group"
+input InputfilterDateRangeGroup {
+    "AND or OR filter operation"
+    operation: Operation
+    "Ranges used for filtering"
+    ranges: [InputfilterExtendedDateRange]!
+}
+
+"Custom extended date range input object"
+input InputfilterExtendedDateRange {
+    "To display hits after specified date"
+    after: String
+    "To display hits before specified date"
+    before: String
+    "Filter for strict equality to the date"
+    equal: String
+    "Field to filter by"
+    field: String!
+}
+
+"Custom filter groups"
+input InputfilterGroups {
+    "Groups of date range filters"
+    dateRange: [InputfilterDateRangeGroup]
+    "Groups of number range filters"
+    numberRange: [InputfilterNumberRangeGroup]
+    "Groups of term filters"
+    term: [InputfilterTermGroup]
+}
+
+"Number range input object"
+input InputfilterNumberRange {
+    "Numeric field to filter by"
+    field: String!
+    "Greater than a number"
+    gt: Float
+    "Greater than or equal to number"
+    gte: Float
+    "Less than a number"
+    lt: Float
+    "Less than or equal to number"
+    lte: Float
+}
+
+"Custom number range group"
+input InputfilterNumberRangeGroup {
+    "Filter operation"
+    operation: Operation
+    "Ranges"
+    ranges: [InputfilterNumberRange]!
+}
+
+"Range input object"
+input InputfilterRange {
+    "To display hits after specified date"
+    after: String
+    "To display hits before specified date"
+    before: String
+    "Filter for strict equality to the date"
+    equal: String
+}
+
+"Custom filter term group"
+input InputfilterTermGroup {
+    "Filter operation"
+    operation: Operation
+    "Terms to filter by"
+    terms: [InputfilterCustomTerm]!
+}
+
+"Filter for filtering on node type"
+input InputnodeTypeFilter {
+    "Flag to determine if sub node types should be included in filter"
+    includeSubNodes: Boolean
+    "Node type"
+    type: String
+}
+
+"Sort object for ordering or results"
+input InputsortV2 {
+    "Direction in which ordering occurs"
+    dir: OrderDirection!
+    "The field to order by"
+    field: String!
+}
+
 "Work in progress information"
 input InputwipInfo {
     "The languages set for Work in progress"
     languages: [String]
     "Get WIP status"
     status: WipStatus
+}
+
+input allOffersArgsInput {
+    "Content language, defaults to English"
+    language: String = "en"
+    "Return content from live or default workspace"
+    preview: Boolean = false
+    "Sort filter object"
+    sortBy: InputFieldSorterInput
 }

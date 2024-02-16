@@ -1,0 +1,15 @@
+type CoverageOffer @mapping(node: "jnt:coverageOffer", ignoreDefaultQueries: true) {
+	metadata: Metadata
+	coverageTitle: String @mapping(property: "jcr:title")
+}
+type Offer @mapping(node: "jnt:offer") {
+	metadata: Metadata
+	coverages: [CoverageOffer]
+	title: String @mapping(property: "jcr:title")
+	subTitle: String @mapping(property: "subTitle")
+}
+
+extend type Query {
+	allOffers: [Offer]
+	allOffersConnection: OfferConnection
+}

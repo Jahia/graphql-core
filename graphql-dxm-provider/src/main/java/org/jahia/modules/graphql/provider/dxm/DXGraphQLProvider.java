@@ -383,7 +383,7 @@ public class DXGraphQLProvider implements
     private void transformCodeRegistryWithSDLDefaultFetcherFactory() {
         codeRegistry = container.getCodeRegistryBuilder().defaultDataFetcher(environment -> {
             GraphQLFieldDefinition fieldDefinition = environment.getFieldDefinition();
-            if (fieldDefinition.getName().equals("nodes") || fieldDefinition.getName().equals("edges")) {
+            if (fieldDefinition.getName().equals("nodes") || fieldDefinition.getName().equals("edges") || fieldDefinition.getName().equals("node")) {
                 return PropertyDataFetcher.fetching(environment.getFieldDefinition().getName());
             }
             logger.debug("No default data fetcher found for field {} of type {} in Code registry", fieldDefinition.getName(), fieldDefinition.getType());
