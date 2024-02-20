@@ -18,11 +18,8 @@ package org.jahia.modules.graphql.provider.dxm.render;
 import graphql.GraphQLContext;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import graphql.schema.DataFetchingEnvironment;
-import org.apache.commons.lang.StringUtils;
-import org.apache.poi.poifs.property.PropertyTable;
 import org.jahia.bin.Render;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrProperty;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
@@ -31,26 +28,19 @@ import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.decorator.JCRSiteNode;
-import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.SelectorType;
 import org.jahia.services.render.RenderContext;
-import org.jahia.services.render.RenderException;
 import org.jahia.services.render.RenderService;
 import org.jahia.services.render.Resource;
 import org.jahia.settings.SettingsBean;
 
 import javax.jcr.PropertyType;
-import javax.jcr.RepositoryException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @GraphQLTypeExtension(GqlJcrProperty.class)
 @GraphQLDescription("Extensions for JCRProperty")
@@ -63,7 +53,7 @@ public class RenderPropertyExtensions {
     }
 
     @GraphQLField
-    @GraphQLDescription("Gets the rendered content values of that node")
+    @GraphQLDescription("Gets the rendered values of that property")
     public List<String> getRenderedValues(DataFetchingEnvironment environment) {
         try {
             if (!property.getProperty().getDefinition().isMultiple() ||
@@ -82,7 +72,7 @@ public class RenderPropertyExtensions {
     }
 
     @GraphQLField
-    @GraphQLDescription("Gets the rendered content value of that node")
+    @GraphQLDescription("Gets the rendered value of that property")
     public String getRenderedValue(DataFetchingEnvironment environment) {
         try {
             if (property.getProperty().getDefinition().isMultiple() ||

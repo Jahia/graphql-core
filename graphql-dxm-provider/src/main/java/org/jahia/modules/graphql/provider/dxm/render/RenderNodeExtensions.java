@@ -15,10 +15,8 @@
  */
 package org.jahia.modules.graphql.provider.dxm.render;
 
-
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
-import graphql.kickstart.servlet.context.GraphQLServletContext;
 import org.jahia.bin.Render;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
@@ -41,7 +39,10 @@ import javax.jcr.RepositoryException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 @GraphQLTypeExtension(GqlJcrNode.class)
 public class RenderNodeExtensions {
