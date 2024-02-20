@@ -15,10 +15,8 @@
  */
 package org.jahia.modules.graphql.provider.dxm.render;
 
-
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
-import graphql.kickstart.servlet.context.GraphQLServletContext;
 import org.jahia.bin.Render;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
@@ -41,7 +39,10 @@ import javax.jcr.RepositoryException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 @GraphQLTypeExtension(GqlJcrNode.class)
 public class RenderNodeExtensions {
@@ -121,7 +122,7 @@ public class RenderNodeExtensions {
             RenderService renderService = (RenderService) SpringContextSingleton.getBean("RenderService");
 
             if (contextConfiguration == null) {
-                contextConfiguration = "preview";
+                contextConfiguration = "module";
             }
             if (templateType == null) {
                 templateType = "html";
@@ -144,7 +145,7 @@ public class RenderNodeExtensions {
                 request = (HttpServletRequest) ((HttpServletRequestWrapper) request).getRequest();
             }
 
-            if (requestAttributes != null && requestAttributes.size() > 0) {
+            if (requestAttributes != null && !requestAttributes.isEmpty()) {
                 for (RenderRequestAttributeInput requestAttribute : requestAttributes) {
                     request.setAttribute(requestAttribute.getName(), requestAttribute.getValue());
                 }
@@ -173,8 +174,7 @@ public class RenderNodeExtensions {
             renderContext.setSite(site);
 
             response.setCharacterEncoding(SettingsBean.getInstance().getCharacterEncoding());
-            String res = renderService.render(r, renderContext);
-
+            String res = RenderExtensionsHelper.clean(renderService.render(r, renderContext));
             return new RenderedNode(res, renderContext);
         } catch (Exception e) {
             throw new RuntimeException(e);
