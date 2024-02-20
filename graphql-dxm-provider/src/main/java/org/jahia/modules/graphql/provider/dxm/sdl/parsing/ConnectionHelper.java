@@ -19,31 +19,26 @@ import graphql.language.*;
 import graphql.language.ObjectTypeExtensionDefinition.Builder;
 import graphql.schema.GraphQLNamedOutputType;
 import graphql.schema.GraphQLObjectType;
+import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ConnectionHelper {
 
-    public static ObjectTypeExtensionDefinition newQueryWithoutConnections(ObjectTypeExtensionDefinition oldQuery, Map<String, ConnectionTypeInfo> connectionFieldNameToSDLType) {
-        Builder query = ObjectTypeExtensionDefinition.newObjectTypeExtensionDefinition()
-                .name("Query");
-
-        query.name(oldQuery.getName());
-        query.comments(oldQuery.getComments());
-        query.description(oldQuery.getDescription());
-        query.directives(oldQuery.getDirectives());
-        query.implementz(oldQuery.getImplements());
-        query.sourceLocation(oldQuery.getSourceLocation());
-        query.fieldDefinitions(oldQuery.getFieldDefinitions()
+    public static ObjectTypeExtensionDefinition transformQueryExtensions(
+            ObjectTypeExtensionDefinition oldQuery,
+            Map<String, ConnectionTypeInfo> connectionFieldNameToSDLType) {
+        List<FieldDefinition> fieldDefs = oldQuery.getFieldDefinitions()
                 .stream()
                 .filter(f -> !connectionFieldNameToSDLType.containsKey(f.getName()))
-                .collect(Collectors.toList())
-        );
-
-        return query.build();
+                .collect(Collectors.toList());
+        ObjectTypeExtensionDefinition newQuery = oldQuery.transformExtension(builder -> builder.fieldDefinitions(fieldDefs));
+        return newQuery.transformExtension(new TransformQueryExtension(connectionFieldNameToSDLType));
     }
 
     public static GraphQLObjectType getOrCreateConnection(SDLSchemaService service, GraphQLNamedOutputType node, String typeName) {
@@ -72,9 +67,9 @@ public class ConnectionHelper {
         private String mappedToType;
         private String connectionName;
 
-        public ConnectionTypeInfo(String mappedToType, String connectionName) {
-            this.mappedToType = mappedToType;
+        public ConnectionTypeInfo(String connectionName) {
             this.connectionName = connectionName;
+            this.mappedToType = connectionName.replace(SDLConstants.CONNECTION_QUERY_SUFFIX, "");
         }
 
         public String getMappedToType() {
@@ -96,12 +91,15 @@ public class ConnectionHelper {
 
         @Override
         public void accept(Builder builder) {
+            List<FieldDefinition> fieldDefs = new ArrayList<>();
             for (Map.Entry<String, ConnectionTypeInfo> entry : connectionFieldNameToSDLType.entrySet()) {
-                builder
-                        .fieldDefinition(FieldDefinition.newFieldDefinition()
-                                .name(entry.getKey())
-                                .type(new ListType(TypeName.newTypeName(entry.getValue().getMappedToType()).build()))
-                                .build());
+                if (entry.getKey().contains(".")) {
+                    continue; // Do not include ObjectTypeDefinition connection fields
+                }
+                builder.fieldDefinition(FieldDefinition.newFieldDefinition()
+                        .name(entry.getKey())
+                        .type(new ListType(TypeName.newTypeName(entry.getValue().getMappedToType()).build()))
+                        .build());
             }
         }
     }

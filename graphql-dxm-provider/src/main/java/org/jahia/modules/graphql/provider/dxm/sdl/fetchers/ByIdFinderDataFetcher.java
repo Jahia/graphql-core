@@ -37,7 +37,7 @@ public class ByIdFinderDataFetcher extends FinderBaseDataFetcher {
     @Override
     public List<GraphQLArgument> getArguments() {
         List<GraphQLArgument> defaultArguments = getDefaultArguments();
-        defaultArguments.add(GraphQLArgument.newArgument().name("id").type(GraphQLString).build());
+        defaultArguments.add(GraphQLArgument.newArgument().name("id").description("Node identifier").type(GraphQLString).build());
         return defaultArguments;
     }
 

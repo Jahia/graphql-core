@@ -18,8 +18,11 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 import graphql.schema.*;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PropertiesDataFetcherFactory {
+    private static Logger logger = LoggerFactory.getLogger(PropertiesDataFetcherFactory.class);
 
     private PropertiesDataFetcherFactory() {
         //void
@@ -29,7 +32,9 @@ public class PropertiesDataFetcherFactory {
         GraphQLAppliedDirective mapping = graphQLFieldDefinition.getAppliedDirective(SDLConstants.MAPPING_DIRECTIVE);
         GraphQLAppliedDirectiveArgument property = mapping != null ? mapping.getArgument(SDLConstants.MAPPING_DIRECTIVE_PROPERTY) : null;
         String propertyValue = property != null ? property.getValue().toString() : null;
-
+        if (logger.isDebugEnabled()) {
+            logger.debug("Mapping property: field {}, type {}, definition {}:{}, value {}", field.getName(), field.getType(), graphQLFieldDefinition.getName(), graphQLFieldDefinition.getType().toString(), propertyValue);
+        }
         if (SDLConstants.IDENTIFIER.equals(propertyValue)) {
             return environment -> {
                 GqlJcrNode node = environment.getSource();

@@ -47,7 +47,9 @@ public class ObjectDataFetcher implements DataFetcher<Object> {
         GqlJcrNode node = environment.getSource();
         JCRNodeWrapper jcrNode = node.getNode();
         try {
-            if (jcrNode.hasNode(field.getProperty())) {
+            if (field.getNodeType() != null && jcrNode.isNodeType(field.getNodeType())) {
+                return new GqlJcrNodeImpl(jcrNode);
+            } else if (jcrNode.hasNode(field.getProperty())) {
                 logger.debug("Fetch child {}", field.getType());
                 //Treat property as child
                 JCRNodeWrapper subNode = jcrNode.getNode(field.getProperty());

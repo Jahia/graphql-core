@@ -41,6 +41,7 @@ public class SDLUtil {
         args.forEach(arg -> {
             newObject
                     .name(String.format("%s%s", typeName, SDLConstants.CONNECTION_ARGUMENTS_INPUT_SUFFIX))
+                    .description("Available arguments")
                     .field(GraphQLInputObjectField.newInputObjectField()
                             .name(arg.getName())
                             .description(arg.getDescription())
@@ -52,6 +53,7 @@ public class SDLUtil {
             if (arg.getArgumentDefaultValue().getValue() != null) {
                 defaultObject
                         .name(String.format("%s%s", typeName, SDLConstants.CONNECTION_ARGUMENTS_INPUT_SUFFIX))
+                        .description("Available arguments")
                         .field(GraphQLInputObjectField.newInputObjectField()
                                 .name(arg.getName())
                                 .description(arg.getDescription())
@@ -89,7 +91,7 @@ public class SDLUtil {
             //In this case we are handling default arguments
             if (argObject instanceof GraphQLInputObjectType) {
                 GraphQLInputObjectField field = ((GraphQLInputObjectType) argObject).getField(argName);
-                return field != null ? field.getInputFieldDefaultValue() : null;
+                return field != null ? field.getInputFieldDefaultValue().getValue() : null;
             }
 
             return ((Map<String, Object>) args.get(name)).get(argName);
