@@ -14,7 +14,6 @@ describe('Pagination Limit test', () => {
     const waitUntilTestFcnDisable = (response: string) => response.indexOf('graphql.fields.node.limit = 5000') !== -1;
     const waitUntilTestFcnEnable = (response: string) => response.indexOf('graphql.fields.node.limit = 100') !== -1;
 
-
     before('create nodes with structure', () => {
         // Setup data for testing
         console.log('run groovy script');
