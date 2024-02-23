@@ -51,7 +51,7 @@ describe('Node validity graphql test', () => {
         });
     });
 
-    it.only('Finds first 5 offers with Relay', () => {
+    it('Finds first 5 offers with Relay', () => {
         cy.apollo({
             query: gql`
                 query {

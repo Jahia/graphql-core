@@ -1,0 +1,8 @@
+[
+  {
+    "editConfiguration": 	"org.jahia.modules.graphql.provider-default",
+    "properties": {
+      "graphql.fields.node.limit" : "5000"
+    }
+  }
+]
