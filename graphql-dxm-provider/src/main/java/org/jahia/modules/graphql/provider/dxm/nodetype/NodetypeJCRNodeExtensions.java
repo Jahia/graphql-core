@@ -15,7 +15,6 @@
  */
 package org.jahia.modules.graphql.provider.dxm.nodetype;
 
-import com.google.common.base.Splitter;
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
@@ -132,7 +131,7 @@ public class NodetypeJCRNodeExtensions {
         }
 
         LinkedHashSet<ExtendedNodeType> types = new LinkedHashSet<>();
-        List<String> typeNames = Splitter.on(" ").splitToList(constraints);
+        List<String> typeNames = Arrays.asList(constraints.split(" "));
         for (String typeName : typeNames) {
             ExtendedNodeType type;
             try {
