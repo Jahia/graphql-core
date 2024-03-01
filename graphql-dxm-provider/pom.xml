@@ -57,6 +57,7 @@
         <powermock.version>2.0.9</powermock.version>
         <yarn.arguments>build:production</yarn.arguments>
         <sonar.sources>src/javascript,src/main/resources/javascript</sonar.sources>
+        <jahia-depends>default</jahia-depends>
     </properties>
 
     <dependencies>
@@ -140,7 +141,6 @@
             <version>${dataloader.version}</version>
             <scope>provided</scope>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -152,7 +152,6 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Jahia-Depends>default</Jahia-Depends>
                         <_dsannotations>*</_dsannotations>
                     </instructions>
                 </configuration>

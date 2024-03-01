@@ -15,12 +15,10 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import com.google.common.collect.Lists;
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.FastDateFormat;
-import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.acl.service.JahiaAclService;
@@ -37,7 +35,6 @@ import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import javax.inject.Inject;
 import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
-import javax.jcr.version.VersionIterator;
 import javax.jcr.version.VersionManager;
 import java.util.*;
 import java.util.function.Supplier;
@@ -488,8 +485,11 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
         try {
             String destChildName = null;
+            //Avoid potential issues with ImmutableList
+            List<String> reversedNames = new ArrayList<>(names);
+            Collections.reverse(reversedNames);
             // we proceed in reverse order
-            for (String srcChildName : Lists.reverse(names)) {
+            for (String srcChildName : reversedNames) {
                 if (destChildName == null) {
                     // we are on the last element in the list (first one, we process)
                     if (position == ReorderedChildrenPosition.LAST) {
