@@ -5,6 +5,7 @@ import graphql.annotations.annotationTypes.GraphQLField;
 
 import java.util.List;
 
+@GraphQLDescription("Publication event")
 public class GqlPublicationEvent {
     private final State state;
     private final String siteKey;
@@ -12,6 +13,7 @@ public class GqlPublicationEvent {
     private final List<String> paths;
     private final String user;
 
+    @GraphQLDescription("State of the publication event")
     public enum State {FINISHED, STARTED}
 
     public GqlPublicationEvent(State state, List<String> siteKey, List<String> language, List<String> paths, List<String> user) {
