@@ -141,6 +141,13 @@
             <version>${dataloader.version}</version>
             <scope>provided</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.felix/org.apache.felix.utils -->
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.utils</artifactId>
+            <version>1.11.8</version>
+        </dependency>
+
     </dependencies>
 
     <build>
