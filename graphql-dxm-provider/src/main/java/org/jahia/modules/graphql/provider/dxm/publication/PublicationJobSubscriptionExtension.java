@@ -36,7 +36,7 @@ public class PublicationJobSubscriptionExtension {
             listeners.put(name, obs);
             logger.debug("Registered publication job listener {}", name);
             obs.setCancellable(() -> {
-                logger.debug("Registered publication job listener {}", name);
+                logger.debug("Unregistered publication job listener {}", name);
                 listeners.remove(name);
             });
         }, BackpressureStrategy.BUFFER);
