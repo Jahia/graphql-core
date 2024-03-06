@@ -34,12 +34,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.jahia.server</groupId>
-            <artifactId>jahia-impl</artifactId>
-            <version>8.2.0.0-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.jahia.test</groupId>
             <artifactId>jahia-test-module</artifactId>
             <version>8.2.0.0-SNAPSHOT</version>
@@ -116,6 +110,9 @@
                             org.bouncycastle.jce.provider;resolution:=optional,
                             org.bouncycastle.operator;resolution:=optional,
                             org.bouncycastle.operator.jcajce;resolution:=optional,
+                            com.google.protobuf;resolution:=optional,
+                            com.google.protobuf.nano;resolution:=optional,
+                            com.oracle.svm.core.annotate;resolution:=optional,
                             *
                         </Import-Package>
                         <Require-Capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</Require-Capability>
