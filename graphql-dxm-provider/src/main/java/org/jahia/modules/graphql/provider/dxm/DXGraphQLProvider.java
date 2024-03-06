@@ -403,8 +403,4 @@ public class DXGraphQLProvider implements
         }).build();
         sdlSchemaService.setCodeRegistry(codeRegistry);
     }
-
-    public BundleContext getBundleContext() {
-        return bundleContext;
-    }
 }
