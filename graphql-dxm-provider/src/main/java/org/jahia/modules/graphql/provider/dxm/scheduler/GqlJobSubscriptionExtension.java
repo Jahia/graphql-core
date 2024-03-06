@@ -38,6 +38,7 @@ public class GqlJobSubscriptionExtension {
 
     @GraphQLField
     @GraphQLDescription("Subscription on background jobs")
+    @GraphQLDeprecate("Use subscribeToPublicationJob instead")
     public static Publisher<GqlBackgroundJob> backgroundJobSubscription(
             @GraphQLName("targetScheduler") @GraphQLDefaultValue(TargetSchedulerDefaultValue.class) @GraphQLDescription("The target scheduler for listening jobs") TargetScheduler targetScheduler,
             @GraphQLName("filterByGroups") @GraphQLDescription("Subscribe only to job with matching group names") List<String> groupsFilter,
