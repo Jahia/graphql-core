@@ -22,7 +22,11 @@ public class PublicationJobSubscriptionExtension {
 
     static Logger logger = LoggerFactory.getLogger(PublicationJobSubscriptionExtension.class);
 
-    private final static Map<String, FlowableEmitter<GqlPublicationEvent>> listeners = new HashMap<>();
+    private static final Map<String, FlowableEmitter<GqlPublicationEvent>> listeners = new HashMap<>();
+
+    private PublicationJobSubscriptionExtension() {
+        throw new IllegalStateException("Subscription class are fully static and must not be instantiated");
+    }
 
     @GraphQLField
     @GraphQLDescription("Subscription on publication jobs")
