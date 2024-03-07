@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
         org.osgi.framework.Constants.SERVICE_DESCRIPTION + "= Publication Job event handler",
         EventConstants.EVENT_TOPIC + "=" + Constants.CLUSTER_BROADCAST_TOPIC_PREFIX + "/publication/done",
         EventConstants.EVENT_TOPIC + "=" + Constants.CLUSTER_BROADCAST_TOPIC_PREFIX + "/publication/start",
+        EventConstants.EVENT_TOPIC + "=" + Constants.CLUSTER_BROADCAST_TOPIC_PREFIX + "/publication/unpublished",
 })
 public class PublicationJobEventListener implements EventHandler {
 
@@ -19,6 +20,7 @@ public class PublicationJobEventListener implements EventHandler {
 
     @Override
     public void handleEvent(Event event) {
+        logger.debug("Received event on topic {}", event.getTopic());
         PublicationJobSubscriptionExtension.notifyListeners(event);
     }
 

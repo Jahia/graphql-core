@@ -44,13 +44,33 @@ public class PublicationJobSubscriptionExtension {
 
     public static void notifyListeners(Event event) {
         if (!listeners.isEmpty()) {
-            logger.debug("Received event on topic {}", event.getTopic());
-            GqlPublicationEvent gqlPublicationEvent = new GqlPublicationEvent(
-                    event.getTopic().endsWith("/publication/done") ? GqlPublicationEvent.State.FINISHED : GqlPublicationEvent.State.STARTED,
-                    (List<String>) event.getProperty("siteKey"),
-                    (List<String>) event.getProperty("language"),
-                    (List<String>) event.getProperty("paths"),
-                    (List<String>) event.getProperty("user"));
+            String eventTopic = event.getTopic();
+            logger.debug("Received event on topic {}", eventTopic);
+            GqlPublicationEvent gqlPublicationEvent;
+            if (eventTopic.endsWith("/publication/done")) {
+                gqlPublicationEvent = new GqlPublicationEvent(
+                        GqlPublicationEvent.State.FINISHED,
+                        (List<String>) event.getProperty("siteKey"),
+                        (List<String>) event.getProperty("language"),
+                        (List<String>) event.getProperty("paths"),
+                        (List<String>) event.getProperty("user"));
+            }
+            else if (eventTopic.endsWith("/publication/unpublished")) {
+                gqlPublicationEvent = new GqlPublicationEvent(
+                        GqlPublicationEvent.State.UNPUBLISHED,
+                        (List<String>) event.getProperty("siteKey"),
+                        (List<String>) event.getProperty("language"),
+                        (List<String>) event.getProperty("paths"),
+                        (List<String>) event.getProperty("user"));
+            }
+            else {
+                gqlPublicationEvent = new GqlPublicationEvent(
+                        GqlPublicationEvent.State.STARTED,
+                        (List<String>) event.getProperty("siteKey"),
+                        (List<String>) event.getProperty("language"),
+                        (List<String>) event.getProperty("paths"),
+                        (List<String>) event.getProperty("user"));
+            }
             listeners.forEach((name, emitter) -> emitter.onNext(gqlPublicationEvent));
         }
     }

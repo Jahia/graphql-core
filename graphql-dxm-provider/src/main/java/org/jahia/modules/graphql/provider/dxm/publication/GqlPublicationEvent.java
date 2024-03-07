@@ -14,7 +14,7 @@ public class GqlPublicationEvent {
     private final String user;
 
     @GraphQLDescription("State of the publication event")
-    public enum State {FINISHED, STARTED}
+    public enum State {FINISHED, STARTED, UNPUBLISHED}
 
     public GqlPublicationEvent(State state, List<String> siteKey, List<String> language, List<String> paths, List<String> user) {
         this.state = state;
