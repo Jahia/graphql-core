@@ -2,11 +2,13 @@ package org.jahia.modules.graphql.provider.dxm.publication;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.modules.graphql.provider.dxm.scheduler.jobs.GqlBackgroundJob;
 import org.osgi.service.event.Event;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -16,13 +18,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 @GraphQLTypeExtension(DXGraphQLProvider.Subscription.class)
 public class PublicationJobSubscriptionExtension {
 
     static Logger logger = LoggerFactory.getLogger(PublicationJobSubscriptionExtension.class);
 
-    private static final Map<String, FlowableEmitter<GqlPublicationEvent>> listeners = new HashMap<>();
+    private static final Map<String, Map<String, Object>> listeners = new HashMap<>();
 
     private PublicationJobSubscriptionExtension() {
         throw new IllegalStateException("Subscription class are fully static and must not be instantiated");
@@ -30,10 +33,16 @@ public class PublicationJobSubscriptionExtension {
 
     @GraphQLField
     @GraphQLDescription("Subscription on publication jobs")
-    public static Publisher<GqlPublicationEvent> subscribeToPublicationJob() {
+    public static Publisher<GqlPublicationEvent> subscribeToPublicationJob(@GraphQLName("userKeyFilter") @GraphQLDescription("Subscribe only to job with matching user keys") List<String> userKeyFilter) {
         return Flowable.create(obs -> {
             String name = UUID.randomUUID().toString();
-            listeners.put(name, obs);
+            Map<String, Object> m = new HashMap<>();
+            m.put("emitter", obs);
+
+            Predicate<Event> p = event -> userKeyFilter == null || userKeyFilter.contains(((List<String>)event.getProperty("user")).get(0));
+            m.put("predicate", p);
+
+            listeners.put(name, m);
             logger.debug("Registered publication job listener {}", name);
             obs.setCancellable(() -> {
                 logger.debug("Unregistered publication job listener {}", name);
@@ -71,8 +80,15 @@ public class PublicationJobSubscriptionExtension {
                         (List<String>) event.getProperty("paths"),
                         (List<String>) event.getProperty("user"));
             }
-            listeners.forEach((name, emitter) -> emitter.onNext(gqlPublicationEvent));
+
+            listeners.forEach((name, m) -> {
+                Predicate<Event> p = (Predicate<Event>) m.get("predicate");
+
+                if (p.test(event)) {
+                    FlowableEmitter<GqlPublicationEvent> emitter = (FlowableEmitter<GqlPublicationEvent>) m.get("emitter");
+                    emitter.onNext(gqlPublicationEvent);
+                }
+            });
         }
     }
-
 }
