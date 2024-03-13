@@ -32,7 +32,6 @@ jobs:
           ref: ${{ matrix.supported_branches }}
       - uses: jahia/jahia-modules-action/build@v2
         with:
-          module_id: graphql-dxm-provider
           mvn_settings_filepath: '.github/maven.settings.xml'
           nexus_username: ${{ secrets.NEXUS_USERNAME }}
           nexus_password: ${{ secrets.NEXUS_PASSWORD }}
