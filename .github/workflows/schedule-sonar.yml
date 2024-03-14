@@ -21,8 +21,7 @@ jobs:
       matrix:
          supported_branches: ["${{ github.event.repository.default_branch }}"]
     container:
-      image: cimg/openjdk:11.0.20-node
-      options: --user root
+      image: jahia/cimg-mvn-cache:ga_cimg_openjdk_11.0.20-node
       credentials:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -43,4 +42,5 @@ jobs:
           github_pr_id: ${{github.event.number}}
           sonar_url: ${{ secrets.SONAR_URL }}
           sonar_token: ${{ secrets.SONAR_TOKEN }}
+          nvd_apikey: ${{ secrets.NVD_APIKEY }}
           mvn_settings_filepath: '.github/maven.settings.xml'
