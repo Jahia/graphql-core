@@ -2,12 +2,16 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
+    # Disable version updates for npm dependencies
+    open-pull-requests-limit: 0
     directory: "/"
     schedule:
       interval: "daily"
     allow:
       - dependency-type: "production"
   - package-ecosystem: "maven"
+    # Disable version updates for maven dependencies
+    open-pull-requests-limit: 0
     directory: "/"
     schedule:
       interval: "daily"
