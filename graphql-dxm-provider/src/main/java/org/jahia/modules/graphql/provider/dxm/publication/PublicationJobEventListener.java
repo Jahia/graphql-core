@@ -57,7 +57,7 @@ public class PublicationJobEventListener implements EventHandler, RecordConsumer
         logger.debug("Received event on topic {}", event.getTopic());
         List<String> revisions = (List<String>) event.getProperty("revision");
 
-        if (revisions != null && Long.parseLong(revisions.get(0)) > clusterNode.getRevision()) {
+        if (revisions != null && clusterNode != null && Long.parseLong(revisions.get(0)) > clusterNode.getRevision()) {
             eventForRevision.put(Long.parseLong(revisions.get(0)), event);
         } else {
             PublicationJobSubscriptionExtension.notifyListeners(event);
