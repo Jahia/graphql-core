@@ -1,4 +1,30 @@
-- include: 'mvn:org.jahia.packages/jahia-additional-modules/${const:org.jahia.api.Constants.JAHIA_PROJECT_VERSION}/yaml/provisioning'
+- addMavenRepository: 'https://store.jahia.com/nexus/content/repositories/jahia-public-app-store@id=JahiaStore'
+- addMavenRepository: 'https://devtools.jahia.com/nexus/content/groups/public/@snapshots@noreleases@id=JahiaSnapshot'
+
+# This modules were added during the switch from using jahia-discovery to jahia-ee
+- installBundle: 
+  - 'mvn:org.jahia.modules/press/3.1.0'
+  - 'mvn:org.jahia.modules/person/3.2.0'
+  - 'mvn:org.jahia.modules/news/3.4.0'
+  - 'mvn:org.jahia.modules/font-awesome/6.1.5'
+  - 'mvn:org.jahia.modules/calendar/3.2.0'
+  - 'mvn:org.jahia.modules/bootstrap3-core/4.3.0'
+  - 'mvn:org.jahia.modules/bootstrap3-components/4.3.0'
+  - 'mvn:org.jahia.modules/location/3.2.0'
+  - 'mvn:org.jahia.modules/topstories/3.0.0'
+  - 'mvn:org.jahia.modules/rating/3.2.0'
+  - 'mvn:org.jahia.modules/event/3.1.0'
+  - 'mvn:org.jahia.modules/bookmarks/3.1.0'
+  - 'mvn:org.jahia.modules/dx-base-demo-core/2.3.0'
+  - 'mvn:org.jahia.modules/dx-base-demo-templates/3.1.0'
+  - 'mvn:org.jahia.modules/dx-base-demo-components/2.2.0'
+  - 'mvn:org.jahia.modules/digitall/2.3.0'
+  autoStart: true
+  uninstallPreviousVersion: true
+
+- import: "jar:mvn:org.jahia.modules/digitall/2.1.0/zip/import!/users.zip"
+- importSite: "jar:mvn:org.jahia.modules/digitall/2.1.0/zip/import!/Digitall.zip"
+
 - installBundle:
   - 'mvn:org.jahia.modules/graphql-dxm-provider'
   - 'mvn:org.jahia.test/graphql-test-module'
