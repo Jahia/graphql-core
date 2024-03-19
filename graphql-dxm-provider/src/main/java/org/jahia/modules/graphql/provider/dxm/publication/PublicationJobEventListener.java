@@ -34,6 +34,10 @@ public class PublicationJobEventListener implements EventHandler, RecordConsumer
 
     @Activate
     public void activate() {
+        if (clusterNode == null) {
+            return;
+        }
+
         try {
             SpringJackrabbitRepository jackrabbitRepository = (SpringJackrabbitRepository) org.jahia.services.SpringContextSingleton.getBean("jackrabbit");
             clusterNode = jackrabbitRepository.getClusterNode();
