@@ -34,10 +34,14 @@ public class PublicationJobEventListener implements EventHandler, RecordConsumer
 
     @Activate
     public void activate() {
+
         try {
             SpringJackrabbitRepository jackrabbitRepository = (SpringJackrabbitRepository) org.jahia.services.SpringContextSingleton.getBean("jackrabbit");
             clusterNode = jackrabbitRepository.getClusterNode();
-            clusterNode.getJournal().register(this);
+
+            if (clusterNode != null) {
+                clusterNode.getJournal().register(this);
+            }
         } catch (Exception e) {
             logger.warn("Failed to register record consumer. Publication events may be triggered before data is processed.", e);
         }

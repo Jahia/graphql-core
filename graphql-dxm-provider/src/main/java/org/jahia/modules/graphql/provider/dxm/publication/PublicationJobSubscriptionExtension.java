@@ -39,7 +39,10 @@ public class PublicationJobSubscriptionExtension {
             Map<String, Object> m = new HashMap<>();
             m.put("emitter", obs);
 
-            Predicate<Event> p = event -> userKeyFilter == null || userKeyFilter.contains(((List<String>)event.getProperty("user")).get(0));
+            Predicate<Event> p = event -> {
+                List<String> user = (List<String>)event.getProperty("user");
+                return user == null || userKeyFilter == null || userKeyFilter.contains(user.get(0));
+            };
             m.put("predicate", p);
 
             listeners.put(name, m);
