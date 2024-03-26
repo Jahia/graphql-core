@@ -1,3 +1,4 @@
 #!/bin/bash
-npx --yes --package @jahia/cypress ci.startup
-
+version=$(node -p "require('./package.json').devDependencies['@jahia/cypress']")
+echo Using @jahia/cypress@$version...
+npx --yes --package @jahia/cypress@$version ci.startup 
