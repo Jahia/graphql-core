@@ -7,6 +7,7 @@
 </body>
 <script>
     console.log('starting');
+    window.jahiaContextPath = '${pageContext.request.contextPath}';
     document.addEventListener("DOMContentLoaded",() => {
         console.log('dom loaded');
         GraphqlPlayground.EmbeddedSandbox('embedded-sandbox');
