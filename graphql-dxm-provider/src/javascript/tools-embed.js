@@ -27,7 +27,7 @@ query {
 const explorer = explorerPlugin();
 const GraphiQLComponent = () => {
     const {setTheme} = useTheme();
-    const url = window.location.origin;
+    const url = window.location.origin + window.jahiaContextPath;
     const subscriptionURL = url.replace(window.location.protocol, window.location.protocol === 'https:' ? 'wss:' : ' ws:');
     const fetcher = React.useMemo(
         () => createGraphiQLFetcher({
