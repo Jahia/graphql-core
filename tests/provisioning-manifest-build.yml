@@ -20,6 +20,8 @@
   - 'mvn:org.jahia.modules/dx-base-demo-templates/4.0.0-SNAPSHOT'
   - 'mvn:org.jahia.modules/dx-base-demo-components/3.0.0-SNAPSHOT'
   - 'mvn:org.jahia.modules/digitall/3.0.0-SNAPSHOT'
+  - 'mvn:org.jahia.modules/skins'
+  - 'mvn:org.jahia.modules/default-skins'
   autoStart: true
   uninstallPreviousVersion: true
 
