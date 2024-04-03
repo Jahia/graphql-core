@@ -2,7 +2,8 @@
 - addMavenRepository: 'https://devtools.jahia.com/nexus/content/groups/public/@snapshots@noreleases@id=JahiaSnapshot'
 
 # This modules were added during the switch from using jahia-discovery to jahia-ee
-- installBundle: 
+- installBundle:
+  - 'mvn:org.jahia.modules/legacy-default-components/1.0.0-SNAPSHOT'
   - 'mvn:org.jahia.modules/press/3.1.0'
   - 'mvn:org.jahia.modules/person/3.2.0'
   - 'mvn:org.jahia.modules/news/3.4.0'
@@ -13,17 +14,17 @@
   - 'mvn:org.jahia.modules/location/3.2.0'
   - 'mvn:org.jahia.modules/topstories/3.0.0'
   - 'mvn:org.jahia.modules/rating/3.2.0'
-  - 'mvn:org.jahia.modules/event/3.1.0'
+  - 'mvn:org.jahia.modules/event/4.0.0-SNAPSHOT'
   - 'mvn:org.jahia.modules/bookmarks/3.1.0'
-  - 'mvn:org.jahia.modules/dx-base-demo-core/2.3.0'
-  - 'mvn:org.jahia.modules/dx-base-demo-templates/3.1.0'
-  - 'mvn:org.jahia.modules/dx-base-demo-components/2.2.0'
-  - 'mvn:org.jahia.modules/digitall/2.3.0'
+  - 'mvn:org.jahia.modules/dx-base-demo-core/2.4.0'
+  - 'mvn:org.jahia.modules/dx-base-demo-templates/4.0.0-SNAPSHOT'
+  - 'mvn:org.jahia.modules/dx-base-demo-components/3.0.0-SNAPSHOT'
+  - 'mvn:org.jahia.modules/digitall/3.0.0-SNAPSHOT'
   autoStart: true
   uninstallPreviousVersion: true
 
-- import: "jar:mvn:org.jahia.modules/digitall/2.1.0/zip/import!/users.zip"
-- importSite: "jar:mvn:org.jahia.modules/digitall/2.1.0/zip/import!/Digitall.zip"
+- import: "jar:mvn:org.jahia.modules/digitall/3.0.0-SNAPSHOT/zip/import!/users.zip"
+- importSite: "jar:mvn:org.jahia.modules/digitall/3.0.0-SNAPSHOT/zip/import!/Digitall.zip"
 
 - installBundle:
   - 'mvn:org.jahia.modules/graphql-dxm-provider'
