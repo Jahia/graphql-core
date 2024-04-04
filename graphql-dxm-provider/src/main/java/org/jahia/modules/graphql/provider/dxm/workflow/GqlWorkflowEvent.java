@@ -45,11 +45,9 @@ package org.jahia.modules.graphql.provider.dxm.workflow;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLTypeExtension;
-import io.reactivex.FlowableEmitter;
-import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
-import org.jahia.osgi.BundleUtils;
+import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.workflow.WorkflowService;
 import org.jahia.services.workflow.WorkflowTask;
 
@@ -62,9 +60,11 @@ public class GqlWorkflowEvent {
     private GqlWorkflow endedWorkflow;
     private GqlTask createdTask;
     private GqlTask endedTask;
+    private String userKey;
 
-    public GqlWorkflowEvent(WorkflowService workflowService) {
+    public GqlWorkflowEvent(WorkflowService workflowService, String userKey) {
         this.workflowService = workflowService;
+        this.userKey = userKey;
     }
 
     @GraphQLField
@@ -110,7 +110,10 @@ public class GqlWorkflowEvent {
     @GraphQLField
     @GraphQLDescription("Number of tasks for current user")
     public Integer activeWorkflowTaskCountForUser() {
-        List<WorkflowTask> tasksForUser = workflowService.getTasksForUser(JCRSessionFactory.getInstance().getCurrentUser(), null);
+        JahiaUser user = (userKey != null) ?
+            ServicesRegistry.getInstance().getJahiaUserManagerService().lookupUserByPath(userKey).getJahiaUser() :
+            JCRSessionFactory.getInstance().getCurrentUser();
+        List<WorkflowTask> tasksForUser = workflowService.getTasksForUser(user, null);
         if (endedTask != null) {
             tasksForUser = tasksForUser.stream().filter(workflowTask -> !workflowTask.getId().equals(endedTask.getTask().getId())).collect(Collectors.toList());
         }

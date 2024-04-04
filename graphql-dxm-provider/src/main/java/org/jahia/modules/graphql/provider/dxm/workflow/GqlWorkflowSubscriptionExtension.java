@@ -49,10 +49,10 @@ import graphql.schema.SelectedField;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
-import org.apache.commons.beanutils.PropertyUtils;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.modules.graphql.provider.dxm.util.BeanWrapper;
 import org.jahia.osgi.BundleUtils;
+import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.workflow.*;
 import org.reactivestreams.Publisher;
 
@@ -66,9 +66,13 @@ public class GqlWorkflowSubscriptionExtension {
     @GraphQLField
     @GraphQLDescription("Subscription on workflows")
     public static Publisher<GqlWorkflowEvent> workflowEvent(DataFetchingEnvironment environment) {
+        String userKey = JCRSessionFactory.getInstance().getCurrentUser().getUserKey();
         return Flowable.create(obs -> {
             WorkflowService workflowService = BundleUtils.getOsgiService(WorkflowService.class, null);
-            GqlWfListener wfListener = new GqlWfListener(workflowService, obs, environment.getSelectionSet().getFields().stream().map(SelectedField::getName).collect(Collectors.toSet()));
+            Set<String> filters = environment.getSelectionSet().getFields().stream()
+                    .map(SelectedField::getName)
+                    .collect(Collectors.toSet());
+            GqlWfListener wfListener = new GqlWfListener(workflowService, obs, filters, userKey);
             workflowService.addWorkflowListener(wfListener);
 
             obs.setCancellable(() -> {
@@ -83,13 +87,17 @@ public class GqlWorkflowSubscriptionExtension {
         private final FlowableEmitter<GqlWorkflowEvent> obs;
         private final Set<String> filters;
 
-        public GqlWfListener(WorkflowService workflowService, FlowableEmitter<GqlWorkflowEvent> obs, Set<String> filters) {
+        private final String userKey;
+
+        public GqlWfListener(WorkflowService workflowService, FlowableEmitter<GqlWorkflowEvent> obs, Set<String> filters, String userKey) {
             this.workflowService = workflowService;
             this.obs = obs;
             this.filters = filters;
+            // the current user for session when the subscription is created
+            this.userKey = userKey;
 
             if (filters.contains("activeWorkflowTaskCountForUser")) {
-                obs.onNext(new GqlWorkflowEvent(workflowService));
+                obs.onNext(new GqlWorkflowEvent(workflowService, userKey));
             }
 
         }
@@ -97,7 +105,7 @@ public class GqlWorkflowSubscriptionExtension {
         @Override
         public void workflowStarted(Workflow workflow) {
             if (filters.contains("startedWorkflow")) {
-                GqlWorkflowEvent t = new GqlWorkflowEvent(workflowService);
+                GqlWorkflowEvent t = new GqlWorkflowEvent(workflowService, userKey);
                 t.setStartedWorkflow(new GqlWorkflow(workflow));
                 obs.onNext(t);
             }
@@ -106,7 +114,7 @@ public class GqlWorkflowSubscriptionExtension {
         @Override
         public void workflowEnded(HistoryWorkflow workflow) {
             if (filters.contains("endedWorkflow")) {
-                GqlWorkflowEvent t = new GqlWorkflowEvent(workflowService);
+                GqlWorkflowEvent t = new GqlWorkflowEvent(workflowService, userKey);
                 obs.onNext(t);
             }
         }
@@ -114,7 +122,7 @@ public class GqlWorkflowSubscriptionExtension {
         @Override
         public void newTaskCreated(WorkflowTask task) {
             if (filters.contains("createdTask") || filters.contains("activeWorkflowTaskCountForUser")) {
-                GqlWorkflowEvent t = new GqlWorkflowEvent(workflowService);
+                GqlWorkflowEvent t = new GqlWorkflowEvent(workflowService, userKey);
                 t.setCreatedTask(new GqlTask(task));
                 obs.onNext(t);
             }
@@ -123,7 +131,7 @@ public class GqlWorkflowSubscriptionExtension {
         @Override
         public void taskEnded(WorkflowTask task) {
             if (filters.contains("endedTask") || filters.contains("activeWorkflowTaskCountForUser")) {
-                GqlWorkflowEvent t = new GqlWorkflowEvent(workflowService);
+                GqlWorkflowEvent t = new GqlWorkflowEvent(workflowService, userKey);
                 t.setEndedTask(new GqlTask(task));
                 obs.onNext(t);
             }
