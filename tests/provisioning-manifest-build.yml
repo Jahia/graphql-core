@@ -23,6 +23,7 @@
   - 'mvn:org.jahia.modules/skins'
   - 'mvn:org.jahia.modules/default-skins'
   - 'mvn:org.jahia.modules/grid'
+  - 'mvn:org.jahia.modules/tabularList'
   autoStart: true
   uninstallPreviousVersion: true
 
