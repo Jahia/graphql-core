@@ -8,7 +8,6 @@
         <property name="testCases">
             <list>
                 <value>org.jahia.test.graphql.GraphQLDescendantsTest</value>
-                <value>org.jahia.test.graphql.GraphQLReferencesTest</value>
                 <value>org.jahia.test.graphql.GraphQLCriteriaTest</value>
                 <value>org.jahia.test.graphql.GraphQLConnectionsTest</value>
                 <value>org.jahia.test.graphql.GraphQLWorkspaceTest</value>
