@@ -1,0 +1,13 @@
+query getNodeReferencesByPath($path: String!) {
+    jcr {
+        nodeByPath(path: $path) {
+            references {
+                nodes {
+                    node {
+                        name
+                    }
+                }
+            }
+        }
+    }
+}
