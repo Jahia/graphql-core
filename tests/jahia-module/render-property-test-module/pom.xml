@@ -55,7 +55,7 @@
     <groupId>org.jahia.test</groupId>
     <artifactId>render-property-test-module</artifactId>
     <name>GraphQL Render Property Test Module</name>
-    <version>8.2.1.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <description>This is the custom module for render property (multi richtext) cypress tests.</description>
 
