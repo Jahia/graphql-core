@@ -1,9 +1,9 @@
-name: Nightly Test run
+name: Nightly Test run (Jahia RL)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron:  '0 0 * * *'
+    - cron:  '0 1 * * *'
 
 jobs:
   integration-tests-sn:
@@ -27,16 +27,16 @@ jobs:
       - uses: jahia/jahia-modules-action/integration-tests@v2
         with:
           module_id: graphql-dxm-provider
-          jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
-          incident_service: graphql-dxm-provider-JahiaSN
+          jahia_image: jahia/jahia-ee:8
+          incident_service: graphql-dxm-provider-JahiaRL
           timeout_minutes: 20
           testrail_project: GraphQL Core module
           tests_manifest: provisioning-manifest-snapshot.yml
           jahia_license: ${{ secrets.JAHIA_LICENSE_8X_FULL }}
           should_use_build_artifacts: false
           should_skip_testrail: false
-          github_artifact_name: graphql-dxm-provider-jahia-sn-${{ github.run_number }}
-          jahia_artifact_name: graphql-dxm-provider-jahia-sn-${{ github.run_number }}
+          github_artifact_name: gql-jahia-rl-${{ github.run_number }}
+          jahia_artifact_name: gql-jahia-rl-${{ github.run_number }}
           bastion_ssh_private_key: ${{ secrets.BASTION_SSH_PRIVATE_KEY_JAHIACI }}
           docker_username: ${{ secrets.DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.DOCKERHUB_PASSWORD }}
