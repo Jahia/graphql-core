@@ -270,7 +270,8 @@ public class DXGraphQLProvider implements
                     }
                 }
             } catch (Throwable e) {
-                logger.error("Unable to register extension for provider {} because {}", extensionsProvider.getClass().getName(), e.getCause().toString());
+                logger.error("Unable to register extension for provider {} because {}", extensionsProvider.getClass().getName(),
+                        (e.getCause() != null)?e.getCause().toString():"Cause is null");
                 logger.debug("full error", e);
             }
         }
