@@ -550,16 +550,16 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     @Override
     @GraphQLDescription("Get node thumbnail URL")
-    public String getThumbnailUrl(@GraphQLName("name") @GraphQLDescription("Thumbnail name") String name) {
+    public String getThumbnailUrl(@GraphQLName("name") @GraphQLDescription("Thumbnail name") String name, @GraphQLName("checkIfExists") @GraphQLDescription("Optional: Checks if requested thumbnail node exists") Boolean checkIfExists) {
         try {
-            if (node.hasNode(name)) {
-                return node.getThumbnailUrl(name);
+            if (checkIfExists != null && checkIfExists && !node.hasNode(name)) {
+                return null;
             }
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
 
-        return null;
+        return node.getThumbnailUrl(name);
     }
 
     @Override

@@ -315,7 +315,7 @@ public interface GqlJcrNode {
 
     @GraphQLField
     @GraphQLDescription("Get node thumbnail URL")
-    String getThumbnailUrl(@GraphQLName("name") @GraphQLDescription("Thumbnail name") String name);
+    String getThumbnailUrl(@GraphQLName("name") @GraphQLDescription("Thumbnail name") String name, @GraphQLName("checkIfExists") @GraphQLDescription("Checks if requested thumbnail node exists") Boolean checkIfExists);
 
     /**
      * Nodes filter based on their types.
