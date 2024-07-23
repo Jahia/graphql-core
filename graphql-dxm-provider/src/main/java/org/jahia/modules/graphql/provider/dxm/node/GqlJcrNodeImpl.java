@@ -15,10 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.annotations.annotationTypes.GraphQLDefaultValue;
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.collections.CollectionUtils;
@@ -26,6 +23,7 @@ import org.apache.commons.lang.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
+import org.jahia.bin.Jahia;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.acl.GqlAcl;
 import org.jahia.modules.graphql.provider.dxm.predicate.*;
@@ -33,9 +31,19 @@ import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
+import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
+import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
+import org.jahia.services.render.RenderContext;
+import org.jahia.services.render.RenderService;
+import org.jahia.services.render.Resource;
+import org.jahia.services.render.Template;
+import org.jahia.services.seo.urlrewrite.UrlRewriteService;
+import org.jahia.services.seo.urlrewrite.*;
+import org.jahia.utils.LanguageCodeConverters;
+import org.tuckey.web.filters.urlrewrite.UrlRewriteWrappedResponse;
 import pl.touk.throwing.ThrowingFunction;
 import pl.touk.throwing.ThrowingPredicate;
 import pl.touk.throwing.ThrowingSupplier;
@@ -43,10 +51,15 @@ import pl.touk.throwing.ThrowingSupplier;
 import javax.jcr.*;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.security.AccessControlException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+
 
 /**
  * GraphQL representation of a JCR node - generic implementation.
@@ -563,6 +576,23 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLDescription("Get render URL")
+    public String getRenderUrl(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace,
+                               @GraphQLName("language") @GraphQLDescription("The language content is rendered in") @GraphQLNonNull String language,
+                               DataFetchingEnvironment environment) {
+        try {
+            String url =  getNodeURL("render", this.node, null, null, workspace.getValue(), LanguageCodeConverters.languageCodeToLocale(language), true);
+            HttpServletResponse httpServletResponse = ContextUtil.getHttpServletResponse(environment.getGraphQlContext());
+            HttpServletRequest httpServletRequest = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
+            UrlRewriteService urs = (UrlRewriteService) SpringContextSingleton.getBean("UrlRewriteService");
+            HttpServletResponse resp = new UrlRewriteWrappedResponse(httpServletResponse, httpServletRequest, urs.getEngine());
+            return resp.encodeURL(url).replace("/modules", "");
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     @GraphQLName("usages")
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLNonNull
@@ -637,5 +667,44 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                 }).addUsage(gqlReference);
             }
         }
+    }
+
+    private String getNodeURL(String servlet, JCRNodeWrapper node, Date versionDate,
+                              String versionLabel, final String workspace, final Locale locale, boolean findDisplayable)
+            throws RepositoryException {
+        if (servlet == null) {
+            servlet = "render";
+        }
+        String url = Jahia.getContextPath() + "/cms/" + servlet + "/" + workspace + "/" + locale;
+
+        Resource resource = new Resource(node, "html", null, Resource.CONFIGURATION_PAGE);
+        RenderContext renderContext = new RenderContext(null, null, node.getSession().getUser());
+        renderContext.setMainResource(resource);
+        renderContext.setServletPath("/cms/" + servlet);
+        JCRNodeWrapper nodeForURL = node;
+        if (findDisplayable) {
+            nodeForURL = JCRContentUtils.findDisplayableNode(node, renderContext);
+            if (nodeForURL != null && !nodeForURL.getIdentifier().equals(node.getIdentifier())) {
+                resource = new Resource(nodeForURL, "html", null, Resource.CONFIGURATION_PAGE);
+            }
+        }
+        Template template = RenderService.getInstance().resolveTemplate(resource, renderContext);
+        String extensionName;
+        if (template != null || nodeForURL.isNodeType("jnt:page") || nodeForURL.isNodeType("jmix:mainResource")) {
+            extensionName = ".html";
+        } else {
+            extensionName = ".content-template.html";
+        }
+
+        url += nodeForURL.getPath() + extensionName;
+
+        if (versionDate != null) {
+            url += "?v=" + (versionDate.getTime());
+            if (versionLabel != null) {
+                url += "&l=" + versionLabel;
+            }
+        }
+
+        return url;
     }
 }

@@ -295,6 +295,12 @@ public interface GqlJcrNode {
     @GraphQLDescription("Get ACL info for this node")
     public GqlAcl getAcl();
 
+    @GraphQLDescription("Get render URL")
+    @GraphQLField
+    String getRenderUrl(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace,
+                        @GraphQLName("language") @GraphQLDescription("The language content is rendered in") @GraphQLNonNull String language,
+                        DataFetchingEnvironment environment);
+
     @GraphQLField
     @GraphQLName("usages")
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
@@ -313,7 +319,7 @@ public interface GqlJcrNode {
     @GraphQLDescription("Get node URL")
     String getUrl();
 
-    @GraphQLField
+
     @GraphQLDescription("Get node thumbnail URL")
     String getThumbnailUrl(@GraphQLName("name") @GraphQLDescription("Thumbnail name") String name, @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("checkIfExists") @GraphQLDescription("Checks if requested thumbnail node exists") Boolean checkIfExists);
 
