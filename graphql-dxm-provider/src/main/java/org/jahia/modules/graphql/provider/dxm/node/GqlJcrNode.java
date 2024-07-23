@@ -299,6 +299,7 @@ public interface GqlJcrNode {
     @GraphQLField
     String getRenderUrl(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace,
                         @GraphQLName("language") @GraphQLDescription("The language content is rendered in") @GraphQLNonNull String language,
+                        @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("findDisplayable") @GraphQLDescription("Finds displayable node") Boolean findDisplayable,
                         DataFetchingEnvironment environment);
 
     @GraphQLField

@@ -576,9 +576,10 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLDescription("Get render URL")
     public String getRenderUrl(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace,
                                @GraphQLName("language") @GraphQLDescription("The language content is rendered in") @GraphQLNonNull String language,
+                               @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("findDisplayable") @GraphQLDescription("Finds displayable node") Boolean findDisplayable,
                                DataFetchingEnvironment environment) {
         try {
-            String url =  getNodeURL("render", this.node, null, null, workspace.getValue(), LanguageCodeConverters.languageCodeToLocale(language), true);
+            String url =  getNodeURL(this.node, workspace.getValue(), LanguageCodeConverters.languageCodeToLocale(language), findDisplayable);
             HttpServletResponse httpServletResponse = ContextUtil.getHttpServletResponse(environment.getGraphQlContext());
             HttpServletRequest httpServletRequest = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
             UrlRewriteService urs = (UrlRewriteService) SpringContextSingleton.getBean("UrlRewriteService");
@@ -666,12 +667,9 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         }
     }
 
-    private String getNodeURL(String servlet, JCRNodeWrapper node, Date versionDate,
-                              String versionLabel, final String workspace, final Locale locale, boolean findDisplayable)
+    private String getNodeURL(JCRNodeWrapper node, final String workspace, final Locale locale, boolean findDisplayable)
             throws RepositoryException {
-        if (servlet == null) {
-            servlet = "render";
-        }
+        String servlet = "render";
         String url = Jahia.getContextPath() + "/cms/" + servlet + "/" + workspace + "/" + locale;
 
         Resource resource = new Resource(node, "html", null, Resource.CONFIGURATION_PAGE);
@@ -694,13 +692,6 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         }
 
         url += nodeForURL.getPath() + extensionName;
-
-        if (versionDate != null) {
-            url += "?v=" + (versionDate.getTime());
-            if (versionLabel != null) {
-                url += "&l=" + versionLabel;
-            }
-        }
 
         return url;
     }
