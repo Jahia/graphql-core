@@ -588,7 +588,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             HttpServletResponse resp = new UrlRewriteWrappedResponse(httpServletResponse, httpServletRequest, urs.getEngine());
             return resp.encodeURL(url).replace("/modules", "");
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
