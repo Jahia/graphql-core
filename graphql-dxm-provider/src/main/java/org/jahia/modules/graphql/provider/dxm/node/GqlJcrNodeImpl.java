@@ -26,6 +26,7 @@ import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.acl.GqlAcl;
+import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.predicate.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
@@ -33,7 +34,6 @@ import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
-import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.render.RenderContext;
@@ -42,7 +42,6 @@ import org.jahia.services.render.Resource;
 import org.jahia.services.render.Template;
 import org.jahia.services.seo.urlrewrite.UrlRewriteService;
 import org.jahia.utils.LanguageCodeConverters;
-import org.tuckey.web.filters.urlrewrite.UrlRewriteWrappedResponse;
 import pl.touk.throwing.ThrowingFunction;
 import pl.touk.throwing.ThrowingPredicate;
 import pl.touk.throwing.ThrowingSupplier;
@@ -50,12 +49,16 @@ import pl.touk.throwing.ThrowingSupplier;
 import javax.jcr.*;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.security.AccessControlException;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import javax.inject.Inject;
 
 
 /**
@@ -70,6 +73,10 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     private JCRNodeWrapper node;
     private String type;
+
+    @Inject
+    @GraphQLOsgiService
+    private UrlRewriteService urlRewriteService;
 
     /**
      * Create an instance that represents a JCR node to GraphQL.
@@ -579,13 +586,14 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("findDisplayable") @GraphQLDescription("Finds displayable node") Boolean findDisplayable,
                                DataFetchingEnvironment environment) {
         try {
-            String url =  getNodeURL(this.node, workspace.getValue(), LanguageCodeConverters.languageCodeToLocale(language), findDisplayable);
+            String url = getNodeURL(this.node, workspace.getValue(), LanguageCodeConverters.languageCodeToLocale(language), findDisplayable);
             HttpServletResponse httpServletResponse = ContextUtil.getHttpServletResponse(environment.getGraphQlContext());
             HttpServletRequest httpServletRequest = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
-            UrlRewriteService urs = (UrlRewriteService) SpringContextSingleton.getBean("UrlRewriteService");
-            HttpServletResponse resp = new UrlRewriteWrappedResponse(httpServletResponse, httpServletRequest, urs.getEngine());
-            return resp.encodeURL(url).replace("/modules", "");
-        } catch (RepositoryException e) {
+            url = urlRewriteService.rewriteOutbound(url, httpServletRequest, httpServletResponse);
+            // Need to strip off /modules as it is being added after rewrite rules are applied. It is not needed for the
+            // final url.
+            return url.replace("/modules", "");
+        } catch (RepositoryException | ServletException | IOException | InvocationTargetException e) {
             throw new DataFetchingException(e);
         }
     }
