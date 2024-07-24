@@ -675,6 +675,8 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         }
     }
 
+    // This code was borrowed from gwt related package in the core: https://github.com/Jahia/jahia-private/blob/0ddbc6f48459751a4e7a1729c234f28c764d12ea/core/src/main/java/org/jahia/ajax/gwt/helper/NodeHelper.java#L102-L139
+    // TODO: A TECH ticket to move this code was created: TECH-1875
     private String getNodeURL(JCRNodeWrapper node, final String workspace, final Locale locale, boolean findDisplayable)
             throws RepositoryException {
         String servlet = "render";
