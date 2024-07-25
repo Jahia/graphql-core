@@ -1,5 +1,4 @@
 import {addNode, addVanityUrl, createSite, deleteSite, publishAndWaitJobEnding} from '@jahia/cypress';
-import gql from 'graphql-tag';
 
 const sitename = 'graphql_test_renderurl';
 describe('Test graphql render url generation', () => {
@@ -15,7 +14,7 @@ describe('Test graphql render url generation', () => {
             ]
         });
         addNode({
-            parentPathOrId: '/sites/' + sitename + '/home/page2',
+            parentPathOrId: '/sites/' + sitename + '/home/page1',
             name: 'page2',
             primaryNodeType: 'jnt:page',
             properties: [
