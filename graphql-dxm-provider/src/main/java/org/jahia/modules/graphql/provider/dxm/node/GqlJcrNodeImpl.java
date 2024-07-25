@@ -707,7 +707,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     /**
      * Custom request wrapper designed to get rid of unnecessary "/modules" context part, which may be injected in some cases
-     * by rewrite engine rules. On default Jahia installation this kind of context is injected by outbound rule
+     * by rewrite engine rules. On default Jahia installation this kind of context is injected into resulting url by outbound rule
      * associated with org.jahia.services.seo.jcr.VanityUrlMapper when processing requests to /modules/graphql.
      */
     private class RenderUrlHttpServletResponseWrapper extends HttpServletRequestWrapper {

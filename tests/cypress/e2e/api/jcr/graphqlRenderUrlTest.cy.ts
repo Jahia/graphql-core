@@ -107,7 +107,7 @@ describe('Test graphql render url generation', () => {
     });
 
     it('Returns correct values for nodes which have vanity urls defined', () => {
-        addVanityUrl(`/sites/${sitename}/home/page1`, 'en', 'my-page1');
+        addVanityUrl(`/sites/${sitename}/home/page1`, 'en', '/my-page1');
         publishAndWaitJobEnding(`/sites/${sitename}/home/page1`);
 
         cy.apollo({
