@@ -1,4 +1,4 @@
-import {addNode, addVanityUrl, createSite, deleteSite} from '@jahia/cypress';
+import {addNode, addVanityUrl, createSite, deleteSite, publishAndWaitJobEnding} from '@jahia/cypress';
 import gql from 'graphql-tag';
 
 const sitename = 'graphql_test_renderurl';
@@ -14,7 +14,6 @@ describe('Test graphql render url generation', () => {
                 {name: 'j:templateName', value: 'simple'}
             ]
         });
-
         addNode({
             parentPathOrId: '/sites/' + sitename + '/home/page2',
             name: 'page2',
@@ -25,20 +24,7 @@ describe('Test graphql render url generation', () => {
                 {name: 'j:templateName', value: 'simple'}
             ]
         });
-
-        cy.apollo({
-            mutation: gql`
-                mutation publishSite {
-                    jcr {
-                        mutateNode(
-                            pathOrId: '/sites/${sitename}'
-                        ) {
-                            publish(publishSubNodes: true)
-                        }
-                    }
-                }
-            `
-        });
+        publishAndWaitJobEnding('/sites/' + sitename);
     });
 
     after('Delete the site', () => {
@@ -100,7 +86,7 @@ describe('Test graphql render url generation', () => {
             queryFile: 'jcr/renderUrl.graphql',
             variables: {
                 path: `/sites/${sitename}/home/page1`,
-                workspace: 'LIVE',
+                workspace: 'EDIT',
                 lang: 'en'
             }
         }).should(resp => {
@@ -112,12 +98,41 @@ describe('Test graphql render url generation', () => {
             queryFile: 'jcr/renderUrl.graphql',
             variables: {
                 path: `/sites/${sitename}/home/page1/page2`,
-                workspace: 'LIVE',
+                workspace: 'EDIT',
                 lang: 'en'
             }
         }).should(resp => {
             expect(resp.data.jcr.nodeByPath.renderUrl).to.exist;
             expect(resp.data.jcr.nodeByPath.renderUrl).to.be.equal(`/cms/render/default/en/sites/${sitename}/home/page1/page2.html`);
+        });
+    });
+
+    it('Returns correct values for nodes which have vanity urls defined', () => {
+        addVanityUrl(`/sites/${sitename}/home/page1`, 'en', 'my-page1');
+        publishAndWaitJobEnding(`/sites/${sitename}/home/page1`);
+
+        cy.apollo({
+            queryFile: 'jcr/renderUrl.graphql',
+            variables: {
+                path: `/sites/${sitename}/home/page1`,
+                workspace: 'EDIT',
+                lang: 'en'
+            }
+        }).should(resp => {
+            expect(resp.data.jcr.nodeByPath.renderUrl).to.exist;
+            expect(resp.data.jcr.nodeByPath.renderUrl).to.be.equal(`/cms/render/default/en/sites/${sitename}/home/page1.html`);
+        });
+
+        cy.apollo({
+            queryFile: 'jcr/renderUrl.graphql',
+            variables: {
+                path: `/sites/${sitename}/home/page1`,
+                workspace: 'LIVE',
+                lang: 'en'
+            }
+        }).should(resp => {
+            expect(resp.data.jcr.nodeByPath.renderUrl).to.exist;
+            expect(resp.data.jcr.nodeByPath.renderUrl).to.be.equal(`/sites/${sitename}/home/page1.html`);
         });
     });
 });
