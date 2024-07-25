@@ -1,0 +1,7 @@
+query($path: String!, $workspace: Workspace!, $lang: String!) {
+  jcr {
+    nodeByPath(path: $path) {
+      renderUrl(workspace:$workspace, language:$lang)
+    }
+  }
+}

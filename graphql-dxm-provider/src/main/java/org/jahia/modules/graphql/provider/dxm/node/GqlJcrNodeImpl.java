@@ -51,6 +51,7 @@ import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.security.AccessControlException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -59,6 +60,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 
 /**
@@ -580,7 +582,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
-    @GraphQLDescription("Get render URL")
+    @GraphQLDescription("Get render URL.")
     public String getRenderUrl(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace,
                                @GraphQLName("language") @GraphQLDescription("The language content is rendered in") @GraphQLNonNull String language,
                                @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("findDisplayable") @GraphQLDescription("Finds displayable node") Boolean findDisplayable,
@@ -589,10 +591,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             String url = getNodeURL(this.node, workspace.getValue(), LanguageCodeConverters.languageCodeToLocale(language), findDisplayable);
             HttpServletResponse httpServletResponse = ContextUtil.getHttpServletResponse(environment.getGraphQlContext());
             HttpServletRequest httpServletRequest = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
-            url = urlRewriteService.rewriteOutbound(url, httpServletRequest, httpServletResponse);
-            // Need to strip off /modules as it is being added after rewrite rules are applied. It is not needed for the
-            // final url.
-            return url.replace("/modules", "");
+            return urlRewriteService.rewriteOutbound(url, new RenderUrlHttpServletResponseWrapper(httpServletRequest), httpServletResponse);
         } catch (RepositoryException | ServletException | IOException | InvocationTargetException e) {
             throw new DataFetchingException(e);
         }
@@ -704,5 +703,28 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         url += nodeForURL.getPath() + extensionName;
 
         return url;
+    }
+
+    /**
+     * Custom request wrapper designed to get rid of unnecessary "/modules" context part, which may be injected in some cases
+     * by rewrite engine rules. On default Jahia installation this kind of context is injected by outbound rule
+     * associated with org.jahia.services.seo.jcr.VanityUrlMapper when processing requests to /modules/graphql.
+     */
+    private class RenderUrlHttpServletResponseWrapper extends HttpServletRequestWrapper {
+
+        public RenderUrlHttpServletResponseWrapper(HttpServletRequest request) {
+            super(request);
+        }
+
+        @Override
+        public String getContextPath() {
+            String ctx = super.getContextPath();
+
+            if (ctx.endsWith("/modules")) {
+                ctx = ctx.replace("/modules", "");
+            }
+
+            return ctx;
+        }
     }
 }
