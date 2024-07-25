@@ -1,6 +1,7 @@
-import {addNode, addVanityUrl, createSite, deleteSite, publishAndWaitJobEnding} from '@jahia/cypress';
+import {addNode, addVanityUrl, createSite, deleteSite, publishAndWaitJobEnding, editSite} from '@jahia/cypress';
 
-const sitename = 'graphql_test_renderurl';
+const sitename = 'graphql_test_render_url';
+
 describe('Test graphql render url generation', () => {
     before('Create a site', () => {
         createSite(sitename);
@@ -18,7 +19,6 @@ describe('Test graphql render url generation', () => {
             name: 'page2',
             primaryNodeType: 'jnt:page',
             properties: [
-                {name: 'jcr:title', value: 'page2'},
                 {name: 'jcr:title', value: 'page2'},
                 {name: 'j:templateName', value: 'simple'}
             ]
@@ -109,6 +109,7 @@ describe('Test graphql render url generation', () => {
     // Note that for this to work you must run it with a host other than localhost (e.g. http://jahia:8080)
     it('Returns correct values for nodes which have vanity urls defined', () => {
         const vanity = '/my-page1';
+        editSite(sitename, {serverName: 'jahia'});
         addVanityUrl(`/sites/${sitename}/home/page1`, 'en', vanity);
         publishAndWaitJobEnding(`/sites/${sitename}/home/page1`);
 
