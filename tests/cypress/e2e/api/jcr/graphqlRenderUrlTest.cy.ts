@@ -106,8 +106,10 @@ describe('Test graphql render url generation', () => {
         });
     });
 
+    // Note that for this to work you must run it with a host other than localhost (e.g. http://jahia:8080)
     it('Returns correct values for nodes which have vanity urls defined', () => {
-        addVanityUrl(`/sites/${sitename}/home/page1`, 'en', '/my-page1');
+        const vanity = '/my-page1';
+        addVanityUrl(`/sites/${sitename}/home/page1`, 'en', vanity);
         publishAndWaitJobEnding(`/sites/${sitename}/home/page1`);
 
         cy.apollo({
@@ -119,7 +121,7 @@ describe('Test graphql render url generation', () => {
             }
         }).should(resp => {
             expect(resp.data.jcr.nodeByPath.renderUrl).to.exist;
-            expect(resp.data.jcr.nodeByPath.renderUrl).to.be.equal(`/cms/render/default/en/sites/${sitename}/home/page1.html`);
+            expect(resp.data.jcr.nodeByPath.renderUrl).to.be.equal(`/cms/render/default${vanity}`);
         });
 
         cy.apollo({
@@ -131,7 +133,7 @@ describe('Test graphql render url generation', () => {
             }
         }).should(resp => {
             expect(resp.data.jcr.nodeByPath.renderUrl).to.exist;
-            expect(resp.data.jcr.nodeByPath.renderUrl).to.be.equal(`/sites/${sitename}/home/page1.html`);
+            expect(resp.data.jcr.nodeByPath.renderUrl).to.be.equal(`${vanity}`);
         });
     });
 });
