@@ -23,7 +23,7 @@ describe('Test graphql render url generation', () => {
                 {name: 'j:templateName', value: 'simple'}
             ]
         });
-        publishAndWaitJobEnding('/sites/' + sitename);
+        publishAndWaitJobEnding('/sites/' + sitename, ['en']);
     });
 
     after('Delete the site', () => {
@@ -110,13 +110,13 @@ describe('Test graphql render url generation', () => {
     it('Returns correct values for nodes which have vanity urls defined', () => {
         const vanity = '/my-page1';
         editSite(sitename, {serverName: 'jahia'});
-        addVanityUrl(`/sites/${sitename}/home/page1`, 'en', vanity);
-        publishAndWaitJobEnding(`/sites/${sitename}/home/page1`);
+        addVanityUrl(`/sites/${sitename}/home`, 'en', vanity);
+        publishAndWaitJobEnding(`/sites/${sitename}/home`, ['en']);
 
         cy.apollo({
             queryFile: 'jcr/renderUrl.graphql',
             variables: {
-                path: `/sites/${sitename}/home/page1`,
+                path: `/sites/${sitename}/home`,
                 workspace: 'EDIT',
                 lang: 'en'
             }
@@ -128,7 +128,7 @@ describe('Test graphql render url generation', () => {
         cy.apollo({
             queryFile: 'jcr/renderUrl.graphql',
             variables: {
-                path: `/sites/${sitename}/home/page1`,
+                path: `/sites/${sitename}/home`,
                 workspace: 'LIVE',
                 lang: 'en'
             }

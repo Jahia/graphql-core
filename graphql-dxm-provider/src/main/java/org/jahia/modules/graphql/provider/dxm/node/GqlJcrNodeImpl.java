@@ -34,6 +34,7 @@ import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
+import org.jahia.modules.graphql.provider.dxm.util.ServletUtil;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.render.RenderContext;
@@ -51,7 +52,6 @@ import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.security.AccessControlException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -60,7 +60,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
-import javax.servlet.http.HttpServletResponseWrapper;
 
 
 /**
@@ -591,7 +590,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             String url = getNodeURL(this.node, workspace.getValue(), LanguageCodeConverters.languageCodeToLocale(language), findDisplayable);
             HttpServletResponse httpServletResponse = ContextUtil.getHttpServletResponse(environment.getGraphQlContext());
             HttpServletRequest httpServletRequest = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
-            return urlRewriteService.rewriteOutbound(url, new RenderUrlHttpServletResponseWrapper(httpServletRequest), httpServletResponse);
+            return urlRewriteService.rewriteOutbound(url, ServletUtil.unwrapRequest(httpServletRequest), httpServletResponse);
         } catch (RepositoryException | ServletException | IOException | InvocationTargetException e) {
             throw new DataFetchingException(e);
         }
@@ -703,28 +702,5 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         url += nodeForURL.getPath() + extensionName;
 
         return url;
-    }
-
-    /**
-     * Custom request wrapper designed to get rid of unnecessary "/modules" context part, which may be injected in some cases
-     * by rewrite engine rules. On default Jahia installation this kind of context is injected into resulting url by outbound rule
-     * associated with org.jahia.services.seo.jcr.VanityUrlMapper when processing requests to /modules/graphql.
-     */
-    private class RenderUrlHttpServletResponseWrapper extends HttpServletRequestWrapper {
-
-        public RenderUrlHttpServletResponseWrapper(HttpServletRequest request) {
-            super(request);
-        }
-
-        @Override
-        public String getContextPath() {
-            String ctx = super.getContextPath();
-
-            if (ctx.endsWith("/modules")) {
-                ctx = ctx.replace("/modules", "");
-            }
-
-            return ctx;
-        }
     }
 }
