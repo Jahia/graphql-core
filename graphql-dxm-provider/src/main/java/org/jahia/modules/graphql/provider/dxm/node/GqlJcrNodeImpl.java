@@ -15,10 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.annotations.annotationTypes.GraphQLDefaultValue;
-import graphql.annotations.annotationTypes.GraphQLDescription;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.collections.CollectionUtils;
@@ -26,16 +23,26 @@ import org.apache.commons.lang.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
+import org.jahia.bin.Jahia;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.acl.GqlAcl;
+import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.predicate.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
+import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
+import org.jahia.modules.graphql.provider.dxm.util.ServletUtil;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
+import org.jahia.services.render.RenderContext;
+import org.jahia.services.render.RenderService;
+import org.jahia.services.render.Resource;
+import org.jahia.services.render.Template;
+import org.jahia.services.seo.urlrewrite.UrlRewriteService;
+import org.jahia.utils.LanguageCodeConverters;
 import pl.touk.throwing.ThrowingFunction;
 import pl.touk.throwing.ThrowingPredicate;
 import pl.touk.throwing.ThrowingSupplier;
@@ -43,10 +50,17 @@ import pl.touk.throwing.ThrowingSupplier;
 import javax.jcr.*;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.security.AccessControlException;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import javax.inject.Inject;
+
 
 /**
  * GraphQL representation of a JCR node - generic implementation.
@@ -60,6 +74,10 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     private JCRNodeWrapper node;
     private String type;
+
+    @Inject
+    @GraphQLOsgiService
+    private UrlRewriteService urlRewriteService;
 
     /**
      * Create an instance that represents a JCR node to GraphQL.
@@ -563,6 +581,22 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
+    @GraphQLDescription("Get render URL.")
+    public String getRenderUrl(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace,
+                               @GraphQLName("language") @GraphQLDescription("The language content is rendered in") @GraphQLNonNull String language,
+                               @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) @GraphQLName("findDisplayable") @GraphQLDescription("Finds displayable node") Boolean findDisplayable,
+                               DataFetchingEnvironment environment) {
+        try {
+            String url = getNodeURL(this.node, workspace.getValue(), LanguageCodeConverters.languageCodeToLocale(language), findDisplayable);
+            HttpServletResponse httpServletResponse = ContextUtil.getHttpServletResponse(environment.getGraphQlContext());
+            HttpServletRequest httpServletRequest = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
+            return urlRewriteService.rewriteOutbound(url, ServletUtil.unwrapRequest(httpServletRequest), httpServletResponse);
+        } catch (RepositoryException | ServletException | IOException | InvocationTargetException e) {
+            throw new DataFetchingException(e);
+        }
+    }
+
+    @Override
     @GraphQLName("usages")
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLNonNull
@@ -637,5 +671,36 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                 }).addUsage(gqlReference);
             }
         }
+    }
+
+    // This code was borrowed from gwt related package in the core: https://github.com/Jahia/jahia-private/blob/0ddbc6f48459751a4e7a1729c234f28c764d12ea/core/src/main/java/org/jahia/ajax/gwt/helper/NodeHelper.java#L102-L139
+    // TODO: A TECH ticket to move this code was created: TECH-1875
+    private String getNodeURL(JCRNodeWrapper node, final String workspace, final Locale locale, boolean findDisplayable)
+            throws RepositoryException {
+        String servlet = "render";
+        String url = Jahia.getContextPath() + "/cms/" + servlet + "/" + workspace + "/" + locale;
+
+        Resource resource = new Resource(node, "html", null, Resource.CONFIGURATION_PAGE);
+        RenderContext renderContext = new RenderContext(null, null, node.getSession().getUser());
+        renderContext.setMainResource(resource);
+        renderContext.setServletPath("/cms/" + servlet);
+        JCRNodeWrapper nodeForURL = node;
+        if (findDisplayable) {
+            nodeForURL = JCRContentUtils.findDisplayableNode(node, renderContext);
+            if (nodeForURL != null && !nodeForURL.getIdentifier().equals(node.getIdentifier())) {
+                resource = new Resource(nodeForURL, "html", null, Resource.CONFIGURATION_PAGE);
+            }
+        }
+        Template template = RenderService.getInstance().resolveTemplate(resource, renderContext);
+        String extensionName;
+        if (template != null || nodeForURL.isNodeType("jnt:page") || nodeForURL.isNodeType("jmix:mainResource")) {
+            extensionName = ".html";
+        } else {
+            extensionName = ".content-template.html";
+        }
+
+        url += nodeForURL.getPath() + extensionName;
+
+        return url;
     }
 }

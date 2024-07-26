@@ -23,6 +23,7 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
+import org.jahia.modules.graphql.provider.dxm.util.ServletUtil;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -141,9 +142,7 @@ public class RenderNodeExtensions {
                 throw new RuntimeException("No HttpRequest or HttpResponse");
             }
 
-            if (request instanceof HttpServletRequestWrapper) {
-                request = (HttpServletRequest) ((HttpServletRequestWrapper) request).getRequest();
-            }
+            request = ServletUtil.unwrapRequest(request);
 
             if (requestAttributes != null && !requestAttributes.isEmpty()) {
                 for (RenderRequestAttributeInput requestAttribute : requestAttributes) {
