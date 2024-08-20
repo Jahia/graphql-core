@@ -19,11 +19,15 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.graphql.provider.dxm.acl.service.JahiaAclService;
+import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.jcr.RepositoryException;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,6 +44,14 @@ public class GqlLockInfo {
         this.node = node;
     }
 
+    @Inject
+    @GraphQLOsgiService
+    private JahiaAclService aclService;
+
+    @Inject
+    @GraphQLOsgiService
+    private JahiaGroupManagerService groupManagerService;
+
     @GraphQLField
     @GraphQLDescription("Is node lockable")
     public boolean isLockable() {
@@ -51,6 +63,8 @@ public class GqlLockInfo {
     public boolean canLock() {
         try {
             if (isLockable()) {
+                if (!node.isLocked()) return true;
+
                 JahiaUser jahiaUser = node.getSession().getUser();
                 if (jahiaUser.isRoot()) {
                     return true;
@@ -73,6 +87,8 @@ public class GqlLockInfo {
                 if (jahiaUser.isRoot()) {
                     return true;
                 }
+                if (isUserSiteAdmin(jahiaUser)) return true;
+
                 return isUserLockOwner();
             }
         } catch(RepositoryException ex) {
@@ -110,7 +126,7 @@ public class GqlLockInfo {
     }
 
     private boolean isUserLockOwner() throws RepositoryException {
-        if (node.getLock().getLockOwner() != null) {
+        if (node.getLock() != null && node.getLock().getLockOwner() != null) {
             String[] lockOwners = node.getLock().getLockOwner().split(" ");
             for(String lockOwner : lockOwners) {
                 if (node.getSession().getUserID().equals(lockOwner)) {
@@ -119,5 +135,9 @@ public class GqlLockInfo {
             }
         }
         return false;
+    }
+
+    private boolean isUserSiteAdmin(JahiaUser user) throws RepositoryException {
+        return aclService.hasInheritedUserRole(node, user, "site-administrator");
     }
 }

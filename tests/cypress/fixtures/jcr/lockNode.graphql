@@ -1,0 +1,7 @@
+mutation lockNode($pathOrId: String!) {
+    jcr(workspace: EDIT) {
+        mutateNode(pathOrId: $pathOrId) {
+            lock
+        }
+    }
+}

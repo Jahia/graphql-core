@@ -18,12 +18,15 @@ package org.jahia.modules.graphql.provider.dxm.locking;
 import graphql.annotations.annotationTypes.*;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
+import org.jahia.modules.graphql.provider.dxm.acl.service.JahiaAclService;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.usermanager.JahiaUser;
 
+import javax.inject.Inject;
 import javax.jcr.RepositoryException;
 import java.util.function.Supplier;
 
@@ -40,9 +43,13 @@ public class LockJCRNodeMutationExtension {
      *
      * @param nodeMutation JCR node mutation to apply the extension to
      */
-    public LockJCRNodeMutationExtension(GqlJcrNodeMutation nodeMutation) throws GqlJcrWrongInputException {
+    @Inject
+    public LockJCRNodeMutationExtension(GqlJcrNodeMutation nodeMutation) {
         this.nodeMutation = nodeMutation;
+        this.aclService = BundleUtils.getOsgiService(JahiaAclService.class, null);
     }
+
+    private JahiaAclService aclService;
 
     /**
      * Lock the node.
@@ -67,13 +74,15 @@ public class LockJCRNodeMutationExtension {
      */
     @GraphQLField
     @GraphQLDescription("Unlock the node")
-    public boolean unlock(@GraphQLName("type") @GraphQLDefaultValue(DefaultLockTypeProvider.class) @GraphQLDescription("Type of lock, defaults to user") String type) {
+    public boolean unlock(
+            @GraphQLName("type") @GraphQLDefaultValue(DefaultLockTypeProvider.class) @GraphQLDescription("Type of lock, defaults to user") String type
+    ) {
         try {
             JCRNodeWrapper nodeToUnlock = nodeMutation.getNode().getNode();
             if (!nodeToUnlock.isLocked()) {
                 return false;
             }
-            if (nodeToUnlock.getSession().getUser().isRoot()) {
+            if (nodeToUnlock.getSession().getUser().isRoot() || isUserSiteAdmin()) {
                 String lockOwner = nodeToUnlock.getLockOwner();
                 nodeToUnlock.unlock(type, lockOwner);
             }
@@ -112,5 +121,10 @@ public class LockJCRNodeMutationExtension {
         public String get() {
             return "user";
         }
+    }
+
+    private boolean isUserSiteAdmin() throws RepositoryException {
+        JahiaUser user = this.nodeMutation.jcrNode.getSession().getUser();
+        return aclService.hasInheritedUserRole(this.nodeMutation.jcrNode, user, "site-administrator");
     }
 }
