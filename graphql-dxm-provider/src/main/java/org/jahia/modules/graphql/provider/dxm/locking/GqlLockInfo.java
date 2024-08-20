@@ -22,7 +22,6 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.acl.service.JahiaAclService;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,10 +46,6 @@ public class GqlLockInfo {
     @Inject
     @GraphQLOsgiService
     private JahiaAclService aclService;
-
-    @Inject
-    @GraphQLOsgiService
-    private JahiaGroupManagerService groupManagerService;
 
     @GraphQLField
     @GraphQLDescription("Is node lockable")

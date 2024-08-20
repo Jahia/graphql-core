@@ -26,7 +26,6 @@ import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.usermanager.JahiaUser;
 
-import javax.inject.Inject;
 import javax.jcr.RepositoryException;
 import java.util.function.Supplier;
 
@@ -36,20 +35,19 @@ import java.util.function.Supplier;
 @GraphQLTypeExtension(GqlJcrNodeMutation.class)
 public class LockJCRNodeMutationExtension {
 
-    private GqlJcrNodeMutation nodeMutation;
+    private final GqlJcrNodeMutation nodeMutation;
+    private final JahiaAclService aclService;
 
     /**
      * Create a lock mutation extension instance.
      *
      * @param nodeMutation JCR node mutation to apply the extension to
      */
-    @Inject
     public LockJCRNodeMutationExtension(GqlJcrNodeMutation nodeMutation) {
         this.nodeMutation = nodeMutation;
         this.aclService = BundleUtils.getOsgiService(JahiaAclService.class, null);
     }
 
-    private JahiaAclService aclService;
 
     /**
      * Lock the node.

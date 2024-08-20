@@ -130,10 +130,10 @@ public class JahiaAclServiceImpl implements JahiaAclService {
                 .anyMatch(ace -> {
                     if (!ace.isGrantType()) return false;
                     if (ace.getRoleName().equalsIgnoreCase(roleName)) {
-                        if (ace.getPrincipalKey().startsWith("u:") && ace.getPrincipalKey().substring(2).equalsIgnoreCase(user.getUsername())) {
+                        if (ace.isUserPrincipal() && ace.getPrincipalName().equalsIgnoreCase(user.getUsername())) {
                             return true;
                         }
-                        if (ace.getPrincipalKey().startsWith("g:") && this.groupService.isMember(user.getUsername(), ace.getPrincipalKey().substring(2), site.getSiteKey())) {
+                        if (ace.isGroupPrincipal() && this.groupService.isMember(user.getUsername(), ace.getPrincipalName(), site.getSiteKey())) {
                             return true;
                         }
                     }

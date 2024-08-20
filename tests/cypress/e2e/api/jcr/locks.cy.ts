@@ -54,7 +54,6 @@ describe('Node locks tests', () => {
                 }
             })
             .should(resp => {
-                debugger;
                 expect(resp?.data?.jcr?.nodeByPath?.lockInfo?.canUnlock, 'Cannot unlock').to.be.false;
             });
 
