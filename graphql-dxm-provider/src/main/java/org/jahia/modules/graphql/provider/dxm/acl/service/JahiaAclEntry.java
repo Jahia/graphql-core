@@ -23,6 +23,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.acl.service;
 
+import org.jahia.modules.graphql.provider.dxm.user.PrincipalType;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.slf4j.Logger;
@@ -127,6 +128,18 @@ public class JahiaAclEntry {
 
     public boolean isDenyType() {
         return type == AclEntryType.DENY;
+    }
+
+    public boolean isUserPrincipal() {
+        return PrincipalType.isUser(principalKey);
+    }
+
+    public boolean isGroupPrincipal() {
+        return PrincipalType.isGroup(principalKey);
+    }
+
+    public String getPrincipalName() {
+        return principalKey.substring(2);
     }
 
 }

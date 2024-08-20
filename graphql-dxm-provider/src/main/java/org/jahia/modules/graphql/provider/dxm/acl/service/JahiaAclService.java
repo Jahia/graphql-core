@@ -23,6 +23,7 @@ package org.jahia.modules.graphql.provider.dxm.acl.service;/*
  */
 
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.usermanager.JahiaUser;
 
 import javax.jcr.RepositoryException;
 import java.util.List;
@@ -71,6 +72,11 @@ public interface JahiaAclService {
      * @return true if principalKey has GRANT permission on a roleName for a given node; false otherwise.
      */
     public boolean hasInheritedPermission(JCRNodeWrapper node, String principalKey, String roleName);
+
+    /**
+     * @return true if user has a role on a given node or belongs to a group who has role on a given node
+     */
+    public boolean hasInheritedUserRole(JCRNodeWrapper node, JahiaUser user, String roleName) throws RepositoryException;
 
     public List<JahiaAclEntry> getAclEntries(JCRNodeWrapper jcrNode);
 

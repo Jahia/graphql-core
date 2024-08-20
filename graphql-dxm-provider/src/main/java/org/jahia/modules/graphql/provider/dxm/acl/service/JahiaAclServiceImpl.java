@@ -30,6 +30,7 @@ import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
+import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -119,6 +120,25 @@ public class JahiaAclServiceImpl implements JahiaAclService {
     public boolean hasInheritedPermission(JCRNodeWrapper jcrNode, String principalKey, String roleName) {
         List<JahiaAclEntry> aclEntries = getAclEntries(jcrNode, principalKey);
         return aclEntries.stream().anyMatch(ace -> roleName.equals(ace.getRoleName()) && ace.isGrantType() && ace.isInherited());
+    }
+
+    public boolean hasInheritedUserRole(JCRNodeWrapper node, JahiaUser user, String roleName) throws RepositoryException {
+        List<JahiaAclEntry> aclEntries = this.getAclEntries(node);
+        JCRSiteNode site = node.getResolveSite();
+        return aclEntries
+                .stream()
+                .anyMatch(ace -> {
+                    if (!ace.isGrantType()) return false;
+                    if (ace.getRoleName().equalsIgnoreCase(roleName)) {
+                        if (ace.isUserPrincipal() && ace.getPrincipalName().equalsIgnoreCase(user.getUsername())) {
+                            return true;
+                        }
+                        if (ace.isGroupPrincipal() && this.groupService.isMember(user.getUsername(), ace.getPrincipalName(), site.getSiteKey())) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
     }
 
     public List<JahiaAclEntry> getAclEntries(JCRNodeWrapper jcrNode, String principalKey) {

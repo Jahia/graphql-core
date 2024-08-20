@@ -1,0 +1,10 @@
+query lockInfoByPath($pathOrId: String!) {
+    jcr {
+        nodeByPath(path: $pathOrId) {
+            lockInfo {
+                canLock
+                canUnlock
+            }
+        }
+    }
+}
