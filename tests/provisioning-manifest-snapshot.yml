@@ -32,7 +32,7 @@
 
 - installBundle:
   - 'mvn:org.jahia.modules/graphql-dxm-provider'
-  - 'mvn:org.jahia.test/graphql-test-module'
+  - 'mvn:org.jahia.test/graphql-test'
   - 'mvn:org.jahia.modules/graphql-extension-example'
   autoStart: true
   uninstallPreviousVersion: true
