@@ -142,8 +142,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     }
 
     public boolean isIntrospectionEnabled() {
-        return false;
-//        return SettingsBean.getInstance().isDevelopmentMode() || introspectionEnabled;
+        return SettingsBean.getInstance().isDevelopmentMode() || introspectionEnabled;
     }
 
 
