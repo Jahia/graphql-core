@@ -17,6 +17,7 @@ package org.jahia.modules.graphql.provider.dxm.config;
 
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
+import org.jahia.settings.SettingsBean;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.service.component.ComponentContext;
@@ -42,6 +43,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private final static String CORS_ORIGINS = "http.cors.allow-origin";
     private final static String NODE_LIMIT = "graphql.fields.node.limit";
 
+    private final static String ENABLE_INTROSPECTION_MODE = "graphql.introspection.enabled";
+
     private Map<String, List<String>> keysByPid = new HashMap<>();
     private Map<String, String> permissions = new HashMap<>();
 
@@ -49,6 +52,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private Map<String, Set<String>> corsOriginByPid = new HashMap<>();
 
     private int nodeLimit = 5000;
+    private boolean introspectionEnabled = false;
 
     private ComponentContext componentContext;
 
@@ -71,6 +75,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
         // parse properties
         Enumeration<String> keys = properties.keys();
+        boolean isDefaultConfig = properties.get("felix.fileinstall.filename") != null &&
+                properties.get("felix.fileinstall.filename").toString().endsWith("org.jahia.modules.graphql.provider-default.cfg");
+
         while (keys.hasMoreElements()) {
             String key = keys.nextElement();
             boolean addKey = true;
@@ -81,7 +88,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 for (String p : keysByPid.keySet()) {
                     if (!StringUtils.equals(p, pid) && keysByPid.get(p).contains(key)) {
                         addKey = false;
-                        logger.warn("Unable to register permission for {} because it has been already registered by the config with id {}", key, p);
+                        logger.warn("Unable to register permission for {} because it has been already registered by the config with id {}",
+                                key, p);
                         break;
                     }
                 }
@@ -91,8 +99,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                     keysForPid.add(key);
                 }
             } else if (key.equals(CORS_ORIGINS)) {
-                corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split(value," ,"))));
-            } else if (key.equals(NODE_LIMIT) && properties.get("felix.fileinstall.filename") != null && properties.get("felix.fileinstall.filename").toString().endsWith("org.jahia.modules.graphql.provider-default.cfg")) {
+                corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split(value, " ,"))));
+            } else if (isDefaultConfig && key.equals(NODE_LIMIT)) {
                 try {
                     int newNodeLimit = Integer.parseInt(value);
                     if (newNodeLimit < 0) {
@@ -106,6 +114,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 } catch (NumberFormatException e) {
                     throw new ConfigurationException(key, "Node limit must be a positive integer");
                 }
+            } else if (isDefaultConfig && key.equals(ENABLE_INTROSPECTION_MODE)) {
+                introspectionEnabled = Boolean.parseBoolean(value);
             } else {
                 // store other properties than permission configuration
                 keysForPid.add(key);
@@ -129,6 +139,11 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
             }
             keysByPid.remove(pid);
         }
+    }
+
+    public boolean isIntrospectionEnabled() {
+        return false;
+//        return SettingsBean.getInstance().isDevelopmentMode() || introspectionEnabled;
     }
 
 
