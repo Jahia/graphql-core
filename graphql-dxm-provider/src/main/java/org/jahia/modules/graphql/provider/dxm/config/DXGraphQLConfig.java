@@ -52,7 +52,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private Map<String, Set<String>> corsOriginByPid = new HashMap<>();
 
     private int nodeLimit = 5000;
-    private boolean introspectionEnabled = false;
+    private Boolean introspectionEnabled;
 
     private ComponentContext componentContext;
 
@@ -77,6 +77,14 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         Enumeration<String> keys = properties.keys();
         boolean isDefaultConfig = properties.get("felix.fileinstall.filename") != null &&
                 properties.get("felix.fileinstall.filename").toString().endsWith("org.jahia.modules.graphql.provider-default.cfg");
+
+        /*
+         * Keep track of ENABLE_INTROSPECTION_MODE property if it's defined or not (using null) in the default configuration
+         * and only set it to a true/false value if it's defined in the configuration file
+         */
+        if (isDefaultConfig) {
+            introspectionEnabled = null;
+        }
 
         while (keys.hasMoreElements()) {
             String key = keys.nextElement();
@@ -141,10 +149,13 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         }
     }
 
+    /**
+     * @return true if ENABLE_INTROSPECTION_MODE property is set to true for the default configuration, or false for any other value.
+     * It will be enabled in development mode by default, and disabled in production mode by default if the property is not defined.
+     */
     public boolean isIntrospectionEnabled() {
-        return SettingsBean.getInstance().isDevelopmentMode() || introspectionEnabled;
+        return (introspectionEnabled == null && SettingsBean.getInstance().isDevelopmentMode()) || introspectionEnabled;
     }
-
 
     public Map<String, String> getPermissions() {
         return permissions;
