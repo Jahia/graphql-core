@@ -154,7 +154,10 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
      * It will be enabled in development mode by default, and disabled in production mode by default if the property is not defined.
      */
     public boolean isIntrospectionEnabled() {
-        return (introspectionEnabled == null && SettingsBean.getInstance().isDevelopmentMode()) || introspectionEnabled;
+        if (introspectionEnabled == null) {
+            return SettingsBean.getInstance().isDevelopmentMode();
+        }
+        return introspectionEnabled;
     }
 
     public Map<String, String> getPermissions() {
