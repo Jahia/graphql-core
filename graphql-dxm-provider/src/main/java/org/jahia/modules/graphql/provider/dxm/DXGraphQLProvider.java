@@ -25,6 +25,7 @@ import graphql.annotations.processor.searchAlgorithms.SearchAlgorithm;
 import graphql.annotations.processor.typeFunctions.TypeFunction;
 import graphql.kickstart.servlet.osgi.*;
 import graphql.schema.*;
+import graphql.schema.visibility.NoIntrospectionGraphqlFieldVisibility;
 import org.jahia.bin.filters.jcr.JcrSessionFilter;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
@@ -266,7 +267,11 @@ public class DXGraphQLProvider implements GraphQLTypesProvider, GraphQLQueryProv
         queryType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Query.class, container);
         mutationType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Mutation.class, container);
         subscriptionType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Subscription.class, container);
-        codeRegistry = container.getCodeRegistryBuilder().build();
+        GraphQLCodeRegistry.Builder registryBuilder = container.getCodeRegistryBuilder();
+        if (!dxGraphQLConfig.isIntrospectionEnabled()) {
+            registryBuilder.fieldVisibility(NoIntrospectionGraphqlFieldVisibility.NO_INTROSPECTION_FIELD_VISIBILITY);
+        }
+        codeRegistry = registryBuilder.build();
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
                 if (aClass.isAnnotationPresent(GraphQLTypeExtension.class)) {

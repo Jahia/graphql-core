@@ -27,6 +27,9 @@
   "jahia": {
     "remotes": {
       "jahia": "javascript/apps/remoteEntry.js"
+    },
+    "apps": {
+      "jahia": "configs/graphqlDxmProvider.jsp"
     }
   },
   "dependencies": {

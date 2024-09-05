@@ -51,12 +51,14 @@ const GraphiQLComponent = () => {
 };
 
 export const registerRoutes = () => {
-    registry.add('adminRoute', 'graphql-workspace', {
-        targets: ['developerTools:20'],
-        requiredPermission: 'developerToolsAccess',
-        icon: window.jahia.moonstone.toIconComponent('GraphQl'),
-        label: 'graphql-dxm-provider:graphql',
-        isSelectable: true,
-        render: () => <GraphiQLComponent/>
-    });
+    if (window?.contextJsParameters?.config?.graphqlDxmProvider?.isIntrospectionEnabled) {
+        registry.add('adminRoute', 'graphql-workspace', {
+            targets: ['developerTools:20'],
+            requiredPermission: 'developerToolsAccess',
+            icon: window.jahia.moonstone.toIconComponent('GraphQl'),
+            label: 'graphql-dxm-provider:graphql',
+            isSelectable: true,
+            render: () => <GraphiQLComponent/>
+        });
+    }
 };
