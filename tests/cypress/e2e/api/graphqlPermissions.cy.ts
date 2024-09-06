@@ -13,7 +13,6 @@ describe('Test graphql permissions', () => {
     let subList2Cursor: string;
 
     before('create user and test data', () => {
-        // DeleteNode('/testList'); // TODO should not be needed
         createUser('testUser', 'testPassword');
         addUserToGroup('testUser', 'privileged');
 
@@ -64,18 +63,23 @@ describe('Test graphql permissions', () => {
                 revokeRoles('/testList/testSubList1', ['owner'], 'testUser', 'USER');
                 revokeRoles('/testList/reference1', ['owner'], 'testUser', 'USER');
             }
+            )
+            .then(() => {
+                // Use the newly created user for the rest of the tests
+                cy.apolloClient({username: 'testUser', password: 'testPassword'});
+            }
             );
     });
 
     after('Delete user and test data', () => {
+        cy.apolloClient(); // Use root user to perform cleanup operations
         deleteUser('testUser');
-        cy.apolloClient() // TODO needed but I don't know why
-            .apollo({
-                mutationFile: 'jcr/deleteNode.graphql',
-                variables: {
-                    pathOrId: '/testList'
-                }
-            });
+        cy.apollo({
+            mutationFile: 'jcr/deleteNode.graphql',
+            variables: {
+                pathOrId: '/testList'
+            }
+        });
     });
 
     it('Should get error not retrieve protected node', () => {
@@ -83,9 +87,6 @@ describe('Test graphql permissions', () => {
             .apollo({
                 query: gql`
                 query {
-                    currentUser {
-                        username
-                    }
                     jcr {
                         nodeByPath(path: "/testList/testSubList1") {
                             uuid
