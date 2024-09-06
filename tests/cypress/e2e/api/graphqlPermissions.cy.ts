@@ -63,23 +63,18 @@ describe('Test graphql permissions', () => {
                 revokeRoles('/testList/testSubList1', ['owner'], 'testUser', 'USER');
                 revokeRoles('/testList/reference1', ['owner'], 'testUser', 'USER');
             }
-            )
-            .then(() => {
-                // Use the newly created user for the rest of the tests
-                cy.apolloClient({username: 'testUser', password: 'testPassword'});
-            }
             );
     });
 
     after('Delete user and test data', () => {
-        cy.apolloClient(); // Use root user to perform cleanup operations
         deleteUser('testUser');
-        cy.apollo({
-            mutationFile: 'jcr/deleteNode.graphql',
-            variables: {
-                pathOrId: '/testList'
-            }
-        });
+        cy.apolloClient() // Use root user to perform cleanup operations
+            .apollo({
+                mutationFile: 'jcr/deleteNode.graphql',
+                variables: {
+                    pathOrId: '/testList'
+                }
+            });
     });
 
     it('Should get error not retrieve protected node', () => {
