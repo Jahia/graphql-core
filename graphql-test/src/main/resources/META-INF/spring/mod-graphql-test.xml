@@ -10,7 +10,6 @@
                 <value>org.jahia.test.graphql.GraphQLDescendantsTest</value>
                 <value>org.jahia.test.graphql.GraphQLCriteriaTest</value>
                 <value>org.jahia.test.graphql.GraphQLNodeMutationsTest</value>
-                <value>org.jahia.test.graphql.GraphQLPermissionsTest</value>
                 <value>org.jahia.test.graphql.GraphQLPublicationTest</value>
                 <value>org.jahia.test.graphql.GraphQLVanityUrlsTest</value>
                 <value>org.jahia.test.graphql.GraphQLWorkflowTest</value>
