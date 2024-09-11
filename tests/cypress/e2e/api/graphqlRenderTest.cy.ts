@@ -327,4 +327,31 @@ describe('Test graphql rendering', () => {
         });
         deleteNode('/sites/' + sitename + '/home/news5');
     });
+
+    it('gets view name from property when rendering', () => {
+        addNode({
+            parentPathOrId: '/sites/' + sitename + '/home',
+            name: 'text1',
+            primaryNodeType: 'jnt:bigText',
+            properties: [
+                {name: 'text', language: 'en', value: 'test'},
+                {name: 'j:view', language: 'en', value: 'link'}
+            ],
+            mixins: ['jmix:renderable']
+        });
+
+        cy.apollo({
+            queryFile: 'jcr/nodeRenderedContent.graphql',
+            variables: {
+                path: '/sites/' + sitename + '/home/text1',
+                view: null
+            }
+        }).should(result => {
+            const output = result?.data?.jcr?.nodeByPath?.renderedContent.output;
+            expect(output).contains(
+                '<a target="" href="/cms/render/default/en/sites/graphql_test_render/home/text1.html">text1</a>'
+            );
+        });
+        deleteNode('/sites/' + sitename + '/home/text1');
+    });
 });

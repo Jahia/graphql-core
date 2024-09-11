@@ -112,7 +112,7 @@ public class RenderNodeExtensions {
 
     @GraphQLField
     @GraphQLDescription("Gets the fully rendered content for this node")
-    public RenderedNode getRenderedContent(@GraphQLName("view") @GraphQLDescription("Name of the view") String view,
+    public RenderedNode getRenderedContent(@GraphQLName("view") @GraphQLDescription("Name of the view (leave null for default)") String view,
                                            @GraphQLName("templateType") @GraphQLDescription("Template type") String templateType,
                                            @GraphQLName("contextConfiguration") @GraphQLDescription("Rendering context configuration") String contextConfiguration,
                                            @GraphQLName("language") @GraphQLDescription("Language") String language,
@@ -151,6 +151,11 @@ public class RenderNodeExtensions {
             }
 
             JCRNodeWrapper node = NodeHelper.getNodeInLanguage(this.node.getNode(), language);
+
+            if (view == null) {
+                String definedView = node.hasProperty("j:view") ? node.getPropertyAsString("j:view") : null;
+                view = definedView != null && !definedView.isEmpty() ? definedView : "cm";
+            }
 
             Resource r = new Resource(node, templateType, view, contextConfiguration);
 
