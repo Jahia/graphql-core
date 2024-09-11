@@ -1,4 +1,4 @@
-query($path: String!, $view: String!) {
+query($path: String!, $view: String) {
     jcr {
         nodeByPath(path: $path) {
             renderedContent(view: $view) {
