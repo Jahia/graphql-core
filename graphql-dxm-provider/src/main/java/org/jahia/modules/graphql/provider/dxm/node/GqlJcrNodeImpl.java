@@ -652,23 +652,30 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                     String s = referencingNode.getProperty("j:fieldName").getValue().getString();
                     referencingNode = referencingNode.getParent();
                     NodeIterator it = referencingNode.getI18Ns();
-                    while (it.hasNext()) {
-                        Node langNode = it.nextNode();
-                        String lang = langNode.getProperty("jcr:language").getString();
-                        if (s.endsWith("_" + lang)) {
-                            locale = lang;
-                            name = StringUtils.substringBeforeLast(s, "_" + lang);
-                            break;
+                    if (!it.hasNext()) {
+                        name = s;
+                    } else {
+                        while (it.hasNext()) {
+                            Node langNode = it.nextNode();
+                            String lang = langNode.getProperty("jcr:language").getString();
+                            if (s.endsWith("_" + lang)) {
+                                locale = lang;
+                                name = StringUtils.substringBeforeLast(s, "_" + lang);
+                                break;
+                            }
                         }
                     }
                 }
                 GqlJcrNode gqlReferencingNode = SpecializedTypesHandler.getNode(referencingNode);
                 GqlJcrProperty gqlReference = gqlReferencingNode.getProperty(name, locale, false);
-                gqlReferences.stream().filter(gqlUsage -> gqlUsage.getNode().getUuid().equals(gqlReferencingNode.getUuid())).findFirst().orElseGet(() -> {
-                    GqlUsage usage = new GqlUsage(gqlReferencingNode);
-                    gqlReferences.add(usage);
-                    return usage;
-                }).addUsage(gqlReference);
+                gqlReferences.stream()
+                        .filter(gqlUsage -> gqlUsage.getNode().getUuid().equals(gqlReferencingNode.getUuid()))
+                        .findFirst()
+                        .orElseGet(() -> {
+                            GqlUsage usage = new GqlUsage(gqlReferencingNode);
+                            gqlReferences.add(usage);
+                            return usage;
+                        }).addUsage(gqlReference);
             }
         }
     }
