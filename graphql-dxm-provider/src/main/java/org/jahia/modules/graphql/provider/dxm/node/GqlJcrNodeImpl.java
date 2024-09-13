@@ -367,15 +367,48 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     public DXPaginatedData<GqlJcrProperty> getReferences(@GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
                                                          @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
                                                          DataFetchingEnvironment environment) {
-        List<GqlJcrProperty> references = getReferences(this.node, environment);
-
+        List<GqlJcrProperty> references = new LinkedList<GqlJcrProperty>();
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
+        try {
+            collectReferences(node.getWeakReferences(), references, environment);
+        } catch (UnsupportedRepositoryOperationException | ConstraintViolationException e) {
+            return null;
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            collectReferences(node.getReferences(), references, environment);
+        } catch (RepositoryException e) {
+            //EDP implementation will throw UnsupportedRepositoryOperationException on access to getReferences
+            if (!(e instanceof UnsupportedRepositoryOperationException)) {
+                throw new RuntimeException(e);
+            }
+        }
+
         List<GqlJcrProperty> result = FilterHelper.filterConnection(references, fieldFilter, environment);
         if (fieldSorter != null) {
             result.sort(SorterHelper.getFieldComparator(fieldSorter, FieldEvaluator.forConnection(environment)));
         }
 
         return PaginationHelper.paginate(result, p -> PaginationHelper.encodeCursor(p.getNode().getUuid() + "/" + p.getName()), arguments);
+    }
+
+    @Override
+    @GraphQLField
+    @GraphQLName("referenceCount")
+    @GraphQLDescription("Returns count of all references of the node across all sites")
+    public Integer getReferenceCount(DataFetchingEnvironment environment) {
+        try {
+            return jcrTemplate.doExecuteWithSystemSession(new JCRCallback<Integer>() {
+                @Override
+                public Integer doInJCR(JCRSessionWrapper jcrSessionWrapper) throws RepositoryException {
+                    JCRNodeWrapper nodeWrapper = jcrSessionWrapper.getNode(node.getPath());
+                    return (int) (nodeWrapper.getWeakReferences().getSize() + nodeWrapper.getReferences().getSize());
+                }
+            });
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
     }
 
     private void collectReferences(PropertyIterator references, Collection<GqlJcrProperty> gqlReferences, DataFetchingEnvironment environment) throws RepositoryException {
@@ -407,25 +440,6 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                     gqlReferences.add(gqlReference);
                 }
             }
-        }
-    }
-
-    @Override
-    @GraphQLField
-    @GraphQLName("referenceCount")
-    @GraphQLDescription("Returns count of all references of the node across all sites")
-    public Integer getReferenceCount(DataFetchingEnvironment environment) {
-        try {
-            return jcrTemplate.doExecuteWithSystemSession(new JCRCallback<Integer>() {
-                @Override
-                public Integer doInJCR(JCRSessionWrapper jcrSessionWrapper) throws RepositoryException {
-                    JCRNodeWrapper nodeWrapper = jcrSessionWrapper.getNode(node.getPath());
-                    List<GqlJcrProperty> references = getReferences(nodeWrapper, environment);
-                    return references.size();
-                }
-            });
-        } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
         }
     }
 
@@ -717,27 +731,5 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         url += nodeForURL.getPath() + extensionName;
 
         return url;
-    }
-
-    private List<GqlJcrProperty> getReferences(JCRNodeWrapper node, DataFetchingEnvironment environment) {
-        List<GqlJcrProperty> references = new LinkedList<GqlJcrProperty>();
-
-        try {
-            collectReferences(node.getWeakReferences(), references, environment);
-        } catch (UnsupportedRepositoryOperationException | ConstraintViolationException e) {
-            return references;
-        } catch (RepositoryException e) {
-            throw new RuntimeException(e);
-        }
-        try {
-            collectReferences(node.getReferences(), references, environment);
-        } catch (RepositoryException e) {
-            //EDP implementation will throw UnsupportedRepositoryOperationException on access to getReferences
-            if (!(e instanceof UnsupportedRepositoryOperationException)) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        return references;
     }
 }
