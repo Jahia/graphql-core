@@ -397,7 +397,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @GraphQLField
     @GraphQLName("referenceCount")
     @GraphQLDescription("Returns count of all references of the node across all sites")
-    public Integer getReferenceCount(DataFetchingEnvironment environment) {
+    public Integer getReferenceCount() {
         try {
             return jcrTemplate.doExecuteWithSystemSession(new JCRCallback<Integer>() {
                 @Override
