@@ -230,6 +230,11 @@ public interface GqlJcrNode {
                                                   @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
                                                   DataFetchingEnvironment environment);
 
+    @GraphQLField
+    @GraphQLName("referenceCount")
+    @GraphQLDescription("Returns count of all references of the node across all sites")
+    Integer getReferenceCount(DataFetchingEnvironment environment);
+
     /**
      * Get GraphQL representation of this node in certain workspace.
      *
