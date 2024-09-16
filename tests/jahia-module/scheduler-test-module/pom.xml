@@ -90,33 +90,4 @@
             </snapshots>
         </repository>
     </repositories>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Import-Package>
-                            ${jahia.plugin.projectPackageImport},
-                            javax.jcr,
-                            org.bouncycastle.asn1.x500;resolution:=optional,
-                            org.bouncycastle.cert;resolution:=optional,
-                            org.bouncycastle.cert.jcajce;resolution:=optional,
-                            org.bouncycastle.jce.provider;resolution:=optional,
-                            org.bouncycastle.operator;resolution:=optional,
-                            org.bouncycastle.operator.jcajce;resolution:=optional,
-                            com.google.protobuf;resolution:=optional,
-                            com.google.protobuf.nano;resolution:=optional,
-                            com.oracle.svm.core.annotate;resolution:=optional,
-                            *
-                        </Import-Package>
-<!--                        <Require-Capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</Require-Capability>-->
-                    </instructions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

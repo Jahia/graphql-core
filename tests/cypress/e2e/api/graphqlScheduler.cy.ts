@@ -40,12 +40,10 @@ describe('Test graphql scheduler', () => {
             cache: new InMemoryCache()
         });
 
-
-
-        const responses = []; // Keep track of the data read in the WS subscription
+        const subResponses = []; // Keep track of the data read in the WS subscription
 
         cy.wrap(
-            new Cypress.Promise((resolve) => {
+            new Cypress.Promise(resolve => {
                 // Subscribe to the background job (that is created later on)
                 const query = gql`
                     subscription($jobName: String) {
@@ -69,16 +67,16 @@ describe('Test graphql scheduler', () => {
                     })
                     .subscribe({
                         next(data) {
-                            responses.push(data);
+                            subResponses.push(data);
                             if (data?.data?.backgroundJobSubscription?.jobState === 'FINISHED') {
                                 subscriptionClient.unsubscribeAll();
                                 subscriptionClient.close();
-                                resolve(responses);
+                                resolve(subResponses);
                             }
                         }
                     });
 
-                // create and start the background job
+                // Create and start the background job
                 const createJobQuery = gql`
                     query($jobName: String!) {
                         admin {
@@ -95,7 +93,7 @@ describe('Test graphql scheduler', () => {
                         expect(result.data.admin.createAndStartJob).to.equal(true);
                     });
             })
-        ).then((responses) => {
+        ).then(responses => {
             expect(responses).to.have.length(2, 'Exactly 2 notifications should be received');
             expect(responses[0].data.backgroundJobSubscription.name).to.equal(jobName);
             expect(responses[0].data.backgroundJobSubscription.jobState).to.equal('STARTED');
