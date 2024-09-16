@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "cypress",
   "devDependencies": {
-    "@apollo/client": "^3.4.16",
+    "@apollo/client": "^3.11.7",
     "@cypress/code-coverage": "^3.9.11",
     "@cypress/webpack-preprocessor": "^5.9.1",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
@@ -42,12 +42,15 @@
     "nyc": "^15.1.0",
     "path": "^0.12.7",
     "prettier": "^2.4.1",
+    "react": "^18.3.1",
     "set-value": "^4.1.0",
     "source-map-support": "^0.5.20",
+    "subscriptions-transport-ws": "^0.11.0",
     "supports-color": "^9.0.2",
     "ts-node": "^10.4.0",
     "typescript": "^4.4.4",
     "util": "^0.12.4",
+    "uuid": "^10.0.0",
     "webpack": "5.88.2",
     "yarn": "^1.22.17"
   },
@@ -93,5 +96,6 @@
   "bugs": {
     "url": "https://github.com/Jahia/graphql-core/issues"
   },
-  "homepage": "https://github.com/Jahia/graphql-core#readme"
+  "homepage": "https://github.com/Jahia/graphql-core#readme",
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
