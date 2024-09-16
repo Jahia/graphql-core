@@ -49,7 +49,13 @@ public class GraphQLBackgroundJobExtension implements DXGraphQLExtensionsProvide
     @GraphQLDescription("Stop and delete a background job")
     public static boolean stopAndDeleteJob(@GraphQLName("jobName") @GraphQLNonNull String jobName) throws SchedulerException {
         SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
-        var job = schedulerService.getAllJobs().stream().filter(jobDetail -> jobName.equals(jobDetail.getName())).findFirst();
-        return schedulerService.getScheduler().deleteJob(job.get().getName(), BackgroundJob.getGroupName(TestJob.class));
+        return schedulerService.getAllJobs().stream().filter(jobDetail -> jobName.equals(jobDetail.getName())).findFirst()
+                .map(jobDetail -> {
+                    try {
+                        return schedulerService.getScheduler().deleteJob(jobDetail.getName(), BackgroundJob.getGroupName(TestJob.class));
+                    } catch (SchedulerException e) {
+                        return null;
+                    }
+                }).orElseThrow(() -> new SchedulerException(String.format("Job '%s' not found", jobName)));
     }
 }
