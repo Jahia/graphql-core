@@ -233,7 +233,7 @@ public interface GqlJcrNode {
     @GraphQLField
     @GraphQLName("referenceCount")
     @GraphQLDescription("Returns count of all references of the node across all sites")
-    Integer getReferenceCount();
+    Integer getReferenceCount(@GraphQLName("typesFilter") @GraphQLDescription("Filter out referencing types which should not be counted") NodeTypesInput typesFilter);
 
     /**
      * Get GraphQL representation of this node in certain workspace.
