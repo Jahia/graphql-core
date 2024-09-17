@@ -39,7 +39,7 @@ public class GraphQLBackgroundJobExtension implements DXGraphQLExtensionsProvide
 
     @GraphQLField
     @GraphQLDescription("Create and start a background job")
-    public static boolean createAndStartJob(@GraphQLName("jobName") @GraphQLNonNull String jobName) throws SchedulerException {
+    public static boolean createAndStartJob(@GraphQLName("jobName") @GraphQLDescription("The name of the test job") @GraphQLNonNull String jobName) throws SchedulerException {
         SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
         schedulerService.scheduleJobNow(TestJob.createTestJobDetail(jobName));
         return true;
@@ -47,7 +47,7 @@ public class GraphQLBackgroundJobExtension implements DXGraphQLExtensionsProvide
 
     @GraphQLField
     @GraphQLDescription("Stop and delete a background job")
-    public static boolean stopAndDeleteJob(@GraphQLName("jobName") @GraphQLNonNull String jobName) throws SchedulerException {
+    public static boolean stopAndDeleteJob(@GraphQLName("jobName") @GraphQLDescription("The name of the test job") @GraphQLNonNull String jobName) throws SchedulerException {
         SchedulerService schedulerService = BundleUtils.getOsgiService(SchedulerService.class, null);
         return schedulerService.getAllJobs().stream().filter(jobDetail -> jobName.equals(jobDetail.getName())).findFirst()
                 .map(jobDetail -> {
