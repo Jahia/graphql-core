@@ -26,15 +26,19 @@ package org.jahia.test.scheduler;
 import org.jahia.services.scheduler.BackgroundJob;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class TestJob extends BackgroundJob {
+    private static final Logger logger = LoggerFactory.getLogger(TestJob.class);
 
     @Override
     public void executeJahiaJob(JobExecutionContext jobExecutionContext) throws InterruptedException {
         Thread.sleep(500);
+        logger.info("Executing test job with name: {}", jobExecutionContext.getJobDetail().getKey().getName());
     }
 
     static JobDetail createTestJobDetail(String jobName) {

@@ -31,6 +31,8 @@ import org.jahia.services.scheduler.BackgroundJob;
 import org.jahia.services.scheduler.SchedulerService;
 import org.osgi.service.component.annotations.Component;
 import org.quartz.SchedulerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -43,6 +45,8 @@ import java.util.Map;
  * NB: it's not possible to use a Groovy script as a job class defined in a Groovy is not available to the Quartz scheduler.
  */
 public class GraphQLBackgroundJobExtension implements DXGraphQLExtensionsProvider {
+
+    private static final Logger logger = LoggerFactory.getLogger(GraphQLBackgroundJobExtension.class);
 
     @GraphQLField
     @GraphQLDescription("Create and start a background job for graphqlScheduler.cy.ts")
@@ -69,15 +73,18 @@ public class GraphQLBackgroundJobExtension implements DXGraphQLExtensionsProvide
         long startTime = System.currentTimeMillis();
         while (jobListenersMap.isEmpty()) {
             if (System.currentTimeMillis() - startTime > 10000) { // 10 seconds timeout
+                logger.error("Timeout waiting for the job listener to be created");
                 return false;
             }
             try {
                 // wait for the job listener to be added
                 Thread.sleep(200);
+                logger.info("Waiting for job listener to be created...");
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
+        logger.info("Job listener created successfully");
         return true;
     }
 
