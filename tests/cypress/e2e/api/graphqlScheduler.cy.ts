@@ -20,7 +20,7 @@ describe('Test graphql scheduler', () => {
         const removeJobQuery = gql`
             query($jobName: String!) {
                 admin {
-                    stopAndDeleteJob(jobName: $jobName)
+                    stopAndDeleteJobForGraphQLSchedulerCypressTest(jobName: $jobName)
                 }
             }
         `;
@@ -30,7 +30,7 @@ describe('Test graphql scheduler', () => {
                 variables: {jobName: jobName}
             })
             .should(result => {
-                expect(result.data.admin.stopAndDeleteJob).to.equal(true);
+                expect(result.data.admin.stopAndDeleteJobForGraphQLSchedulerCypressTest).to.equal(true);
             });
     });
 
@@ -80,7 +80,7 @@ describe('Test graphql scheduler', () => {
                 const createJobQuery = gql`
                     query($jobName: String!) {
                         admin {
-                            createAndStartJob(jobName: $jobName)
+                            createAndStartJobForGraphQLSchedulerCypressTest(jobName: $jobName)
                         }
                     }
                 `;
@@ -90,7 +90,7 @@ describe('Test graphql scheduler', () => {
                         variables: {jobName: jobName}
                     })
                     .should(result => {
-                        expect(result.data.admin.createAndStartJob).to.equal(true);
+                        expect(result.data.admin.createAndStartJobForGraphQLSchedulerCypressTest).to.equal(true);
                     });
             })
         ).then(responses => {
