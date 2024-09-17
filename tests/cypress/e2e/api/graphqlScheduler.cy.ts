@@ -5,7 +5,8 @@ import {SubscriptionClient} from 'subscriptions-transport-ws';
 import {v4 as uuid4} from 'uuid';
 
 describe('Test graphql scheduler', () => {
-    const wsUrl = 'ws://localhost:8080/modules/graphqlws';
+    const url = new URL(Cypress.env('JAHIA_URL'));
+    const wsUrl = `ws://${url.host}/modules/graphqlws`;
     const subscriptionClient = new SubscriptionClient(wsUrl);
     const wsLink = new WebSocketLink(
         subscriptionClient
