@@ -77,5 +77,6 @@
     <modules>
         <module>sdl-test-module</module>
         <module>render-property-test-module</module>
+        <module>scheduler-test-module</module>
     </modules>
 </project>
