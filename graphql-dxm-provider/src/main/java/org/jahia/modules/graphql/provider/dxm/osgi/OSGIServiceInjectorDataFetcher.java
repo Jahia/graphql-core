@@ -15,6 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.osgi;
 
+import graphql.execution.DataFetcherResult;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang3.StringUtils;
@@ -61,6 +62,12 @@ public class OSGIServiceInjectorDataFetcher<T> implements DataFetcher<T> {
     }
 
     private T inject(T data) throws IllegalAccessException, InvocationTargetException {
+        if (data instanceof DataFetcherResult && ((DataFetcherResult) data).getData() instanceof Collection) {
+            for (Object item : ((Collection) ((DataFetcherResult) data).getData())) {
+                handleMethodInjection(item);
+            }
+        }
+
         if (data instanceof Collection) {
             for (Object item : ((Collection) data)) {
                 handleMethodInjection(item);
