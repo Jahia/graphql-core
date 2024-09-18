@@ -66,9 +66,7 @@ public class OSGIServiceInjectorDataFetcher<T> implements DataFetcher<T> {
             for (Object item : ((Collection) ((DataFetcherResult) data).getData())) {
                 handleMethodInjection(item);
             }
-        }
-
-        if (data instanceof Collection) {
+        } else if (data instanceof Collection) {
             for (Object item : ((Collection) data)) {
                 handleMethodInjection(item);
             }
