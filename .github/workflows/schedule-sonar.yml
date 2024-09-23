@@ -7,39 +7,17 @@ on:
   schedule:
     - cron: '0 4 * * 1,3,5' # At 4AM, on Monday, Wednesday and Friday
 
-env:
-  MODULE_ID: graphql-dxm-provider
-
 jobs:
   sonar-analysis:
-    name: Sonar Analysis
-    runs-on: self-hosted
-    env:
-      NEXUS_INTERNAL_URL: ${{ secrets.NEXUS_INTERNAL_URL }}    
+    uses: Jahia/jahia-modules-action/.github/workflows/sonar-scan.yml@v2
+    secrets: inherit
+    # Keeping a matrix as it becomes useful when a maintenance branch is present.
     strategy:
       fail-fast: false
       matrix:
-         supported_branches: ["${{ github.event.repository.default_branch }}"]
-    container:
-      image: jahia/cimg-mvn-cache:ga_cimg_openjdk_11.0.20-node
-      credentials:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ matrix.supported_branches }}
-      - uses: jahia/jahia-modules-action/build@v2
-        with:
-          mvn_settings_filepath: '.github/maven.settings.xml'
-          nexus_username: ${{ secrets.NEXUS_USERNAME }}
-          nexus_password: ${{ secrets.NEXUS_PASSWORD }}
-      - uses: jahia/jahia-modules-action/sonar-analysis@v2
-        with:
-          primary_release_branch: ${{ matrix.supported_branches }}
-          build_artifacts: ''
-          github_pr_id: ${{github.event.number}}
-          sonar_url: ${{ secrets.SONAR_URL }}
-          sonar_token: ${{ secrets.SONAR_TOKEN }}
-          nvd_apikey: ${{ secrets.NVD_APIKEY }}
-          mvn_settings_filepath: '.github/maven.settings.xml'
+         git_branch: ["${{ github.event.repository.default_branch }}"]    
+    with:
+      module_id: graphql-dxm-provider
+      tests_module_type: mvn
+      git_branch: ${{ matrix.git_branch }}
+      incident_service: graphql-dxm-provider-sonar
