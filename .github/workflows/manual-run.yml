@@ -6,13 +6,13 @@ on:
   workflow_dispatch:
     inputs:
       jahia_image:
-        description: 'Jahia Image'
+        description: "Jahia Image"
         required: true
-        default: 'jahia/jahia-discovery-dev:8-SNAPSHOT'
+        default: "jahia/jahia-discovery-dev:8-SNAPSHOT"
       manifest:
-        description: 'Provisioning manifest. Can be a local repository file in the tests folder or a publicly accessible link'
+        description: "Provisioning manifest. Can be a local repository file in the tests folder or a publicly accessible link"
         required: true
-        default: 'provisioning-manifest-snapshot.yml'
+        default: "provisioning-manifest-snapshot.yml"
 
 jobs:
   integration-tests:
@@ -26,14 +26,14 @@ jobs:
       - uses: actions/checkout@v3
       - uses: KengoTODA/actions-setup-docker-compose@main
         with:
-          version: '1.29.2'
+          version: "1.29.2"
       - uses: actions/setup-node@v3
         with:
-          node-version: 'lts/*'
+          node-version: "lts/*"
       - uses: jahia/jahia-modules-action/integration-tests@v2
         with:
           module_id: graphql-dxm-provider
-          timeout_minutes: 20      
+          timeout_minutes: 20
           testrail_project: GraphQL Core module
           tests_manifest: ${{ github.event.inputs.manifest }}
           jahia_image: ${{ github.event.inputs.jahia_image }}
@@ -59,6 +59,6 @@ jobs:
         if: success() || failure()
         with:
           name: Tests Report (Standalone)
-          path: tests/artifacts/results/xml_reports/*.xml
+          path: tests/artifacts/results/xml_reports/**/*.xml
           reporter: java-junit
-          fail-on-error: 'false'
+          fail-on-error: "false"
