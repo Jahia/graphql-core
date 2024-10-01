@@ -21,6 +21,13 @@ jobs:
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
     steps:
+      # This is only needed for older codebases, do not add this to
+      # newly created codebases
+      - name: Add safe directory
+        shell: bash
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+
       # Providing the SSH PRIVATE of a user part of an admin group
       # is necessary to bypass PR checks
       - uses: actions/checkout@v4
