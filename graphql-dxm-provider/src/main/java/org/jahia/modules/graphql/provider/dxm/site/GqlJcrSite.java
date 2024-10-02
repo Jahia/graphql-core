@@ -110,9 +110,10 @@ public class GqlJcrSite extends GqlJcrNodeImpl implements GqlJcrNode {
 
     @GraphQLField
     @GraphQLName("homePage")
-    @GraphQLDescription("Returns the node of the home page")
+    @GraphQLDescription("Returns the node of the home page or null if no home page is defined or is not accessible")
     public GqlJcrNode getHomePage() throws RepositoryException {
-        return SpecializedTypesHandler.getNode(siteNode.getHome());
+        JCRNodeWrapper home = siteNode.getHome();
+        return home == null ? null : SpecializedTypesHandler.getNode(home);
     }
 
 }

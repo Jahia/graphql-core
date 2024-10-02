@@ -1,0 +1,18 @@
+query {
+    jcr(workspace: EDIT) {
+        nodesByQuery(
+            query: "select * from [jnt:virtualsite] where ischildnode('/sites')"
+        ) {
+            nodes {
+                name
+                site {
+                    homePage {
+                        path
+                        name
+                    }
+                }
+            }
+        }
+    }
+}
+
