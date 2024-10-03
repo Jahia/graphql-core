@@ -17,6 +17,10 @@ describe('Test graphql site queries', () => {
         deleteUser(username);
     });
 
+    after('Logout', () => {
+        cy.logout();
+    });
+
     it('Should be able to read the homePage property when requested as root', () => {
         cy.apollo({
             queryFile: 'site/getAllSitesWithHomePage.graphql'
