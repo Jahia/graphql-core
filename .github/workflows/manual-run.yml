@@ -20,19 +20,22 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: jahia/jahia-modules-action/helper@v2
-      - uses: actions/checkout@v4
       - uses: KengoTODA/actions-setup-docker-compose@main
         with:
-          version: '1.29.2'
+          version: '2.23.0'
       - uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
+      - uses: s4u/setup-maven-action@v1.14.0
+        with:
+          java-distribution: 'temurin'
+          java-version: 11
       - uses: jahia/jahia-modules-action/integration-tests@v2
         with:
           module_id: graphql-dxm-provider
           testrail_project: GraphQL Core module
-          tests_manifest: ${{ github.event.inputs.manifest }}
           jahia_image: ${{ github.event.inputs.jahia_image }}
+          tests_manifest: ${{ github.event.inputs.manifest }}
           jahia_license: ${{ secrets.JAHIA_LICENSE_8X_FULL }}
           should_use_build_artifacts: false
           github_artifact_name: gql-core-standalone-${{ github.run_number }}
@@ -51,10 +54,12 @@ jobs:
           incident_google_api_key_base64: ${{ secrets.INCIDENT_GOOGLE_PRIVATE_KEY_BASE64 }}
           zencrepes_secret: ${{ secrets.ZENCREPES_WEBHOOK_SECRET }}
       - name: Test Report
-        uses: dorny/test-reporter@v1
+        uses: phoenix-actions/test-reporting@v12
+        id: test-report
         if: success() || failure()
         with:
-          name: Tests Report (Standalone)
-          path: tests/artifacts/results/xml_reports/*.xml
+          name: Test Report - (Standalone)
+          path: tests/artifacts/results/xml_reports/**/*.xml
           reporter: java-junit
           fail-on-error: 'false'
+          output-to: 'step-summary'
