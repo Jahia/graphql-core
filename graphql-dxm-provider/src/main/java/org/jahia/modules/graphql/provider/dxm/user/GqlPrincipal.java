@@ -23,13 +23,14 @@ import org.jahia.modules.graphql.provider.dxm.predicate.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
-import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 import org.jahia.modules.graphql.provider.dxm.site.GqlJcrSite;
+import org.jahia.services.content.decorator.JCRGroupNode;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import pl.touk.throwing.ThrowingPredicate;
 
 import javax.jcr.RepositoryException;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 @GraphQLName("Principal")
@@ -46,7 +47,9 @@ public interface GqlPrincipal {
 
         List<String> paths = groupManagerService.getMembershipByPath(localPath);
         Stream<GqlGroup> stream = paths.stream()
-                .map(path -> groupManagerService.lookupGroupByPath(path).getJahiaGroup())
+                .map(groupManagerService::lookupGroupByPath)
+                .filter(Objects::nonNull)
+                .map(JCRGroupNode::getJahiaGroup)
                 .filter(group -> !group.isHidden())
                 .filter(ThrowingPredicate.unchecked(n -> site == null || n.getLocalPath().startsWith("/sites/" + site + "/")))
                 .map(GqlGroup::new)
