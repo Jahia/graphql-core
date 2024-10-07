@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import {createSite, deleteSite} from '@jahia/cypress';
+
 describe('Test admin user endpoint', () => {
     it('gets a user', () => {
         cy.apollo({
@@ -90,6 +92,30 @@ describe('Test admin user endpoint', () => {
         }).should((response: any) => {
             expect(response.data.admin.userGroup).to.exist;
             expect(response.data.admin.userGroup.group.members.nodes.map(n => n.name)).to.contains('bill');
+        });
+    });
+
+    it('tests members list after adding & removing a site', () => {
+        // Create a new site and flush the cache of sites to force it to be reloaded
+        createSite('sampleNewSite');
+        cy.executeGroovy('groovy/flushCache.groovy', {CACHE_NAME: 'org.jahia.sitesService.sitesListCache'});
+
+        cy.apollo({
+            queryFile: 'admin/userGroupMembershipBasic.graphql',
+            variables: {username: 'bill', site: 'digitall'}
+        }).should((response: any) => {
+            expect(response.data.admin.userAdmin).to.exist;
+        });
+
+        // Delete the site but not flush the cache
+        deleteSite('sampleNewSite');
+
+        // The query should return the same result as before even if the cached list of memberships point to non-existing JCR nodes
+        cy.apollo({
+            queryFile: 'admin/userGroupMembershipBasic.graphql',
+            variables: {username: 'bill', site: 'digitall'}
+        }).should((response: any) => {
+            expect(response.data.admin.userAdmin).to.exist;
         });
     });
 });
