@@ -55,6 +55,13 @@ public class GqlBackgroundJob {
     }
 
     @GraphQLField
+    @GraphQLName("jobDescription")
+    @GraphQLDescription("Job description")
+    public String getJobDescription() {
+        return jobDetail.getDescription();
+    }
+
+    @GraphQLField
     @GraphQLName("jobStatus")
     @GraphQLDescription("The job status")
     public GqlBackgroundJobStatus getJobStatus() {
