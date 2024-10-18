@@ -54,7 +54,7 @@ jobs:
           sbom_artifacts: 'build-artifacts'
 
   integration-tests-standalone:
-    uses:  Jahia/jahia-modules-action/.github/workflows/integration-tests.yml@PIPELINE-81
+    uses:  Jahia/jahia-modules-action/.github/workflows/integration-tests.yml@v2
     secrets: inherit
     with:
       jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT

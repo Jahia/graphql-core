@@ -16,7 +16,7 @@ on:
 
 jobs:
   integration-tests:
-    uses:  Jahia/jahia-modules-action/.github/workflows/integration-tests.yml@PIPELINE-81
+    uses:  Jahia/jahia-modules-action/.github/workflows/integration-tests.yml@v2
     secrets: inherit
     with:
       jahia_image: ${{ github.event.inputs.jahia_image }}
