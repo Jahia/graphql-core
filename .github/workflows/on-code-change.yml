@@ -62,5 +62,3 @@ jobs:
       provisioning_manifest: provisioning-manifest-build.yml
       should_use_build_artifacts: true
       artifact_prefix: gql
-      timeout_job: 45
-      timeout_step: 20

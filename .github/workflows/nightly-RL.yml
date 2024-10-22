@@ -16,6 +16,3 @@ jobs:
       pagerduty_incident_service: graphql-dxm-provider-JahiaRL
       provisioning_manifest: provisioning-manifest-snapshot.yml
       artifact_prefix: gql
-      timeout_job: 45
-      timeout_step: 20
-

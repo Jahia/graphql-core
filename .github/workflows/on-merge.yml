@@ -66,8 +66,6 @@ jobs:
       should_use_build_artifacts: true
       pagerduty_incident_service: graphql-dxm-provider-JahiaSN
       artifact_prefix: gql
-      timeout_job: 45
-      timeout_step: 20
 
   publish:
     name: Publish module
