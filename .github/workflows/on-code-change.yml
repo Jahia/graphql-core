@@ -52,6 +52,7 @@ jobs:
 
   integration-tests-standalone:
     uses:  Jahia/jahia-modules-action/.github/workflows/integration-tests.yml@v2
+    needs: build   
     secrets: inherit
     with:
       jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
