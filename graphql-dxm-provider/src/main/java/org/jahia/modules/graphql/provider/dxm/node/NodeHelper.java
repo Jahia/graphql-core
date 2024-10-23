@@ -213,13 +213,20 @@ public class NodeHelper {
         }
     }
 
-    static Predicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final GqlJcrNode.NodeTypesInput typesFilter, final GqlJcrNode.NodePropertiesInput propertiesFilter, DataFetchingEnvironment environment) {
+    static Predicate<JCRNodeWrapper> getNodesPredicate(final Collection<String> names, final GqlJcrNode.NodeTypesInput typesFilter, final GqlJcrNode.NodePropertiesInput propertiesFilter, Integer maxDepth, DataFetchingEnvironment environment) {
 
         Predicate<JCRNodeWrapper> namesPredicate;
         if (names == null) {
             namesPredicate = PredicateHelper.truePredicate();
         } else {
             namesPredicate = (node) -> names.contains(node.getName());
+        }
+
+        Predicate<JCRNodeWrapper> maxDepthPredicate;
+        if (maxDepth == null) {
+            maxDepthPredicate = PredicateHelper.truePredicate();
+        } else {
+            maxDepthPredicate = ThrowingPredicate.unchecked((node) -> node.getDepth() < maxDepth);
         }
 
         Predicate<JCRNodeWrapper> typesPredicate = getTypesPredicate(typesFilter);
@@ -232,7 +239,7 @@ public class NodeHelper {
             permissionPredicate = (node) -> PermissionHelper.hasPermission(node, environment);
         }
 
-        Predicate<JCRNodeWrapper> result = PredicateHelper.allPredicates(Arrays.asList(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate, permissionPredicate));
+        Predicate<JCRNodeWrapper> result = PredicateHelper.allPredicates(Arrays.asList(GqlJcrNodeImpl.DEFAULT_CHILDREN_PREDICATE, namesPredicate, typesPredicate, propertiesPredicate, permissionPredicate, maxDepthPredicate));
         return result;
     }
 
@@ -241,7 +248,7 @@ public class NodeHelper {
 
         @SuppressWarnings("unchecked") Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
             .filter(node-> PermissionHelper.hasPermission(node, environment))
-            .filter(getNodesPredicate(names, typesFilter, propertiesFilter, environment))
+            .filter(getNodesPredicate(names, typesFilter, propertiesFilter, null, environment))
             .filter(ThrowingPredicate.unchecked(NodeHelper::checkNodeValidity))
             .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode))
             .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));

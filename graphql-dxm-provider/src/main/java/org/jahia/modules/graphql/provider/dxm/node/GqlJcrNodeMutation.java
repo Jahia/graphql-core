@@ -209,7 +209,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
                                                             @GraphQLName("recursionPropertiesFilter") @GraphQLDescription("Filter out and stop recursion on nodes by their property values; null to avoid such filtering") GqlJcrNode.NodePropertiesInput recursionPropertiesFilter) throws BaseGqlClientException {
         List<GqlJcrNodeMutation> descendants = new LinkedList<>();
         try {
-            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, null),  NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, null),  descendant -> descendants.add(new GqlJcrNodeMutation(descendant)));
+            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(null, typesFilter, propertiesFilter, null, null),  NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, null, null),  descendant -> descendants.add(new GqlJcrNodeMutation(descendant)));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -233,7 +233,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     throws BaseGqlClientException {
         List<GqlJcrNodeMutation> children = new LinkedList<>();
         try {
-            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, null), PredicateHelper.falsePredicate(), child -> children.add(new GqlJcrNodeMutation(child)));
+            NodeHelper.collectDescendants(jcrNode, NodeHelper.getNodesPredicate(names, typesFilter, propertiesFilter, null, null), PredicateHelper.falsePredicate(), child -> children.add(new GqlJcrNodeMutation(child)));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
