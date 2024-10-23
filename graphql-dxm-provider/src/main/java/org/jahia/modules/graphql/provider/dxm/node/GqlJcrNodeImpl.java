@@ -167,6 +167,23 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         return node.getPath();
     }
 
+    /**
+     * @return The depth of the JCR node this object represents
+     */
+    @GraphQLField
+    @GraphQLName("depth")
+    @GraphQLNonNull
+    @GraphQLDescription("The depth in the JCR Tree of the JCR node this object represents")
+    public Integer getDepth() {
+        try {
+            return node.getDepth();
+        } catch (ItemNotFoundException e) {
+            return null;
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
+    };
+
     @Override
     @GraphQLName("displayName")
     @GraphQLDescription("The displayable name of the JCR node")
@@ -312,11 +329,14 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                                                       @GraphQLName("recursionTypesFilter") @GraphQLDescription("Filter out and stop recursion on nodes by their types; null to avoid such filtering") NodeTypesInput recursionTypesFilter,
                                                       @GraphQLName("recursionPropertiesFilter") @GraphQLDescription("Filter out and stop recursion on nodes by their property values; null to avoid such filtering") NodePropertiesInput recursionPropertiesFilter,
                                                       @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                                      @GraphQLName("maxDepth") @GraphQLDescription("Maximum depth in JCR tree for descendants from the current node, 0 (or less) for all sub nodes, 1 for one sub level, etc") Integer maxDepth,
                                                       @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
                                                       @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields according to specified criteria") FieldGroupingInput fieldGrouping,
                                                       DataFetchingEnvironment environment) {
         try {
-            JCRDescendantsNodeIterator it = new JCRDescendantsNodeIterator(NodeHelper.getNodeInLanguage(node, validInLanguage), NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, environment));
+            // Compute maxDepth relative to the current node depth
+            Integer maxDepthValue = maxDepth != null && maxDepth > 0 ? node.getDepth() + maxDepth : null;
+            JCRDescendantsNodeIterator it = new JCRDescendantsNodeIterator(NodeHelper.getNodeInLanguage(node, validInLanguage), NodeHelper.getNodesPredicate(null, recursionTypesFilter, recursionPropertiesFilter, maxDepthValue, environment));
             return NodeHelper.getPaginatedNodesList(it, null, typesFilter, propertiesFilter, fieldFilter, environment, fieldSorter, fieldGrouping);
         } catch (ItemNotFoundException e) {
             throw new DataFetchingException(e);
