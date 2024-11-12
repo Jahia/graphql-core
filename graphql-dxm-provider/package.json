@@ -29,6 +29,9 @@
       "jahia": "javascript/apps/remoteEntry.js"
     }
   },
+  "resolutions": {
+    "*/**/elliptic": "6.6.0"
+  },
   "dependencies": {
     "@graphiql/plugin-code-exporter": "^1.0.1",
     "@graphiql/plugin-explorer": "^1.0.1",
