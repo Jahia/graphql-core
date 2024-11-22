@@ -30,6 +30,7 @@ import org.jahia.bin.filters.jcr.JcrSessionFilter;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
+import org.jahia.modules.graphql.provider.dxm.relay.DXFieldAggregation;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.Field;
@@ -307,6 +308,7 @@ public class DXGraphQLProvider implements
         List<GraphQLType> types = new ArrayList<>();
 
         types.add(graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(GqlJcrNodeImpl.class, container));
+        types.add(graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(DXFieldAggregation.class, container));
         types.addAll(specializedTypesHandler.getKnownTypes().values());
         types.addAll(sdlSchemaService.getSDLTypes());
         return types;
