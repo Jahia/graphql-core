@@ -62,3 +62,4 @@ jobs:
       provisioning_manifest: provisioning-manifest-build.yml
       should_use_build_artifacts: true
       artifact_prefix: gql
+      module_branch: ${{ github.head_ref }}

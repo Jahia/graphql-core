@@ -46,13 +46,20 @@ public class GqlScheduler {
     @GraphQLName("jobs")
     @GraphQLDescription("List of active jobs")
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
-    public DXPaginatedData<GqlBackgroundJob> getJobs(@GraphQLName("group") @GraphQLDescription("The group jobs belong to") String group, DataFetchingEnvironment environment) throws SchedulerException {
+    public DXPaginatedData<GqlBackgroundJob> getJobs(
+            @GraphQLName("group") @GraphQLDescription("The group jobs belong to") String group,
+            @GraphQLName("includeStatuses") @GraphQLDescription("Include jobs with these statuses") List<GqlBackgroundJob.GqlBackgroundJobStatus> includeStatuses,
+            @GraphQLName("excludeStatuses") @GraphQLDescription("Exclude jobs with these statuses") List<GqlBackgroundJob.GqlBackgroundJobStatus> excludeStatuses,
+            DataFetchingEnvironment environment
+    ) throws SchedulerException {
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         List<GqlBackgroundJob> jobs = schedulerService
                 .getAllJobs()
                 .stream()
                 .filter(job -> group == null || group.equals(job.getGroup()))
                 .map(job -> new GqlBackgroundJob(job, GqlBackgroundJob.GqlBackgroundJobState.STARTED))
+                .filter(job -> includeStatuses == null || includeStatuses.contains(job.getJobStatus()))
+                .filter(job -> excludeStatuses == null || !excludeStatuses.contains(job.getJobStatus()))
                 .collect(Collectors.toList());
         return PaginationHelper.paginate(jobs, t -> PaginationHelper.encodeCursor(t.getName()), arguments);
     }

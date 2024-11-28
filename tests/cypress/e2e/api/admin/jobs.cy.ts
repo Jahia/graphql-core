@@ -1,7 +1,7 @@
 import gql from 'graphql-tag';
 
-describe('Jobs graphQL endpoint', () => {
-    it('background job list should not be empty', function () {
+describe('Jobs GraphQL endpoint', () => {
+    it('Background job list should not be empty', function () {
         cy.apollo({
             query: gql`
                 query {
@@ -9,8 +9,10 @@ describe('Jobs graphQL endpoint', () => {
                         jahia {
                             scheduler {
                                 jobs {
-                                    group
-                                    name
+                                    nodes {
+                                        group
+                                        name
+                                    }
                                 }
                             }
                         }
@@ -18,7 +20,7 @@ describe('Jobs graphQL endpoint', () => {
                 }
             `
         }).should(response => {
-            const result = response.data.admin.jahia.scheduler.jobs;
+            const result = response.data.admin.jahia.scheduler.jobs.nodes;
             expect(result.length).to.gt(0);
         });
     });
