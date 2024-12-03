@@ -100,6 +100,8 @@ interface JCRNode {
     defaultWipInfo: wipInfo
     "Returns the node definition that applies to this node."
     definition: JCRNodeDefinition
+    "The depth in the JCR Tree of the JCR node this object represents"
+    depth: Int!
     "GraphQL representation of a descendant node, based on its relative path"
     descendant(
         "Name or relative path of the sub node"
@@ -123,6 +125,8 @@ interface JCRNode {
         last: Int,
         "fetching only the first certain number of nodes"
         limit: Int,
+        "Maximum depth in JCR tree for descendants from the current node, 0 (or less) for all sub nodes, 1 for one sub level, etc"
+        maxDepth: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int,
         "Filter of descendant nodes by their property values; null to avoid such filtering"
@@ -210,6 +214,11 @@ interface JCRNode {
         "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): JCRProperty
+    "Returns count of all references of the node across all sites"
+    referenceCount(
+        "Filter out referencing types which should not be counted"
+        typesFilter: InputNodeTypesInput
+    ): Int
     "GraphQL representations of the reference properties that target the current JCR Node"
     references(
         "fetching only nodes after this node (exclusive)"
@@ -229,6 +238,15 @@ interface JCRNode {
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): JCRPropertyConnection!
+    "Get render URL"
+    renderUrl(
+        "Finds displayable node"
+        findDisplayable: Boolean = false,
+        "The language content is rendered in"
+        language: String!,
+        "The target workspace"
+        workspace: Workspace!
+    ): String
     "Gets the fully rendered content for this node"
     renderedContent(
         "Rendering context configuration"
@@ -243,13 +261,15 @@ interface JCRNode {
         requestAttributes: [InputRenderRequestAttributeInput],
         "Template type"
         templateType: String,
-        "Name of the view"
+        "Name of the view (leave null for default)"
         view: String
     ): RenderedNode
     "GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site"
     site: JCRSite
     "Get node thumbnail URL"
     thumbnailUrl(
+        "Checks if requested thumbnail node exists"
+        checkIfExists: Boolean = false,
         "Thumbnail name"
         name: String
     ): String
@@ -338,107 +358,6 @@ interface Principal {
     site: JCRSite
 }
 
-"Function score mutations"
-type ASAdminFunctionScoreMutations {
-    "Remove function score specification"
-    removeFunction(
-        "Function score id to be removed"
-        id: String!
-    ): Boolean
-    "Upload function score specification"
-    uploadFunction(
-        "Describes what this function score does."
-        description: String,
-        "Function score file"
-        file: String!,
-        "Function score id, will be used as reference at query time."
-        id: String!
-    ): Boolean
-}
-
-"Function score admin entry point"
-type ASAdminFunctionScoreQueries {
-    "List available function score functions"
-    functions(
-        "fetching only nodes after this node (exclusive)"
-        after: String,
-        "fetching only nodes before this node (exclusive)"
-        before: String,
-        "fetching only the first certain number of nodes"
-        first: Int,
-        "fetching only the last certain number of nodes"
-        last: Int,
-        "fetching only the first certain number of nodes"
-        limit: Int,
-        "fetching only nodes after this node (inclusive)"
-        offset: Int
-    ): FunctionScoreConnection
-}
-
-"Generic object with admin mutation results"
-type ASAdminMutations {
-    "Add site to the list of indexed sites"
-    addSite(
-        "Site key"
-        siteKey: String!
-    ): String
-    "Clear the database connection to use with Augmented Search (indexation and querying)"
-    clearDbConnection: String
-    "Function score mutations"
-    functionScore: ASAdminFunctionScoreMutations
-    "Remove site from the list of indexed sites"
-    removeSite(
-        "Site key"
-        siteKey: String!
-    ): String
-    "Set the database connection to use with Augmented Search (indexation and querying)"
-    setDbConnection(
-        "DB connection id"
-        connectionId: String!
-    ): String
-    "Given a list of sites, trigger bulk indexing. If no sites are provided, triggers a full reindex."
-    startIndex(
-        "Force start indexation for when job has already been started"
-        force: Boolean = false,
-        "List of siteKeys to index"
-        siteKeys: [String],
-        "Can be LIVE or EDIT or null for both"
-        workspace: Workspace
-    ): indexMutationResult
-    "Given a list of nodes, trigger bulk indexing of those nodes and its descendants."
-    startNodeIndex(
-        "Re-index descendants (Optional; default=false)"
-        inclDescendants: Boolean,
-        "List of node paths to index"
-        nodePaths: [String],
-        "Can be LIVE or EDIT, or both if not specified"
-        workspace: Workspace
-    ): indexMutationResult
-}
-
-"List of indexed sites entry point"
-type ASAdminQueries {
-    "Current database connection ID used by Augmented Search"
-    currentConnection: String
-    "Get current shard configuration"
-    currentShardConfiguration: GqlShardConfiguration
-    "List of available database connections"
-    dbConnections: [GqlAvailableConnection]
-    "Function score queries"
-    functionScore: ASAdminFunctionScoreQueries
-    "Get index sizes"
-    indexSizes: [GqlIndexSize]
-    "List sites configured for Augmented Search"
-    listSites: siteList
-    "Get optimal shard configurations"
-    optimalShardConfigurations(
-        "Maximum average shard size allowed, in Gb"
-        maxShardSizeInGb: Float,
-        "Minimum amount of heap memory for each shard, in Mb"
-        minHeapPerShardInMb: Float
-    ): [GqlShardConfiguration]
-}
-
 "GraphQL representation of a Jahia ACL role"
 type AclRole {
     "List of dependencies for a given role"
@@ -467,8 +386,6 @@ type AdminMutation {
     mountPoint: GqlMountPointMutation
     "Personal API tokens mutations"
     personalApiTokens: PersonalApiTokensMutation
-    "Augmented Search administrative mutations"
-    search: ASAdminMutations
 }
 
 "Admin queries root"
@@ -485,14 +402,43 @@ type AdminQuery {
     personalApiTokens: PersonalApiTokensQuery
     "Get available ACL roles; does not include any hidden or privileged roles"
     roles: [AclRole]
-    "Augmented Search administrative queries"
-    search: ASAdminQueries
+    "Jahia admin tools"
+    tools: AdminTools
     "Get user administration endpoint"
     userAdmin: UserAdminQuery
     "Get user group endpoint"
     userGroup: UserGroupQuery
     "Version of the running Jahia instance"
     version: String! @deprecated(reason: "Deprecated")
+}
+
+"Jahia admin tools"
+type AdminTools {
+    "Will return dependencies of a bundle (modules or packages)"
+    findDependencies(
+        "will return only dependencies of Jahia modules (not bundles)"
+        ModulesOnly: Boolean = true,
+        "will return only bundle name matching the RegExp"
+        RegExp: String,
+        "will return only dependencies with a strict version specified (a version that reprobates upgrade of minor ones)"
+        StrictVersionOnly: Boolean = true
+    ): FindDependencies
+    "Will return all the duplicate export packages and the bundles that export them"
+    findMatchingExportPackages(
+        "will return only export-package matching the RegExp"
+        RegExp: String,
+        "will return only export-package found multiple times for a same package name"
+        duplicates: Boolean = false
+    ): FindExportPackage
+    "Will return all the import packages matching the given parameters."
+    findMatchingImportPackages(
+        "will return only import-package matching the RegExp"
+        RegExp: String,
+        "will return only import-package matching the given version"
+        version: String,
+        "will return only import-package with no version range limitations"
+        versionMissing: Boolean = false
+    ): FindImportPackage
 }
 
 "Asset type for files"
@@ -503,6 +449,66 @@ type Asset {
     size: Float
     "Mime type of the asset"
     type: String
+}
+
+"Result of the dependency inspector operation."
+type BundleDependency {
+    "An error occurred during parsing dependency"
+    error: String
+    "The name of the dependency"
+    name: String
+    "The dependency is optional"
+    optional: Boolean
+    "The status of that dependency."
+    status: String
+    "The type of the dependency."
+    type: String
+    "The version of the dependency (can be a range, a number or empty)"
+    version: String
+}
+
+"Result of the dependency inspector operation."
+type BundleWithDependencies {
+    "Display name of the bundle."
+    bundleDisplayName: String
+    "ID of the bundle."
+    bundleId: Long
+    "Name of the bundle."
+    bundleName: String
+    "Symbolic name of the bundle."
+    bundleSymbolicName: String
+    "List of bundle dependencies (packages and modules)."
+    dependencies: [BundleDependency]
+    "Is module dependencies can be safely upgraded without breaking module wiring ?"
+    dependenciesUpgradables: Boolean
+}
+
+"Result of the export package inspector operation."
+type BundleWithExportPackage {
+    "Display name of the bundle."
+    bundleDisplayName: String
+    "ID of the bundle."
+    bundleId: Long
+    "Name of the bundle."
+    bundleName: String
+    "Symbolic name of the bundle."
+    bundleSymbolicName: String
+    "The full export-package clause."
+    matchingExportPackage: String
+}
+
+"Result of the import package inspector operation."
+type BundleWithImportPackages {
+    "Display name of the bundle."
+    bundleDisplayName: String
+    "ID of the bundle."
+    bundleId: Long
+    "Name of the bundle."
+    bundleName: String
+    "Symbolic name of the bundle."
+    bundleSymbolicName: String
+    "List of matching imported packages."
+    matchingImportPackages: [String]
 }
 
 "Category type"
@@ -604,11 +610,6 @@ type CountAggregation {
     ): Int
 }
 
-type CoverageOffer {
-    coverageTitle: String
-    metadata: Metadata
-}
-
 "GraphQL representation of a Jahia current user"
 type Current_32_user {
     "Full display name"
@@ -647,34 +648,38 @@ type Current_32_user {
     username: String!
 }
 
-"Functions score representation"
-type FunctionScore {
-    "Function score description"
-    description: String
-    "Function score id"
-    id: String
-    "JSON string "
-    json: String
+"Result of the export package inspector operation."
+type ExportPackages {
+    "Flat list of exported packages"
+    matchingExportPackages: [String]
+    "The bundles that export the package."
+    matchingExportPackagesDetailed: [BundleWithExportPackage]
+    "the package name."
+    packageName: String
 }
 
-"A connection to a list of items."
-type FunctionScoreConnection {
-    "a list of edges"
-    edges: [FunctionScoreEdge]
-    "a list of nodes"
-    nodes: [FunctionScore]
-    "details about this specific page"
-    pageInfo: PageInfo!
+"Result of the dependency inspector operation."
+type FindDependencies {
+    "List of matching bundles."
+    bundles: [BundleWithDependencies]
+    "Total number of dependencies."
+    totalCount: Int
 }
 
-"An edge in a connection"
-type FunctionScoreEdge {
-    "cursor marks a unique position or index into the connection"
-    cursor: String!
-    "index in the connection"
-    index: Int
-    "The item at the end of the edge"
-    node: FunctionScore
+"Result of the export package inspector operation."
+type FindExportPackage {
+    "List of matching packages"
+    packages: [ExportPackages]
+    "Total number of matching export packages."
+    totalCount: Int
+}
+
+"Result of the import package inspector operation."
+type FindImportPackage {
+    "List of matching bundles."
+    bundles: [BundleWithImportPackages]
+    "Total number of matching import packages."
+    totalCount: Int
 }
 
 "GraphQL representation of a generic JCR node"
@@ -748,6 +753,8 @@ type GenericJCRNode implements JCRNode {
     defaultWipInfo: wipInfo
     "Returns the node definition that applies to this node."
     definition: JCRNodeDefinition
+    "The depth in the JCR Tree of the JCR node this object represents"
+    depth: Int!
     "GraphQL representation of a descendant node, based on its relative path"
     descendant(
         "Name or relative path of the sub node"
@@ -771,6 +778,8 @@ type GenericJCRNode implements JCRNode {
         last: Int,
         "fetching only the first certain number of nodes"
         limit: Int,
+        "Maximum depth in JCR tree for descendants from the current node, 0 (or less) for all sub nodes, 1 for one sub level, etc"
+        maxDepth: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int,
         "Filter of descendant nodes by their property values; null to avoid such filtering"
@@ -858,6 +867,11 @@ type GenericJCRNode implements JCRNode {
         "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): JCRProperty
+    "Returns count of all references of the node across all sites"
+    referenceCount(
+        "Filter out referencing types which should not be counted"
+        typesFilter: InputNodeTypesInput
+    ): Int
     "GraphQL representations of the reference properties that target the current JCR Node"
     references(
         "fetching only nodes after this node (exclusive)"
@@ -877,6 +891,15 @@ type GenericJCRNode implements JCRNode {
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): JCRPropertyConnection!
+    "Get render URL."
+    renderUrl(
+        "Finds displayable node"
+        findDisplayable: Boolean = false,
+        "The language content is rendered in"
+        language: String!,
+        "The target workspace"
+        workspace: Workspace!
+    ): String
     "Gets the fully rendered content for this node"
     renderedContent(
         "Rendering context configuration"
@@ -891,13 +914,15 @@ type GenericJCRNode implements JCRNode {
         requestAttributes: [InputRenderRequestAttributeInput],
         "Template type"
         templateType: String,
-        "Name of the view"
+        "Name of the view (leave null for default)"
         view: String
     ): RenderedNode
     "GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site"
     site: JCRSite
     "Get node thumbnail URL"
     thumbnailUrl(
+        "Optional: Checks if requested thumbnail node exists, returns null if it doesn't"
+        checkIfExists: Boolean = false,
         "Thumbnail name"
         name: String
     ): String
@@ -973,14 +998,6 @@ type GqlAclEntry {
     role: AclRole
 }
 
-"Elasticsearch connection model"
-type GqlAvailableConnection {
-    "Id of the connection"
-    connectionId: String
-    "List of plugins if any"
-    plugins: [GqlPlugin]
-}
-
 "Background job"
 type GqlBackgroundJob {
     "The amount of time the job ran for (in milliseconds). The returned value will be -1 until the job has actually completed"
@@ -989,29 +1006,36 @@ type GqlBackgroundJob {
     group: String
     "The job (Boolean) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
     jobBooleanProperty(
-        "The job name"
+        "The name of the property"
         name: String
     ): Boolean
+    "Job description"
+    jobDescription: String
     "The job (Int) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
     jobIntegerProperty(
-        "The job name"
+        "The name of the property"
         name: String
     ): Int
     "The job (Long) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
     jobLongProperty(
-        "The job name"
+        "The name of the property"
         name: String
     ): Long
     "The job state is different from the status, it reflect the last action done on the job instance (Started, Vetoed, Finished)"
     jobState: GqlBackgroundJobState
     "The job status"
     jobStatus: GqlBackgroundJobStatus
+    "List of strings property from the job map (eg. publicationInfos, publicationPaths)"
+    jobStringListProperty(
+        "The name of the property"
+        name: String
+    ): [String]
     "The job (String) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
     jobStringProperty(
-        "The job name"
+        "The name of the property"
         name: String
     ): String
-    "The job name"
+    "The name of the property"
     name: String
     "GraphQL representation of publication job"
     publicationJob: GqlPublicationBackgroundJob
@@ -1019,6 +1043,26 @@ type GqlBackgroundJob {
     siteKey: String
     "The user key. The returned value will be null in case the job doesn't have associated user key"
     userKey: String
+}
+
+"A connection to a list of items."
+type GqlBackgroundJobConnection {
+    "a list of edges"
+    edges: [GqlBackgroundJobEdge]
+    "a list of nodes"
+    nodes: [GqlBackgroundJob]
+    "details about this specific page"
+    pageInfo: PageInfo!
+}
+
+"An edge in a connection"
+type GqlBackgroundJobEdge {
+    "cursor marks a unique position or index into the connection"
+    cursor: String!
+    "index in the connection"
+    index: Int
+    "The item at the end of the edge"
+    node: GqlBackgroundJob
 }
 
 "Condition for override item"
@@ -1311,17 +1355,37 @@ type GqlEditorForms {
 "Server healthCheck"
 type GqlHealthCheck {
     "Probes registered in SAM for the requested severity"
-    probes: [GqlProbe]
+    probes(
+        "Return probes matching this status or above"
+        health: GqlProbeHealth
+    ): [GqlProbe]
     "Highest reported status across all probes"
     status: GqlProbeStatus
 }
 
-"Index size"
-type GqlIndexSize {
-    "Index name"
-    name: String
-    "Index size in bytes"
-    size: Long
+"jContent API"
+type GqlJContent {
+    "Returns html with marked differences"
+    diffHtml(
+        "New html"
+        newHtml: String,
+        "Original html"
+        originalHtml: String
+    ): String
+}
+
+"jContent API"
+type GqlJContentMutations {
+    "Flushes cache for a page, checks adminCache permission and node type"
+    flushPageCache(
+        "Page path"
+        pagePath: String!
+    ): Boolean
+    "Flushes cache for a site, will resolve site node if the path supplied is not a site, checks adminCache permission"
+    flushSiteCache(
+        "Site path"
+        sitePath: String!
+    ): Boolean
 }
 
 type GqlJcrImageTransformMutation {
@@ -1376,15 +1440,6 @@ type GqlMergedItem {
     form: GqlEditorForm
     "Override priority"
     priority: Float
-}
-
-type GqlMetricsFacetResult {
-    "The field that was used to run the aggregation"
-    field: String
-    "Maximum value within the filtered dataset"
-    max: Float
-    "Minimum value within the filtered dataset"
-    min: Float
 }
 
 type GqlModule {
@@ -1492,28 +1547,6 @@ type GqlMountPointQuery {
     mountPoints: [GqlMountPoint]
 }
 
-type GqlNpmHelper {
-    "Render a compoment according to the parameters"
-    renderedComponent(
-        "Rendering context configuration"
-        contextConfiguration: String,
-        "Edit mode"
-        isEditMode: Boolean,
-        "Language"
-        language: String,
-        "Main resource path"
-        mainResourcePath: String,
-        "Input containing the primary node type, the name, the properties and other fields of a JCR Node of a node to render"
-        node: InputJCRNode,
-        "Path of the node"
-        path: String,
-        "Template type"
-        templateType: String,
-        "Name of the view"
-        view: String
-    ): SimpleRenderedNode
-}
-
 "Possible operations on a node"
 type GqlOperationsSupport {
     "Can node be locked"
@@ -1522,16 +1555,6 @@ type GqlOperationsSupport {
     markForDeletion: Boolean
     "does the node supports publication"
     publication: Boolean!
-}
-
-"Model of a plugin information (name,description,version)"
-type GqlPlugin {
-    "Full description of the plugin"
-    description: String
-    "Full name of the plugin"
-    name: String
-    "version of the plugin"
-    version: String
 }
 
 "Probes registered with SAM"
@@ -1551,7 +1574,7 @@ type GqlProbeStatus {
     "Health of the probe"
     health: GqlProbeHealth
     "Message explaining probe status"
-    message: String
+    message: String @deprecated(reason: "When multiple probe return the same error status (YELLOW or RED), the message does not guarantee which of the probe will get its message returned. We recommend using the \"health\" parameter and corresponding individual probe message instead.")
 }
 
 "Publication background job"
@@ -1562,36 +1585,57 @@ type GqlPublicationBackgroundJob {
     group: String
     "The job (Boolean) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
     jobBooleanProperty(
-        "The job name"
+        "The name of the property"
         name: String
     ): Boolean
+    "Job description"
+    jobDescription: String
     "The job (Int) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
     jobIntegerProperty(
-        "The job name"
+        "The name of the property"
         name: String
     ): Int
     "The job (Long) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
     jobLongProperty(
-        "The job name"
+        "The name of the property"
         name: String
     ): Long
     "The job state is different from the status, it reflect the last action done on the job instance (Started, Vetoed, Finished)"
     jobState: GqlBackgroundJobState
     "The job status"
     jobStatus: GqlBackgroundJobStatus
+    "List of strings property from the job map (eg. publicationInfos, publicationPaths)"
+    jobStringListProperty(
+        "The name of the property"
+        name: String
+    ): [String]
     "The job (String) property that correspond to the given name. The returned value will be null in case the job doesn't have the property"
     jobStringProperty(
-        "The job name"
+        "The name of the property"
         name: String
     ): String
     "Publication language"
     language: String
-    "The job name"
+    "The name of the property"
     name: String
     "The site key. The returned value will be null in case the job doesn't have associated site key"
     siteKey: String
     "The user key. The returned value will be null in case the job doesn't have associated user key"
     userKey: String
+}
+
+"Publication event"
+type GqlPublicationEvent {
+    "Language"
+    language: String
+    "Paths"
+    paths: [String]
+    "Site key"
+    siteKey: String
+    "State of the publication event"
+    state: State
+    "User"
+    user: String
 }
 
 "Publication status information for a JCR node"
@@ -1608,26 +1652,29 @@ type GqlPublicationInfo {
     workInProgress: Boolean
 }
 
-"Representation of range facet aggregation buckets"
-type GqlRangeFacetData {
-    "Number of documents matching the range"
-    count: Int
-    "Name provided for the range"
-    name: String
-}
-
-"Result of aggregation based on field and ranges"
-type GqlRangeFacetResult {
-    "Data based on facets specified in the search"
-    data: [GqlRangeFacetData]
-    "The field that was used to run the aggregation"
-    field: String
-}
-
 "Scheduler object which allows to access to background jobs"
 type GqlScheduler {
     "List of active jobs"
-    jobs: [GqlBackgroundJob]
+    jobs(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "Exclude jobs with these statuses"
+        excludeStatuses: [GqlBackgroundJobStatus],
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "The group jobs belong to"
+        group: String,
+        "Include jobs with these statuses"
+        includeStatuses: [GqlBackgroundJobStatus],
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int
+    ): GqlBackgroundJobConnection
 }
 
 "API Scope"
@@ -1636,64 +1683,6 @@ type GqlScope {
     description: String
     "The name of the scope"
     name: String
-}
-
-"Sharding configuration details"
-type GqlShardConfiguration {
-    "Average shard size, based on the current index size"
-    averageShardSize: Long
-    "Is the number of shards evenly divisible by number of data nodes"
-    divisible: Boolean
-    "Available heap memory per shard"
-    heapPerShard: Long
-    "Number of primary shards"
-    primaryCount: Int
-    "Number of replicas"
-    replicas: Int
-}
-
-"Aggregation bucket representation"
-type GqlTermFacetData {
-    "The aggregation bucket value"
-    count: Int
-    "The aggregation bucket value"
-    value: String
-}
-
-"Result of aggregation based on field"
-type GqlTermFacetResult {
-    "Data based on facets specified in the search"
-    data: [GqlTermFacetData]
-    "The field that was used to run the aggregation"
-    field: String
-}
-
-"Children data of tree facet root value"
-type GqlTreeFacetData {
-    "Number of documents"
-    count: Int
-    "Filter expression to find matching results for this path"
-    filter: String
-    "Indicate whether the tree element has any children"
-    hasChildren: Boolean
-    "Human Readable path"
-    humanPath: String
-    "key of this facet"
-    key: String
-    "System path to be used in root path for tree facets"
-    rootPath: String
-    "The aggregation bucket value"
-    value: String
-}
-
-"Result of hierarchical facet aggregation"
-type GqlTreeFacetResult {
-    "Data based on facets specified in the search"
-    data: [GqlTreeFacetData]
-    "The field that was used to run the aggregation"
-    field: String
-    "rootPath passed as a parameter"
-    rootPath: String
 }
 
 type GqlWorkflowEvent {
@@ -2327,6 +2316,10 @@ type JCRProperty {
     refNode: JCRNode
     "GraphQL representations of the nodes this property references in case the property is multiple-valued, null otherwise"
     refNodes: [JCRNode]
+    "Gets the rendered value of that property"
+    renderedValue: String
+    "Gets the rendered values of that property"
+    renderedValues: [String]
     "The binary size of the JCR node as a Long, null otherwise"
     size: Long
     "The type of the JCR property"
@@ -2636,6 +2629,8 @@ type JCRSite implements JCRNode {
     defaultWipInfo: wipInfo
     "Returns the node definition that applies to this node."
     definition: JCRNodeDefinition
+    "The depth in the JCR Tree of the JCR node this object represents"
+    depth: Int!
     "GraphQL representation of a descendant node, based on its relative path"
     descendant(
         "Name or relative path of the sub node"
@@ -2659,6 +2654,8 @@ type JCRSite implements JCRNode {
         last: Int,
         "fetching only the first certain number of nodes"
         limit: Int,
+        "Maximum depth in JCR tree for descendants from the current node, 0 (or less) for all sub nodes, 1 for one sub level, etc"
+        maxDepth: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int,
         "Filter of descendant nodes by their property values; null to avoid such filtering"
@@ -2688,7 +2685,7 @@ type JCRSite implements JCRNode {
         "The name of the permission"
         permissionName: String!
     ): Boolean
-    "Returns the node of the home page"
+    "Returns the node of the home page or null if no home page is defined or is not accessible"
     homePage: JCRNode
     "Retrieves a collection of module IDs, which are installed on the site, the node belongs to"
     installedModules: [String]
@@ -2756,6 +2753,11 @@ type JCRSite implements JCRNode {
         "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): JCRProperty
+    "Returns count of all references of the node across all sites"
+    referenceCount(
+        "Filter out referencing types which should not be counted"
+        typesFilter: InputNodeTypesInput
+    ): Int
     "GraphQL representations of the reference properties that target the current JCR Node"
     references(
         "fetching only nodes after this node (exclusive)"
@@ -2775,6 +2777,15 @@ type JCRSite implements JCRNode {
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): JCRPropertyConnection!
+    "Get render URL."
+    renderUrl(
+        "Finds displayable node"
+        findDisplayable: Boolean = false,
+        "The language content is rendered in"
+        language: String!,
+        "The target workspace"
+        workspace: Workspace!
+    ): String
     "Gets the fully rendered content for this node"
     renderedContent(
         "Rendering context configuration"
@@ -2789,7 +2800,7 @@ type JCRSite implements JCRNode {
         requestAttributes: [InputRenderRequestAttributeInput],
         "Template type"
         templateType: String,
-        "Name of the view"
+        "Name of the view (leave null for default)"
         view: String
     ): RenderedNode
     "Site server name"
@@ -2800,6 +2811,8 @@ type JCRSite implements JCRNode {
     sitekey: String
     "Get node thumbnail URL"
     thumbnailUrl(
+        "Optional: Checks if requested thumbnail node exists, returns null if it doesn't"
+        checkIfExists: Boolean = false,
         "Thumbnail name"
         name: String
     ): String
@@ -2943,6 +2956,8 @@ type JahiaAdminQuery {
     database: JahiaDatabase
     "HealthCheck node"
     healthCheck(
+        "Returns only SAM probes with probe names included in this list"
+        includes: [String!],
         "Returns SAM probes with this severity or higher"
         severity: GqlProbeSeverity
     ): GqlHealthCheck
@@ -3036,21 +3051,27 @@ type JournalRevision {
 
 "Server load"
 type Load {
+    "Get JCR Node Cache load across active sessions"
+    cachedNodes: LoadProvider
     "Get requests load"
-    requests: LoadValue
+    requests: LoadProvider
     "Get JCR Sessions load"
-    sessions: LoadValue
+    sessions: LoadProvider
+    "Get Thread load"
+    thread: LoadProvider
 }
 
-"Load value"
-type LoadValue {
+"Load provider"
+type LoadProvider {
     "Exponential moving average"
     average(
         "Interval between collection of load metrics"
         interval: LoadInterval
     ): Float
     "Instantaneous count"
-    count: Int
+    count: Float
+    "Load Entry"
+    entry: String
 }
 
 "Information on node lock"
@@ -3090,6 +3111,8 @@ type Mutation {
     admin: AdminMutation!
     "Main access field to the DX GraphQL Form mutation API"
     forms: GqlEditorFormMutations
+    "Main access field to the jContent mutation API"
+    jcontent: GqlJContentMutations
     "JCR Mutation"
     jcr(
         "Should save"
@@ -3121,33 +3144,6 @@ type NodeTypeTreeEntry {
     nodeType: JCRNodeType
     "Return the parent tree entry (if any)"
     parent: NodeTypeTreeEntry
-}
-
-type Offer {
-    coverages: [CoverageOffer]
-    metadata: Metadata
-    subTitle: String
-    title: String
-}
-
-"A connection to a list of items."
-type OfferConnection {
-    "a list of edges"
-    edges: [OfferEdge]
-    "a list of nodes"
-    nodes: [Offer]
-    "details about this specific page"
-    pageInfo: PageInfo!
-}
-
-"An edge in a connection"
-type OfferEdge {
-    "cursor marks a unique position or index into the connection"
-    cursor: String!
-    "index in the connection"
-    index: Int
-    "The item at the end of the edge"
-    node: Offer
 }
 
 "Information about pagination in a connection."
@@ -3309,32 +3305,9 @@ type PrincipalEdge {
 type Query {
     "Admin Queries"
     admin: AdminQuery!
-    allOffers(
-        "Content language, defaults to English"
-        language: String = "en",
-        "Return content from live or default workspace"
-        preview: Boolean = false,
-        "Sort filter object"
-        sortBy: InputFieldSorterInput
-    ): [Offer]
-    allOffersConnection(
-        "fetching only nodes after this node (exclusive)"
-        after: String,
-        "Available arguments"
-        allOffersArgs: allOffersArgsInput = {preview: false, language: "en"},
-        "fetching only nodes before this node (exclusive)"
-        before: String,
-        "fetching only the first certain number of nodes"
-        first: Int,
-        "fetching only the last certain number of nodes"
-        last: Int,
-        "fetching only the first certain number of nodes"
-        limit: Int,
-        "fetching only nodes after this node (inclusive)"
-        offset: Int
-    ): OfferConnection
     "default finder for categoryById"
     categoryById(
+        "Node identifier"
         id: String,
         "Content language, defaults to English"
         language: String = "en",
@@ -3345,6 +3318,7 @@ type Query {
     categoryByPath(
         "Content language, defaults to English"
         language: String = "en",
+        "Path of the node"
         path: String,
         "Return content from live or default workspace"
         preview: Boolean = false
@@ -3355,48 +3329,13 @@ type Query {
     dashboard: GqlDashboard
     "Main access field to the DX GraphQL Form API"
     forms: GqlEditorForms
+    "Main access field to the jContent API"
+    jcontent: GqlJContent
     "JCR Queries"
     jcr(
         "The name of the workspace to fetch the node from; either EDIT, LIVE, or null to use EDIT by default"
         workspace: Workspace
     ): JCRQuery!
-    "Main access field to the NPM helpers"
-    npm: GqlNpmHelper
-    "default finder for offerById"
-    offerById(
-        id: String,
-        "Content language, defaults to English"
-        language: String = "en",
-        "Return content from live or default workspace"
-        preview: Boolean = false
-    ): Offer
-    "default finder for offerByPath"
-    offerByPath(
-        "Content language, defaults to English"
-        language: String = "en",
-        path: String,
-        "Return content from live or default workspace"
-        preview: Boolean = false
-    ): Offer
-    "Search in Jahia using Augmented Search"
-    search(
-        "Boost specification"
-        boosts: Inputboost,
-        "Filtering specification"
-        filters: Inputfilter,
-        "Function score id"
-        functionScoreId: String,
-        "Language to search in"
-        language: String = "en",
-        "Search query"
-        q: String!,
-        "Where to search, can be CONTENT or FILES"
-        searchIn: [SearchIn],
-        "List of unique site identifiers. Search across all sites if not provided"
-        siteKeys: [String],
-        "Can be LIVE or EDIT"
-        workspace: Workspace = LIVE
-    ): augmentedSearchResult
     "Tag Queries"
     tag: JCRTags
     "Retrieves the number of active workflow tasks for the current user"
@@ -3414,14 +3353,6 @@ type RenderedNode {
         "Assets type"
         type: String!
     ): [StaticAsset]
-}
-
-"Rendering result for a node"
-type SimpleRenderedNode {
-    "Id of of the rendering node"
-    id: String
-    "Rendering output"
-    output: String
 }
 
 "Simple numeric aggregation on properties values"
@@ -3476,7 +3407,7 @@ type Subscription {
         filterByUserKey: [String],
         "The target scheduler for listening jobs"
         targetScheduler: TargetScheduler = BOTH
-    ): GqlBackgroundJob
+    ): GqlBackgroundJob @deprecated(reason: "Use subscribeToPublicationJob instead")
     "Lock the node for edition and subscribe to hold the lock. The node is automatically unlocked when the client disconnect or close the connection"
     subscribeToEditorLock(
         "An ID generated client side used to identify the lock"
@@ -3484,6 +3415,11 @@ type Subscription {
         "Uuid of the node to be locked."
         nodeId: String!
     ): String
+    "Subscription on publication jobs"
+    subscribeToPublicationJob(
+        "Subscribe only to job with matching user keys"
+        userKeyFilter: [String]
+    ): GqlPublicationEvent
     "Subscription on workflows"
     workflowEvent: GqlWorkflowEvent
 }
@@ -3753,6 +3689,8 @@ type VanityUrl implements JCRNode {
     defaultWipInfo: wipInfo
     "Returns the node definition that applies to this node."
     definition: JCRNodeDefinition
+    "The depth in the JCR Tree of the JCR node this object represents"
+    depth: Int!
     "GraphQL representation of a descendant node, based on its relative path"
     descendant(
         "Name or relative path of the sub node"
@@ -3776,6 +3714,8 @@ type VanityUrl implements JCRNode {
         last: Int,
         "fetching only the first certain number of nodes"
         limit: Int,
+        "Maximum depth in JCR tree for descendants from the current node, 0 (or less) for all sub nodes, 1 for one sub level, etc"
+        maxDepth: Int,
         "fetching only nodes after this node (inclusive)"
         offset: Int,
         "Filter of descendant nodes by their property values; null to avoid such filtering"
@@ -3865,6 +3805,11 @@ type VanityUrl implements JCRNode {
         "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): JCRProperty
+    "Returns count of all references of the node across all sites"
+    referenceCount(
+        "Filter out referencing types which should not be counted"
+        typesFilter: InputNodeTypesInput
+    ): Int
     "GraphQL representations of the reference properties that target the current JCR Node"
     references(
         "fetching only nodes after this node (exclusive)"
@@ -3884,6 +3829,15 @@ type VanityUrl implements JCRNode {
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): JCRPropertyConnection!
+    "Get render URL."
+    renderUrl(
+        "Finds displayable node"
+        findDisplayable: Boolean = false,
+        "The language content is rendered in"
+        language: String!,
+        "The target workspace"
+        workspace: Workspace!
+    ): String
     "Gets the fully rendered content for this node"
     renderedContent(
         "Rendering context configuration"
@@ -3898,7 +3852,7 @@ type VanityUrl implements JCRNode {
         requestAttributes: [InputRenderRequestAttributeInput],
         "Template type"
         templateType: String,
-        "Name of the view"
+        "Name of the view (leave null for default)"
         view: String
     ): RenderedNode
     "GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site"
@@ -3907,6 +3861,8 @@ type VanityUrl implements JCRNode {
     targetNode: JCRNode
     "Get node thumbnail URL"
     thumbnailUrl(
+        "Optional: Checks if requested thumbnail node exists, returns null if it doesn't"
+        checkIfExists: Boolean = false,
         "Thumbnail name"
         name: String
     ): String
@@ -4025,160 +3981,6 @@ type ZipFileMutation {
     ): Boolean
 }
 
-"Generic object with search results which contains facets and results"
-type augmentedSearchResult {
-    "Provides access to min and max values for a specific field across the selected dataset"
-    numberRange(
-        "Defines the field to operate on, this field is required."
-        field: String!
-    ): GqlMetricsFacetResult
-    "Retrieves aggregations for range facet"
-    rangeFacet(
-        "Defines the field to aggregate on, this field is required."
-        field: String!,
-        "List of available ranges to be used"
-        ranges: [InputRange]
-    ): GqlRangeFacetResult
-    "Retrieves nodes matching a search"
-    results(
-        "Page count to offset the results window"
-        page: Int,
-        "Number of documents in the results window"
-        size: Int = 25,
-        "Sort object, by default, doesn’t do any sorting and return the results by weight."
-        sortBy: [InputsortV2]
-    ): searchResultsV2
-    "Retrieves aggregations for term facet"
-    termFacet(
-        "Defines whether the facet aggregation should be executed on the exact search filter (disjunctive: false) or on a modified version of the filter without the current facet field."
-        disjunctive: Boolean = false,
-        "Defines the field to aggregate on, this field is required."
-        field: String!,
-        "Maximum number of facet groups returned."
-        max: Int = 10,
-        "Minimum number of documents for a value to return as a facet."
-        minDocCount: Int = 1,
-        "Label to be used for missing values on this field. If not specified, missing fields will not be counted"
-        missingValue: String
-    ): GqlTermFacetResult
-    "Retrieves aggregations for tree facet"
-    treeFacet(
-        "Defines whether the facet aggregation should be executed on the exact search filter (disjunctive: false) or on a modified version of the filter without the current facet field."
-        disjunctive: Boolean = false,
-        "Defines the field to aggregate on, this field is required."
-        field: String!,
-        "Maximum number of facet groups returned."
-        max: Int = 10,
-        "Minimum number of documents for a value to return as a facet."
-        minDocCount: Int = 1,
-        "Label to be used for missing values on this field. If not specified, missing fields will not be counted"
-        missingValue: String,
-        "The root path to fetch children from"
-        rootPath: String!
-    ): GqlTreeFacetResult
-}
-
-"Information related to specific indexing job"
-type indexJob {
-    "The ID of the job that was just started"
-    id: String
-    "Relation to a Jahia project object"
-    project: project
-    "Indexing job status"
-    status: jobStatus
-}
-
-"Information about indexing jobs"
-type indexMutationResult {
-    "Information about indexing jobs, one per site indexed"
-    jobs: [indexJob]
-}
-
-"Representation of indexed site"
-type indexedSite {
-    "End time of most recent indexation as ISO string"
-    indexationEnd: String
-    "Scheduled time of most recent indexation as ISO string"
-    indexationScheduled: String
-    "Start time of most recent indexation as ISO string"
-    indexationStart: String
-    "Status of indexation"
-    indexationStatus: indexationStatus
-    "Site key"
-    siteKey: String
-}
-
-"Site specific information "
-type project {
-    "Unique site identifier"
-    siteKey: String
-}
-
-"Detailed information about search hit"
-type searchHitV2 {
-    "Date when node was created"
-    created: String
-    "User who created the node"
-    createdBy: String
-    "Prettified displayable name of the node"
-    displayableName: String
-    "Short extract from the hit"
-    excerpt: String
-    "ID of the node"
-    id: String
-    "Keywords associated with this hit"
-    keywords: [String]
-    "Date and time of last modification"
-    lastModified: String
-    "User who modified the node last"
-    lastModifiedBy: String
-    "Date and time of last publication"
-    lastPublished: String
-    "User who published the node last"
-    lastPublishedBy: String
-    "Formatted link to the node"
-    link: String
-    "Mime type of the node"
-    mimeType: String
-    "Main type of the node, e.g jnt:page"
-    nodeType: String
-    "Path of the node"
-    path: String
-    "Fetch the value of the requested property, property name can be pass as an alias or as an argument"
-    property(
-        "Name of the property to return"
-        name: String
-    ): String
-    "Determines how relevant a match is to the query"
-    score: Float
-    "Tags associated with this hit"
-    tags: [String]
-}
-
-"Object with search results"
-type searchResultsV2 {
-    "This flag indicates that more data is available by using different filters"
-    hasMore: Boolean
-    "Array of hits based on the search query"
-    hits: [searchHitV2]
-    "Number of hits on page"
-    hitsOnPage: Long
-    "Time taken by query"
-    took: String
-    "Total number of hits"
-    totalHits: Long
-}
-
-"List of indexed sites"
-type siteList {
-    "Database connection id"
-    connectionId: String
-    "Indexed sites"
-    sites: [indexedSite]
-    "Total number of indexed sites"
-    totalCount: Int
-}
-
 "Task that prevents server from shutdown"
 type task {
     "The name of the task associated with the service"
@@ -4252,6 +4054,8 @@ enum GqlProbeHealth {
 enum GqlProbeSeverity {
     "CRITICAL"
     CRITICAL
+    "DEBUG"
+    DEBUG
     "HIGH"
     HIGH
     "LOW"
@@ -4327,21 +4131,6 @@ enum NodeNamingConflictResolutionStrategy {
     FAIL
     "RENAME"
     RENAME
-}
-
-enum Operation {
-    "AND"
-    AND
-    "OR"
-    OR
-}
-
-"Direction of sort"
-enum OrderDirection {
-    "Ascendant order"
-    ASC
-    "Descendant order"
-    DESC
 }
 
 enum OrderType {
@@ -4440,19 +4229,21 @@ enum ReorderedChildrenPosition {
     LAST
 }
 
-"Index in which search should be performed"
-enum SearchIn {
-    "content index"
-    CONTENT
-    "files index"
-    FILES
-}
-
 enum SortType {
     "Ascendant order"
     ASC
     "Descendant order"
     DESC
+}
+
+"State of the publication event"
+enum State {
+    "FINISHED"
+    FINISHED
+    "STARTED"
+    STARTED
+    "UNPUBLISHED"
+    UNPUBLISHED
 }
 
 "The target scheduler(s)"
@@ -4487,24 +4278,6 @@ enum Workspace {
     EDIT
     "Live workspace"
     LIVE
-}
-
-"Status of indexation"
-enum indexationStatus {
-    "Indexation has completed"
-    COMPLETED
-    "Indexation has been scheduled"
-    SCHEDULED
-    "Indexation has started"
-    STARTED
-}
-
-"Status of job"
-enum jobStatus {
-    "Job has completed"
-    COMPLETED
-    "Job has started"
-    STARTED
 }
 
 "Date type"
@@ -4734,16 +4507,6 @@ input InputPrincipalInput {
     type: PrincipalType
 }
 
-"Number Range Input Object"
-input InputRange {
-    "From value [used in Range facet]"
-    from: String
-    "Name to describe the facet"
-    name: String!
-    "To value [used in Range facet]"
-    to: String
-}
-
 "Request attribute that can be use by rendering API"
 input InputRenderRequestAttributeInput {
     "The name of the request attribute"
@@ -4763,169 +4526,10 @@ input InputVanityUrl {
     url: String!
 }
 
-"Boost fields for document matching"
-input Inputboost {
-    "Boost configuration for fields and subfields. Overrides content, main and metadata boosts if present. Unspecified fields receive a default value as specified in .cfg file."
-    boosts: InputboostConfig
-    "Boost document based on their content(rich text, simple text) matching"
-    content: Float
-    "Boost document based on their main field (displayableName, title) matching"
-    main: Float
-    "Boost document based on their metadata field (tags, keywords, categories) matching"
-    metadata: Float
-}
-
-"Boost configuration for fields and their subfields"
-input InputboostConfig {
-    "Boost for jgql:content field multimatch query"
-    content: InputboostSpec
-    "Boost for jgql:file_content field multimatch query. Note that stem and ngram field boosts are not taken into account."
-    file: InputboostSpec
-    "Boost for jgql:main field multimatch query"
-    main: InputboostSpec
-    "Boost for jgql:metadata field multimatch query"
-    metadata: InputboostSpec
-}
-
-"Boost specification for multimatch query against a field"
-input InputboostSpec {
-    "Boost for default field"
-    defaultField: Float
-    "Boost for ngram field"
-    ngram: Float
-    "Boost for phrase field"
-    phrase: Float
-    "Overall boost for multimatch query (default field and subfields as a group)"
-    query: Float
-    "Boost for stem field"
-    stem: Float
-}
-
-"Search filter"
-input Inputfilter {
-    "Author filter"
-    author: String
-    "Created filter"
-    created: InputfilterRange
-    "Custom filters"
-    custom: InputfilterGroups
-    "Modified filter"
-    modified: InputfilterRange
-    "Node type filter"
-    nodeType: InputnodeTypeFilter
-    "Node path filter"
-    path: String
-    "Published filter"
-    published: InputfilterRange
-}
-
-"Custom term input object"
-input InputfilterCustomTerm {
-    "Mapped field to filter on"
-    field: String!
-    "Value to filter"
-    value: String!
-}
-
-"Custom date range group"
-input InputfilterDateRangeGroup {
-    "AND or OR filter operation"
-    operation: Operation
-    "Ranges used for filtering"
-    ranges: [InputfilterExtendedDateRange]!
-}
-
-"Custom extended date range input object"
-input InputfilterExtendedDateRange {
-    "To display hits after specified date"
-    after: String
-    "To display hits before specified date"
-    before: String
-    "Filter for strict equality to the date"
-    equal: String
-    "Field to filter by"
-    field: String!
-}
-
-"Custom filter groups"
-input InputfilterGroups {
-    "Groups of date range filters"
-    dateRange: [InputfilterDateRangeGroup]
-    "Groups of number range filters"
-    numberRange: [InputfilterNumberRangeGroup]
-    "Groups of term filters"
-    term: [InputfilterTermGroup]
-}
-
-"Number range input object"
-input InputfilterNumberRange {
-    "Numeric field to filter by"
-    field: String!
-    "Greater than a number"
-    gt: Float
-    "Greater than or equal to number"
-    gte: Float
-    "Less than a number"
-    lt: Float
-    "Less than or equal to number"
-    lte: Float
-}
-
-"Custom number range group"
-input InputfilterNumberRangeGroup {
-    "Filter operation"
-    operation: Operation
-    "Ranges"
-    ranges: [InputfilterNumberRange]!
-}
-
-"Range input object"
-input InputfilterRange {
-    "To display hits after specified date"
-    after: String
-    "To display hits before specified date"
-    before: String
-    "Filter for strict equality to the date"
-    equal: String
-}
-
-"Custom filter term group"
-input InputfilterTermGroup {
-    "Filter operation"
-    operation: Operation
-    "Terms to filter by"
-    terms: [InputfilterCustomTerm]!
-}
-
-"Filter for filtering on node type"
-input InputnodeTypeFilter {
-    "Flag to determine if sub node types should be included in filter"
-    includeSubNodes: Boolean
-    "Node type"
-    type: String
-}
-
-"Sort object for ordering or results"
-input InputsortV2 {
-    "Direction in which ordering occurs"
-    dir: OrderDirection!
-    "The field to order by"
-    field: String!
-}
-
 "Work in progress information"
 input InputwipInfo {
     "The languages set for Work in progress"
     languages: [String]
     "Get WIP status"
     status: WipStatus
-}
-
-input allOffersArgsInput {
-    "Content language, defaults to English"
-    language: String = "en"
-    "Return content from live or default workspace"
-    preview: Boolean = false
-    "Sort filter object"
-    sortBy: InputFieldSorterInput
 }
