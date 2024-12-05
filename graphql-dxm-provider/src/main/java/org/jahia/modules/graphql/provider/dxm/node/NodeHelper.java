@@ -172,7 +172,7 @@ public class NodeHelper {
         String workspace = node.getSession().getWorkspace().getName();
         if (language == null) {
             if (node.getLanguage() != null) {
-                JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
+                JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(workspace, Locale.forLanguageTag(node.getLanguage()));
                 return session.getNodeByIdentifier(node.getIdentifier());
             }
             return node;

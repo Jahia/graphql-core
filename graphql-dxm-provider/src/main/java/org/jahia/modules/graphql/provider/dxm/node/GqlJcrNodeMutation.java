@@ -260,8 +260,27 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
      */
     @GraphQLField
     @GraphQLDescription("Mutates or creates a set of properties on the current node")
-    public Collection<GqlJcrPropertyMutation> mutateProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names) {
+    public Collection<GqlJcrPropertyMutation> mutateProperties(@GraphQLName("names") @GraphQLDescription("The names of the JCR properties; null to obtain all properties") Collection<String> names,
+                                                               @GraphQLName("properties") @GraphQLDescription("The collection of JCR properties to set") Collection<GqlJcrPropertyInput> properties) {
         return names.stream().map((String name) -> new GqlJcrPropertyMutation(jcrNode, name)).collect(Collectors.toList());
+    }
+
+    /**
+     * Creates a collection of mutation object for modifications of the specified localized node properties
+     *
+     * @param properties the name of node properties to be modified
+     * @return a collection of mutation object for modifications of the specified node properties
+     */
+    @GraphQLField
+    @GraphQLDescription("Mutates or creates a set of properties on the current localized node")
+    public Collection<GqlJcrPropertyMutation> mutateLocalizedProperties(@GraphQLNonNull @GraphQLName("properties") @GraphQLDescription("The collection of JCR properties: name and language") Collection<GqlJcrPropertyI18nInput> properties) {
+        return properties.stream().map(prop -> {
+            try {
+                return new GqlJcrPropertyMutation(NodeHelper.getNodeInLanguage(jcrNode, prop.getLanguage()), prop.getName());
+            } catch (RepositoryException e) {
+                throw new DataFetchingException(e);
+            }
+        }).collect(Collectors.toList());
     }
 
     /**
