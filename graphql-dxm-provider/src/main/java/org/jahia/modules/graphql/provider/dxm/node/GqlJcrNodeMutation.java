@@ -265,20 +265,24 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     }
 
     /**
-     * Creates a collection of mutation object for modifications of the specified localized node properties
+     * Performs batch-set of the specified properties on the JCR node.
      *
-     * @param properties the name of node properties to be modified
-     * @return a collection of mutation object for modifications of the specified node properties
+     * @param properties the collection of properties to be deleted
+     * @return List of Boolean responses
+     * @throws BaseGqlClientException in case of modification errors
      */
     @GraphQLField
-    @GraphQLDescription("Mutates or creates a set of properties on the current localized node")
-    public Collection<GqlJcrPropertyMutation> mutateLocalizedProperties(@GraphQLNonNull @GraphQLName("properties") @GraphQLDescription("The collection of JCR properties: name and language") Collection<GqlJcrPropertyI18nInput> properties) {
+    @GraphQLName("deletePropertiesBatch")
+    @GraphQLDescription("Deletes a set of properties on the current node")
+    public Collection<Boolean> deletePropertiesBatch(@GraphQLName("properties") @GraphQLDescription("The collection of JCR properties: name and language") Collection<GqlJcrPropertyI18nInput> properties) {
         return properties.stream().map(prop -> {
             try {
-                return new GqlJcrPropertyMutation(NodeHelper.getNodeInLanguage(jcrNode, prop.getLanguage()), prop.getName());
+                NodeHelper.getNodeInLanguage(jcrNode, prop.getLanguage()).getProperty(prop.getName()).remove();
             } catch (RepositoryException e) {
                 throw new DataFetchingException(e);
             }
+
+            return true;
         }).collect(Collectors.toList());
     }
 
