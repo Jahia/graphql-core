@@ -15,6 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.scheduler;
 
+import graphql.annotations.annotationTypes.GraphQLDeprecate;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
@@ -44,9 +45,22 @@ public class GqlScheduler {
 
     @GraphQLField
     @GraphQLName("jobs")
-    @GraphQLDescription("List of active jobs")
+    @GraphQLDescription("List of active jobs (deprecated)")
+    @GraphQLDeprecate("Use paginatedJobs instead")
+    public List<GqlBackgroundJob> getJobs(
+    ) throws SchedulerException {
+        return schedulerService
+                .getAllJobs()
+                .stream()
+                .map(job -> new GqlBackgroundJob(job, GqlBackgroundJob.GqlBackgroundJobState.STARTED))
+                .collect(Collectors.toList());
+    }
+
+    @GraphQLField
+    @GraphQLName("paginatedJobs")
+    @GraphQLDescription("List of active jobs (paginated)")
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
-    public DXPaginatedData<GqlBackgroundJob> getJobs(
+    public DXPaginatedData<GqlBackgroundJob> getPaginatedJobs(
             @GraphQLName("group") @GraphQLDescription("The group jobs belong to") String group,
             @GraphQLName("includeStatuses") @GraphQLDescription("Include jobs with these statuses") List<GqlBackgroundJob.GqlBackgroundJobStatus> includeStatuses,
             @GraphQLName("excludeStatuses") @GraphQLDescription("Exclude jobs with these statuses") List<GqlBackgroundJob.GqlBackgroundJobStatus> excludeStatuses,
