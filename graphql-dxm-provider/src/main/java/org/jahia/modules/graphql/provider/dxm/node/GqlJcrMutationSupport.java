@@ -123,12 +123,12 @@ public class GqlJcrMutationSupport {
      * @param properties the collection of properties to be deleted
      * @return Boolean
      */
-    public static boolean deleteProperties(JCRNodeWrapper node, Collection<GqlJcrPropertyI18nInput> properties) {
+    public static boolean deleteProperties(JCRNodeWrapper node, Collection<GqlJcrDeletedPropertyInput> properties) {
         if (properties == null) {
             return false;
         }
 
-        for (GqlJcrPropertyI18nInput prop : properties) {
+        for (GqlJcrDeletedPropertyInput prop : properties) {
             try {
                 NodeHelper.getNodeInLanguage(node, prop.getLanguage()).getProperty(prop.getName()).remove();
             } catch (RepositoryException e) {

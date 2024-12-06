@@ -274,7 +274,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     @GraphQLField
     @GraphQLName("deletePropertiesBatch")
     @GraphQLDescription("Deletes a set of properties on the current node")
-    public Boolean deletePropertiesBatch(@GraphQLName("properties") @GraphQLDescription("The collection of JCR properties: name and language") Collection<GqlJcrPropertyI18nInput> properties) {
+    public Boolean deletePropertiesBatch(@GraphQLName("properties") @GraphQLDescription("The collection of JCR properties: name and language") Collection<GqlJcrDeletedPropertyInput> properties) {
         return deleteProperties(jcrNode, properties);
     }
 

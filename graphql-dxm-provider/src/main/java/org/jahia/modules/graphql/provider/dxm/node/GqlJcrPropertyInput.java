@@ -24,7 +24,9 @@ import java.util.List;
 
 @GraphQLName("JCRProperty")
 @GraphQLDescription("GraphQL representation of a JCR property to set")
-public class GqlJcrPropertyInput extends GqlJcrPropertyI18nInput {
+public class GqlJcrPropertyInput {
+    private String name;
+    private String language;
     private GqlJcrPropertyType type;
     private GqlJcrPropertyOption option;
     private String value;
@@ -36,11 +38,20 @@ public class GqlJcrPropertyInput extends GqlJcrPropertyI18nInput {
                                @GraphQLName("language") @GraphQLDescription("The language in which the property will be set (for internationalized properties") String language,
                                @GraphQLName("value") @GraphQLDescription("The value to set (for single valued properties)") String value,
                                @GraphQLName("values") @GraphQLDescription("The values to set (for multivalued properties)") List<String> values) {
-        super(name, language);
+        this.name = name;
+        this.language = language;
         this.type = type;
         this.option = option;
         this.value = value;
         this.values = values;
+    }
+
+    @GraphQLField
+    @GraphQLName("name")
+    @GraphQLNonNull
+    @GraphQLDescription("The name of the property to set")
+    public String getName() {
+        return name;
     }
 
     @GraphQLField
@@ -55,6 +66,13 @@ public class GqlJcrPropertyInput extends GqlJcrPropertyI18nInput {
     @GraphQLDescription("The option of the property")
     public GqlJcrPropertyOption getOption() {
         return option;
+    }
+
+    @GraphQLField
+    @GraphQLName("language")
+    @GraphQLDescription("The language in which the property will be set (for internationalized properties")
+    public String getLanguage() {
+        return language;
     }
 
     @GraphQLField

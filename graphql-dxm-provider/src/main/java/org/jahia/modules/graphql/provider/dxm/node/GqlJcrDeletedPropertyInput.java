@@ -20,16 +20,14 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 
-import java.util.List;
-
-@GraphQLName("JCRPropertyI18n")
-@GraphQLDescription("GraphQL representation of a JCR property to set")
-public class GqlJcrPropertyI18nInput {
+@GraphQLName("JCRDeletedProperty")
+@GraphQLDescription("GraphQL representation of a deleted JCR property")
+public class GqlJcrDeletedPropertyInput {
     protected String name;
     protected String language;
 
-    public GqlJcrPropertyI18nInput(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property to set") String name,
-                                   @GraphQLName("language") @GraphQLDescription("The language in which the property will be set (for internationalized properties") String language) {
+    public GqlJcrDeletedPropertyInput(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property to set") String name,
+                                      @GraphQLName("language") @GraphQLNonNull @GraphQLDescription("The language in which the property will be set (for internationalized properties") String language) {
         this.name = name;
         this.language = language;
     }
@@ -37,14 +35,15 @@ public class GqlJcrPropertyI18nInput {
     @GraphQLField
     @GraphQLName("name")
     @GraphQLNonNull
-    @GraphQLDescription("The name of the property to set")
+    @GraphQLDescription("The name of the property to delete")
     public String getName() {
         return name;
     }
 
     @GraphQLField
     @GraphQLName("language")
-    @GraphQLDescription("The language in which the property will be set (for internationalized properties")
+    @GraphQLNonNull
+    @GraphQLDescription("The language in which the property will be deleted")
     public String getLanguage() {
         return language;
     }
