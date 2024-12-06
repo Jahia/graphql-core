@@ -268,22 +268,14 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
      * Performs batch-set of the specified properties on the JCR node.
      *
      * @param properties the collection of properties to be deleted
-     * @return List of Boolean responses
+     * @return Boolean
      * @throws BaseGqlClientException in case of modification errors
      */
     @GraphQLField
     @GraphQLName("deletePropertiesBatch")
     @GraphQLDescription("Deletes a set of properties on the current node")
-    public Collection<Boolean> deletePropertiesBatch(@GraphQLName("properties") @GraphQLDescription("The collection of JCR properties: name and language") Collection<GqlJcrPropertyI18nInput> properties) {
-        return properties.stream().map(prop -> {
-            try {
-                NodeHelper.getNodeInLanguage(jcrNode, prop.getLanguage()).getProperty(prop.getName()).remove();
-            } catch (RepositoryException e) {
-                throw new DataFetchingException(e);
-            }
-
-            return true;
-        }).collect(Collectors.toList());
+    public Boolean deletePropertiesBatch(@GraphQLName("properties") @GraphQLDescription("The collection of JCR properties: name and language") Collection<GqlJcrPropertyI18nInput> properties) {
+        return deleteProperties(jcrNode, properties);
     }
 
     /**
