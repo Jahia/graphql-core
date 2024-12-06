@@ -265,7 +265,7 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     }
 
     /**
-     * Performs batch-set of the specified properties on the JCR node.
+     * Performs batch-delete of the specified properties on the JCR node.
      *
      * @param properties the collection of properties to be deleted
      * @return Boolean
