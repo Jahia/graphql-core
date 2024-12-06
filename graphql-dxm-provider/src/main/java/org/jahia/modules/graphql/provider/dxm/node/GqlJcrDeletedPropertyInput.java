@@ -26,8 +26,8 @@ public class GqlJcrDeletedPropertyInput {
     protected String name;
     protected String language;
 
-    public GqlJcrDeletedPropertyInput(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property to set") String name,
-                                      @GraphQLName("language") @GraphQLNonNull @GraphQLDescription("The language in which the property will be set (for internationalized properties") String language) {
+    public GqlJcrDeletedPropertyInput(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property to delete") String name,
+                                      @GraphQLName("language") @GraphQLNonNull @GraphQLDescription("The language in which the property will be deleted") String language) {
         this.name = name;
         this.language = language;
     }
