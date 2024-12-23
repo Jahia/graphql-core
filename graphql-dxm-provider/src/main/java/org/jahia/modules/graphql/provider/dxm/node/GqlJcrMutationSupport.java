@@ -130,7 +130,10 @@ public class GqlJcrMutationSupport {
 
         for (GqlJcrDeletedPropertyInput prop : properties) {
             try {
-                NodeHelper.getNodeInLanguage(node, prop.getLanguage()).getProperty(prop.getName()).remove();
+                JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, prop.getLanguage());
+                if (localizedNode.hasProperty(prop.getName())) {
+                    localizedNode.getProperty(prop.getName()).remove();
+                }
             } catch (RepositoryException e) {
                 throw new DataFetchingException(e);
             }

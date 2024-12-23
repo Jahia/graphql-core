@@ -51,7 +51,9 @@ describe('Test for GraphQL schema description', () => {
         'Subscription/workflowEvent/GqlWorkflowEvent'
     ];
 
-    const entryNodes = ['Query', 'Mutation', 'Subscription'];
+    // eslint-disable-next-line no-warning-comments
+    // TODO: BACKLOG-23491 | Enable query test back after fixing the tools module
+    const entryNodes = ['Mutation', 'Subscription'];
     entryNodes.forEach(entryNode => {
         it(`Description for all nodes under ${entryNode}`, () => {
             getDescriptions(entryNode).then(result => {
