@@ -117,6 +117,32 @@ public class GqlJcrMutationSupport {
     }
 
     /**
+     * Delete the provided properties to the specified node.
+     *
+     * @param node       The JCR node to delete properties from
+     * @param properties the collection of properties to be deleted
+     * @return Boolean
+     */
+    public static boolean deleteProperties(JCRNodeWrapper node, Collection<GqlJcrDeletedPropertyInput> properties) {
+        if (properties == null) {
+            return false;
+        }
+
+        for (GqlJcrDeletedPropertyInput prop : properties) {
+            try {
+                JCRNodeWrapper localizedNode = NodeHelper.getNodeInLanguage(node, prop.getLanguage());
+                if (localizedNode.hasProperty(prop.getName())) {
+                    localizedNode.getProperty(prop.getName()).remove();
+                }
+            } catch (RepositoryException e) {
+                throw new DataFetchingException(e);
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Retrieve the specified JCR node by its path or UUID.
      *
      * @param session  JCR session to be used for node retrieval
