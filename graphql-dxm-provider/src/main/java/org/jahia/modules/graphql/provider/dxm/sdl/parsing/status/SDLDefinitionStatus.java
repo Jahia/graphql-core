@@ -53,12 +53,11 @@ public class SDLDefinitionStatus {
 
     @Override
     public String toString() {
-        return String.format("DEFINITION: %s maps to type %s from module %s with id %s. STATUS: %s",
-                this.name,
-                this.mapsToType,
-                this.mappedTypeModuleName,
-                this.mappedTypeModuleId,
-                getStatusString());
+        String info = String.format("%s maps to type %s", this.name, this.mapsToType);
+        if (mappedTypeModuleName != null) {
+            info += String.format(" from module %s with id %s", this.mappedTypeModuleName, this.mappedTypeModuleId);
+        }
+        return String.format("DEFINITION: %s. STATUS: %s", info, getStatusString());
     }
 
     public String getStatusString() {
