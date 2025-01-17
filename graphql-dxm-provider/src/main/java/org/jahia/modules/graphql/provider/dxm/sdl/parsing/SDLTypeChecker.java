@@ -156,8 +156,19 @@ public class SDLTypeChecker {
         return status;
     }
 
-    public static void printStatuses(Map<String, SDLDefinitionStatus> statusMap) {
-        statusMap.values().forEach(e -> logger.info(e.toString()));
+    /**
+     * Print and log SDL definition status.
+     * If status is not OK, it will be logged as error. Otherwise, it logs status only if debug is enabled.
+     * @param statuses list of statuses to log
+     */
+    public static void printStatuses(Collection<SDLDefinitionStatus> statuses) {
+        statuses.forEach(e -> {
+            if (e.getStatus() != SDLDefinitionStatusType.OK) {
+                logger.error(e.toString());
+            } else if (logger.isDebugEnabled()) {
+                logger.debug(e.toString());
+            }
+        });
     }
 
     private static SDLDefinitionStatus checkForFieldsConsistency(SDLSchemaService sdlSchemaService, ObjectTypeDefinition objectTypeDefinition, TypeDefinitionRegistry typeDefinitionRegistry) {

@@ -129,7 +129,7 @@ public class SDLSchemaService {
                 sources.keySet().removeAll(invalidTypes);
                 invalidTypes.forEach(typeDefinitionRegistry::remove);
             } while (!invalidTypes.isEmpty());
-            SDLTypeChecker.printStatuses(sdlDefinitionStatusMap);
+            SDLTypeChecker.printStatuses(sdlDefinitionStatusMap.values());
             SchemaGenerator schemaGenerator = new SchemaGenerator();
 
             TypeDefinitionRegistry cleanedTypeRegistry = new TypeDefinitionRegistry();
