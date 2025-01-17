@@ -10,4 +10,6 @@ jobs:
   release-module:
     uses: Jahia/jahia-modules-action/.github/workflows/release-module.yml@v2
     secrets: inherit 
+    with:
+      primary_release_branch: "master"
 
