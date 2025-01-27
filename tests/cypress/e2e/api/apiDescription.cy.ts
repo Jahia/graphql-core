@@ -21,9 +21,6 @@ describe('Test for GraphQL schema description', () => {
         'AdminQuery/jahia/JahiaAdminQuery/GqlHealthCheck',
         'AdminQuery/jahia/JahiaAdminQuery/load',
 
-        // Tools - BACKLOG-23491
-        'AdminQuery/tools/AdminTools/bundles/BundleWithDependencies/dependencies/BundleDependency/status/Status',
-
         // Missing but provided by: https://github.com/Jahia/personal-api-tokens
         'AdminQuery/personalApiTokens/PersonalApiTokensQuery',
 
