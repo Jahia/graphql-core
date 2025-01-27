@@ -17,7 +17,6 @@ describe('Test for GraphQL schema description', () => {
         'GqlDashboard',
 
         // Missing but provided by: https://github.com/Jahia/server-availability-manager
-
         'AdminQuery/jahia/JahiaAdminQuery/healthCheck',
         'AdminQuery/jahia/JahiaAdminQuery/GqlHealthCheck',
         'AdminQuery/jahia/JahiaAdminQuery/load',
@@ -51,9 +50,10 @@ describe('Test for GraphQL schema description', () => {
         'Subscription/workflowEvent/GqlWorkflowEvent'
     ];
 
-    // eslint-disable-next-line no-warning-comments
-    // TODO: BACKLOG-23491 | Enable query test back after fixing the tools module
-    const entryNodes = ['Mutation', 'Subscription'];
+    // Note: If you need to remove a node missing a description, please use the noDescBlacklist
+    // array, do not filter out one of the entryNodes entirely as it will make the test blind
+    // to any further updates to the schema.
+    const entryNodes = ['Query', 'Mutation', 'Subscription'];
     entryNodes.forEach(entryNode => {
         it(`Description for all nodes under ${entryNode}`, () => {
             getDescriptions(entryNode).then(result => {
