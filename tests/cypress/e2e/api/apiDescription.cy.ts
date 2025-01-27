@@ -17,10 +17,12 @@ describe('Test for GraphQL schema description', () => {
         'GqlDashboard',
 
         // Missing but provided by: https://github.com/Jahia/server-availability-manager
-
         'AdminQuery/jahia/JahiaAdminQuery/healthCheck',
         'AdminQuery/jahia/JahiaAdminQuery/GqlHealthCheck',
         'AdminQuery/jahia/JahiaAdminQuery/load',
+
+        // Tools - BACKLOG-23491
+        'AdminQuery/tools/AdminTools/bundles/BundleWithDependencies/dependencies/BundleDependency/status/Status',
 
         // Missing but provided by: https://github.com/Jahia/personal-api-tokens
         'AdminQuery/personalApiTokens/PersonalApiTokensQuery',
@@ -52,8 +54,7 @@ describe('Test for GraphQL schema description', () => {
     ];
 
     // eslint-disable-next-line no-warning-comments
-    // TODO: BACKLOG-23491 | Enable query test back after fixing the tools module
-    const entryNodes = ['Mutation', 'Subscription'];
+    const entryNodes = ['Query', 'Mutation', 'Subscription'];
     entryNodes.forEach(entryNode => {
         it(`Description for all nodes under ${entryNode}`, () => {
             getDescriptions(entryNode).then(result => {
