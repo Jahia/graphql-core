@@ -53,7 +53,9 @@ describe('Test for GraphQL schema description', () => {
         'Subscription/workflowEvent/GqlWorkflowEvent'
     ];
 
-    // eslint-disable-next-line no-warning-comments
+    // Note: If you need to remove a node missing a description, please use the noDescBlacklist
+    // array, do not filter out one of the entryNodes entirely as it will make the test blind
+    // to any further updates to the schema.
     const entryNodes = ['Query', 'Mutation', 'Subscription'];
     entryNodes.forEach(entryNode => {
         it(`Description for all nodes under ${entryNode}`, () => {
