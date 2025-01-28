@@ -1,17 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getJahiaVersion } from '@jahia/cypress'
+import { compare } from 'compare-versions'
 
 describe('Test admin jahia system endpoint', () => {
     it('Gets system details', () => {
         cy.apollo({
             queryFile: 'admin/system.graphql'
-        }).should((response: any) => {
+        }).then((response: any) => {
             expect(response.data.admin.jahia.system.os.name).to.equal('Linux');
             expect(response.data.admin.jahia.system.os.architecture.length).to.greaterThan(3);
             expect(response.data.admin.jahia.system.os.version.length).to.greaterThan(3);
 
             getJahiaVersion().then((jahiaVersion) => {
-                cy.log(jahiaVersion).then(() => {
+                cy.log(JSON.stringify(jahiaVersion)).then(() => {
                     if (compare(jahiaVersion.release.replace('-SNAPSHOT', ''), '8.2.1', '<')) {
                         expect(response.data.admin.jahia.system.java.runtimeName).to.equal('OpenJDK Runtime Environment');
                     } else {
