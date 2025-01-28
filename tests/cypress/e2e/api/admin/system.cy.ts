@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getJahiaVersion } from '@jahia/cypress'
 
-describe('Test admin jahia cluster endpoint', () => {
-    it('Gets cluster details', () => {
+describe('Test admin jahia system endpoint', () => {
+    it('Gets system details', () => {
         cy.apollo({
             queryFile: 'admin/system.graphql'
         }).should((response: any) => {
