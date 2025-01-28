@@ -16,3 +16,5 @@ jobs:
       pagerduty_incident_service: graphql-dxm-provider-JahiaSN
       provisioning_manifest: provisioning-manifest-snapshot.yml
       artifact_prefix: gql
+      module_branch: ${{ github.ref }}
+
