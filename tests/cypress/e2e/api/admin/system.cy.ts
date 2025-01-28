@@ -11,13 +11,14 @@ describe('Test admin jahia cluster endpoint', () => {
             expect(response.data.admin.jahia.system.os.version.length).to.greaterThan(3);
 
             getJahiaVersion().then((jahiaVersion) => {
-                cy.log(jahiaVersion)
-                if (compare(jahiaVersion.release.replace('-SNAPSHOT', ''), '8.2.1', '<')) {
-                    expect(response.data.admin.jahia.system.java.runtimeName).to.equal('OpenJDK Runtime Environment');
-                } else {
-                    // With TECH-2029 the GraalVM vendor was changed, resulting in a new runtime name
-                    expect(response.data.admin.jahia.system.java.runtimeName).to.equal('Java(TM) SE Runtime Environment');
-                }
+                cy.log(jahiaVersion).then(() => 
+                    if (compare(jahiaVersion.release.replace('-SNAPSHOT', ''), '8.2.1', '<')) {
+                        expect(response.data.admin.jahia.system.java.runtimeName).to.equal('OpenJDK Runtime Environment');
+                    } else {
+                        // With TECH-2029 the GraalVM vendor was changed, resulting in a new runtime name
+                        expect(response.data.admin.jahia.system.java.runtimeName).to.equal('Java(TM) SE Runtime Environment');
+                    }                    
+                })
             })
             expect(response.data.admin.jahia.system.java.runtimeVersion.length).to.greaterThan(3);
             expect(response.data.admin.jahia.system.java.vendor.length).to.greaterThan(3);
