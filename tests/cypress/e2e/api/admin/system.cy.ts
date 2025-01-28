@@ -11,7 +11,7 @@ describe('Test admin jahia cluster endpoint', () => {
             expect(response.data.admin.jahia.system.os.version.length).to.greaterThan(3);
 
             getJahiaVersion().then((jahiaVersion) => {
-                console.log(jahiaVersion)
+                cy.log(jahiaVersion)
                 if (compare(jahiaVersion.release.replace('-SNAPSHOT', ''), '8.2.1', '<')) {
                     expect(response.data.admin.jahia.system.java.runtimeName).to.equal('OpenJDK Runtime Environment');
                 } else {
