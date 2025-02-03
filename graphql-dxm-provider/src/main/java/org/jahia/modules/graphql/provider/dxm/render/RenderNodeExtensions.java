@@ -100,7 +100,7 @@ public class RenderNodeExtensions {
             context.setServletPath("/cms/render/live");
             return JCRContentUtils.isADisplayableNode(node.getNode(), context);
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -139,7 +139,7 @@ public class RenderNodeExtensions {
             HttpServletRequest request = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
             HttpServletResponse response = ContextUtil.getHttpServletResponse(environment.getGraphQlContext());
             if (request == null || response == null) {
-                throw new RuntimeException("No HttpRequest or HttpResponse");
+                throw new DataFetchingException("No HttpRequest or HttpResponse");
             }
 
             request = ServletUtil.unwrapRequest(request);
@@ -181,7 +181,7 @@ public class RenderNodeExtensions {
             String res = RenderExtensionsHelper.clean(renderService.render(r, renderContext));
             return new RenderedNode(res, renderContext);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 
@@ -208,7 +208,7 @@ public class RenderNodeExtensions {
             try {
                 constraints = ConstraintsHelper.getConstraints(renderContext.getMainResource().getNode());
             } catch (RepositoryException e) {
-                throw new RuntimeException(e);
+                throw new DataFetchingException(e);
             }
             return constraints;
         }
