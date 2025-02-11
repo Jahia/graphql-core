@@ -52,7 +52,7 @@
             org.apache.tika;version="[1.27,3)"
         </import-package>
         <jahia-module-type>system</jahia-module-type>
-        <jahia-module-signature>MCwCFHLmHk8vPHBXLB4bXfqjjpEj2AtkAhRGZaxeT33TJCKTAfSBG5rW/JuXDA==</jahia-module-signature>
+        <jahia-module-signature>MCwCFHTUakiZUZrIEsNLOZihCKIJMJcKAhQxln0a13z4ayYW6ganSiFL/47gGA==</jahia-module-signature>
         <mockito.version>2.21.0</mockito.version>
         <powermock.version>2.0.9</powermock.version>
         <yarn.arguments>build:production</yarn.arguments>
