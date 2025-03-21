@@ -9,7 +9,7 @@ on:
 
 jobs:
   sonar-analysis:
-    uses: Jahia/jahia-modules-action/.github/workflows/sonar-scan.yml@v2
+    uses: Jahia/jahia-modules-action/.github/workflows/reusable-sonar-scan.yml@v2
     secrets: inherit
     # Keeping a matrix as it becomes useful when a maintenance branch is present.
     strategy:
