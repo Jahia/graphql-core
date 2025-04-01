@@ -1,0 +1,12 @@
+# Retrieves the properties of a site by its name
+query siteProperties($siteName: String!) {
+    jcr(workspace: EDIT) {
+        nodeByPath(path: $siteName) {
+            properties {
+                name
+                value
+                values
+            }
+        }
+    }
+}
