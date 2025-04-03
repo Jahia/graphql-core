@@ -104,7 +104,7 @@ function createContentNode(path: string, name: string, type: string):void {
  * @param {string} node - path of the node to check (e.g. /sites/siteName/contents/myFolder)
  * @param {string} langTranslated - languages that are already translated (e.g. ["fr"])
  * @param {string} langToCheck - languages to check for translation (e.g. ["en"])
- * @returns {Chainable} - returns a promise that resolves to an array of languages that need translation
+ * @returns {Chainable} - returns a chainable object that resolves to an array of languages that need translation
  */
 function getLanguagesToTranslate(node: string, langTranslated: string, langToCheck: string): Cypress.Chainable {
     // Call the GraphQL query to get the languages to translate
