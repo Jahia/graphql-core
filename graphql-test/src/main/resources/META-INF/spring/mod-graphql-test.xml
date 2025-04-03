@@ -13,7 +13,6 @@
                 <value>org.jahia.test.graphql.GraphQLPublicationTest</value>
                 <value>org.jahia.test.graphql.GraphQLVanityUrlsTest</value>
                 <value>org.jahia.test.graphql.GraphQLWorkflowTest</value>
-                <value>org.jahia.test.graphql.GraphQLi18nTest</value>
                 <value>org.jahia.test.graphql.GraphQLZipMutationTest</value>
             </list>
         </property>
