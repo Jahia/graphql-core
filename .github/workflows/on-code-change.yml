@@ -21,3 +21,5 @@ jobs:
       artifact_prefix: gql
       static_analysis_auditci_level: critical
       module_branch: ${{ github.head_ref }}
+      build_instance_type: self-hosted
+      tests_standalone: true
