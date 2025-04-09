@@ -52,13 +52,10 @@
     "typescript": "^4.4.4",
     "util": "^0.12.4",
     "uuid": "^10.0.0",
-    "webpack": "5.88.2",
     "yarn": "^1.22.17"
   },
   "resolutions": {
-    "*/**/elliptic": "6.5.4",
-    "**/glob-parent": "^5.1.2",
-    "*/**/minimist": "1.2.6"
+    "**/glob-parent": "^5.1.2"
   },
   "scripts": {
     "instrument": "nyc instrument --compact=false cypress instrumented",
