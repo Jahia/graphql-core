@@ -30,21 +30,32 @@
 
     <properties>
         <export-package>
+            org.jahia.modules.graphql.provider.dxm,
+            org.jahia.modules.graphql.provider.dxm.acl,
+            org.jahia.modules.graphql.provider.dxm.acl.service,
             org.jahia.modules.graphql.provider.dxm.admin,
-            org.jahia.modules.graphql.provider.dxm.relay,
+            org.jahia.modules.graphql.provider.dxm.config,
+            org.jahia.modules.graphql.provider.dxm.image,
+            org.jahia.modules.graphql.provider.dxm.instrumentation,
             org.jahia.modules.graphql.provider.dxm.node,
             org.jahia.modules.graphql.provider.dxm.nodetype,
-            org.jahia.modules.graphql.provider.dxm,
-            org.jahia.modules.graphql.provider.dxm.instrumentation,
+            org.jahia.modules.graphql.provider.dxm.osgi.annotations,
+            org.jahia.modules.graphql.provider.dxm.osgiconfig,
             org.jahia.modules.graphql.provider.dxm.predicate,
+            org.jahia.modules.graphql.provider.dxm.relay,
+            org.jahia.modules.graphql.provider.dxm.scheduler,
+            org.jahia.modules.graphql.provider.dxm.scheduler.jobs,
+            org.jahia.modules.graphql.provider.dxm.sdl,
             org.jahia.modules.graphql.provider.dxm.sdl.extension,
             org.jahia.modules.graphql.provider.dxm.sdl.fetchers,
-            org.jahia.modules.graphql.provider.dxm.sdl,
+            org.jahia.modules.graphql.provider.dxm.sdl.parsing,
+            org.jahia.modules.graphql.provider.dxm.sdl.parsing.status,
+            org.jahia.modules.graphql.provider.dxm.sdl.registration,
             org.jahia.modules.graphql.provider.dxm.security,
+            org.jahia.modules.graphql.provider.dxm.site,
+            org.jahia.modules.graphql.provider.dxm.upload,
             org.jahia.modules.graphql.provider.dxm.user,
-            org.jahia.modules.graphql.provider.dxm.util,
-            org.jahia.modules.graphql.provider.dxm.osgi.annotations,
-            org.jahia.modules.graphql.provider.dxm.upload
+            org.jahia.modules.graphql.provider.dxm.util
         </export-package>
         <import-package>
             com.fasterxml.jackson.annotation,
