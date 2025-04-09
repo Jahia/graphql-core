@@ -59,6 +59,10 @@
     <packaging>pom</packaging>
     <description>This is the custom module (text-field-initializer) for content-editor cypress tests.</description>
 
+    <properties>
+        <graphql-dxm-provider.version>3.5.0-SNAPSHOT</graphql-dxm-provider.version>
+    </properties>
+
     <repositories>
         <repository>
             <id>jahia-public</id>
