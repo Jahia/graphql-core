@@ -12,14 +12,14 @@ jobs:
     uses: Jahia/jahia-modules-action/.github/workflows/reusable-on-code-change.yml@reusable-on-code-change
     secrets: inherit
     with:
-      jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
+      integration_tests_jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
       module_id: graphql-dxm-provider
-      testrail_project: GraphQL Core module
-      pagerduty_skip_notification: true
-      provisioning_manifest: provisioning-manifest-build.yml
-      should_use_build_artifacts: true
-      artifact_prefix: gql
+      integration_tests_testrail_project: GraphQL Core module
+      integration_tests_pagerduty_skip_notification: true
+      integration_tests_provisioning_manifest: provisioning-manifest-build.yml
+      integration_tests_should_use_build_artifacts: true
+      integration_tests_artifact_prefix: gql
       static_analysis_auditci_level: critical
       module_branch: ${{ github.head_ref }}
       build_instance_type: self-hosted
-      tests_standalone: true
+      integration_tests_standalone_execute: true
