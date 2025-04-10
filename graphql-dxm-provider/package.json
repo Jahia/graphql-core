@@ -18,8 +18,8 @@
     "build:production-analyze": "yarn build --mode=production --analyze",
     "clean": "rimraf *.log src/main/resources/javascript/apps",
     "clean:all": "yarn clean && rimraf node_modules node",
-    "lint": "./node_modules/.bin/eslint --ext js,jsx .",
-    "lint:fix": "./node_modules/.bin/eslint --ext js,jsx --fix .",
+    "lint": "eslint . -c .eslintrc.json  --ext js,jsx .",
+    "lint:fix": "yarn lint --fix .",
     "sync-pom": "sync-pom-version --use-yarn"
   },
   "main": "index.js",
@@ -29,17 +29,14 @@
       "jahia": "javascript/apps/remoteEntry.js"
     }
   },
-  "resolutions": {
-    "*/**/elliptic": "6.6.0"
-  },
   "dependencies": {
-    "@graphiql/plugin-code-exporter": "^1.0.1",
-    "@graphiql/plugin-explorer": "^1.0.1",
-    "@graphiql/react": "^0.20.1",
-    "@graphiql/toolkit": "^0.9.1",
+    "@graphiql/plugin-code-exporter": "3.1.0",
+    "@graphiql/plugin-explorer": "^3.2.0",
+    "@graphiql/react": "^0.24.0",
+    "@graphiql/toolkit": "^0.9.2",
     "@jahia/ui-extender": "^1.1.0",
     "bufferutil": "^4.0.8",
-    "graphiql": "^3.0.8",
+    "graphiql": "^3.5.0",
     "graphql": "^16.8.1",
     "i18next": "^23.5.1",
     "net": "^1.0.2",
@@ -76,13 +73,12 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "husky": "^8.0.3",
     "node-polyfill-webpack-plugin": "^2.0.1",
-    "path": "^0.12.7",
     "rimraf": "^5.0.5",
     "style-loader": "^3.3.3",
     "sync-pom-version-to-package": "^1.6.1",
-    "webpack": "^5.89.0",
-    "webpack-bundle-analyzer": "^4.9.1",
-    "webpack-cli": "^5.1.4"
+    "webpack": "^5.99.4",
+    "webpack-bundle-analyzer": "^4.10.2",
+    "webpack-cli": "^6.0.1"
   },
   "browser": {
     "fs": false,
