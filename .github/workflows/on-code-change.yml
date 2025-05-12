@@ -19,6 +19,7 @@ jobs:
       integration_tests_provisioning_manifest: provisioning-manifest-build.yml
       integration_tests_should_use_build_artifacts: true
       integration_tests_artifact_prefix: gql
+      static_analysis_node_version: lts/*
       static_analysis_auditci_level: critical
       module_branch: ${{ github.head_ref }}
       build_instance_type: self-hosted
