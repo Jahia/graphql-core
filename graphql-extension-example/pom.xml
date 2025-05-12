@@ -30,6 +30,7 @@
 
     <properties>
         <jahia-module-signature>MC0CFQCJVh5RjYpTR5Krt7id8My/aWJm+AIUNHqUwi6475pHyLeq5frk4n/v/yU=</jahia-module-signature>
+        <jahia-depends>default,graphql-dxm-provider</jahia-depends>
     </properties>
 
     <dependencies>
@@ -64,14 +65,13 @@
 
     <build>
         <plugins>
-
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
+                <version>5.1.9</version>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Jahia-Depends>default,graphql-dxm-provider</Jahia-Depends>
                         <_dsannotations>*</_dsannotations>
                         <Import-Package>
                             org.jahia.modules.graphql.provider.dxm.relay,
@@ -87,6 +87,5 @@
                 </configuration>
             </plugin>
         </plugins>
-
     </build>
 </project>

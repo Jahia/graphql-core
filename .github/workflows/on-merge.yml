@@ -63,7 +63,6 @@ jobs:
       testrail_project: GraphQL Core module
       pagerduty_skip_notification: true
       provisioning_manifest: provisioning-manifest-build.yml
-      should_use_build_artifacts: true
       pagerduty_incident_service: graphql-dxm-provider-JahiaSN
       artifact_prefix: gql
 
