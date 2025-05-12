@@ -9,7 +9,7 @@ on:
 
 jobs:
   on-code-change:
-    uses: Jahia/jahia-modules-action/.github/workflows/reusable-on-code-change.yml@reusable-on-code-change
+    uses: Jahia/jahia-modules-action/.github/workflows/reusable-on-code-change.yml@v2
     secrets: inherit
     with:
       integration_tests_jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
