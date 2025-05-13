@@ -1234,10 +1234,10 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.3.tgz#e45e384e4b8ec16bce2fd903af78450f6bf7ec98"
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
 
-"@jahia/cypress@^4.0.0":
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/@jahia/cypress/-/cypress-4.0.0.tgz#d47b4b013c5f26bf969caf652c426a9a780b225d"
-  integrity sha512-rvG0NpB6RddUOcEr2JS9S3s3E0wdzUv1BtaTekLBsT8sW1wv/CfDiIQQxG3dwaS/JpTon4eGK6VyrPEUuT4xGQ==
+"@jahia/cypress@^5.2.0":
+  version "5.2.0"
+  resolved "https://npm.jahia.com/@jahia%2fcypress/-/cypress-5.2.0.tgz#69cb8c8b13fdb97e918df8423f5ad1cf728405b9"
+  integrity sha512-0OeM0U7UBbKS2noMGUw5kCFIN0yhgOHL0iAWLGE9Nst2btNuChoVUQq1lIVDFNSopEgCM+gm8vdSsEhOidybgw==
   dependencies:
     "@apollo/client" "^3.4.9"
     cypress-real-events "^1.11.0"
