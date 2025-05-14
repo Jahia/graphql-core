@@ -380,7 +380,11 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
                     safeRename(parentDest, jcrNode.getName());
                 }
 
-                jcrNode.getSession().move(jcrNode.getPath(), parentDest.getPath() + "/" + jcrNode.getName());
+                String dest = parentDest.getPath() + "/" + jcrNode.getName();
+
+                jcrNode.getSession().move(jcrNode.getPath(), dest);
+                // The node can be moved into a different provider, so we need to update it
+                jcrNode = jcrNode.getSession().getNode(dest);
             } else {
                 throw new GqlJcrWrongInputException(
                         "Either destPath or parentPathOrId is expected for the node move operation");
