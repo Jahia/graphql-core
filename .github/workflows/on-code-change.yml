@@ -8,56 +8,19 @@ on:
     types: [opened, reopened, synchronize]
 
 jobs:
-  static-analysis:
-    name: Static Analysis (linting, vulns)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: Jahia/jahia-modules-action/static-analysis@v2
-        with:
-          auditci_level: critical
-
-  build:
-    name: Build Module
-    runs-on: self-hosted
-    env:
-      NEXUS_INTERNAL_URL: ${{ secrets.NEXUS_INTERNAL_URL }}
-    container:
-      image: jahia/cimg-mvn-cache:ga_cimg_openjdk_11.0.20-node
-      credentials:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: jahia/jahia-modules-action/build@v2
-        with:
-          mvn_settings_filepath: '.github/maven.settings.xml'
-          nexus_username: ${{ secrets.NEXUS_USERNAME }}
-          nexus_password: ${{ secrets.NEXUS_PASSWORD }}
-
-  sonar-analysis:
-    name: Sonar Analysis
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: jahia/jahia-modules-action/sonar-analysis@v2
-        with:
-          primary_release_branch: master
-          github_pr_id: ${{github.event.number}}
-          sonar_url: ${{ secrets.SONAR_URL }}
-          sonar_token: ${{ secrets.SONAR_TOKEN }}
-          mvn_settings_filepath: '.github/maven.settings.xml'
-
-  integration-tests-standalone:
-    uses:  Jahia/jahia-modules-action/.github/workflows/reusable-integration-tests.yml@v2
-    needs: build   
+  on-code-change:
+    uses: Jahia/jahia-modules-action/.github/workflows/reusable-on-code-change.yml@v2
     secrets: inherit
     with:
-      jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
+      integration_tests_jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
       module_id: graphql-dxm-provider
-      testrail_project: GraphQL Core module
-      pagerduty_skip_notification: true
-      provisioning_manifest: provisioning-manifest-build.yml
-      artifact_prefix: gql
+      integration_tests_testrail_project: GraphQL Core module
+      integration_tests_pagerduty_skip_notification: true
+      integration_tests_provisioning_manifest: provisioning-manifest-build.yml
+      integration_tests_should_use_build_artifacts: true
+      integration_tests_artifact_prefix: gql
+      static_analysis_node_version: 22
+      static_analysis_auditci_level: critical
       module_branch: ${{ github.head_ref }}
+      build_instance_type: self-hosted
+      integration_tests_standalone_execute: true
