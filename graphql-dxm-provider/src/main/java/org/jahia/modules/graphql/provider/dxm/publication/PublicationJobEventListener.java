@@ -62,8 +62,20 @@ public class PublicationJobEventListener implements EventHandler, RecordConsumer
         List<String> revisions = (List<String>) event.getProperty("revision");
 
         if (revisions != null && clusterNode != null && Long.parseLong(revisions.get(0)) > clusterNode.getRevision()) {
+            logger.debug("Storing event for revision {}, cluster node revision is {}", revisions.get(0), clusterNode.getRevision());
             eventForRevision.put(Long.parseLong(revisions.get(0)), event);
         } else {
+            if (logger.isDebugEnabled()){
+                logger.debug("Notifying listeners for event {}", event.getTopic());
+                if (revisions != null && !revisions.isEmpty()) {
+                    logger.debug("Event revision: {}", revisions.get(0));
+                }
+                if (clusterNode != null) {
+                    logger.debug("Cluster node revision: {}", clusterNode.getRevision());
+                } else {
+                    logger.debug("Cluster node is null");
+                }
+            }
             PublicationJobSubscriptionExtension.notifyListeners(event);
         }
     }
@@ -85,7 +97,9 @@ public class PublicationJobEventListener implements EventHandler, RecordConsumer
 
     @Override
     public void setRevision(long l) {
+        logger.debug("Received revision {}", l);
         if (eventForRevision.containsKey(l)) {
+            logger.debug("Remove revision {} and send notification to listeners", l);
             PublicationJobSubscriptionExtension.notifyListeners(eventForRevision.get(l));
             eventForRevision.remove(l);
         }

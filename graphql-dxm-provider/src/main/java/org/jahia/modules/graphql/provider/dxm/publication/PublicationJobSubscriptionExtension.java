@@ -55,6 +55,7 @@ public class PublicationJobSubscriptionExtension {
     }
 
     public static void notifyListeners(Event event) {
+        logger.debug("Notifying listeners for event {}, number of listeners: {}", event.getTopic(), listeners.size());
         if (!listeners.isEmpty()) {
             String eventTopic = event.getTopic();
             logger.debug("Received event on topic {}", eventTopic);
