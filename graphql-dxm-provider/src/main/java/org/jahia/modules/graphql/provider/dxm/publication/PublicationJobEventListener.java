@@ -34,12 +34,13 @@ public class PublicationJobEventListener implements EventHandler, RecordConsumer
 
     @Activate
     public void activate() {
-
+        logger.info("Activating PublicationJobEventListener");
         try {
             SpringJackrabbitRepository jackrabbitRepository = (SpringJackrabbitRepository) org.jahia.services.SpringContextSingleton.getBean("jackrabbit");
             clusterNode = jackrabbitRepository.getClusterNode();
 
             if (clusterNode != null) {
+                logger.info("Register PublicationJobEventListener as record consumer for cluster node {}", clusterNode.getId());
                 clusterNode.getJournal().register(this);
             }
         } catch (Exception e) {
@@ -49,9 +50,12 @@ public class PublicationJobEventListener implements EventHandler, RecordConsumer
 
     @Deactivate
     public void deactivate() {
+        logger.info("Deactivating PublicationJobEventListener");
+
         eventForRevision.clear();
 
         if (clusterNode != null) {
+            logger.info("Unregister PublicationJobEventListener as record consumer for cluster node {}", clusterNode.getId());
             clusterNode.getJournal().unregister(this);
         }
     }
