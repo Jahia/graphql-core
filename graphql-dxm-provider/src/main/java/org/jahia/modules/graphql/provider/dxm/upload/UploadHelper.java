@@ -17,6 +17,7 @@ package org.jahia.modules.graphql.provider.dxm.upload;
 
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
+import org.apache.commons.fileupload.FileUploadException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
@@ -25,6 +26,7 @@ import org.jahia.settings.SettingsBean;
 import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -70,6 +72,8 @@ public class UploadHelper {
             return true;
         } catch (IOException | ServletException e) {
             throw new DataFetchingException("Cannot read parts");
+        } catch (FileUploadException e) {
+            throw new DataFetchingException(e.getMessage(), e);
         }
     }
 
@@ -94,11 +98,19 @@ public class UploadHelper {
             return part;
         } catch (IOException | ServletException e) {
             throw new DataFetchingException("Cannot read parts");
+        } catch (FileUploadException e) {
+            throw new DataFetchingException(e.getMessage(), e);
         }
     }
 
-    private static List<Part> getParts(DataFetchingEnvironment environment) throws IOException, ServletException {
-        List<Part> parts = ContextUtil.getHttpServletRequest(environment.getGraphQlContext()).getParts().stream()
+    private static List<Part> getParts(DataFetchingEnvironment environment) throws IOException, ServletException, FileUploadException {
+        List<Part> parts = (List<Part>) ContextUtil.getHttpServletRequest(environment.getGraphQlContext()).getParts();
+
+        if (parts.size() > SettingsBean.getInstance().getJahiaFileUploadCountMax()) {
+            throw new FileUploadException("Request contains too many upload parts");
+        }
+
+        parts = parts.stream()
                 .filter(part -> part.getContentType() != null)
                 .collect(Collectors.toList());
         return parts;
