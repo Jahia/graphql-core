@@ -378,7 +378,7 @@ describe('Node types graphql test', () => {
         });
     });
 
-    it.only('Get mixins extends', () => {
+    it('Get mixins extends', () => {
         cy.apollo({
             query: gql`
                 query {
