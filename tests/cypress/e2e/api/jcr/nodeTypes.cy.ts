@@ -378,6 +378,45 @@ describe('Node types graphql test', () => {
         });
     });
 
+    it.only('Get mixins extends', () => {
+        cy.apollo({
+            query: gql`
+                query {
+                    jcr {
+                        nodeTypes(filter: {includeTypes: ["jmix:internalLink","jmix:categorized"]}) {
+                            nodes {
+                                name
+                                mixinExtendsNames
+                            }
+                        }
+                    }
+                }
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeTypes).to.exist;
+            const nodes = response.data.jcr.nodeTypes.nodes;
+            expect(nodes).to.have.length(2);
+            type NodeType = {
+                name: string;
+                mixinExtendsNames: string[];
+            };
+            const categorizedNode = nodes.find((node: NodeType) => node.name === 'jmix:categorized');
+            const internalLinkNode = nodes.find((node: NodeType) => node.name === 'jmix:internalLink');
+
+            // Single mixin extend:
+            expect(internalLinkNode).to.exist;
+            expect(internalLinkNode.mixinExtendsNames).to.have.length(1);
+            expect(internalLinkNode.mixinExtendsNames).to.contain('jnt:content');
+
+            // Multiple mixin extends:
+            expect(categorizedNode).to.exist;
+            expect(categorizedNode.mixinExtendsNames).to.have.length(3);
+            expect(categorizedNode.mixinExtendsNames).to.contain('nt:hierarchyNode');
+            expect(categorizedNode.mixinExtendsNames).to.contain('jnt:content');
+            expect(categorizedNode.mixinExtendsNames).to.contain('jnt:page');
+        });
+    });
+
     after('Delete testList node', function () {
         cy.apollo({
             mutationFile: 'jcr/deleteNode.graphql',

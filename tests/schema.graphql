@@ -396,7 +396,7 @@ type AdminQuery {
     datetime: String
     "Get Jahia admin query"
     jahia: JahiaAdminQuery!
-    "Mount point mutation extension API"
+    "Mount point query extension API"
     mountPoint: GqlMountPointQuery
     "Personal API tokens queries"
     personalApiTokens: PersonalApiTokensQuery
@@ -414,29 +414,29 @@ type AdminQuery {
 
 "Jahia admin tools"
 type AdminTools {
-    "Will return dependencies of a bundle (modules or packages)"
-    findDependencies(
-        "will return only dependencies of Jahia modules (not bundles)"
-        ModulesOnly: Boolean = true,
-        "will return only bundle name matching the RegExp"
-        RegExp: String,
-        "will return only dependencies with a strict version specified (a version that reprobates upgrade of minor ones)"
-        StrictVersionOnly: Boolean = true
-    ): FindDependencies
+    "List of matching bundles."
+    bundles(
+        "Allows to filter on whether the bundles are Jahia modules or not. If the parameter is set to 'true', only bundles that are also Jahia modules are returned. If set to 'false', only bundles that are not Jahia modules are returned. By default, both Jahia modules and non Jahia modules are returned."
+        areModules: Boolean,
+        "Only return bundles whose symbolic names match the given regular expression"
+        nameRegExp: String,
+        "When set to 'true', only return bundles that have at least one dependency with an unsupported version range (to be considered supported, a version range should be open to minor upgrade based on SemVer)"
+        withUnsupportedDependenciesOnly: Boolean = false
+    ): [BundleWithDependencies]
     "Will return all the duplicate export packages and the bundles that export them"
     findMatchingExportPackages(
-        "will return only export-package matching the RegExp"
+        "Regular expression for the export packages. When specified, only export packages matching this regular expression are retrieved."
         RegExp: String,
-        "will return only export-package found multiple times for a same package name"
+        "When set to 'true', only return export packages found multiple times for the same package name. By default (or when set to 'false'), all export packages are retrieved, regardless of how many times they are exported."
         duplicates: Boolean = false
     ): FindExportPackage
     "Will return all the import packages matching the given parameters."
     findMatchingImportPackages(
-        "will return only import-package matching the RegExp"
+        "Regular expression for the import packages. When specified, only import packages matching this regular expression are retrieved"
         RegExp: String,
-        "will return only import-package matching the given version"
+        "Version for the import package. When specified, only import packages of an exact version or a version range matching this version are retrieved. Note that this parameter does not apply on the versions of the bundles, but on the versions of the import packages"
         version: String,
-        "will return only import-package with no version range limitations"
+        "Filter the import packages on whether their version is missing (when the flag is set to 'true') or is set (when the flag is set to 'false'). If not specified, import packages with and without version are retrieved"
         versionMissing: Boolean = false
     ): FindImportPackage
 }
@@ -460,7 +460,7 @@ type BundleDependency {
     "The dependency is optional"
     optional: Boolean
     "The status of that dependency."
-    status: String
+    status: Status
     "The type of the dependency."
     type: String
     "The version of the dependency (can be a range, a number or empty)"
@@ -470,45 +470,78 @@ type BundleDependency {
 "Result of the dependency inspector operation."
 type BundleWithDependencies {
     "Display name of the bundle."
-    bundleDisplayName: String
+    bundleDisplayName: String @deprecated(reason: "Use displayName instead")
     "ID of the bundle."
-    bundleId: Long
+    bundleId: Long @deprecated(reason: "Use id instead")
     "Name of the bundle."
-    bundleName: String
+    bundleName: String @deprecated(reason: "Use name instead")
     "Symbolic name of the bundle."
-    bundleSymbolicName: String
+    bundleSymbolicName: String @deprecated(reason: "Use symbolicName instead")
     "List of bundle dependencies (packages and modules)."
-    dependencies: [BundleDependency]
-    "Is module dependencies can be safely upgraded without breaking module wiring ?"
-    dependenciesUpgradables: Boolean
+    dependencies(
+        "Return dependencies matching the provided statuses. This parameter cannot be used with the 'supported' one."
+        statuses: [Status],
+        "Allows to filter the list of dependencies returned. If the parameter is set to 'true', only the supported dependencies are returned. If set to 'false', only the unsupported ones are returned. By default, all dependencies are returned. This parameter cannot be used with the 'statuses' one."
+        supported: Boolean
+    ): [BundleDependency]
+    "Display name of the bundle."
+    displayName: String
+    "ID of the bundle."
+    id: Long
+    "Name of the bundle."
+    name: String
+    "Symbolic name of the bundle."
+    symbolicName: String
+    "Version of the bundle."
+    version: String
 }
 
 "Result of the export package inspector operation."
 type BundleWithExportPackage {
     "Display name of the bundle."
-    bundleDisplayName: String
+    bundleDisplayName: String @deprecated(reason: "Use displayName instead")
     "ID of the bundle."
-    bundleId: Long
+    bundleId: Long @deprecated(reason: "Use id instead")
     "Name of the bundle."
-    bundleName: String
+    bundleName: String @deprecated(reason: "Use name instead")
     "Symbolic name of the bundle."
-    bundleSymbolicName: String
+    bundleSymbolicName: String @deprecated(reason: "Use symbolicName instead")
+    "Display name of the bundle."
+    displayName: String
+    "ID of the bundle."
+    id: Long
     "The full export-package clause."
     matchingExportPackage: String
+    "Name of the bundle."
+    name: String
+    "Symbolic name of the bundle."
+    symbolicName: String
+    "Version of the bundle."
+    version: String
 }
 
 "Result of the import package inspector operation."
 type BundleWithImportPackages {
     "Display name of the bundle."
-    bundleDisplayName: String
+    bundleDisplayName: String @deprecated(reason: "Use displayName instead")
     "ID of the bundle."
-    bundleId: Long
+    bundleId: Long @deprecated(reason: "Use id instead")
     "Name of the bundle."
-    bundleName: String
+    bundleName: String @deprecated(reason: "Use name instead")
     "Symbolic name of the bundle."
-    bundleSymbolicName: String
+    bundleSymbolicName: String @deprecated(reason: "Use symbolicName instead")
+    "Display name of the bundle."
+    displayName: String
+    "ID of the bundle."
+    id: Long
     "List of matching imported packages."
     matchingImportPackages: [String]
+    "Name of the bundle."
+    name: String
+    "Symbolic name of the bundle."
+    symbolicName: String
+    "Version of the bundle."
+    version: String
 }
 
 "Category type"
@@ -656,14 +689,6 @@ type ExportPackages {
     matchingExportPackagesDetailed: [BundleWithExportPackage]
     "the package name."
     packageName: String
-}
-
-"Result of the dependency inspector operation."
-type FindDependencies {
-    "List of matching bundles."
-    bundles: [BundleWithDependencies]
-    "Total number of dependencies."
-    totalCount: Int
 }
 
 "Result of the export package inspector operation."
@@ -1065,6 +1090,18 @@ type GqlBackgroundJobEdge {
     node: GqlBackgroundJob
 }
 
+"Channel information"
+type GqlChannel {
+    "Channel label (not localized)"
+    displayName: String
+    "Return true if channel is visible, otherwise false"
+    isVisible: Boolean
+    "Channel name/identifier"
+    name: String
+    "Return variants for this channel, if available"
+    variants: [GqlVariant]
+}
+
 "Condition for override item"
 type GqlCondition {
     "Item will apply only on this nodetype"
@@ -1365,6 +1402,8 @@ type GqlHealthCheck {
 
 "jContent API"
 type GqlJContent {
+    "Returns all available channels"
+    channels: [GqlChannel]
     "Returns html with marked differences"
     diffHtml(
         "New html"
@@ -1654,8 +1693,10 @@ type GqlPublicationInfo {
 
 "Scheduler object which allows to access to background jobs"
 type GqlScheduler {
-    "List of active jobs"
-    jobs(
+    "List of active jobs (deprecated)"
+    jobs: [GqlBackgroundJob] @deprecated(reason: "Use paginatedJobs instead")
+    "List of active jobs (paginated)"
+    paginatedJobs(
         "fetching only nodes after this node (exclusive)"
         after: String,
         "fetching only nodes before this node (exclusive)"
@@ -1683,6 +1724,24 @@ type GqlScope {
     description: String
     "The name of the scope"
     name: String
+}
+
+"Variant information for a given channel"
+type GqlVariant {
+    "Variant display name/label (not localized)"
+    displayName: String
+    "Variant dimension (width x height) if available"
+    imageSize: GqlVariantDimension
+    "Variant name/identifier"
+    name: String
+}
+
+"Represents dimensions (width, height) of a variant"
+type GqlVariantDimension {
+    "Variant height"
+    height: String
+    "Variant width"
+    width: String
 }
 
 type GqlWorkflowEvent {
@@ -2033,6 +2092,11 @@ type JCRNodeMutation {
     ): Boolean
     "Delete the current node (and its subgraph)"
     delete: Boolean
+    "Deletes a set of properties on the current node"
+    deletePropertiesBatch(
+        "The collection of JCR properties: name and language"
+        properties: [InputJCRDeletedProperty]
+    ): Boolean
     "Grant role permissions to specified principal user/group for the given node"
     grantRoles(
         "Name of principal (user/group)"
@@ -2204,6 +2268,8 @@ type JCRNodeType {
     ): Boolean!
     "Returns true if this is a mixin type; returns false otherwise."
     mixin: Boolean
+    "Returns the names of the mixin extends of this node type."
+    mixinExtendsNames: [String]
     "Node type name"
     name: String
     "Returns an array containing the child node definitions of this node type."
@@ -2932,6 +2998,8 @@ type JahiaAdminMutation {
         "Service name"
         service: String!
     ): Boolean
+    "Mount point mutation extension API"
+    mountPoint: GqlMountPointMutation
     "Shutdown the server"
     shutdown(
         "Do not send the shutdown event"
@@ -2963,6 +3031,8 @@ type JahiaAdminQuery {
     ): GqlHealthCheck
     "Get server load"
     load: Load
+    "Mount point query extension API"
+    mountPoint: GqlMountPointQuery
     "Get jobs scheduler"
     scheduler: GqlScheduler
     "Details about the system hosting Jahia"
@@ -4246,6 +4316,22 @@ enum State {
     UNPUBLISHED
 }
 
+"List of available statuses for a dependency"
+enum Status {
+    "EMPTY"
+    EMPTY
+    "OPEN_RANGE"
+    OPEN_RANGE
+    "RESTRICTIVE_RANGE"
+    RESTRICTIVE_RANGE
+    "SINGLE_VERSION_RANGE"
+    SINGLE_VERSION_RANGE
+    "STRICT_NO_RANGE"
+    STRICT_NO_RANGE
+    "UNKNOWN"
+    UNKNOWN
+}
+
 "The target scheduler(s)"
 enum TargetScheduler {
     "Both persisted and RAM schedulers will be used"
@@ -4399,6 +4485,14 @@ input InputGqlOrdering {
     orderType: OrderType
     "The property to order by"
     property: String
+}
+
+"GraphQL representation of a deleted JCR property"
+input InputJCRDeletedProperty {
+    "The language in which the property will be deleted"
+    language: String!
+    "The name of the property to delete"
+    name: String!
 }
 
 "GraphQL representation of a JCR node to be created"

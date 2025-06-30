@@ -183,6 +183,13 @@ public class GqlJcrNodeType {
                 .collect(Collectors.toList());
     }
 
+    @GraphQLField
+    @GraphQLName("mixinExtendsNames")
+    @GraphQLDescription("Returns the names of the mixin extends of this node type.")
+    public List<String> mixinExtendsNames() {
+        return nodeType.getMixinExtendNames();
+    }
+
     private String getIcon(ExtendedNodeType type) throws RepositoryException {
         return JCRContentUtils.getIconWithContext(type);
     }
