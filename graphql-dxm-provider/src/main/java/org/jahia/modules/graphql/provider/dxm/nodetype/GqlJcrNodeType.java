@@ -186,7 +186,7 @@ public class GqlJcrNodeType {
 
     @GraphQLField
     @GraphQLName("mixinExtends")
-    @GraphQLDescription("Returns the mixin node types extended by this node type, filtered by the specified parameters.")
+    @GraphQLDescription("Returns the node types this mixin dynamically extends, filtered by the specified parameters.")
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     public DXPaginatedData<GqlJcrNodeType> getNodeTypes(@GraphQLName("filter") @GraphQLDescription("Filter on node type") NodeTypesListInput input,
                                                         @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
