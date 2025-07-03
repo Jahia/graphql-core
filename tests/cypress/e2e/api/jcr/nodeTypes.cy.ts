@@ -386,7 +386,12 @@ describe('Node types graphql test', () => {
                         nodeTypes(filter: {includeTypes: ["jmix:internalLink","jmix:categorized"]}) {
                             nodes {
                                 name
-                                mixinExtendsNames
+                                mixinExtends {
+                                    nodes {
+                                        name
+                                        abstract
+                                    }
+                                }
                             }
                         }
                     }
@@ -396,24 +401,90 @@ describe('Node types graphql test', () => {
             expect(response.data.jcr.nodeTypes).to.exist;
             const nodes = response.data.jcr.nodeTypes.nodes;
             expect(nodes).to.have.length(2);
-            type NodeType = {
+            type MixinExtendNodeType = {
                 name: string;
-                mixinExtendsNames: string[];
+                mixinExtends : {
+                    nodes : {
+                        name: string;
+                        abstract: boolean;
+                        __typename: string;
+                    }
+                }
             };
-            const categorizedNode = nodes.find((node: NodeType) => node.name === 'jmix:categorized');
-            const internalLinkNode = nodes.find((node: NodeType) => node.name === 'jmix:internalLink');
+            const categorizedNode = nodes.find((node: MixinExtendNodeType) => node.name === 'jmix:categorized');
+            const internalLinkNode = nodes.find((node: MixinExtendNodeType) => node.name === 'jmix:internalLink');
 
             // Single mixin extend:
             expect(internalLinkNode).to.exist;
-            expect(internalLinkNode.mixinExtendsNames).to.have.length(1);
-            expect(internalLinkNode.mixinExtendsNames).to.contain('jnt:content');
+            expect(internalLinkNode.mixinExtends.nodes).to.exist;
+            expect(internalLinkNode.mixinExtends.nodes).to.have.length(1);
+            expect(internalLinkNode.mixinExtends.nodes[0].name).to.equal('jnt:content');
+            expect(internalLinkNode.mixinExtends.nodes[0].abstract).to.equal(false);
+            expect(internalLinkNode.mixinExtends.nodes[0].__typename).to.equal('JCRNodeType');
 
             // Multiple mixin extends:
             expect(categorizedNode).to.exist;
-            expect(categorizedNode.mixinExtendsNames).to.have.length(3);
-            expect(categorizedNode.mixinExtendsNames).to.contain('nt:hierarchyNode');
-            expect(categorizedNode.mixinExtendsNames).to.contain('jnt:content');
-            expect(categorizedNode.mixinExtendsNames).to.contain('jnt:page');
+            expect(categorizedNode.mixinExtends.nodes).to.exist;
+            expect(categorizedNode.mixinExtends.nodes).to.have.length(3);
+            expect(categorizedNode.mixinExtends.nodes[0].name).to.equal('nt:hierarchyNode');
+            expect(categorizedNode.mixinExtends.nodes[0].abstract).to.equal(true);
+            expect(categorizedNode.mixinExtends.nodes[0].__typename).to.equal('JCRNodeType');
+            expect(categorizedNode.mixinExtends.nodes[1].name).to.equal('jnt:content');
+            expect(categorizedNode.mixinExtends.nodes[1].abstract).to.equal(false);
+            expect(categorizedNode.mixinExtends.nodes[1].__typename).to.equal('JCRNodeType');
+            expect(categorizedNode.mixinExtends.nodes[2].name).to.equal('jnt:page');
+            expect(categorizedNode.mixinExtends.nodes[2].abstract).to.equal(false);
+            expect(categorizedNode.mixinExtends.nodes[2].__typename).to.equal('JCRNodeType');
+        });
+    });
+    it('Get mixins extends with filtering', () => {
+        cy.apollo({
+            query: gql`
+                query {
+                    jcr {
+                        nodeTypes(filter: {includeTypes: ["jmix:internalLink","jmix:categorized"]}) {
+                            nodes {
+                                name
+                                mixinExtends(filter:{excludeTypes:["jnt:content"], includeAbstract:false}) {
+                                    nodes {
+                                        name
+                                        abstract
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeTypes).to.exist;
+            const nodes = response.data.jcr.nodeTypes.nodes;
+            expect(nodes).to.have.length(2);
+            type MixinExtendNodeType = {
+                name: string;
+                mixinExtends : {
+                    nodes : {
+                        name: string;
+                        abstract: boolean;
+                        __typename: string;
+                    }
+                }
+            };
+            const categorizedNode = nodes.find((node: MixinExtendNodeType) => node.name === 'jmix:categorized');
+            const internalLinkNode = nodes.find((node: MixinExtendNodeType) => node.name === 'jmix:internalLink');
+
+            // No match for 'jmix:internalLink'
+            expect(internalLinkNode).to.exist;
+            expect(internalLinkNode.mixinExtends.nodes).to.exist;
+            expect(internalLinkNode.mixinExtends.nodes).to.be.empty;
+
+            // Only one match for 'jmix:categorized'
+            expect(categorizedNode).to.exist;
+            expect(categorizedNode.mixinExtends.nodes).to.exist;
+            expect(categorizedNode.mixinExtends.nodes).to.have.length(1);
+            expect(categorizedNode.mixinExtends.nodes[0].name).to.equal('jnt:page');
+            expect(categorizedNode.mixinExtends.nodes[0].abstract).to.equal(false);
+            expect(categorizedNode.mixinExtends.nodes[0].__typename).to.equal('JCRNodeType');
         });
     });
 

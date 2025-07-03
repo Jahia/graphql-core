@@ -44,7 +44,7 @@ public final class NodeTypeHelper {
 
     private static final Predicate<ExtendedNodeType> PREDICATE_IS_MIXIN = (nodeType) -> nodeType.isMixin();
 
-    private static Predicate<ExtendedNodeType> getFilterPredicate(NodeTypesListInput input) {
+    public static Predicate<ExtendedNodeType> getFilterPredicate(NodeTypesListInput input) {
 
         if (input == null) {
             return PredicateHelper.truePredicate();

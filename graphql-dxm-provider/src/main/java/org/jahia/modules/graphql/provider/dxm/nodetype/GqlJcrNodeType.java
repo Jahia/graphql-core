@@ -26,6 +26,7 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FilterHelper;
+import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.services.content.JCRContentUtils;
@@ -76,7 +77,7 @@ public class GqlJcrNodeType {
     @GraphQLField()
     @GraphQLName("icon")
     @GraphQLDescription("Node type icon")
-    public String getIcon(){
+    public String getIcon() {
         try {
             return getIcon(nodeType);
         } catch (RepositoryException e) {
@@ -184,10 +185,18 @@ public class GqlJcrNodeType {
     }
 
     @GraphQLField
-    @GraphQLName("mixinExtendsNames")
-    @GraphQLDescription("Returns the names of the mixin extends of this node type.")
-    public List<String> mixinExtendsNames() {
-        return nodeType.getMixinExtendNames();
+    @GraphQLName("mixinExtends")
+    @GraphQLDescription("Returns the node types this mixin dynamically extends, filtered by the specified parameters.")
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
+    public DXPaginatedData<GqlJcrNodeType> getNodeTypes(@GraphQLName("filter") @GraphQLDescription("Filter on node type") NodeTypesListInput input,
+                                                        @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                                        DataFetchingEnvironment environment) {
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
+        Stream<GqlJcrNodeType> mapped = nodeType.getMixinExtends().stream()
+                .filter(NodeTypeHelper.getFilterPredicate(input))
+                .map(GqlJcrNodeType::new)
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
+        return PaginationHelper.paginate(mapped, GqlJcrNodeType::getName, arguments);
     }
 
     private String getIcon(ExtendedNodeType type) throws RepositoryException {
