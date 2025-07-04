@@ -291,4 +291,34 @@ describe('Test graphql i18n calls', () => {
                 expect(result).to.include('en');
             });
     });
+
+    it('allows modifying translation nodes directly', () => {
+        cy.apollo({
+            query: gql`
+                mutation ModifyDescription {
+                    jcr {
+                        mutateNode(
+                            pathOrId: "${contentNodePath}/j:translation_fr"
+                        ) {
+                            mutateProperty(name: "text") {
+                                setValue(type: STRING, value: "new fr test value")
+                            }
+                        }
+                        modifiedNodes {
+                            path
+                        }
+                    }
+                }
+            `
+        }).then(response => {
+            expect(response.data.jcr.modifiedNodes[0].path).to.equal(`${contentNodePath}/j:translation_fr`);
+        });
+
+        getNodeByPath(contentNodePath, ['text'], 'fr').then(response => {
+            const props = new SiteProperties(response.data.jcr.nodeByPath.properties);
+            const textProperty = props.get('text');
+            expect(textProperty).to.exist;
+            expect(textProperty.value).to.equal('new fr test value');
+        });
+    });
 });
