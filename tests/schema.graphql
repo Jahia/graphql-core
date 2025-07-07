@@ -2268,8 +2268,25 @@ type JCRNodeType {
     ): Boolean!
     "Returns true if this is a mixin type; returns false otherwise."
     mixin: Boolean
-    "Returns the names of the mixin extends of this node type."
-    mixinExtendsNames: [String]
+    "Returns the mixin node types extended by this node type, filtered by the specified parameters."
+    mixinExtends(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "Filter by graphQL fields values"
+        fieldFilter: InputFieldFiltersInput,
+        "Filter on node type"
+        filter: InputNodeTypesListInput,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int
+    ): JCRNodeTypeConnection
     "Node type name"
     name: String
     "Returns an array containing the child node definitions of this node type."
