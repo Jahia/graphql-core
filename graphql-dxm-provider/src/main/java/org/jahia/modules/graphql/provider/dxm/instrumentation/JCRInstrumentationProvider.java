@@ -15,6 +15,8 @@
  */
 package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
+import graphql.analysis.MaxQueryComplexityInstrumentation;
+import graphql.analysis.MaxQueryDepthInstrumentation;
 import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.kickstart.execution.config.InstrumentationProvider;
@@ -54,6 +56,12 @@ public class JCRInstrumentationProvider implements InstrumentationProvider {
     public Instrumentation getInstrumentation() {
         List<Instrumentation> instns = new ArrayList<>();
         instns.add(new JCRInstrumentation(dxGraphQLConfig));
+        if (dxGraphQLConfig.getDepthLimit() > 0) {
+            instns.add(new MaxQueryDepthInstrumentation(dxGraphQLConfig.getDepthLimit()));
+        }
+        if (dxGraphQLConfig.getComplexityLimit() > 0) {
+            instns.add(new MaxQueryComplexityInstrumentation(dxGraphQLConfig.getComplexityLimit()));
+        }
         instns.addAll(instrumentations.stream()
                 .sorted(Comparator.comparingInt(JahiaInstrumentation::getPriority))
                 .map(inst -> inst.getInstrumentation(dxGraphQLConfig))

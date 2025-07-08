@@ -42,8 +42,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private final static String CORS_ORIGINS = "http.cors.allow-origin";
     private final static String NODE_LIMIT = "graphql.fields.node.limit";
-
     private final static String ENABLE_INTROSPECTION_MODE = "graphql.introspection.enabled";
+    private final static String DEPTH_LIMIT = "graphql.depth.limit";
+    private final static String COMPLEXITY_LIMIT = "graphql.complexity.limit";
 
     private Map<String, List<String>> keysByPid = new HashMap<>();
     private Map<String, String> permissions = new HashMap<>();
@@ -53,6 +54,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private int nodeLimit = 5000;
     private Boolean introspectionEnabled;
+    private int depthLimit = 20; // comes from https://github.com/graphql-java/graphql-java/blob/master/src/main/java/graphql/introspection/GoodFaithIntrospection.java#L57
+    private int complexityLimit = 500;
 
     private ComponentContext componentContext;
 
@@ -108,7 +111,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 }
             } else if (key.equals(CORS_ORIGINS)) {
                 corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split(value, " ,"))));
-            } else if (isDefaultConfig && key.equals(NODE_LIMIT)) {
+            } else if (isDefaultConfig && value != null && key.equals(NODE_LIMIT)) {
                 try {
                     int newNodeLimit = Integer.parseInt(value);
                     if (newNodeLimit < 0) {
@@ -124,6 +127,24 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 }
             } else if (isDefaultConfig && key.equals(ENABLE_INTROSPECTION_MODE)) {
                 introspectionEnabled = Boolean.parseBoolean(value);
+            } else if (isDefaultConfig && value != null && key.equals(DEPTH_LIMIT)) {
+                try {
+                    int newDepthLimit = Integer.parseInt(value);
+                    depthLimit = newDepthLimit;
+                    logger.info("Depth limit updated to {} by pid {} (file/config) {}.cfg", newDepthLimit, pid, pid);
+
+                } catch (NumberFormatException e) {
+                    throw new ConfigurationException(key, "Depth limit must be a number");
+                }
+            } else if (isDefaultConfig && value != null && key.equals(COMPLEXITY_LIMIT)) {
+                try {
+                    int newComplexityLimit = Integer.parseInt(value);
+                    complexityLimit = newComplexityLimit;
+                    logger.info("Complexity limit updated to {} by pid {} (file/config) {}.cfg", newComplexityLimit, pid, pid);
+
+                } catch (NumberFormatException e) {
+                    throw new ConfigurationException(key, "Complexity limit must be a number");
+                }
             } else {
                 // store other properties than permission configuration
                 keysForPid.add(key);
@@ -170,5 +191,13 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     public int getNodeLimit() {
         return nodeLimit;
+    }
+
+    public int getDepthLimit() {
+        return depthLimit;
+    }
+
+    public int getComplexityLimit() {
+        return complexityLimit;
     }
 }
