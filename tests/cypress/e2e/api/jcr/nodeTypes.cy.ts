@@ -1,6 +1,27 @@
 import gql from 'graphql-tag';
 import {validateError} from './validateErrors';
 
+type ExtendsType = {
+    name: string;
+    extends : {
+        nodes : {
+            name: string;
+            abstract: boolean;
+            __typename: string;
+        }
+    }
+};
+type ExtendedByType = {
+    name: string;
+    extendedBy : {
+        nodes : {
+            name: string;
+            abstract: boolean;
+            __typename: string;
+        }
+    }
+};
+
 describe('Node types graphql test', () => {
     before('Create nodes', () => {
         cy.apollo({
@@ -378,18 +399,17 @@ describe('Node types graphql test', () => {
         });
     });
 
-    it('Get mixins extends', () => {
+    it('Get \'extends\' field', () => {
         cy.apollo({
             query: gql`
                 query {
                     jcr {
-                        nodeTypes(filter: {includeTypes: ["jmix:internalLink","jmix:categorized"]}) {
+                        nodeTypes(filter: {includeTypes: ["extendtest:sample1", "extendtest:sample3"]}) {
                             nodes {
                                 name
-                                mixinExtends {
+                                extends {
                                     nodes {
                                         name
-                                        abstract
                                     }
                                 }
                             }
@@ -401,51 +421,116 @@ describe('Node types graphql test', () => {
             expect(response.data.jcr.nodeTypes).to.exist;
             const nodes = response.data.jcr.nodeTypes.nodes;
             expect(nodes).to.have.length(2);
-            type MixinExtendNodeType = {
-                name: string;
-                mixinExtends : {
-                    nodes : {
-                        name: string;
-                        abstract: boolean;
-                        __typename: string;
-                    }
-                }
-            };
-            const categorizedNode = nodes.find((node: MixinExtendNodeType) => node.name === 'jmix:categorized');
-            const internalLinkNode = nodes.find((node: MixinExtendNodeType) => node.name === 'jmix:internalLink');
 
-            // Single mixin extend:
-            expect(internalLinkNode).to.exist;
-            expect(internalLinkNode.mixinExtends.nodes).to.exist;
-            expect(internalLinkNode.mixinExtends.nodes).to.have.length(1);
-            expect(internalLinkNode.mixinExtends.nodes[0].name).to.equal('jnt:content');
-            expect(internalLinkNode.mixinExtends.nodes[0].abstract).to.equal(false);
-            expect(internalLinkNode.mixinExtends.nodes[0].__typename).to.equal('JCRNodeType');
+            const sample1 = nodes.find((node: ExtendsType) => node.name === 'extendtest:sample1');
+            const sample3 = nodes.find((node: ExtendsType) => node.name === 'extendtest:sample3');
 
-            // Multiple mixin extends:
-            expect(categorizedNode).to.exist;
-            expect(categorizedNode.mixinExtends.nodes).to.exist;
-            expect(categorizedNode.mixinExtends.nodes).to.have.length(3);
-            expect(categorizedNode.mixinExtends.nodes[0].name).to.equal('nt:hierarchyNode');
-            expect(categorizedNode.mixinExtends.nodes[0].abstract).to.equal(true);
-            expect(categorizedNode.mixinExtends.nodes[0].__typename).to.equal('JCRNodeType');
-            expect(categorizedNode.mixinExtends.nodes[1].name).to.equal('jnt:content');
-            expect(categorizedNode.mixinExtends.nodes[1].abstract).to.equal(false);
-            expect(categorizedNode.mixinExtends.nodes[1].__typename).to.equal('JCRNodeType');
-            expect(categorizedNode.mixinExtends.nodes[2].name).to.equal('jnt:page');
-            expect(categorizedNode.mixinExtends.nodes[2].abstract).to.equal(false);
-            expect(categorizedNode.mixinExtends.nodes[2].__typename).to.equal('JCRNodeType');
+            // Single extend:
+            expect(sample1).to.exist;
+            expect(sample1.extends.nodes).to.exist;
+            expect(sample1.extends.nodes).to.have.length(1);
+            expect(sample1.extends.nodes[0].name).to.equal('extendtest:base1');
+
+            // Multiple extends:
+            expect(sample3).to.exist;
+            expect(sample3.extends.nodes).to.exist;
+            expect(sample3.extends.nodes).to.have.length(2);
+            expect(sample3.extends.nodes[0].name).to.equal('extendtest:base1');
+            expect(sample3.extends.nodes[0].__typename).to.equal('JCRNodeType');
+            expect(sample3.extends.nodes[1].name).to.equal('extendtest:base2');
+            expect(sample3.extends.nodes[1].__typename).to.equal('JCRNodeType');
         });
     });
-    it('Get mixins extends with filtering', () => {
+
+    it('Get \'extends\' field with filtering', () => {
         cy.apollo({
             query: gql`
                 query {
                     jcr {
-                        nodeTypes(filter: {includeTypes: ["jmix:internalLink","jmix:categorized"]}) {
+                        nodeTypes(filter: {includeTypes: ["extendtest:sample1", "extendtest:sample3"]}) {
                             nodes {
                                 name
-                                mixinExtends(filter:{excludeTypes:["jnt:content"], includeAbstract:false}) {
+                                extends(filter:{excludeTypes:["extendtest:base1"]}) {
+                                    nodes {
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeTypes).to.exist;
+            const nodes = response.data.jcr.nodeTypes.nodes;
+            expect(nodes).to.have.length(2);
+
+            const sample1 = nodes.find((node: ExtendsType) => node.name === 'extendtest:sample1');
+            const sample3 = nodes.find((node: ExtendsType) => node.name === 'extendtest:sample3');
+
+            // No match:
+            expect(sample1).to.exist;
+            expect(sample1.extends.nodes).to.exist;
+            expect(sample1.extends.nodes).to.be.empty;
+
+            // Only one match for 'jmix:categorized'
+            expect(sample3).to.exist;
+            expect(sample3.extends.nodes).to.exist;
+            expect(sample3.extends.nodes).to.have.length(1);
+            expect(sample3.extends.nodes[0].name).to.equal('extendtest:base2');
+            expect(sample3.extends.nodes[0].__typename).to.equal('JCRNodeType');
+        });
+    });
+
+    it('Get \'extendBy\' field', () => {
+        cy.apollo({
+            query: gql`
+                query {
+                    jcr {
+                        nodeTypes(filter: {includeTypes: ["extendtest:base1", "extendtest:base2"]}) {
+                            nodes {
+                                name
+                                extendedBy {
+                                    nodes {
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeTypes).to.exist;
+            const nodes = response.data.jcr.nodeTypes.nodes;
+            expect(nodes).to.have.length(2);
+
+            const base1 = nodes.find((node: ExtendedByType) => node.name === 'extendtest:base1');
+            const base2 = nodes.find((node: ExtendedByType) => node.name === 'extendtest:base2');
+
+            expect(base1).to.exist;
+            expect(base1.extendedBy.nodes).to.exist;
+            const base1ExtendedByNames = base1.extendedBy.nodes.map((n: {name: string}) => n.name);
+            expect(base1ExtendedByNames).to.have.length(3);
+            expect(base1ExtendedByNames).to.have.members(['extendtest:sample1', 'extendtest:sample2', 'extendtest:sample3']);
+
+            expect(base2).to.exist;
+            expect(base2.extendedBy.nodes).to.exist;
+            const base2ExtendedByNames = base2.extendedBy.nodes.map((n: {name: string}) => n.name);
+            expect(base2ExtendedByNames).to.have.length(2);
+            expect(base2ExtendedByNames).to.have.members(['extendtest:sample3', 'extendtest:sample4']);
+        });
+    });
+
+    it('Get \'extendedBy\' field with filtering', () => {
+        cy.apollo({
+            query: gql`
+                query {
+                    jcr {
+                        nodeTypes(filter: {includeTypes: ["extendtest:base1", "extendtest:base2"]}) {
+                            nodes {
+                                name
+                                extendedBy(filter:{includeTypes:["extendtest:sample3", "extendtest:sample4"]}) {
                                     nodes {
                                         name
                                         abstract
@@ -460,31 +545,21 @@ describe('Node types graphql test', () => {
             expect(response.data.jcr.nodeTypes).to.exist;
             const nodes = response.data.jcr.nodeTypes.nodes;
             expect(nodes).to.have.length(2);
-            type MixinExtendNodeType = {
-                name: string;
-                mixinExtends : {
-                    nodes : {
-                        name: string;
-                        abstract: boolean;
-                        __typename: string;
-                    }
-                }
-            };
-            const categorizedNode = nodes.find((node: MixinExtendNodeType) => node.name === 'jmix:categorized');
-            const internalLinkNode = nodes.find((node: MixinExtendNodeType) => node.name === 'jmix:internalLink');
 
-            // No match for 'jmix:internalLink'
-            expect(internalLinkNode).to.exist;
-            expect(internalLinkNode.mixinExtends.nodes).to.exist;
-            expect(internalLinkNode.mixinExtends.nodes).to.be.empty;
+            const base1 = nodes.find((node: ExtendedByType) => node.name === 'extendtest:base1');
+            const base2 = nodes.find((node: ExtendedByType) => node.name === 'extendtest:base2');
 
-            // Only one match for 'jmix:categorized'
-            expect(categorizedNode).to.exist;
-            expect(categorizedNode.mixinExtends.nodes).to.exist;
-            expect(categorizedNode.mixinExtends.nodes).to.have.length(1);
-            expect(categorizedNode.mixinExtends.nodes[0].name).to.equal('jnt:page');
-            expect(categorizedNode.mixinExtends.nodes[0].abstract).to.equal(false);
-            expect(categorizedNode.mixinExtends.nodes[0].__typename).to.equal('JCRNodeType');
+            expect(base1).to.exist;
+            expect(base1.extendedBy.nodes).to.exist;
+            const base1ExtendedByNames = base1.extendedBy.nodes.map((n: {name: string}) => n.name);
+            expect(base1ExtendedByNames).to.have.length(1);
+            expect(base1ExtendedByNames).to.have.members(['extendtest:sample3']);
+
+            expect(base2).to.exist;
+            expect(base2.extendedBy.nodes).to.exist;
+            const base2ExtendedByNames = base2.extendedBy.nodes.map((n: {name: string}) => n.name);
+            expect(base2ExtendedByNames).to.have.length(2);
+            expect(base2ExtendedByNames).to.have.members(['extendtest:sample3', 'extendtest:sample4']);
         });
     });
 
