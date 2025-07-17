@@ -404,13 +404,12 @@ describe('Node types graphql test', () => {
             query: gql`
                 query {
                     jcr {
-                        nodeTypes(filter: {includeTypes: ["jmix:internalLink","jmix:categorized"]}) {
+                        nodeTypes(filter: {includeTypes: ["extendtest:sample1", "extendtest:sample3"]}) {
                             nodes {
                                 name
                                 extends {
                                     nodes {
                                         name
-                                        abstract
                                     }
                                 }
                             }
@@ -423,30 +422,23 @@ describe('Node types graphql test', () => {
             const nodes = response.data.jcr.nodeTypes.nodes;
             expect(nodes).to.have.length(2);
 
-            const categorizedNode = nodes.find((node: ExtendsType) => node.name === 'jmix:categorized');
-            const internalLinkNode = nodes.find((node: ExtendsType) => node.name === 'jmix:internalLink');
+            const sample1 = nodes.find((node: ExtendsType) => node.name === 'extendtest:sample1');
+            const sample3 = nodes.find((node: ExtendsType) => node.name === 'extendtest:sample3');
 
             // Single extend:
-            expect(internalLinkNode).to.exist;
-            expect(internalLinkNode.extends.nodes).to.exist;
-            expect(internalLinkNode.extends.nodes).to.have.length(1);
-            expect(internalLinkNode.extends.nodes[0].name).to.equal('jnt:content');
-            expect(internalLinkNode.extends.nodes[0].abstract).to.equal(false);
-            expect(internalLinkNode.extends.nodes[0].__typename).to.equal('JCRNodeType');
+            expect(sample1).to.exist;
+            expect(sample1.extends.nodes).to.exist;
+            expect(sample1.extends.nodes).to.have.length(1);
+            expect(sample1.extends.nodes[0].name).to.equal('extendtest:base1');
 
             // Multiple extends:
-            expect(categorizedNode).to.exist;
-            expect(categorizedNode.extends.nodes).to.exist;
-            expect(categorizedNode.extends.nodes).to.have.length(3);
-            expect(categorizedNode.extends.nodes[0].name).to.equal('nt:hierarchyNode');
-            expect(categorizedNode.extends.nodes[0].abstract).to.equal(true);
-            expect(categorizedNode.extends.nodes[0].__typename).to.equal('JCRNodeType');
-            expect(categorizedNode.extends.nodes[1].name).to.equal('jnt:content');
-            expect(categorizedNode.extends.nodes[1].abstract).to.equal(false);
-            expect(categorizedNode.extends.nodes[1].__typename).to.equal('JCRNodeType');
-            expect(categorizedNode.extends.nodes[2].name).to.equal('jnt:page');
-            expect(categorizedNode.extends.nodes[2].abstract).to.equal(false);
-            expect(categorizedNode.extends.nodes[2].__typename).to.equal('JCRNodeType');
+            expect(sample3).to.exist;
+            expect(sample3.extends.nodes).to.exist;
+            expect(sample3.extends.nodes).to.have.length(2);
+            expect(sample3.extends.nodes[0].name).to.equal('extendtest:base1');
+            expect(sample3.extends.nodes[0].__typename).to.equal('JCRNodeType');
+            expect(sample3.extends.nodes[1].name).to.equal('extendtest:base2');
+            expect(sample3.extends.nodes[1].__typename).to.equal('JCRNodeType');
         });
     });
 
@@ -455,13 +447,12 @@ describe('Node types graphql test', () => {
             query: gql`
                 query {
                     jcr {
-                        nodeTypes(filter: {includeTypes: ["jmix:internalLink","jmix:categorized"]}) {
+                        nodeTypes(filter: {includeTypes: ["extendtest:sample1", "extendtest:sample3"]}) {
                             nodes {
                                 name
-                                extends(filter:{excludeTypes:["jnt:content"], includeAbstract:false}) {
+                                extends(filter:{excludeTypes:["extendtest:base1"]}) {
                                     nodes {
                                         name
-                                        abstract
                                     }
                                 }
                             }
@@ -474,37 +465,34 @@ describe('Node types graphql test', () => {
             const nodes = response.data.jcr.nodeTypes.nodes;
             expect(nodes).to.have.length(2);
 
-            const categorizedNode = nodes.find((node: ExtendsType) => node.name === 'jmix:categorized');
-            const internalLinkNode = nodes.find((node: ExtendsType) => node.name === 'jmix:internalLink');
+            const sample1 = nodes.find((node: ExtendsType) => node.name === 'extendtest:sample1');
+            const sample3 = nodes.find((node: ExtendsType) => node.name === 'extendtest:sample3');
 
-            // No match for 'jmix:internalLink'
-            expect(internalLinkNode).to.exist;
-            expect(internalLinkNode.extends.nodes).to.exist;
-            expect(internalLinkNode.extends.nodes).to.be.empty;
+            // No match:
+            expect(sample1).to.exist;
+            expect(sample1.extends.nodes).to.exist;
+            expect(sample1.extends.nodes).to.be.empty;
 
             // Only one match for 'jmix:categorized'
-            expect(categorizedNode).to.exist;
-            expect(categorizedNode.extends.nodes).to.exist;
-            expect(categorizedNode.extends.nodes).to.have.length(1);
-            expect(categorizedNode.extends.nodes[0].name).to.equal('jnt:page');
-            expect(categorizedNode.extends.nodes[0].abstract).to.equal(false);
-            expect(categorizedNode.extends.nodes[0].__typename).to.equal('JCRNodeType');
+            expect(sample3).to.exist;
+            expect(sample3.extends.nodes).to.exist;
+            expect(sample3.extends.nodes).to.have.length(1);
+            expect(sample3.extends.nodes[0].name).to.equal('extendtest:base2');
+            expect(sample3.extends.nodes[0].__typename).to.equal('JCRNodeType');
         });
     });
 
     it('Get \'extendBy\' field', () => {
-        // Use considerSubTypes:false to only get "nt:hierarchyNode" and "jnt:content", not the node types inheriting from them
         cy.apollo({
             query: gql`
                 query {
                     jcr {
-                        nodeTypes(filter: {includeTypes: ["nt:hierarchyNode", "jnt:content"], considerSubTypes:false}) {
+                        nodeTypes(filter: {includeTypes: ["extendtest:base1", "extendtest:base2"]}) {
                             nodes {
                                 name
                                 extendedBy {
                                     nodes {
                                         name
-                                        abstract
                                     }
                                 }
                             }
@@ -517,29 +505,20 @@ describe('Node types graphql test', () => {
             const nodes = response.data.jcr.nodeTypes.nodes;
             expect(nodes).to.have.length(2);
 
-            const hierarchyNode = nodes.find((node: ExtendedByType) => node.name === 'nt:hierarchyNode');
-            const contentNode = nodes.find((node: ExtendedByType) => node.name === 'jnt:content');
+            const base1 = nodes.find((node: ExtendedByType) => node.name === 'extendtest:base1');
+            const base2 = nodes.find((node: ExtendedByType) => node.name === 'extendtest:base2');
 
-            // 'nt:hierarchyNode':
-            expect(hierarchyNode).to.exist;
-            expect(hierarchyNode.extendedBy.nodes).to.exist;
-            expect(hierarchyNode.extendedBy.nodes).to.have.length(3);
-            expect(hierarchyNode.extendedBy.nodes[0].name).to.equal('jmix:categorized');
-            expect(hierarchyNode.extendedBy.nodes[1].name).to.equal('jmix:keywords');
-            expect(hierarchyNode.extendedBy.nodes[2].name).to.equal('jmix:tagged');
+            expect(base1).to.exist;
+            expect(base1.extendedBy.nodes).to.exist;
+            const base1ExtendedByNames = base1.extendedBy.nodes.map((n: {name: string}) => n.name);
+            expect(base1ExtendedByNames).to.have.length(3);
+            expect(base1ExtendedByNames).to.have.members(['extendtest:sample1', 'extendtest:sample2', 'extendtest:sample3']);
 
-            // 'jnt:content':
-            expect(contentNode).to.exist;
-            expect(contentNode.extendedBy.nodes).to.exist;
-            expect(contentNode.extendedBy.nodes).to.have.length(8);
-            expect(contentNode.extendedBy.nodes[0].name).to.equal('jmix:internalLink');
-            expect(contentNode.extendedBy.nodes[1].name).to.equal('jmix:categorized');
-            expect(contentNode.extendedBy.nodes[2].name).to.equal('jmix:renderable');
-            expect(contentNode.extendedBy.nodes[3].name).to.equal('jmix:cache');
-            expect(contentNode.extendedBy.nodes[4].name).to.equal('jmix:externalLink');
-            expect(contentNode.extendedBy.nodes[5].name).to.equal('jmix:keywords');
-            expect(contentNode.extendedBy.nodes[6].name).to.equal('jmix:tagged');
-            expect(contentNode.extendedBy.nodes[7].name).to.equal('jmix:requiredPermissions');
+            expect(base2).to.exist;
+            expect(base2.extendedBy.nodes).to.exist;
+            const base2ExtendedByNames = base2.extendedBy.nodes.map((n: {name: string}) => n.name);
+            expect(base2ExtendedByNames).to.have.length(2);
+            expect(base2ExtendedByNames).to.have.members(['extendtest:sample3', 'extendtest:sample4']);
         });
     });
 
@@ -548,10 +527,10 @@ describe('Node types graphql test', () => {
             query: gql`
                 query {
                     jcr {
-                        nodeTypes(filter: {includeTypes: [ "jnt:content"], considerSubTypes:false}) {
+                        nodeTypes(filter: {includeTypes: ["extendtest:base1", "extendtest:base2"]}) {
                             nodes {
                                 name
-                                extendedBy(filter:{includeTypes:["jmix:keywords"]}) {
+                                extendedBy(filter:{includeTypes:["extendtest:sample3", "extendtest:sample4"]}) {
                                     nodes {
                                         name
                                         abstract
@@ -565,12 +544,22 @@ describe('Node types graphql test', () => {
         }).should(response => {
             expect(response.data.jcr.nodeTypes).to.exist;
             const nodes = response.data.jcr.nodeTypes.nodes;
-            expect(nodes).to.have.length(1);
-            const contentNode = nodes.find((node: ExtendedByType) => node.name === 'jnt:content');
-            expect(contentNode).to.exist;
-            expect(contentNode.extendedBy.nodes).to.exist;
-            expect(contentNode.extendedBy.nodes).to.have.length(1);
-            expect(contentNode.extendedBy.nodes[0].name).to.equal('jmix:keywords');
+            expect(nodes).to.have.length(2);
+
+            const base1 = nodes.find((node: ExtendedByType) => node.name === 'extendtest:base1');
+            const base2 = nodes.find((node: ExtendedByType) => node.name === 'extendtest:base2');
+
+            expect(base1).to.exist;
+            expect(base1.extendedBy.nodes).to.exist;
+            const base1ExtendedByNames = base1.extendedBy.nodes.map((n: {name: string}) => n.name);
+            expect(base1ExtendedByNames).to.have.length(1);
+            expect(base1ExtendedByNames).to.have.members(['extendtest:sample3']);
+
+            expect(base2).to.exist;
+            expect(base2.extendedBy.nodes).to.exist;
+            const base2ExtendedByNames = base2.extendedBy.nodes.map((n: {name: string}) => n.name);
+            expect(base2ExtendedByNames).to.have.length(2);
+            expect(base2ExtendedByNames).to.have.members(['extendtest:sample3', 'extendtest:sample4']);
         });
     });
 

@@ -53,11 +53,11 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <groupId>org.jahia.test</groupId>
-    <artifactId>render-property-test-module</artifactId>
-    <name>GraphQL Render Property Test Module</name>
+    <artifactId>misc-test-module</artifactId>
+    <name>GraphQL misc test module</name>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
-    <description>This is the custom module for render property (multi richtext) cypress tests.</description>
+    <description>This is the miscellaneous test module for cypress tests.</description>
 
     <repositories>
         <repository>

@@ -1,0 +1,29 @@
+<jnt = 'http://www.jahia.org/jahia/nt/1.0'>
+<jmix = 'http://www.jahia.org/jahia/mix/1.0'>
+<gqltest = 'http://www.jahia.org/jahia/gqltest/nt/1.0'>
+<extendtest = 'http://www.jahia.org/jahia/extendtest/nt/1.0'>
+
+[gqltest:news] > jnt:content, jmix:editorialContent, jmix:structuredContent
+   - title (string) i18n
+   - description (string, richtext) multiple
+   - date (date) = now()
+   - author (string)
+   - author_bio (string, richtext) i18n
+
+[extendtest:base1] mixin
+
+[extendtest:base2] mixin
+
+[extendtest:sample1] mixin
+extends = extendtest:base1
+
+[extendtest:sample2] mixin
+extends = extendtest:base1
+
+[extendtest:sample3] mixin
+extends = extendtest:base1, extendtest:base2
+
+[extendtest:sample4] mixin
+extends = extendtest:base2
+
+
