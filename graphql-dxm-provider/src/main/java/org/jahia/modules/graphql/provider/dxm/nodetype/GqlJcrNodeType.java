@@ -31,13 +31,17 @@ import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFet
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.utils.LanguageCodeConverters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -185,14 +189,32 @@ public class GqlJcrNodeType {
     }
 
     @GraphQLField
-    @GraphQLName("mixinExtends")
-    @GraphQLDescription("Returns the node types this mixin dynamically extends, filtered by the specified parameters.")
+    @GraphQLName("extends")
+    @GraphQLDescription("Returns the node types dynamically extended by the current node type (in CND using the `extends=...` syntax), filtered by the specified parameters.")
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
-    public DXPaginatedData<GqlJcrNodeType> getNodeTypes(@GraphQLName("filter") @GraphQLDescription("Filter on node type") NodeTypesListInput input,
+    public DXPaginatedData<GqlJcrNodeType> extendsNodes(@GraphQLName("filter") @GraphQLDescription("Filter on node type") NodeTypesListInput input,
                                                         @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
                                                         DataFetchingEnvironment environment) {
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         Stream<GqlJcrNodeType> mapped = nodeType.getMixinExtends().stream()
+                .filter(NodeTypeHelper.getFilterPredicate(input))
+                .map(GqlJcrNodeType::new)
+                .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
+        return PaginationHelper.paginate(mapped, GqlJcrNodeType::getName, arguments);
+    }
+
+    @GraphQLField
+    @GraphQLName("extendedBy")
+    @GraphQLDescription("Returns the node types that extend the current node type (in CND using the `extends=...` syntax), filtered by the specified parameters.")
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
+    public DXPaginatedData<GqlJcrNodeType> extendedByNodes(@GraphQLName("filter") @GraphQLDescription("Filter on node type") NodeTypesListInput input,
+                                                           @GraphQLName("fieldFilter") @GraphQLDescription("Filter by graphQL fields values") FieldFiltersInput fieldFilter,
+                                                           DataFetchingEnvironment environment) {
+        PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
+        NodeTypeRegistry registry = NodeTypeRegistry.getInstance();
+        Set<ExtendedNodeType> extendedNodeTypes = Optional.ofNullable(registry.getMixinExtensions().get(nodeType))
+                .orElse(Collections.emptySet());
+        Stream<GqlJcrNodeType> mapped = extendedNodeTypes.stream()
                 .filter(NodeTypeHelper.getFilterPredicate(input))
                 .map(GqlJcrNodeType::new)
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));

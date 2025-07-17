@@ -2257,19 +2257,8 @@ type JCRNodeType {
         "Language"
         language: String!
     ): String
-    "Returns true if nodes of this type must support orderable child nodes; returns false otherwise."
-    hasOrderableChildNodes: Boolean
-    "Node type icon"
-    icon: String
-    "Reports if the current node type matches the nodetype(s) passed in parameter"
-    isNodeType(
-        "Node type name"
-        type: InputNodeTypesInput!
-    ): Boolean!
-    "Returns true if this is a mixin type; returns false otherwise."
-    mixin: Boolean
-    "Returns the mixin node types extended by this node type, filtered by the specified parameters."
-    mixinExtends(
+    "Returns the node types that extend the current node type (in CND using the `extends=...` syntax), filtered by the specified parameters."
+    extendedBy(
         "fetching only nodes after this node (exclusive)"
         after: String,
         "fetching only nodes before this node (exclusive)"
@@ -2287,6 +2276,36 @@ type JCRNodeType {
         "fetching only nodes after this node (inclusive)"
         offset: Int
     ): JCRNodeTypeConnection
+    "Returns the node types dynamically extended by the current node type (in CND using the `extends=...` syntax), filtered by the specified parameters."
+    extends(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "Filter by graphQL fields values"
+        fieldFilter: InputFieldFiltersInput,
+        "Filter on node type"
+        filter: InputNodeTypesListInput,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int
+    ): JCRNodeTypeConnection
+    "Returns true if nodes of this type must support orderable child nodes; returns false otherwise."
+    hasOrderableChildNodes: Boolean
+    "Node type icon"
+    icon: String
+    "Reports if the current node type matches the nodetype(s) passed in parameter"
+    isNodeType(
+        "Node type name"
+        type: InputNodeTypesInput!
+    ): Boolean!
+    "Returns true if this is a mixin type; returns false otherwise."
+    mixin: Boolean
     "Node type name"
     name: String
     "Returns an array containing the child node definitions of this node type."

@@ -1,6 +1,27 @@
 import gql from 'graphql-tag';
 import {validateError} from './validateErrors';
 
+type ExtendsType = {
+    name: string;
+    extends : {
+        nodes : {
+            name: string;
+            abstract: boolean;
+            __typename: string;
+        }
+    }
+};
+type ExtendedByType = {
+    name: string;
+    extendedBy : {
+        nodes : {
+            name: string;
+            abstract: boolean;
+            __typename: string;
+        }
+    }
+};
+
 describe('Node types graphql test', () => {
     before('Create nodes', () => {
         cy.apollo({
@@ -378,7 +399,7 @@ describe('Node types graphql test', () => {
         });
     });
 
-    it('Get mixins extends', () => {
+    it('Get \'extends\' field', () => {
         cy.apollo({
             query: gql`
                 query {
@@ -386,7 +407,7 @@ describe('Node types graphql test', () => {
                         nodeTypes(filter: {includeTypes: ["jmix:internalLink","jmix:categorized"]}) {
                             nodes {
                                 name
-                                mixinExtends {
+                                extends {
                                     nodes {
                                         name
                                         abstract
@@ -401,43 +422,35 @@ describe('Node types graphql test', () => {
             expect(response.data.jcr.nodeTypes).to.exist;
             const nodes = response.data.jcr.nodeTypes.nodes;
             expect(nodes).to.have.length(2);
-            type MixinExtendNodeType = {
-                name: string;
-                mixinExtends : {
-                    nodes : {
-                        name: string;
-                        abstract: boolean;
-                        __typename: string;
-                    }
-                }
-            };
-            const categorizedNode = nodes.find((node: MixinExtendNodeType) => node.name === 'jmix:categorized');
-            const internalLinkNode = nodes.find((node: MixinExtendNodeType) => node.name === 'jmix:internalLink');
 
-            // Single mixin extend:
+            const categorizedNode = nodes.find((node: ExtendsType) => node.name === 'jmix:categorized');
+            const internalLinkNode = nodes.find((node: ExtendsType) => node.name === 'jmix:internalLink');
+
+            // Single extend:
             expect(internalLinkNode).to.exist;
-            expect(internalLinkNode.mixinExtends.nodes).to.exist;
-            expect(internalLinkNode.mixinExtends.nodes).to.have.length(1);
-            expect(internalLinkNode.mixinExtends.nodes[0].name).to.equal('jnt:content');
-            expect(internalLinkNode.mixinExtends.nodes[0].abstract).to.equal(false);
-            expect(internalLinkNode.mixinExtends.nodes[0].__typename).to.equal('JCRNodeType');
+            expect(internalLinkNode.extends.nodes).to.exist;
+            expect(internalLinkNode.extends.nodes).to.have.length(1);
+            expect(internalLinkNode.extends.nodes[0].name).to.equal('jnt:content');
+            expect(internalLinkNode.extends.nodes[0].abstract).to.equal(false);
+            expect(internalLinkNode.extends.nodes[0].__typename).to.equal('JCRNodeType');
 
-            // Multiple mixin extends:
+            // Multiple extends:
             expect(categorizedNode).to.exist;
-            expect(categorizedNode.mixinExtends.nodes).to.exist;
-            expect(categorizedNode.mixinExtends.nodes).to.have.length(3);
-            expect(categorizedNode.mixinExtends.nodes[0].name).to.equal('nt:hierarchyNode');
-            expect(categorizedNode.mixinExtends.nodes[0].abstract).to.equal(true);
-            expect(categorizedNode.mixinExtends.nodes[0].__typename).to.equal('JCRNodeType');
-            expect(categorizedNode.mixinExtends.nodes[1].name).to.equal('jnt:content');
-            expect(categorizedNode.mixinExtends.nodes[1].abstract).to.equal(false);
-            expect(categorizedNode.mixinExtends.nodes[1].__typename).to.equal('JCRNodeType');
-            expect(categorizedNode.mixinExtends.nodes[2].name).to.equal('jnt:page');
-            expect(categorizedNode.mixinExtends.nodes[2].abstract).to.equal(false);
-            expect(categorizedNode.mixinExtends.nodes[2].__typename).to.equal('JCRNodeType');
+            expect(categorizedNode.extends.nodes).to.exist;
+            expect(categorizedNode.extends.nodes).to.have.length(3);
+            expect(categorizedNode.extends.nodes[0].name).to.equal('nt:hierarchyNode');
+            expect(categorizedNode.extends.nodes[0].abstract).to.equal(true);
+            expect(categorizedNode.extends.nodes[0].__typename).to.equal('JCRNodeType');
+            expect(categorizedNode.extends.nodes[1].name).to.equal('jnt:content');
+            expect(categorizedNode.extends.nodes[1].abstract).to.equal(false);
+            expect(categorizedNode.extends.nodes[1].__typename).to.equal('JCRNodeType');
+            expect(categorizedNode.extends.nodes[2].name).to.equal('jnt:page');
+            expect(categorizedNode.extends.nodes[2].abstract).to.equal(false);
+            expect(categorizedNode.extends.nodes[2].__typename).to.equal('JCRNodeType');
         });
     });
-    it('Get mixins extends with filtering', () => {
+
+    it('Get \'extends\' field with filtering', () => {
         cy.apollo({
             query: gql`
                 query {
@@ -445,7 +458,7 @@ describe('Node types graphql test', () => {
                         nodeTypes(filter: {includeTypes: ["jmix:internalLink","jmix:categorized"]}) {
                             nodes {
                                 name
-                                mixinExtends(filter:{excludeTypes:["jnt:content"], includeAbstract:false}) {
+                                extends(filter:{excludeTypes:["jnt:content"], includeAbstract:false}) {
                                     nodes {
                                         name
                                         abstract
@@ -460,31 +473,104 @@ describe('Node types graphql test', () => {
             expect(response.data.jcr.nodeTypes).to.exist;
             const nodes = response.data.jcr.nodeTypes.nodes;
             expect(nodes).to.have.length(2);
-            type MixinExtendNodeType = {
-                name: string;
-                mixinExtends : {
-                    nodes : {
-                        name: string;
-                        abstract: boolean;
-                        __typename: string;
-                    }
-                }
-            };
-            const categorizedNode = nodes.find((node: MixinExtendNodeType) => node.name === 'jmix:categorized');
-            const internalLinkNode = nodes.find((node: MixinExtendNodeType) => node.name === 'jmix:internalLink');
+
+            const categorizedNode = nodes.find((node: ExtendsType) => node.name === 'jmix:categorized');
+            const internalLinkNode = nodes.find((node: ExtendsType) => node.name === 'jmix:internalLink');
 
             // No match for 'jmix:internalLink'
             expect(internalLinkNode).to.exist;
-            expect(internalLinkNode.mixinExtends.nodes).to.exist;
-            expect(internalLinkNode.mixinExtends.nodes).to.be.empty;
+            expect(internalLinkNode.extends.nodes).to.exist;
+            expect(internalLinkNode.extends.nodes).to.be.empty;
 
             // Only one match for 'jmix:categorized'
             expect(categorizedNode).to.exist;
-            expect(categorizedNode.mixinExtends.nodes).to.exist;
-            expect(categorizedNode.mixinExtends.nodes).to.have.length(1);
-            expect(categorizedNode.mixinExtends.nodes[0].name).to.equal('jnt:page');
-            expect(categorizedNode.mixinExtends.nodes[0].abstract).to.equal(false);
-            expect(categorizedNode.mixinExtends.nodes[0].__typename).to.equal('JCRNodeType');
+            expect(categorizedNode.extends.nodes).to.exist;
+            expect(categorizedNode.extends.nodes).to.have.length(1);
+            expect(categorizedNode.extends.nodes[0].name).to.equal('jnt:page');
+            expect(categorizedNode.extends.nodes[0].abstract).to.equal(false);
+            expect(categorizedNode.extends.nodes[0].__typename).to.equal('JCRNodeType');
+        });
+    });
+
+    it('Get \'extendBy\' field', () => {
+        // Use considerSubTypes:false to only get "nt:hierarchyNode" and "jnt:content", not the node types inheriting from them
+        cy.apollo({
+            query: gql`
+                query {
+                    jcr {
+                        nodeTypes(filter: {includeTypes: ["nt:hierarchyNode", "jnt:content"], considerSubTypes:false}) {
+                            nodes {
+                                name
+                                extendedBy {
+                                    nodes {
+                                        name
+                                        abstract
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeTypes).to.exist;
+            const nodes = response.data.jcr.nodeTypes.nodes;
+            expect(nodes).to.have.length(2);
+
+            const hierarchyNode = nodes.find((node: ExtendedByType) => node.name === 'nt:hierarchyNode');
+            const contentNode = nodes.find((node: ExtendedByType) => node.name === 'jnt:content');
+
+            // 'nt:hierarchyNode':
+            expect(hierarchyNode).to.exist;
+            expect(hierarchyNode.extendedBy.nodes).to.exist;
+            expect(hierarchyNode.extendedBy.nodes).to.have.length(3);
+            expect(hierarchyNode.extendedBy.nodes[0].name).to.equal('jmix:categorized');
+            expect(hierarchyNode.extendedBy.nodes[1].name).to.equal('jmix:keywords');
+            expect(hierarchyNode.extendedBy.nodes[2].name).to.equal('jmix:tagged');
+
+            // 'jnt:content':
+            expect(contentNode).to.exist;
+            expect(contentNode.extendedBy.nodes).to.exist;
+            expect(contentNode.extendedBy.nodes).to.have.length(8);
+            expect(contentNode.extendedBy.nodes[0].name).to.equal('jmix:internalLink');
+            expect(contentNode.extendedBy.nodes[1].name).to.equal('jmix:categorized');
+            expect(contentNode.extendedBy.nodes[2].name).to.equal('jmix:renderable');
+            expect(contentNode.extendedBy.nodes[3].name).to.equal('jmix:cache');
+            expect(contentNode.extendedBy.nodes[4].name).to.equal('jmix:externalLink');
+            expect(contentNode.extendedBy.nodes[5].name).to.equal('jmix:keywords');
+            expect(contentNode.extendedBy.nodes[6].name).to.equal('jmix:tagged');
+            expect(contentNode.extendedBy.nodes[7].name).to.equal('jmix:requiredPermissions');
+        });
+    });
+
+    it('Get \'extendedBy\' field with filtering', () => {
+        cy.apollo({
+            query: gql`
+                query {
+                    jcr {
+                        nodeTypes(filter: {includeTypes: [ "jnt:content"], considerSubTypes:false}) {
+                            nodes {
+                                name
+                                extendedBy(filter:{includeTypes:["jmix:keywords"]}) {
+                                    nodes {
+                                        name
+                                        abstract
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `
+        }).should(response => {
+            expect(response.data.jcr.nodeTypes).to.exist;
+            const nodes = response.data.jcr.nodeTypes.nodes;
+            expect(nodes).to.have.length(1);
+            const contentNode = nodes.find((node: ExtendedByType) => node.name === 'jnt:content');
+            expect(contentNode).to.exist;
+            expect(contentNode.extendedBy.nodes).to.exist;
+            expect(contentNode.extendedBy.nodes).to.have.length(1);
+            expect(contentNode.extendedBy.nodes[0].name).to.equal('jmix:keywords');
         });
     });
 
