@@ -43,15 +43,39 @@ import java.util.stream.Collectors;
 @GraphQLDescription("JCR Mutations")
 public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFieldCompleter {
 
-    private String workspace;
+    private final NodeQueryExtensions.Workspace workspace;
     private boolean save = true;
 
     /**
      * Initializes an instance of this class with the specified JCR workspace name.
      *
      * @param workspace the name of the JCR workspace
+     * @deprecated use {@link #GqlJcrMutation(NodeQueryExtensions.Workspace, boolean)} instead
      */
     public GqlJcrMutation(String workspace, boolean save) {
+        this.workspace = getWorkspaceFromName(workspace);
+        this.save = save;
+    }
+
+    private NodeQueryExtensions.Workspace getWorkspaceFromName(String workspace) {
+        if (workspace == null) {
+            return null;
+        }
+        if (NodeQueryExtensions.Workspace.EDIT.toString().equalsIgnoreCase(workspace)) {
+            return NodeQueryExtensions.Workspace.EDIT;
+        }
+        if (NodeQueryExtensions.Workspace.LIVE.toString().equalsIgnoreCase(workspace)) {
+            return NodeQueryExtensions.Workspace.LIVE;
+        }
+        return null;
+    }
+
+    /**
+     * Initializes an instance of this class with the specified JCR workspace.
+     *
+     * @param workspace the JCR workspace
+     */
+    public GqlJcrMutation(NodeQueryExtensions.Workspace workspace, boolean save) {
         this.workspace = workspace;
         this.save = save;
     }
@@ -471,14 +495,14 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
 
     public JCRSessionWrapper getSession() {
         try {
-            return JCRSessionFactory.getInstance().getCurrentUserSession(workspace);
+            return JCRSessionFactory.getInstance().getCurrentUserSession(getWorkspace());
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
     }
 
     public String getWorkspace() {
-        return workspace;
+        return workspace == null ? null : workspace.getValue();
     }
 
     /**
