@@ -30,16 +30,15 @@ public class NodeMutationExtensions {
 
     /**
      * Root for all JCR mutations.
-     * 
+     *
      * @param workspace the name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default
      * @return GraphQL root object for JCR related mutations
-     * @throws RepositoryException in case of JCR related errors
      */
     @GraphQLField
     @GraphQLName("jcr")
     @GraphQLDescription("JCR Mutation")
-    public static GqlJcrMutation getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") NodeQueryExtensions.Workspace workspace,
-                                        @GraphQLName("save") @GraphQLDescription("Should save") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean save) throws RepositoryException {
-        return new GqlJcrMutation(workspace != null ? workspace.getValue() : null, save);
+    public static GqlJcrMutation getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") @GraphQLDefaultValue(value = NodeQueryExtensions.Workspace.DefaultWorkspaceSupplier.class) NodeQueryExtensions.Workspace workspace,
+                                        @GraphQLName("save") @GraphQLDescription("Should save") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean save) {
+        return new GqlJcrMutation(workspace, save);
     }
 }
