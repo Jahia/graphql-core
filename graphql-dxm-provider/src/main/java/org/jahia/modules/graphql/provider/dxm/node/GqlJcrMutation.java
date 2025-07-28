@@ -17,7 +17,6 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
-import org.apache.commons.lang.mutable.MutableInt;
 import org.jahia.api.Constants;
 import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
@@ -32,17 +31,17 @@ import org.jahia.settings.SettingsBean;
 
 import javax.jcr.RepositoryException;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
  * GraphQL root object for JCR related mutations.
  */
-@GraphQLName("JCRMutation")
+@GraphQLName(GqlJcrMutation.NAME)
 @GraphQLDescription("JCR Mutations")
 public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFieldCompleter {
 
+    public static final String NAME = "JCRMutation";
     private final NodeQueryExtensions.Workspace workspace;
     private boolean save = true;
 

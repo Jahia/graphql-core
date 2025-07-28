@@ -28,6 +28,8 @@ import java.util.function.Supplier;
 @GraphQLDescription("A query extension that adds a possibility to fetch nodes by their UUIDs, paths, or via an SQL2/Xpath query")
 public class NodeQueryExtensions {
 
+    public static final String WORKSPACE_PARAM_NAME = "workspace";
+
     /**
      * JCR workspace to use for the operations.
      */
@@ -92,7 +94,7 @@ public class NodeQueryExtensions {
     @GraphQLName("jcr")
     @GraphQLNonNull
     @GraphQLDescription("JCR Queries")
-    public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; "
+    public static GqlJcrQuery getJcr(@GraphQLName(WORKSPACE_PARAM_NAME) @GraphQLDescription("The name of the workspace to fetch the node from; "
             + "either EDIT, LIVE, or null to use EDIT by default") @GraphQLDefaultValue(value = Workspace.DefaultWorkspaceSupplier.class) Workspace workspace) {
         return new GqlJcrQuery(workspace);
     }

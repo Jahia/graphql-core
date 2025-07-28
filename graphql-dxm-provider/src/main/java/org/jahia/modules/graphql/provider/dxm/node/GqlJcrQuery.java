@@ -61,10 +61,11 @@ import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLangu
 /**
  * GraphQL root object for JCR related queries
  */
-@GraphQLName("JCRQuery")
+@GraphQLName(GqlJcrQuery.NAME)
 @GraphQLDescription("JCR Queries")
 public class GqlJcrQuery {
 
+    public static final String NAME = "JCRQuery";
     private NodeQueryExtensions.Workspace workspace;
 
     public GqlJcrQuery(NodeQueryExtensions.Workspace workspace) {
