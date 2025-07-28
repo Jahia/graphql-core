@@ -43,8 +43,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-public class JCRTrackerInstrumentation implements Instrumentation {
-    private static final Logger log = LoggerFactory.getLogger(JCRTrackerInstrumentation.class);
+public class TrackerInstrumentation implements Instrumentation {
+    private static final Logger log = LoggerFactory.getLogger(TrackerInstrumentation.class);
     /**
      * Should match the name defined in {@link org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery}.
      */
@@ -53,8 +53,8 @@ public class JCRTrackerInstrumentation implements Instrumentation {
      * Should match the name of the <code>workspace</code> parameter in {@link org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions#getJcr(Workspace)} and {@link org.jahia.modules.graphql.provider.dxm.node.NodeMutationExtensions#getJcr(Workspace, boolean)}
      */
     private static final String WORKSPACE_ARGUMENT = "workspace";
-    private static final String WORKSPACE_HEADER = "X-Jahia-Graphql-Jcr-Workspace";
-    private static final String OPERATION_HEADER = "X-Jahia-Graphql-Jcr-Operation";
+    private static final String JCR_WORKSPACE_HEADER = "X-Jahia-Graphql-Jcr-Workspace";
+    private static final String OPERATION_HEADER = "X-Jahia-Graphql-Operation";
 
     @Override
     public InstrumentationState createState(InstrumentationCreateStateParameters parameters) {
@@ -86,14 +86,17 @@ public class JCRTrackerInstrumentation implements Instrumentation {
             log.trace("operation: {}", jcrTrackerInstrumentationState.operation);
             log.trace("workspace: {}", jcrTrackerInstrumentationState.workspace);
         }
-        // 'operation' must be set all the time
-        // 'workspace' must be set, meaning we're processing a GraphQL query on the JCR, and the workspace type has been successfully retrieved
-        if (jcrTrackerInstrumentationState.operation != null && jcrTrackerInstrumentationState.workspace != null) {
-            HttpServletResponse response = ContextUtil.getHttpServletResponse(parameters.getGraphQLContext());
-            if (response != null) {
-                log.debug("Setting http response headers to track the JCR operation(s). operation: {}, workspace: {}", jcrTrackerInstrumentationState.operation, jcrTrackerInstrumentationState.workspace);
+        HttpServletResponse response = ContextUtil.getHttpServletResponse(parameters.getGraphQLContext());
+        if (response != null && !response.isCommitted()) {
+            // 'operation' is expected to be set all the time
+            // 'workspace' is set when processing a GraphQL request on the JCR (the workspace type has been successfully retrieved)
+            if (jcrTrackerInstrumentationState.operation != null) {
+                log.debug("Setting the http response header with the GraphQL operation: {}={}", OPERATION_HEADER, jcrTrackerInstrumentationState.operation);
                 response.setHeader(OPERATION_HEADER, jcrTrackerInstrumentationState.operation.name().toLowerCase());
-                response.setHeader(WORKSPACE_HEADER, jcrTrackerInstrumentationState.workspace.name().toLowerCase());
+            }
+            if (jcrTrackerInstrumentationState.workspace != null) {
+                log.debug("Setting the http response header with the GraphQL JCR workspace: {}={}", JCR_WORKSPACE_HEADER, jcrTrackerInstrumentationState.workspace);
+                response.setHeader(JCR_WORKSPACE_HEADER, jcrTrackerInstrumentationState.workspace.name().toLowerCase());
             }
         }
         return Instrumentation.super.instrumentExecutionResult(executionResult, parameters, state);
