@@ -19,6 +19,8 @@ import graphql.annotations.annotationTypes.*;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 
+import java.util.function.Supplier;
+
 /**
  * A query extension that adds a possibility to fetch nodes by their UUIDs, paths, or via an SQL2/Xpath query.
  */
@@ -44,9 +46,9 @@ public class NodeQueryExtensions {
         @GraphQLDescription("Live workspace")
         LIVE(Constants.LIVE_WORKSPACE);
 
-        private String workspace;
+        private final String workspace;
 
-        private Workspace(String workspace) {
+        Workspace(String workspace) {
             this.workspace = workspace;
         }
 
@@ -56,13 +58,34 @@ public class NodeQueryExtensions {
         public String getValue() {
             return workspace;
         }
+
+        public static NodeQueryExtensions.Workspace fromName(String workspace) {
+            if (workspace == null) {
+                return null;
+            }
+            if (NodeQueryExtensions.Workspace.EDIT.toString().equalsIgnoreCase(workspace)) {
+                return NodeQueryExtensions.Workspace.EDIT;
+            }
+            if (NodeQueryExtensions.Workspace.LIVE.toString().equalsIgnoreCase(workspace)) {
+                return NodeQueryExtensions.Workspace.LIVE;
+            }
+            return null;
+        }
+
+        public static class DefaultWorkspaceSupplier implements Supplier<Object> {
+
+            @Override
+            public Workspace get() {
+                return EDIT;
+            }
+        }
     }
 
 
     /**
      * Root for all JCR queries.
+     *
      * @param workspace the JCR workspace name for the query
-     * @param language to use in the session to get localized nodes
      * @return the root query object
      */
     @GraphQLField
@@ -70,7 +93,7 @@ public class NodeQueryExtensions {
     @GraphQLNonNull
     @GraphQLDescription("JCR Queries")
     public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; "
-            + "either EDIT, LIVE, or null to use EDIT by default") Workspace workspace) {
-        return new GqlJcrQuery(workspace != null ? workspace : Workspace.EDIT);
+            + "either EDIT, LIVE, or null to use EDIT by default") @GraphQLDefaultValue(value = Workspace.DefaultWorkspaceSupplier.class) Workspace workspace) {
+        return new GqlJcrQuery(workspace);
     }
 }
