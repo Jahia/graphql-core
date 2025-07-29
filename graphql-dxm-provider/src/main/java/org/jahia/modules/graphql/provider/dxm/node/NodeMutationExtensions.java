@@ -37,7 +37,7 @@ public class NodeMutationExtensions {
     @GraphQLField
     @GraphQLName("jcr")
     @GraphQLDescription("JCR Mutation")
-    public static GqlJcrMutation getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") @GraphQLDefaultValue(value = NodeQueryExtensions.Workspace.class) NodeQueryExtensions.Workspace workspace,
+    public static GqlJcrMutation getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") @GraphQLDefaultValue(value = NodeQueryExtensions.Workspace.DefaultWorkspaceSupplier.class) NodeQueryExtensions.Workspace workspace,
                                         @GraphQLName("save") @GraphQLDescription("Should save") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean save) {
         return new GqlJcrMutation(workspace, save);
     }

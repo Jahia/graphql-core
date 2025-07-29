@@ -32,7 +32,7 @@ public class NodeQueryExtensions {
      * JCR workspace to use for the operations.
      */
     @GraphQLDescription("JCR workspace to use for the operations")
-    public enum Workspace implements Supplier<Object> {
+    public enum Workspace {
 
         /**
          * Edit workspace
@@ -72,9 +72,12 @@ public class NodeQueryExtensions {
             return null;
         }
 
-        @Override
-        public Object get() {
-            return EDIT;
+        public static class DefaultWorkspaceSupplier implements Supplier<Object> {
+
+            @Override
+            public Workspace get() {
+                return EDIT;
+            }
         }
     }
 
@@ -90,7 +93,7 @@ public class NodeQueryExtensions {
     @GraphQLNonNull
     @GraphQLDescription("JCR Queries")
     public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; "
-            + "either EDIT, LIVE, or null to use EDIT by default") @GraphQLDefaultValue(value = Workspace.class) Workspace workspace) {
+            + "either EDIT, LIVE, or null to use EDIT by default") @GraphQLDefaultValue(value = Workspace.DefaultWorkspaceSupplier.class) Workspace workspace) {
         return new GqlJcrQuery(workspace);
     }
 }
