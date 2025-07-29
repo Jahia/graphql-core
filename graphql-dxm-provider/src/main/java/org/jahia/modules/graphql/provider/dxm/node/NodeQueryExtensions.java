@@ -32,7 +32,7 @@ public class NodeQueryExtensions {
      * JCR workspace to use for the operations.
      */
     @GraphQLDescription("JCR workspace to use for the operations")
-    public enum Workspace {
+    public enum Workspace implements Supplier<Object> {
 
         /**
          * Edit workspace
@@ -46,9 +46,9 @@ public class NodeQueryExtensions {
         @GraphQLDescription("Live workspace")
         LIVE(Constants.LIVE_WORKSPACE);
 
-        private String workspace;
+        private final String workspace;
 
-        private Workspace(String workspace) {
+        Workspace(String workspace) {
             this.workspace = workspace;
         }
 
@@ -59,12 +59,22 @@ public class NodeQueryExtensions {
             return workspace;
         }
 
-        public static class DefaultWorkspaceSupplier implements Supplier<Object> {
-
-            @Override
-            public Workspace get() {
-                return EDIT;
+        public static NodeQueryExtensions.Workspace fromName(String workspace) {
+            if (workspace == null) {
+                return null;
             }
+            if (NodeQueryExtensions.Workspace.EDIT.toString().equalsIgnoreCase(workspace)) {
+                return NodeQueryExtensions.Workspace.EDIT;
+            }
+            if (NodeQueryExtensions.Workspace.LIVE.toString().equalsIgnoreCase(workspace)) {
+                return NodeQueryExtensions.Workspace.LIVE;
+            }
+            return null;
+        }
+
+        @Override
+        public Object get() {
+            return EDIT;
         }
     }
 
@@ -80,7 +90,7 @@ public class NodeQueryExtensions {
     @GraphQLNonNull
     @GraphQLDescription("JCR Queries")
     public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; "
-            + "either EDIT, LIVE, or null to use EDIT by default") @GraphQLDefaultValue(value = Workspace.DefaultWorkspaceSupplier.class) Workspace workspace) {
+            + "either EDIT, LIVE, or null to use EDIT by default") @GraphQLDefaultValue(value = Workspace.class) Workspace workspace) {
         return new GqlJcrQuery(workspace);
     }
 }

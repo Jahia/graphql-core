@@ -52,22 +52,10 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
      * @param workspace the name of the JCR workspace
      * @deprecated use {@link #GqlJcrMutation(NodeQueryExtensions.Workspace, boolean)} instead
      */
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public GqlJcrMutation(String workspace, boolean save) {
-        this.workspace = getWorkspaceFromName(workspace);
+        this.workspace = NodeQueryExtensions.Workspace.fromName(workspace);
         this.save = save;
-    }
-
-    private NodeQueryExtensions.Workspace getWorkspaceFromName(String workspace) {
-        if (workspace == null) {
-            return null;
-        }
-        if (NodeQueryExtensions.Workspace.EDIT.toString().equalsIgnoreCase(workspace)) {
-            return NodeQueryExtensions.Workspace.EDIT;
-        }
-        if (NodeQueryExtensions.Workspace.LIVE.toString().equalsIgnoreCase(workspace)) {
-            return NodeQueryExtensions.Workspace.LIVE;
-        }
-        return null;
     }
 
     /**
@@ -83,25 +71,25 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     /**
      * Adds a child node to the specified one and returns the created mutation object.
      *
-     * @param parentPathOrId the path or UUID of the parent node
-     * @param name the name of the child node to be added
+     * @param parentPathOrId  the path or UUID of the parent node
+     * @param name            the name of the child node to be added
      * @param primaryNodeType the child node primary node type
-     * @param mixins collection of mixin types, which should be added to the created node
-     * @param properties collection of properties to be set on the newly created node
-     * @param children collection of child nodes to be added to the newly created node
+     * @param mixins          collection of mixin types, which should be added to the created node
+     * @param properties      collection of properties to be set on the newly created node
+     * @param children        collection of child nodes to be added to the newly created node
      * @return the created mutation object
      * @throws BaseGqlClientException in case of JCR related errors during adding of child node
      */
     @GraphQLField
     @GraphQLDescription("Creates a new JCR node under the specified parent")
     public GqlJcrNodeMutation addNode(
-        @GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
-        @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
-        @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType,
-        @GraphQLName("useAvailableNodeName") @GraphQLDescription("If true, use the next available name for a node, appending if needed numbers. Default is false") Boolean useAvailableNodeName,
-        @GraphQLName("mixins") @GraphQLDescription("The collection of mixin type names") Collection<String> mixins,
-        @GraphQLName("properties") Collection<GqlJcrPropertyInput> properties,
-        @GraphQLName("children") Collection<GqlJcrNodeInput> children
+            @GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
+            @GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the node to create") String name,
+            @GraphQLName("primaryNodeType") @GraphQLNonNull @GraphQLDescription("The primary node type of the node to create") String primaryNodeType,
+            @GraphQLName("useAvailableNodeName") @GraphQLDescription("If true, use the next available name for a node, appending if needed numbers. Default is false") Boolean useAvailableNodeName,
+            @GraphQLName("mixins") @GraphQLDescription("The collection of mixin type names") Collection<String> mixins,
+            @GraphQLName("properties") Collection<GqlJcrPropertyInput> properties,
+            @GraphQLName("children") Collection<GqlJcrNodeInput> children
     ) throws BaseGqlClientException {
         GqlJcrNodeInput node = new GqlJcrNodeInput(name, primaryNodeType, useAvailableNodeName, mixins, properties, children);
         return new GqlJcrNodeMutation(addNode(getNodeFromPathOrId(getSession(), parentPathOrId), node));
@@ -117,7 +105,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     @GraphQLField
     @GraphQLDescription("Batch creates a number of new JCR nodes under the specified parent")
     public Collection<GqlJcrNodeMutation> addNodesBatch(
-        @GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The collection of nodes to create") Collection<GqlJcrNodeWithParentInput> nodes
+            @GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The collection of nodes to create") Collection<GqlJcrNodeWithParentInput> nodes
     ) throws BaseGqlClientException {
         List<GqlJcrNodeMutation> result = new ArrayList<>();
         for (GqlJcrNodeWithParentInput node : nodes) {
@@ -136,7 +124,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     @GraphQLField
     @GraphQLDescription("Mutates an existing node, based on path or id")
     public GqlJcrNodeMutation mutateNode(
-        @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to mutate") String pathOrId
+            @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to mutate") String pathOrId
     ) throws BaseGqlClientException {
         return new GqlJcrNodeMutation(getNodeFromPathOrId(getSession(), pathOrId));
     }
@@ -151,7 +139,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on path or id")
     public Collection<GqlJcrNodeMutation> mutateNodes(
-        @GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or id ofs the nodes to mutate") Collection<String> pathsOrIds
+            @GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or id ofs the nodes to mutate") Collection<String> pathsOrIds
     ) throws BaseGqlClientException {
         List<GqlJcrNodeMutation> result = new ArrayList<>();
         for (String pathOrId : pathsOrIds) {
@@ -163,20 +151,20 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     /**
      * Creates a collection of mutation objects for the nodes, matching the specified query.
      *
-     * @param query the query to retrieve the nodes to be modified
+     * @param query         the query to retrieve the nodes to be modified
      * @param queryLanguage the query language
-     * @param limit the maximum size of the result set
-     * @param offset the start offset of the result set
+     * @param limit         the maximum size of the result set
+     * @param offset        the start offset of the result set
      * @return a collection of mutation objects
      * @throws BaseGqlClientException in case of node retrieval errors
      */
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on query execution")
     public Collection<GqlJcrNodeMutation> mutateNodesByQuery(
-        @GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
-        @GraphQLName("queryLanguage") @GraphQLDefaultValue(GqlJcrQuery.QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") GqlJcrQuery.QueryLanguage queryLanguage,
-        @GraphQLName("limit") @GraphQLDescription("The maximum size of the result set") Long limit,
-        @GraphQLName("offset") @GraphQLDescription("The start offset of the result set") Long offset
+            @GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
+            @GraphQLName("queryLanguage") @GraphQLDefaultValue(GqlJcrQuery.QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") GqlJcrQuery.QueryLanguage queryLanguage,
+            @GraphQLName("limit") @GraphQLDescription("The maximum size of the result set") Long limit,
+            @GraphQLName("offset") @GraphQLDescription("The start offset of the result set") Long offset
     ) throws BaseGqlClientException {
         List<GqlJcrNodeMutation> result = new LinkedList<>();
         JCRNodeIteratorWrapper nodes;
@@ -210,7 +198,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     @GraphQLField
     @GraphQLDescription("Delete an existing node and all its children")
     public boolean deleteNode(
-        @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to delete") String pathOrId
+            @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to delete") String pathOrId
     ) throws BaseGqlClientException {
         try {
             getNodeFromPathOrId(getSession(), pathOrId).remove();
@@ -224,15 +212,15 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
      * Performs node delete or mark for deletion operation on the specified node.
      *
      * @param pathOrId the path or UUID of the node to perform operation on
-     * @param comment the comment, describing the purpose of the operation
+     * @param comment  the comment, describing the purpose of the operation
      * @return the result of the operation
      * @throws BaseGqlClientException in case of errors during the operation
      */
     @GraphQLField
     @GraphQLDescription("Marks the existing node and all its children for deletion")
     public boolean markNodeForDeletion(
-        @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to mark for deletion") String pathOrId,
-        @GraphQLName("comment") @GraphQLDescription("Optional deletion comment") String comment
+            @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to mark for deletion") String pathOrId,
+            @GraphQLName("comment") @GraphQLDescription("Optional deletion comment") String comment
     ) throws BaseGqlClientException {
         try {
             getNodeFromPathOrId(getSession(), pathOrId).markForDeletion(comment);
@@ -252,7 +240,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     @GraphQLField
     @GraphQLDescription("Unmarks the specified node and all its children for deletion")
     public boolean unmarkNodeForDeletion(
-        @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to unmark for deletion") String pathOrId
+            @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the node to unmark for deletion") String pathOrId
     ) throws BaseGqlClientException {
         try {
             getNodeFromPathOrId(getSession(), pathOrId).unmarkForDeletion();
@@ -266,22 +254,22 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
      * Import a file under the specified parent
      *
      * @param parentPathOrId the path or UUID of the parent node
-     * @param file name of the request part that contains desired import file body
-     * @param environment data fetching environment
-     * @param rootBehaviour Specify the behaviour in case of existing content
+     * @param file           name of the request part that contains desired import file body
+     * @param environment    data fetching environment
+     * @param rootBehaviour  Specify the behaviour in case of existing content
      * @return always true
      * @throws BaseGqlClientException in case of errors during import operation
      */
     @GraphQLField
     @GraphQLDescription("Import a file under the specified parent")
     public boolean importContent(
-        @GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
-        @GraphQLName("file") @GraphQLNonNull @GraphQLDescription("Name of the request part that contains desired import file body") String file,
-        @GraphQLName("rootBehaviour") @GraphQLDefaultValue(DefaultRootBehaviour.class) @GraphQLDescription("Specify the behaviour in case"
-                + " of existing content, possible values are in the DocumentViewImportHandler class") Integer rootBehaviour,
-        DataFetchingEnvironment environment
+            @GraphQLName("parentPathOrId") @GraphQLNonNull @GraphQLDescription("The path or id of the parent node") String parentPathOrId,
+            @GraphQLName("file") @GraphQLNonNull @GraphQLDescription("Name of the request part that contains desired import file body") String file,
+            @GraphQLName("rootBehaviour") @GraphQLDefaultValue(DefaultRootBehaviour.class) @GraphQLDescription("Specify the behaviour in case"
+                    + " of existing content, possible values are in the DocumentViewImportHandler class") Integer rootBehaviour,
+            DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
-        importFileUpload(file, getNodeFromPathOrId(getSession(), parentPathOrId), rootBehaviour,  environment);
+        importFileUpload(file, getNodeFromPathOrId(getSession(), parentPathOrId), rootBehaviour, environment);
         return true;
     }
 
@@ -295,19 +283,19 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     /**
      * Copy a single node to a different parent node.
      *
-     * @param pathOrId Path or UUID of the node to be copied
+     * @param pathOrId           Path or UUID of the node to be copied
      * @param destParentPathOrId Path or UUID of the destination parent node to copy the node to
-     * @param destName The name of the node at the new location or null if its current name should be preserved
+     * @param destName           The name of the node at the new location or null if its current name should be preserved
      * @return Mutation object representing the copy at the new location
      */
     @GraphQLField
     @GraphQLDescription("Copy a single node to a different parent node")
     public GqlJcrNodeMutation copyNode(
-        @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the node to be copied") String pathOrId,
-        @GraphQLName("destParentPathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the destination parent node to copy the node to") String destParentPathOrId,
-        @GraphQLName("destName") @GraphQLDescription("The name of the node at the new location or null if its current name should be preserved") String destName,
-        @GraphQLName("childNodeTypesToSkip") @GraphQLDescription("The child node types that should be skipped during copy") List<String> childNodeTypesToSkip
-        ) throws BaseGqlClientException {
+            @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the node to be copied") String pathOrId,
+            @GraphQLName("destParentPathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the destination parent node to copy the node to") String destParentPathOrId,
+            @GraphQLName("destName") @GraphQLDescription("The name of the node at the new location or null if its current name should be preserved") String destName,
+            @GraphQLName("childNodeTypesToSkip") @GraphQLDescription("The child node types that should be skipped during copy") List<String> childNodeTypesToSkip
+    ) throws BaseGqlClientException {
 
         JCRNodeWrapper destParentNode = getNodeFromPathOrId(getSession(), destParentPathOrId);
         JCRNodeWrapper node = getNodeFromPathOrId(getSession(), pathOrId);
@@ -354,17 +342,17 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     /**
      * Move a single node to a different parent node.
      *
-     * @param pathOrId Path or UUID of the node to be moved
+     * @param pathOrId           Path or UUID of the node to be moved
      * @param destParentPathOrId Path or UUID of the destination parent node to move the node to
-     * @param destName The name of the node at the new location or null if its current name should be preserved
+     * @param destName           The name of the node at the new location or null if its current name should be preserved
      * @return Mutation object representing the node at the new location
      */
     @GraphQLField
     @GraphQLDescription("Move a single node to a different parent node")
     public GqlJcrNodeMutation moveNode(
-        @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the node to be moved") String pathOrId,
-        @GraphQLName("destParentPathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the destination parent node to move the node to") String destParentPathOrId,
-        @GraphQLName("destName") @GraphQLDescription("The name of the node at the new location or null if its current name should be preserved") String destName
+            @GraphQLName("pathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the node to be moved") String pathOrId,
+            @GraphQLName("destParentPathOrId") @GraphQLNonNull @GraphQLDescription("Path or UUID of the destination parent node to move the node to") String destParentPathOrId,
+            @GraphQLName("destName") @GraphQLDescription("The name of the node at the new location or null if its current name should be preserved") String destName
     ) throws BaseGqlClientException {
 
         JCRNodeWrapper destParentNode = getNodeFromPathOrId(getSession(), destParentPathOrId);
@@ -396,8 +384,8 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     @GraphQLField
     @GraphQLDescription("Copy multiple nodes to different parent node(s)")
     public Collection<GqlJcrNodeMutation> copyNodes(
-        @GraphQLName("nodes") @GraphQLNonNull Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes,
-        @GraphQLName("childNodeTypesToSkip") @GraphQLDescription("The child node types that should be skipped during copy") List<String> childNodeTypesToSkip
+            @GraphQLName("nodes") @GraphQLNonNull Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes,
+            @GraphQLName("childNodeTypesToSkip") @GraphQLDescription("The child node types that should be skipped during copy") List<String> childNodeTypesToSkip
     ) throws BaseGqlClientException {
 
         return reproduceNodes(nodes, new NodeReproducer() {
@@ -423,7 +411,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     @GraphQLField
     @GraphQLDescription("Move multiple nodes to different parent node(s)")
     public Collection<GqlJcrNodeMutation> moveNodes(
-        @GraphQLName("nodes") @GraphQLNonNull Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes
+            @GraphQLName("nodes") @GraphQLNonNull Collection<@GraphQLNonNull GqlJcrReproducibleNodeInput> nodes
     ) throws BaseGqlClientException {
 
         return reproduceNodes(nodes, new NodeReproducer() {
@@ -473,6 +461,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
     private interface NodeReproducer {
 
         GqlJcrNodeMutation reproduce(GqlJcrReproducibleNodeInput node);
+
         String getOperationName();
     }
 
