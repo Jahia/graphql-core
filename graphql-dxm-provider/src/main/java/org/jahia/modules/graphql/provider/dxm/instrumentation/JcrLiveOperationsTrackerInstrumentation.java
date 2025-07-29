@@ -47,8 +47,6 @@ public class JcrLiveOperationsTrackerInstrumentation implements Instrumentation 
     private static final Logger log = LoggerFactory.getLogger(JcrLiveOperationsTrackerInstrumentation.class);
 
     private static final String LIVE_OPERATION_HEADER = "X-Jahia-Live-Operation";
-    private static final String QUERY_OPERATION = OperationDefinition.Operation.QUERY.name().toLowerCase();
-    private static final String MUTATION_OPERATION = OperationDefinition.Operation.MUTATION.name().toLowerCase();
 
     @Override
     public InstrumentationState createState(InstrumentationCreateStateParameters parameters) {
@@ -65,10 +63,10 @@ public class JcrLiveOperationsTrackerInstrumentation implements Instrumentation 
             log.debug("'live' workspace used for field '{}'", field.getName());
             switch (unwrappedType.getName()) {
                 case GqlJcrQuery.NAME:
-                    customState.hasLiveQuery = true;
+                    customState.liveOperation = OperationDefinition.Operation.QUERY;
                     break;
                 case GqlJcrMutation.NAME:
-                    customState.hasLiveMutation = true;
+                    customState.liveOperation = OperationDefinition.Operation.MUTATION;
                     break;
                 default:
             }
@@ -82,12 +80,10 @@ public class JcrLiveOperationsTrackerInstrumentation implements Instrumentation 
         HttpServletResponse response = ContextUtil.getHttpServletResponse(parameters.getGraphQLContext());
         if (response != null && !response.isCommitted()) {
             // Set the header only if the live workspace is used
-            if (jcrTrackerInstrumentationState.hasLiveQuery) {
-                log.debug("The GraphQL request contains a query on the live JCR workspace, setting the http header {} :{}", LIVE_OPERATION_HEADER, QUERY_OPERATION);
-                response.setHeader(LIVE_OPERATION_HEADER, QUERY_OPERATION);
-            } else if (jcrTrackerInstrumentationState.hasLiveMutation) {
-                log.debug("The GraphQL request contains a mutation on the live JCR workspace, setting the http header {} :{}", LIVE_OPERATION_HEADER, MUTATION_OPERATION);
-                response.setHeader(LIVE_OPERATION_HEADER, MUTATION_OPERATION);
+            if (jcrTrackerInstrumentationState.liveOperation != null) {
+                String operationName = jcrTrackerInstrumentationState.liveOperation.name().toLowerCase();
+                log.debug("The GraphQL request contains an operation on the live JCR workspace, setting the http header {} :{}", LIVE_OPERATION_HEADER, operationName);
+                response.setHeader(LIVE_OPERATION_HEADER, operationName);
             }
         }
         return Instrumentation.super.instrumentExecutionResult(executionResult, parameters, state);
@@ -102,7 +98,6 @@ public class JcrLiveOperationsTrackerInstrumentation implements Instrumentation 
      * Track details about a GraphQL request being executed
      */
     private static class TrackerInstrumentationState implements InstrumentationState {
-        private boolean hasLiveQuery;
-        private boolean hasLiveMutation;
+        private OperationDefinition.Operation liveOperation;
     }
 }
