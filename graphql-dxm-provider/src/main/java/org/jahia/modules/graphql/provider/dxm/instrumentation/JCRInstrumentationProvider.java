@@ -54,7 +54,6 @@ public class JCRInstrumentationProvider implements InstrumentationProvider {
     public Instrumentation getInstrumentation() {
         List<Instrumentation> instns = new ArrayList<>();
         instns.add(new JCRInstrumentation(dxGraphQLConfig));
-        instns.add(new JcrLiveOperationsTrackerInstrumentation());
         instns.addAll(instrumentations.stream()
                 .sorted(Comparator.comparingInt(JahiaInstrumentation::getPriority))
                 .map(inst -> inst.getInstrumentation(dxGraphQLConfig))

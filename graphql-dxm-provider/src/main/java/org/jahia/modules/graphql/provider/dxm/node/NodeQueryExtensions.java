@@ -15,9 +15,17 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.annotations.annotationTypes.*;
+import graphql.annotations.annotationTypes.GraphQLDefaultValue;
+import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import graphql.language.OperationDefinition;
+import graphql.schema.DataFetchingEnvironment;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 
 import java.util.function.Supplier;
 
@@ -27,8 +35,6 @@ import java.util.function.Supplier;
 @GraphQLTypeExtension(DXGraphQLProvider.Query.class)
 @GraphQLDescription("A query extension that adds a possibility to fetch nodes by their UUIDs, paths, or via an SQL2/Xpath query")
 public class NodeQueryExtensions {
-
-    public static final String WORKSPACE_PARAM_NAME = "workspace";
 
     /**
      * JCR workspace to use for the operations.
@@ -94,8 +100,9 @@ public class NodeQueryExtensions {
     @GraphQLName("jcr")
     @GraphQLNonNull
     @GraphQLDescription("JCR Queries")
-    public static GqlJcrQuery getJcr(@GraphQLName(WORKSPACE_PARAM_NAME) @GraphQLDescription("The name of the workspace to fetch the node from; "
-            + "either EDIT, LIVE, or null to use EDIT by default") @GraphQLDefaultValue(value = Workspace.DefaultWorkspaceSupplier.class) Workspace workspace) {
+    public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; "
+            + "either EDIT, LIVE, or null to use EDIT by default") @GraphQLDefaultValue(value = Workspace.DefaultWorkspaceSupplier.class) Workspace workspace, DataFetchingEnvironment environment) {
+        ContextUtil.setJcrLiveOperationHeaderIfNeeded(workspace, OperationDefinition.Operation.QUERY, environment.getGraphQlContext());
         return new GqlJcrQuery(workspace);
     }
 }

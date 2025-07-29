@@ -37,11 +37,10 @@ import java.util.stream.Collectors;
 /**
  * GraphQL root object for JCR related mutations.
  */
-@GraphQLName(GqlJcrMutation.NAME)
+@GraphQLName("JCRMutation")
 @GraphQLDescription("JCR Mutations")
 public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFieldCompleter {
 
-    public static final String NAME = "JCRMutation";
     private final NodeQueryExtensions.Workspace workspace;
     private boolean save = true;
 

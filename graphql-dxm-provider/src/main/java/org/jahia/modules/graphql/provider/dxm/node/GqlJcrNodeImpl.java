@@ -17,6 +17,7 @@ package org.jahia.modules.graphql.provider.dxm.node;
 
 import graphql.annotations.annotationTypes.*;
 import graphql.annotations.connection.GraphQLConnection;
+import graphql.language.OperationDefinition;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.LocaleUtils;
@@ -487,9 +488,10 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @Override
     @GraphQLName("nodeInWorkspace")
     @GraphQLDescription("GraphQL representation of this node in certain workspace")
-    public GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace) {
+    public GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace, DataFetchingEnvironment environment) {
         try {
             JCRNodeWrapper target = JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue()).getNodeByIdentifier(node.getIdentifier());
+            ContextUtil.setJcrLiveOperationHeaderIfNeeded(workspace, OperationDefinition.Operation.QUERY, environment.getGraphQlContext());
             return SpecializedTypesHandler.getNode(target);
         } catch (ItemNotFoundException e) {
             return null;
@@ -653,6 +655,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
             String url = getNodeURL(this.node, workspace.getValue(), LanguageCodeConverters.languageCodeToLocale(language), findDisplayable);
             HttpServletResponse httpServletResponse = ContextUtil.getHttpServletResponse(environment.getGraphQlContext());
             HttpServletRequest httpServletRequest = ContextUtil.getHttpServletRequest(environment.getGraphQlContext());
+            ContextUtil.setJcrLiveOperationHeaderIfNeeded(workspace, OperationDefinition.Operation.QUERY, httpServletResponse);
             return urlRewriteService.rewriteOutbound(url, ServletUtil.unwrapRequest(httpServletRequest), httpServletResponse);
         } catch (RepositoryException | ServletException | IOException | InvocationTargetException e) {
             throw new DataFetchingException(e);

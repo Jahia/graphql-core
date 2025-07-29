@@ -15,11 +15,16 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
-import graphql.annotations.annotationTypes.*;
+import graphql.annotations.annotationTypes.GraphQLDefaultValue;
+import graphql.annotations.annotationTypes.GraphQLDescription;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import graphql.language.OperationDefinition;
+import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
-
-import javax.jcr.RepositoryException;
 
 /**
  * A mutation extension that adds a possibility to modify JCR nodes.
@@ -37,8 +42,9 @@ public class NodeMutationExtensions {
     @GraphQLField
     @GraphQLName("jcr")
     @GraphQLDescription("JCR Mutation")
-    public static GqlJcrMutation getJcr(@GraphQLName(NodeQueryExtensions.WORKSPACE_PARAM_NAME) @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") @GraphQLDefaultValue(value = NodeQueryExtensions.Workspace.DefaultWorkspaceSupplier.class) NodeQueryExtensions.Workspace workspace,
-                                        @GraphQLName("save") @GraphQLDescription("Should save") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean save) {
+    public static GqlJcrMutation getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default") @GraphQLDefaultValue(value = NodeQueryExtensions.Workspace.DefaultWorkspaceSupplier.class) NodeQueryExtensions.Workspace workspace,
+                                        @GraphQLName("save") @GraphQLDescription("Should save") @GraphQLDefaultValue(GqlUtils.SupplierTrue.class) boolean save, DataFetchingEnvironment environment) {
+        ContextUtil.setJcrLiveOperationHeaderIfNeeded(workspace, OperationDefinition.Operation.MUTATION, environment.getGraphQlContext());
         return new GqlJcrMutation(workspace, save);
     }
 }
