@@ -1,0 +1,12 @@
+mutation ($path:String!, $name1: String!, $name2: String!, $nodeType: String!, $workspace1: Workspace!, $workspace2: Workspace!) {
+    jcr1: jcr(workspace: $workspace1) {
+        addNode(parentPathOrId: $path,name: $name1, primaryNodeType: $nodeType) {
+            createVersion
+        }
+    }
+    jcr2: jcr(workspace: $workspace2) {
+        addNode(parentPathOrId: $path,name: $name2, primaryNodeType: $nodeType) {
+            createVersion
+        }
+    }
+}

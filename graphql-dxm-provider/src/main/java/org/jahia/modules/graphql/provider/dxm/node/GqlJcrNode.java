@@ -254,7 +254,7 @@ public interface GqlJcrNode {
     @GraphQLField
     @GraphQLName("nodeInWorkspace")
     @GraphQLDescription("GraphQL representation of this node in certain workspace")
-    GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace);
+    GqlJcrNode getNodeInWorkspace(@GraphQLName("workspace") @GraphQLDescription("The target workspace") @GraphQLNonNull NodeQueryExtensions.Workspace workspace, DataFetchingEnvironment environment);
 
     /**
      * Check if the current user has a specific permission

@@ -18,6 +18,10 @@ package org.jahia.modules.graphql.provider.dxm.util;
 import graphql.GraphQLContext;
 import graphql.kickstart.execution.context.DefaultGraphQLContext;
 import graphql.kickstart.servlet.context.GraphQLServletContext;
+import graphql.language.OperationDefinition;
+import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -27,11 +31,15 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class ContextUtil {
 
+    private static final Logger log = LoggerFactory.getLogger(ContextUtil.class);
+    private static final String LIVE_OPERATION_HEADER = "X-Jahia-Live-Operation";
+
     private ContextUtil() {
     }
 
     /**
      * Get request if http context
+     *
      * @param context context
      * @return response
      */
@@ -53,6 +61,7 @@ public class ContextUtil {
 
     /**
      * Get response if http context
+     *
      * @param context context
      * @return response
      */
@@ -70,5 +79,35 @@ public class ContextUtil {
         }
 
         return null;
+    }
+
+    /**
+     * Conditionally sets the HTTP header {@value LIVE_OPERATION_HEADER} on the response if the specified workspace is "live".
+     * The header value will be the lower-case name of the provided GraphQL operation.
+     * <p>
+     * The HTTP response is retrieved from the given {@link GraphQLContext}.
+     *
+     * @param workspace      the JCR workspace to check
+     * @param operation      the GraphQL operation (query, mutation, or subscription)
+     * @param graphQLContext the GraphQL context used to obtain the {@link HttpServletResponse}
+     */
+    public static void setJcrLiveOperationHeaderIfNeeded(NodeQueryExtensions.Workspace workspace, OperationDefinition.Operation operation, GraphQLContext graphQLContext) {
+        setJcrLiveOperationHeaderIfNeeded(workspace, operation, getHttpServletResponse(graphQLContext));
+    }
+
+    /**
+     * Conditionally sets the HTTP header {@value LIVE_OPERATION_HEADER} on the provided response if the specified workspace is "live".
+     * The header value will be the lower-case name of the provided GraphQL operation.
+     *
+     * @param workspace the JCR workspace to check
+     * @param operation the GraphQL operation (query, mutation, or subscription)
+     * @param response  the HTTP response on which to set the header (can be {@code null})
+     */
+    public static void setJcrLiveOperationHeaderIfNeeded(NodeQueryExtensions.Workspace workspace, OperationDefinition.Operation operation, HttpServletResponse response) {
+        if (response != null && NodeQueryExtensions.Workspace.LIVE.equals(workspace)) {
+            String operationName = operation.name().toLowerCase();
+            log.debug("The 'live' workspace is used, setting the http header {}: {}", LIVE_OPERATION_HEADER, operationName);
+            response.setHeader(LIVE_OPERATION_HEADER, operationName);
+        }
     }
 }

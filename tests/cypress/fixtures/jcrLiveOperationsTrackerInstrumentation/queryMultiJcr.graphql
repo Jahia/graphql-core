@@ -1,0 +1,8 @@
+query($workspace1: Workspace!, $workspace2: Workspace!) {
+    jcr1: jcr(workspace: $workspace1) {
+        workspace
+    }
+    jcr2: jcr(workspace: $workspace2) {
+        workspace
+    }
+}

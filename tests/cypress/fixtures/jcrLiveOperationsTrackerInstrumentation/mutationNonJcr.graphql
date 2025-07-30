@@ -1,0 +1,5 @@
+mutation {
+    jwtToken(scopes:["foo"]) {
+        id
+    }
+}

@@ -1,0 +1,7 @@
+mutation ($path:String!, $name: String!, $nodeType: String!, $workspace: Workspace) {
+    jcr(workspace: $workspace) {
+        addNode(parentPathOrId: $path,name: $name, primaryNodeType: $nodeType) {
+            createVersion
+        }
+    }
+}
