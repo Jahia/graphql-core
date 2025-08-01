@@ -54,6 +54,7 @@ public class ZipUtils {
     static final int BUFFER = 512;
     static final long MAX_SIZE = 0x6400000; // Max size of unzipped data, 100MB
     static final int MAX_ENTRIES = 1024;      // Max number of files
+    protected static final String DEFAULT_MIME_TYPE = "application/octet-stream";
 
     private ZipUtils() {
     }
@@ -237,11 +238,12 @@ public class ZipUtils {
 
     public static String getMimeType(String name, InputStream inputStream) throws IOException {
         String mimeType = TIKA.detect(name);
-        if ((mimeType == null || StringUtils.equals("application/octet-stream", mimeType)) && inputStream != null) {
+        if ((mimeType == null || DEFAULT_MIME_TYPE.equals(mimeType)) && inputStream != null) {
             mimeType = TIKA.detect(inputStream);
         }
         if (mimeType == null) {
-            logger.warn("Unable to resolve mime type for file {}", name);
+            logger.warn("Unable to resolve mime type for file {}, using the default one: {}", name, DEFAULT_MIME_TYPE);
+            mimeType = DEFAULT_MIME_TYPE;
         }
         return mimeType;
     }
