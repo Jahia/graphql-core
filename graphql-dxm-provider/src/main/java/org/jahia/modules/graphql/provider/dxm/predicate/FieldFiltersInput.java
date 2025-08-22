@@ -38,8 +38,8 @@ public class FieldFiltersInput {
      * @param multicriteriaEvaluation The way to combine multiple individual field filters; null to use ALL by default
      * @param filters Individual field filters
      */
-    public FieldFiltersInput(@GraphQLName("multi") MulticriteriaEvaluation multicriteriaEvaluation,
-                             @GraphQLName("filters") @GraphQLNonNull Collection<FieldFilterInput> filters) {
+    public FieldFiltersInput(@GraphQLName("multi") @GraphQLDescription("The way to combine multiple individual field filters; null to use ALL by default") MulticriteriaEvaluation multicriteriaEvaluation,
+                             @GraphQLName("filters") @GraphQLNonNull @GraphQLDescription("Individual field filters") Collection<FieldFilterInput> filters) {
         this.multicriteriaEvaluation = multicriteriaEvaluation;
         this.filters = filters;
     }

@@ -15,6 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.workflow;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
@@ -32,10 +33,12 @@ import java.util.stream.Collectors;
  * Extensions for JCRNodeMutation
  */
 @GraphQLTypeExtension(DXGraphQLProvider.Mutation.class)
+@GraphQLDescription("Workflow mutation extensions")
 public class WorkflowMutationExtensions {
 
     @GraphQLField
-    public static Collection<GqlWorkflowMutation> mutateWorkflows(@GraphQLName("definition") String workflowDefinitionId) {
+    @GraphQLDescription("Get workflow mutations for a specific workflow definition")
+    public static Collection<GqlWorkflowMutation> mutateWorkflows(@GraphQLName("definition") @GraphQLDescription("The workflow definition ID") String workflowDefinitionId) {
         WorkflowService service = BundleUtils.getOsgiService(WorkflowService.class, null);
         List<Workflow> wfs = service.getWorkflowsForDefinition(StringUtils.substringAfter(workflowDefinitionId,":"), null);
         return wfs.stream().map(GqlWorkflowMutation::new).collect(Collectors.toList());

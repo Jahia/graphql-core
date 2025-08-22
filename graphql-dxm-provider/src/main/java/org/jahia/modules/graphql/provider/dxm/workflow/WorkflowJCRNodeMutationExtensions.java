@@ -16,6 +16,7 @@
 package org.jahia.modules.graphql.provider.dxm.workflow;
 
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
@@ -35,6 +36,7 @@ import java.util.HashMap;
  * Extensions for JCRNodeMutation
  */
 @GraphQLTypeExtension(GqlJcrNodeMutation.class)
+@GraphQLDescription("JCR node workflow mutation extensions")
 public class WorkflowJCRNodeMutationExtensions {
 
 
@@ -45,7 +47,8 @@ public class WorkflowJCRNodeMutationExtensions {
     }
 
     @GraphQLField
-    public boolean startWorkflow(@GraphQLName("definition") String workflowDefinitionId, @GraphQLName("language") String language) {
+    @GraphQLDescription("Start a workflow process on this node")
+    public boolean startWorkflow(@GraphQLName("definition") @GraphQLDescription("The workflow definition ID") String workflowDefinitionId, @GraphQLName("language") @GraphQLDescription("The language to use for the workflow") String language) {
         WorkflowService service = BundleUtils.getOsgiService(WorkflowService.class, null);
         try {
             JCRNodeWrapper node = NodeHelper.getNodeInLanguage(nodeMutation.getNode().getNode(), language);

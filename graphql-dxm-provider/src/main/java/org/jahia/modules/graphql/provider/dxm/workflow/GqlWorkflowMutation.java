@@ -15,6 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.workflow;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.osgi.BundleUtils;
@@ -22,6 +23,7 @@ import org.jahia.services.workflow.Workflow;
 import org.jahia.services.workflow.WorkflowService;
 
 @GraphQLName("WorkflowMutation")
+@GraphQLDescription("Workflow mutation operations")
 public class GqlWorkflowMutation {
 
     private Workflow workflowProcess;
@@ -32,11 +34,13 @@ public class GqlWorkflowMutation {
 
     @GraphQLField
     @GraphQLName("workflow")
+    @GraphQLDescription("Get the workflow associated with this mutation")
     public GqlWorkflow getWorkflow() {
         return new GqlWorkflow(workflowProcess);
     }
 
     @GraphQLField
+    @GraphQLDescription("Abort the workflow process")
     public boolean abortWorkflow() {
         WorkflowService service = BundleUtils.getOsgiService(WorkflowService.class, null);
         service.abortProcess(workflowProcess.getId(), workflowProcess.getProvider());

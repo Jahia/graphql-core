@@ -348,14 +348,17 @@ public class DXGraphQLProvider implements
     }
 
     @GraphQLName("Query")
+    @GraphQLDescription("Root Query type")
     public static class Query {
     }
 
     @GraphQLName("Mutation")
+    @GraphQLDescription("Root Mutation type")
     public static class Mutation {
     }
 
     @GraphQLName("Subscription")
+    @GraphQLDescription("Root Subscription type")
     public static class Subscription {
     }
 
