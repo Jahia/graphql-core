@@ -15,6 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.publication;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.services.content.PublicationInfo;
 
@@ -25,18 +26,30 @@ import java.util.Map;
  * Possible publication statuses of the JCR node.
  */
 @GraphQLName("PublicationStatus")
+@GraphQLDescription("Possible publication statuses of the JCR node")
 public enum GqlPublicationStatus {
 
+    @GraphQLDescription("Content is published and up to date")
     PUBLISHED(PublicationInfo.PUBLISHED),
+    @GraphQLDescription("Content has been modified since last publication")
     MODIFIED(PublicationInfo.MODIFIED),
+    @GraphQLDescription("Content has never been published")
     NOT_PUBLISHED(PublicationInfo.NOT_PUBLISHED),
+    @GraphQLDescription("Content was unpublished")
     UNPUBLISHED(PublicationInfo.UNPUBLISHED),
+    @GraphQLDescription("Mandatory language is unpublishable")
     MANDATORY_LANGUAGE_UNPUBLISHABLE(PublicationInfo.MANDATORY_LANGUAGE_UNPUBLISHABLE),
+    @GraphQLDescription("Content has been modified in live workspace")
     LIVE_MODIFIED(PublicationInfo.LIVE_MODIFIED),
+    @GraphQLDescription("Content exists only in live workspace")
     LIVE_ONLY(PublicationInfo.LIVE_ONLY),
+    @GraphQLDescription("Content has publication conflicts")
     CONFLICT(PublicationInfo.CONFLICT),
+    @GraphQLDescription("Mandatory language is valid")
     MANDATORY_LANGUAGE_VALID(PublicationInfo.MANDATORY_LANGUAGE_VALID),
+    @GraphQLDescription("Content has been deleted")
     DELETED(PublicationInfo.DELETED),
+    @GraphQLDescription("Content is marked for deletion")
     MARKED_FOR_DELETION(PublicationInfo.MARKED_FOR_DELETION);
 
     private static final Map<Integer, GqlPublicationStatus> PUBLICATION_STATUS_BY_STATUS_VALUE = new HashMap<Integer,GqlPublicationStatus>();

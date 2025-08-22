@@ -15,6 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.service.tags;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 
@@ -24,6 +25,7 @@ import java.util.Map.Entry;
  * GraphQL representation of a Tag - generic implementation.
  */
 @GraphQLName("GenericTagNode")
+@GraphQLDescription("Generic tag node representation")
 public class GqlTagNodeImpl implements GqlTagNode {
 
     private Entry<String, Long> node;
@@ -40,6 +42,7 @@ public class GqlTagNodeImpl implements GqlTagNode {
     @Override
     @GraphQLNonNull
     @GraphQLName("name")
+    @GraphQLDescription("The tag name")
     public String getName() {
         return node.getKey();
     }
@@ -47,6 +50,7 @@ public class GqlTagNodeImpl implements GqlTagNode {
     @Override
     @GraphQLNonNull
     @GraphQLName("occurrences")
+    @GraphQLDescription("Number of occurrences of this tag")
     public Long getOccurrences() {
         return node.getValue();
     }

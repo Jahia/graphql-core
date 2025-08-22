@@ -160,10 +160,26 @@ public class GqlBackgroundJob {
     }
 
     public enum GqlBackgroundJobStatus {
-        ADDED, SCHEDULED, EXECUTING, SUCCESSFUL, FAILED, CANCELED
+        @GraphQLDescription("Job has been added to the queue")
+        ADDED,
+        @GraphQLDescription("Job has been scheduled for execution")
+        SCHEDULED,
+        @GraphQLDescription("Job is currently executing")
+        EXECUTING,
+        @GraphQLDescription("Job completed successfully")
+        SUCCESSFUL,
+        @GraphQLDescription("Job execution failed")
+        FAILED,
+        @GraphQLDescription("Job was canceled")
+        CANCELED
     }
 
     public enum GqlBackgroundJobState {
-        STARTED, VETOED, FINISHED
+        @GraphQLDescription("Job execution has started")
+        STARTED,
+        @GraphQLDescription("Job execution was vetoed/prevented")
+        VETOED,
+        @GraphQLDescription("Job execution has finished")
+        FINISHED
     }
 }

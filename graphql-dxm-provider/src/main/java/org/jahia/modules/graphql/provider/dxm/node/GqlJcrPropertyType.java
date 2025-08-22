@@ -15,6 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
 
 import javax.jcr.PropertyType;
@@ -23,19 +24,33 @@ import java.util.HashMap;
 import java.util.Map;
 
 @GraphQLName("JCRPropertyType")
+@GraphQLDescription("JCR property type enumeration")
 public enum GqlJcrPropertyType {
+    @GraphQLDescription("Boolean property type")
     BOOLEAN(PropertyType.BOOLEAN),
+    @GraphQLDescription("Date property type")
     DATE(PropertyType.DATE),
+    @GraphQLDescription("Decimal property type")
     DECIMAL(PropertyType.DECIMAL),
+    @GraphQLDescription("Long property type")
     LONG(PropertyType.LONG),
+    @GraphQLDescription("Double property type")
     DOUBLE(PropertyType.DOUBLE),
+    @GraphQLDescription("Binary property type")
     BINARY(PropertyType.BINARY),
+    @GraphQLDescription("Name property type")
     NAME(PropertyType.NAME),
+    @GraphQLDescription("Path property type")
     PATH(PropertyType.PATH),
+    @GraphQLDescription("Reference property type")
     REFERENCE(PropertyType.REFERENCE),
+    @GraphQLDescription("String property type")
     STRING(PropertyType.STRING),
+    @GraphQLDescription("Undefined property type")
     UNDEFINED(PropertyType.UNDEFINED),
+    @GraphQLDescription("URI property type")
     URI(PropertyType.URI),
+    @GraphQLDescription("Weak reference property type")
     WEAKREFERENCE(PropertyType.WEAKREFERENCE);
 
     private int value;
