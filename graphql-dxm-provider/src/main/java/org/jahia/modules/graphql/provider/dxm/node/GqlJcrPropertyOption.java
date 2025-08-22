@@ -15,10 +15,14 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
 
 @GraphQLName("JCRPropertyOption")
+@GraphQLDescription("JCR property option enumeration")
 public enum GqlJcrPropertyOption {
+    @GraphQLDescription("Property is encrypted")
     ENCRYPTED,
+    @GraphQLDescription("Property is not a zoned date")
     NOT_ZONED_DATE
 }
