@@ -26,6 +26,13 @@ describe('Test zip mutation', () => {
         expectMimeTypeToBe(extension, expectedMimeType);
     });
 
+    it('when unzipping a file with an jar extension, should determine its MIME type based on extension (jar-specific case)', () => {
+        const extension = 'jar';
+        const expectedMimeType = 'application/java-archive';
+        uploadAndUnzip(extension);
+        expectMimeTypeToBe(extension, expectedMimeType);
+    });
+
     it('when unzipping a file with an unknown extension, should use the fallback MIME type', () => {
         const extension = 'unknown';
         const expectedMimeType = 'application/octet-stream';
