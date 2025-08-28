@@ -2,7 +2,7 @@
 
 describe('Test admin users endpont', () => {
     before('load graphql file', () => {
-        cy.runProvisioningScript({fileName: 'admin/addLDAPConfigurationFile.json'});
+        cy.runProvisioningScript({script: { fileName: 'admin/addLDAPConfigurationFile.json', type: 'application/json'}});
         cy.login();
         cy.visit('/cms/adminframe/default/en/settings.manageUsers.html');
         cy.repeatUntil('td:contains("Filibert Alfred")', {attempts: 10});
