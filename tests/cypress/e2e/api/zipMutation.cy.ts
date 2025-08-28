@@ -5,7 +5,6 @@ describe('Test zip mutation', () => {
     const siteKey = 'testZipMutation';
 
     before('Create a site', () => {
-        deleteSite(siteKey);
         createSite(siteKey);
     });
 
