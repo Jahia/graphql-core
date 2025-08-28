@@ -5,6 +5,7 @@ describe('Test zip mutation', () => {
     const siteKey = 'testZipMutation';
 
     before('Create a site', () => {
+        deleteSite(siteKey);
         createSite(siteKey);
     });
 
@@ -22,6 +23,13 @@ describe('Test zip mutation', () => {
     it('when unzipping a file with an unknown extension but with its MIME type detectable, should determine its MIME type based on its content', () => {
         const extension = 'hol';
         const expectedMimeType = 'text/plain';
+        uploadAndUnzip(extension);
+        expectMimeTypeToBe(extension, expectedMimeType);
+    });
+
+    it('when unzipping a file with an jar extension, should determine its MIME type based on extension (jar-specific case)', () => {
+        const extension = 'jar';
+        const expectedMimeType = 'application/java-archive';
         uploadAndUnzip(extension);
         expectMimeTypeToBe(extension, expectedMimeType);
     });
