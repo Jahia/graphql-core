@@ -1,4 +1,4 @@
-import {addNode, getNodeByPath, createSite, deleteSite, setNodeProperty} from '@jahia/cypress';
+import {addNode, getNodeByPath, createSite, deleteSite, setNodeProperty, Log} from '@jahia/cypress';
 import gql from 'graphql-tag';
 
 const siteName = 'i18n-site';
@@ -108,7 +108,7 @@ function createContentNode(path: string, name: string, type: string):void {
  */
 function getLanguagesToTranslate(node: string, langTranslated: string, langToCheck: string): Cypress.Chainable {
     // Call the GraphQL query to get the languages to translate
-    cy.log(`Get languages to translate for node: ${node}, translated: ${langTranslated}, to check: ${langToCheck}`);
+    Log.info(`Get languages to translate for node: ${node}, translated: ${langTranslated}, to check: ${langToCheck}`);
     // Use the gql query to check if the given locales need translation and return the result
     return cy.apollo({
         query: gql`
@@ -128,6 +128,9 @@ function getLanguagesToTranslate(node: string, langTranslated: string, langToChe
 
 describe('Test graphql i18n calls', () => {
     before('Create a test site with i18n node', () => {
+        // Set the log level to INFO
+        Log.setVerbosity(Log.LEVEL.INFO);
+
         // Delete the site if it already exists
         deleteSite(siteName);
         // Create a test site with the languages defined in the siteLanguages array
@@ -171,57 +174,77 @@ describe('Test graphql i18n calls', () => {
     });
 
     it('Should retrieve only Active translation languages', () => {
+        cy.step('Retrieve only Active translation languages', () => {
+            cy.apollo({
+                mutationFile: 'jcr/mutateNode.graphql',
+                variables: {
+                    pathOrId: `/sites/${siteName}`,
+                    properties: [
+                        {name: 'j:inactiveLanguages', values: ['fr']},
+                        {name: 'j:inactiveLiveLanguages', values: ['fr']},
+                        {name: 'j:languages', values: ['en', 'de']}
+                    ]
+                }
+            });
+        });
+
         // STEP 1: Disable FR language
         // @note 3 properties are being changed, because adjusting just 'j:inactiveLanguages' doesn't have changes reflected on UI
-        cy.log('Disable FR language');
-        cy.apollo({
-            mutationFile: 'jcr/mutateNode.graphql',
-            variables: {
-                pathOrId: `/sites/${siteName}`,
-                properties: [
-                    {name: 'j:inactiveLanguages', values: ['fr']},
-                    {name: 'j:inactiveLiveLanguages', values: ['fr']},
-                    {name: 'j:languages', values: ['en', 'de']}
-                ]
-            }
+        cy.step('Disable FR language', () => {
+            cy.apollo({
+                mutationFile: 'jcr/mutateNode.graphql',
+                variables: {
+                    pathOrId: `/sites/${siteName}`,
+                    properties: [
+                        {name: 'j:inactiveLanguages', values: ['fr']},
+                        {name: 'j:inactiveLiveLanguages', values: ['fr']},
+                        {name: 'j:languages', values: ['en', 'de']}
+                    ]
+                }
+            });
         });
 
         // STEP 2: Check if the language is set as inactive
-        cy.log('Fetch site properties and check if inactive language(s) are set');
-        getNodeByPath(`/sites/${siteName}`, null).then(response => {
-            const properties = new SiteProperties(response?.data?.jcr?.nodeByPath?.properties);
-            expect(properties.get('j:inactiveLanguages').values).to.have.length(1);
-            expect(properties.get('j:inactiveLanguages').values).to.include('fr');
-            expect(properties.get('j:inactiveLiveLanguages').values).to.have.length(1);
-            expect(properties.get('j:inactiveLiveLanguages').values).to.include('fr');
-            expect(properties.get('j:languages').values).to.have.length(2);
-            expect(properties.get('j:languages').values).to.include('en');
-            expect(properties.get('j:languages').values).to.include('de');
+        cy.step('Fetch site properties and check if inactive language(s) are set', () => {
+            getNodeByPath(`/sites/${siteName}`, null).then(response => {
+                const properties = new SiteProperties(response?.data?.jcr?.nodeByPath?.properties);
+                expect(properties.get('j:inactiveLanguages').values).to.have.length(1);
+                expect(properties.get('j:inactiveLanguages').values).to.include('fr');
+                expect(properties.get('j:inactiveLiveLanguages').values).to.have.length(1);
+                expect(properties.get('j:inactiveLiveLanguages').values).to.include('fr');
+                expect(properties.get('j:languages').values).to.have.length(2);
+                expect(properties.get('j:languages').values).to.include('en');
+                expect(properties.get('j:languages').values).to.include('de');
+                Log.json(Log.LEVEL.DEBUG, response.data);
+            });
         });
 
         // STEP 3: Fetch and validate ACTIVE languages ONLY
-        cy.log('Fetch and validate ACTIVE languages ONLY');
-        cy.apollo({
-            query: gql`
-                query {
-                    jcr(workspace: EDIT) {
-                        nodeByPath(path: "${contentNodePath}") {
-                            translationLanguages(isActiveOnly:true)
+        cy.step('Fetch and validate ACTIVE languages ONLY', () => {
+            Log.info('Fetch and validate ACTIVE languages ONLY').then(() => {
+                cy.apollo({
+                    query: gql`
+                        query {
+                            jcr(workspace: EDIT) {
+                                nodeByPath(path: "${contentNodePath}") {
+                                    translationLanguages(isActiveOnly:true)
+                                }
+                            }
                         }
-                    }
-                }
-            `
-        }).then(response => {
-            const property = response?.data?.jcr?.nodeByPath?.translationLanguages;
-            expect(property).to.have.length(1);
-            expect(property).to.include('en');
+                    `
+                }).then(response => {
+                    const property = response?.data?.jcr?.nodeByPath?.translationLanguages;
+                    expect(property).to.have.length(1);
+                    expect(property).to.include('en');
+                });
+            });
         });
     });
 
     it('Should retrieve "Required Translation" languages', () => {
         // Adjust `jcr:title` property for the first content folder
         // (update `en` translation first and then `fr` one)
-        cy.log('Adjust jcr:title property for the first content folder ("en" translation first and then "fr" one)');
+        Log.info('Adjust jcr:title property for the first content folder ("en" translation first and then "fr" one)');
         setNodeProperty(`${contentRootPath}/${contentFoldersList[0]}`, 'jcr:title', i18nTitle.en + (Math.random() * Date.now()), 'en');
         setNodeProperty(`${contentRootPath}/${contentFoldersList[0]}`, 'jcr:title', i18nTitle.fr + (Math.random() * Date.now()), 'fr');
 
@@ -235,7 +258,7 @@ describe('Test graphql i18n calls', () => {
             });
 
         // Adjust `jcr:title` property for the first content folder (`en` translation is now the most recent one)
-        cy.log('Adjust jcr:title property for the first content folder (making "en" translation the most recent one)');
+        Log.info('Adjust jcr:title property for the first content folder (making "en" translation the most recent one)');
         setNodeProperty(`${contentRootPath}/${contentFoldersList[0]}`, 'jcr:title', i18nTitle.en + (Math.random() * Date.now()), 'en');
 
         // Retrieve languages that need to be translated

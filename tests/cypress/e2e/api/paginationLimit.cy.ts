@@ -31,7 +31,7 @@ describe('Pagination Limit test', () => {
                 }
             `
         });
-        cy.runProvisioningScript({fileName: 'paginationLimit5000.json'});
+        cy.runProvisioningScript({script: {fileName: 'paginationLimit5000.json', type: 'application/json'}});
         cy.waitUntil(() => cy.task('sshCommand', sshCommands)
             .then(waitUntilTestFcnDisable), waitUntilOptions);
     });
@@ -60,7 +60,7 @@ describe('Pagination Limit test', () => {
     });
 
     it('Finds all descendants nodes with limit', () => {
-        cy.runProvisioningScript({fileName: 'paginationLimit100.json'});
+        cy.runProvisioningScript({script: {fileName: 'paginationLimit100.json', type: 'application/json'}});
         cy.waitUntil(() => cy.task('sshCommand', sshCommands)
             .then(waitUntilTestFcnEnable), waitUntilOptions);
         cy.apollo({
