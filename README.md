@@ -1,4 +1,3 @@
-[![CircleCI](https://circleci.com/gh/Jahia/graphql-core/tree/master.svg?style=svg)](https://circleci.com/gh/Jahia/graphql-core/tree/master)
 ![GitHub tag (latest by version)](https://img.shields.io/github/v/tag/Jahia/graphql-core?sort=semver)
 ![License](https://img.shields.io/github/license/jahia/graphql-core)
 
