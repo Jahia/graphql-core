@@ -1,4 +1,4 @@
-FROM cimg/openjdk:8.0.275-browsers
+FROM ghcr.io/jahia/jahia-docker-mvn-cache:8-jdk-noble-mvn-loaded
 
 RUN sudo apt-get update 
 RUN sudo apt-get install -y openjdk-8-jre-headless locales 

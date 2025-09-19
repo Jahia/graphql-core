@@ -23,10 +23,10 @@ jobs:
     env:
       NEXUS_INTERNAL_URL: ${{ secrets.NEXUS_INTERNAL_URL }}
     container:
-      image: jahia/cimg-mvn-cache:ga_cimg_openjdk_11.0.20-node
+      image: ghcr.io/jahia/jahia-docker-mvn-cache:11-jdk-noble-mvn-loaded
       credentials:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        username: ${{ secrets.GH_PACKAGES_USERNAME }}
+        password: ${{ secrets.GH_PACKAGES_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: jahia/jahia-modules-action/build@v2
@@ -54,7 +54,7 @@ jobs:
     needs: build   
     secrets: inherit
     with:
-      jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
+      jahia_image: ghcr.io/jahia/jahia-ee-dev:8-SNAPSHOT
       module_id: graphql-dxm-provider
       testrail_project: GraphQL Core module
       pagerduty_skip_notification: true

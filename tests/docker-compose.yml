@@ -16,7 +16,7 @@ services:
         networks:
             - stack
     dockerldap:
-        image: "jahia/docker-openldap:${LDAP_TAG}"
+        image: "ghcr.io/jahia/docker-openldap:${LDAP_TAG}"
         container_name: dockerldap
         environment:
             LDAP_LOG_LEVEL: "256"
