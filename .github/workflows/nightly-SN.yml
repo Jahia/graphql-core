@@ -10,7 +10,7 @@ jobs:
     uses:  Jahia/jahia-modules-action/.github/workflows/reusable-integration-tests.yml@v2
     secrets: inherit
     with:
-      jahia_image: jahia/jahia-ee-dev:8-SNAPSHOT
+      jahia_image: ghcr.io/jahia/jahia-ee-dev:8-SNAPSHOT
       module_id: graphql-dxm-provider
       testrail_project: GraphQL Core module
       pagerduty_incident_service: graphql-dxm-provider-JahiaSN
