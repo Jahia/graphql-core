@@ -120,7 +120,7 @@
             org.apache.taglibs.standard.tag.rt.fmt,
             org.apache.taglibs.standard.tei,
             org.apache.taglibs.unstandard,
-            org.apache.tika;version="[1.27,3)",
+            org.apache.tika;version="[1.27,4)",
             org.jahia.api,
             org.jahia.bin,
             org.jahia.bin.filters.jcr,
