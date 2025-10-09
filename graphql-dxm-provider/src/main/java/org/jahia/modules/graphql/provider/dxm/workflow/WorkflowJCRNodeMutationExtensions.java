@@ -16,6 +16,7 @@
 package org.jahia.modules.graphql.provider.dxm.workflow;
 
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
@@ -45,7 +46,10 @@ public class WorkflowJCRNodeMutationExtensions {
     }
 
     @GraphQLField
-    public boolean startWorkflow(@GraphQLName("definition") String workflowDefinitionId, @GraphQLName("language") String language) {
+    @GraphQLDescription("Start publication workflow for this node")
+    public boolean startWorkflow(
+            @GraphQLName("definition") @GraphQLDescription("Name of workflow definition process to start") String workflowDefinitionId,
+            @GraphQLName("language") @GraphQLDescription("Language of the node to publish") String language) {
         WorkflowService service = BundleUtils.getOsgiService(WorkflowService.class, null);
         try {
             JCRNodeWrapper node = NodeHelper.getNodeInLanguage(nodeMutation.getNode().getNode(), language);
@@ -55,6 +59,5 @@ public class WorkflowJCRNodeMutationExtensions {
         }
         return true;
     }
-
 
 }
