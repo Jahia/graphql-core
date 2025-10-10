@@ -1,7 +1,7 @@
-query($path: String!, $view: String) {
+query($path: String!, $view: String, $isEditMode: Boolean = false) {
     jcr {
         nodeByPath(path: $path) {
-            renderedContent(view: $view) {
+            renderedContent(view: $view, isEditMode: $isEditMode) {
                 output
             }
         }

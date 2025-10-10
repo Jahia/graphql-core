@@ -10,6 +10,48 @@ describe('Test graphql rendering', () => {
         deleteSite(sitename);
     });
 
+    /**
+     * Helper function to add a test node including parent page and placeholder to the given parentPath
+     * @param node Object containing the following properties:
+     *  - parentPath: Path where the page should be created (e.g. /sites/mysite/home)
+     *  - pageName: Name of the page to create (e.g. myPage)
+     *  - pageTitle: Title of the page to create (e.g. My Page)
+     *  - name: Name of the actual test node (e.g. myText)
+     *  - type: Node type of the actual test node (e.g. jnt:text)
+     *  - value: Value of the actual test node (e.g. 'This is my text')
+     */
+    const addTestNode = (node: {
+        parentPath: string;
+        pageName: string;
+        pageTitle: string;
+        name: string;
+        type: string;
+        value: string;
+    }) => {
+        addNode({
+            parentPathOrId: node.parentPath,
+            name: node.pageName,
+            primaryNodeType: 'jnt:page',
+            properties: [
+                {name: 'jcr:title', value: node.pageTitle, language: 'en'},
+                {name: 'j:templateName', value: 'simple'}
+            ],
+            children: [
+                {
+                    name: 'landing',
+                    primaryNodeType: 'jnt:contentList',
+                    children: [
+                        {
+                            name: node.name,
+                            primaryNodeType: node.type,
+                            properties: [{name: 'text', value: node.value, language: 'en'}]
+                        }
+                    ]
+                }
+            ]
+        });
+    };
+
     it('Check if node (page) is displayable', () => {
         addNode({
             parentPathOrId: '/sites/' + sitename + '/home',
@@ -50,32 +92,86 @@ describe('Test graphql rendering', () => {
         deleteNode('/sites/' + sitename + '/home/listA');
     });
 
-    it('Check output of renderedContent for node with richtext', () => {
-        addNode({
-            parentPathOrId: '/sites/' + sitename + '/home',
-            name: 'news1',
-            primaryNodeType: 'gqltest:news',
-            properties: [
-                {name: 'title', language: 'en', value: 'My Test News One'},
-                {name: 'description', values: [
-                    '<p>Richtext1</p>\\n\\n<p>Back to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/home.html\\">Home</a></p>\\n',
-                    '<p>Richtext2</p>\\n\\n<p>Go to <a href=\\"/cms/{mode}/{lang}/sites/' + sitename + '/other.html\\">Other</a></p>\\n'
-                ]}
-            ]
-        });
+    it('Check output of renderedContent for node with RichText', () => {
+        // Test-node description, including parent page, placeholder ('landing') and destination node
+        const testNode = {
+            parentPath: `/sites/${sitename}/home`,
+            pageName: 'richTextPage',
+            pageTitle: 'Rich Text Page',
+            name: 'rich-text',
+            path: `/sites/${sitename}/home/richTextPage/landing/rich-text`,
+            type: 'jnt:bigText',
+            value: `<p>Richtext</p>\\n\\n<p>Back to <a href="/cms/{mode}/{lang}/sites/${sitename}/home.html">Home</a></p>\\n`
+        };
+        const expectedContent = `<p>Richtext</p>\\n\\n<p>Back to <a href="/cms/render/default/en/sites/${sitename}/home.html">Home</a></p>\\n`;
+        // Create test-node itself
+        addTestNode(testNode);
+
+        // Check renderedContent in LIVE mode for the text node
+        // Should return the text value of the node with the link filtered
+        // (i.e. {mode} and {lang} replaced with actual values)
         cy.apollo({
             queryFile: 'jcr/nodeRenderedContent.graphql',
             variables: {
-                path: '/sites/' + sitename + '/home/news1',
-                view: 'html'
+                path: testNode.path,
+                view: 'html',
+                isEditMode: false
             }
         }).should(result => {
             const output = result?.data?.jcr?.nodeByPath?.renderedContent.output;
-            expect(output).not.contains('{lang}');
+            expect(output).contains(expectedContent);
             expect(output).not.contains('{workspace}');
+            expect(output).not.contains('{lang}');
             expect(output).not.contains('{mode}');
         });
-        deleteNode('/sites/' + sitename + '/home/news1');
+
+        // Cleanup - delete test-node including parent page
+        deleteNode(`${testNode.parentPath}/${testNode.pageName}`);
+    });
+
+    it('Check output of renderedContent in EDIT workspace', () => {
+        // Test-node description, including parent page, placeholder ('landing') and destination node
+        const testNode = {
+            parentPath: `/sites/${sitename}/home`,
+            pageName: 'editModePage',
+            pageTitle: 'EDIT Mode Page',
+            name: 'simple-text',
+            path: `/sites/${sitename}/home/editModePage/landing/simple-text`,
+            type: 'jnt:text',
+            value: 'test text for EDIT mode'
+        };
+        // Create test-node itself
+        addTestNode(testNode);
+
+        // Check renderedContent in EDIT mode for the text node
+        // Should return the text value of the node
+        cy.apollo({
+            queryFile: 'jcr/nodeRenderedContent.graphql',
+            variables: {
+                path: testNode.path,
+                isEditMode: true
+            }
+        }).should(result => {
+            const output = result?.data?.jcr?.nodeByPath?.renderedContent.output;
+            expect(output).contains(testNode.value);
+        });
+
+        // Check renderedContent in EDIT mode for the page node itself (without view)
+        // Should return a message that no rendering is set for the node
+        // (as the page has no rendering, but its child nodes have)
+        cy.apollo({
+            queryFile: 'jcr/nodeRenderedContent.graphql',
+            variables: {
+                path: `/sites/${sitename}/home/${testNode.pageName}`,
+                isEditMode: true
+            }
+        }).should(result => {
+            const output = result?.data?.jcr?.nodeByPath?.renderedContent.output;
+            expect(output).contains(`<p>\r\n    No rendering set for node: ${testNode.pageName}<br/>Types: [jnt:page]</p>`);
+        });
+
+        // Cleanup - delete test-node including parent page
+        deleteNode(`${testNode.parentPath}/${testNode.pageName}`);
     });
 
     it('Check if property renderedValue and renderedValues are populated correctly', () => {
