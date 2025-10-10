@@ -14,11 +14,12 @@ describe('Test admin jahia system endpoint', () => {
 
             getJahiaVersion().then(jahiaVersion => {
                 cy.log(JSON.stringify(jahiaVersion)).then(() => {
-                    if (compare(jahiaVersion.release.replace('-SNAPSHOT', ''), '8.2.1', '<')) {
-                        expect(response.data.admin.jahia.system.java.runtimeName).to.equal('OpenJDK Runtime Environment');
-                    } else {
-                        // With TECH-2029 the GraalVM vendor was changed, resulting in a new runtime name
+                    // Jahia 8.2.1 and 8.2.2 are using GraalVM, the rest of the versions are using OpenJDK
+                    const jahiaVersionTrimmed = jahiaVersion.release.replace('-SNAPSHOT', '');
+                    if (compare(jahiaVersionTrimmed, '8.2.1', '=') || compare(jahiaVersionTrimmed, '8.2.2', '=')) {
                         expect(response.data.admin.jahia.system.java.runtimeName).to.equal('Java(TM) SE Runtime Environment');
+                    } else {
+                        expect(response.data.admin.jahia.system.java.runtimeName).to.equal('OpenJDK Runtime Environment');
                     }
                 });
             });
