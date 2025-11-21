@@ -18,6 +18,11 @@
 import './commands';
 import addContext from 'mochawesome/addContext';
 
+// Ensure fetch is always bound to window
+if (typeof window !== 'undefined' && window.fetch) {
+    globalThis.fetch = window.fetch.bind(window);
+}
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 require('cypress-terminal-report/src/installLogsCollector')();
 // eslint-disable-next-line @typescript-eslint/no-var-requires
