@@ -1,0 +1,32 @@
+query IntrospectionQuery {
+  ...QueryIntrospection
+  __schema {
+    queryType {
+      name
+    }
+    mutationType {
+      name
+    }
+    
+  }
+  __type(name: "Query") {
+    name
+    kind
+    fields {
+      name
+      type {
+        name
+      }
+    }
+  }
+}
+
+# Test fragment for Query introspection
+fragment QueryIntrospection on Query {
+  __schema {
+    types {
+      name
+      kind
+    }
+  }
+}
