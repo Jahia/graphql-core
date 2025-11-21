@@ -15,6 +15,8 @@
  */
 package org.jahia.modules.graphql.provider.dxm.security;
 
+import graphql.GraphQLContext;
+import graphql.introspection.Introspection;
 import graphql.language.Field;
 import graphql.schema.GraphQLNamedOutputType;
 import graphql.schema.GraphQLObjectType;
@@ -24,6 +26,8 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.util.GqlTypeUtil;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
@@ -35,7 +39,15 @@ import java.util.Map;
 /**
  * Permission checker can handle permission checks on graphQL types and fields
  */
-public class GqlJcrPermissionChecker {
+public final class GqlJcrPermissionChecker {
+
+    private static final String INTROSPECTION_PERMISSION = "graphqlAdminIntrospection";
+
+    private static final Logger logger = LoggerFactory.getLogger(GqlJcrPermissionChecker.class);
+
+    private GqlJcrPermissionChecker() {
+        throw new IllegalStateException("Utility class is not meant to be instantiated");
+    }
 
     /**
      * Check the permissions on the given graphQL type and fields
@@ -90,6 +102,33 @@ public class GqlJcrPermissionChecker {
                 }
             }
         }
+    }
+
+    /**
+     * Configures introspection access through GraphQL context Introspection.INTROSPECTION_DISABLED attribute,
+     * based on user permissions.
+     * <p>
+     * This method checks if the current user has the INTROSPECTION_PERMISSION permission and enables/disables introspection accordingly,
+     * i.e. graphql error is thrown when introspection fields are included in the query, as per graphql-java implementation.
+     * In case of any errors during permission checking, introspection is disabled for safety.
+     * <p>
+     *
+     * @param context GraphQL context to update with the introspection flag
+     */
+    public static void configureIntrospectionFromPermissions(GraphQLContext context) {
+        boolean disableIntrospection = true;
+        String sessionUserId = null;
+        try {
+            JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession();
+            sessionUserId = session.getUserID();
+            logger.debug("Checking for introspection permission for user {} ", sessionUserId);
+            boolean hasPermission = session.getNode("/").hasPermission(INTROSPECTION_PERMISSION);
+            disableIntrospection = !hasPermission;
+        } catch (RepositoryException e) {
+            logger.error("Introspection permission check failed for user {}. Disabling introspection for this request.", sessionUserId);
+            logger.debug(e.getMessage(), e);
+        }
+        context.put(Introspection.INTROSPECTION_DISABLED, disableIntrospection);
     }
 
     private static List<String> resolveTypes(GraphQLType type) {

@@ -6,5 +6,6 @@
     <admin jcr:primaryType="jnt:permission">
         <graphqlAdminQuery jcr:primaryType="jnt:permission"/>
         <graphqlAdminMutation jcr:primaryType="jnt:permission"/>
+        <graphqlAdminIntrospection jcr:primaryType="jnt:permission"/>
     </admin>
 </permissions>

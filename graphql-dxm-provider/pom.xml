@@ -70,6 +70,7 @@
             graphql.execution,
             graphql.execution.instrumentation,
             graphql.execution.instrumentation.parameters,
+            graphql.introspection;version=21.5.0,
             graphql.kickstart.execution.config,
             graphql.kickstart.execution.context,
             graphql.kickstart.execution.subscriptions,
