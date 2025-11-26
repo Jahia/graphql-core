@@ -22,6 +22,7 @@ import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchPar
 import graphql.schema.DataFetcher;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionChecker;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 
@@ -35,7 +36,7 @@ public class JCRInstrumentation extends SimpleInstrumentation {
     public static final String GRAPHQL_VARIABLES = "graphQLVariables";
     public static final String FRAGMENTS_BY_NAME = "fragmentsByName";
 
-    private DXGraphQLConfig dxGraphQLConfig;
+    private final DXGraphQLConfig dxGraphQLConfig;
 
     JCRInstrumentation(DXGraphQLConfig dxGraphQLConfig) {
         this.dxGraphQLConfig = dxGraphQLConfig;
@@ -47,8 +48,8 @@ public class JCRInstrumentation extends SimpleInstrumentation {
                 new GqlJcrPermissionDataFetcher<>(
                         new OSGIServiceInjectorDataFetcher<>(
                                 dataFetcher
-                        ), 
-                        dxGraphQLConfig.getPermissions()), 
+                        ),
+                        dxGraphQLConfig.getPermissions()),
                 parameters
         );
     }
@@ -61,9 +62,12 @@ public class JCRInstrumentation extends SimpleInstrumentation {
 
         // Null only in the case with integration tests.
         if (servletRequest != null) {
-            servletRequest.setAttribute(GRAPHQL_VARIABLES, executionContext.getVariables());
+            servletRequest.setAttribute(GRAPHQL_VARIABLES, executionContext.getCoercedVariables().toMap());
             servletRequest.setAttribute(FRAGMENTS_BY_NAME, executionContext.getFragmentsByName());
         }
+
+        // Configure introspection through Graphql context based on user permissions
+        GqlJcrPermissionChecker.configureIntrospectionFromPermissions(executionContext.getGraphQLContext());
 
         return executionContext;
     }
