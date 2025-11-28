@@ -41,7 +41,7 @@ import java.util.Map;
  */
 public final class GqlJcrPermissionChecker {
 
-    private static final String INTROSPECTION_PERMISSION = "graphqlIntrospection";
+    private static final String INTROSPECTION_PERMISSION = "developerToolsAccess";
 
     private static final Logger logger = LoggerFactory.getLogger(GqlJcrPermissionChecker.class);
 
