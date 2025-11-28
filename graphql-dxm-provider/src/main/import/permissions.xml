@@ -7,7 +7,4 @@
         <graphqlAdminQuery jcr:primaryType="jnt:permission"/>
         <graphqlAdminMutation jcr:primaryType="jnt:permission"/>
     </admin>
-    <developerToolsAccess jcr:primaryType="jnt:permission">
-        <graphqlIntrospection jcr:primaryType="jnt:permission"/>
-    </developerToolsAccess>
 </permissions>

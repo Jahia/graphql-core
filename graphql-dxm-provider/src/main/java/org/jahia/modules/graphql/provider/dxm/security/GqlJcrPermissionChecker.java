@@ -41,7 +41,7 @@ import java.util.Map;
  */
 public final class GqlJcrPermissionChecker {
 
-    private static final String INTROSPECTION_PERMISSION = "graphqlIntrospection";
+    private static final String INTROSPECTION_PERMISSION = "developerToolsAccess";
 
     private static final Logger logger = LoggerFactory.getLogger(GqlJcrPermissionChecker.class);
 
@@ -121,9 +121,9 @@ public final class GqlJcrPermissionChecker {
         try {
             JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession();
             sessionUserId = session.getUserID();
-            logger.debug("Checking for introspection permission for user {} ", sessionUserId);
             boolean hasPermission = session.getNode("/").hasPermission(INTROSPECTION_PERMISSION);
             disableIntrospection = !hasPermission;
+            logger.debug("Introspection permission enabled for user {}: {}", sessionUserId, hasPermission);
         } catch (RepositoryException e) {
             logger.error("Introspection permission check failed for user {}. Disabling introspection for this request.", sessionUserId);
             logger.debug(e.getMessage(), e);

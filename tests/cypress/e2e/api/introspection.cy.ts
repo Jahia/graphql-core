@@ -44,6 +44,7 @@ describe('GraphQL Introspection Authorization', () => {
             });
     });
 
+    // `introspectionCheckEnabled=true` is set in jahia.properties on docker-compose
     it('Should block __schema introspection for regular user without permission', () => {
         cy.apolloClient(user)
             .apollo({queryFile: 'introspectionSchema.graphql', errorPolicy: 'all'})
