@@ -4,9 +4,10 @@ services:
         image: '${JAHIA_IMAGE}'
         container_name: jahia
         environment:
-            - SUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
-            - MAX_RAM_PERCENTAGE=95
-            - JPDA=true
+            SUPER_USER_PASSWORD: ${SUPER_USER_PASSWORD}
+            JAHIA_PROPERTIES: '"introspectionCheckEnabled":"true"'
+            MAX_RAM_PERCENTAGE: 95
+            JPDA: "true"
         ports:
             - '8000:8000'
             - '8080:8080'
