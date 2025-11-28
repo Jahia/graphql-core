@@ -19,14 +19,19 @@ import graphql.execution.ExecutionContext;
 import graphql.execution.instrumentation.SimpleInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
+import graphql.language.OperationDefinition;
 import graphql.schema.DataFetcher;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionChecker;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
+import org.jahia.settings.SettingsBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * JCR instrumentation implementation
@@ -35,6 +40,9 @@ public class JCRInstrumentation extends SimpleInstrumentation {
 
     public static final String GRAPHQL_VARIABLES = "graphQLVariables";
     public static final String FRAGMENTS_BY_NAME = "fragmentsByName";
+    public static final String INTROSPECTION_CHECK_ENABLED_PROP = "introspectionCheckEnabled";
+
+    private static final Logger logger = LoggerFactory.getLogger(JCRInstrumentation.class);
 
     private final DXGraphQLConfig dxGraphQLConfig;
 
@@ -56,7 +64,6 @@ public class JCRInstrumentation extends SimpleInstrumentation {
 
     @Override
     public ExecutionContext instrumentExecutionContext(ExecutionContext executionContext, InstrumentationExecutionParameters parameters) {
-
         executionContext = super.instrumentExecutionContext(executionContext, parameters);
         HttpServletRequest servletRequest = ContextUtil.getHttpServletRequest(executionContext.getContext());
 
@@ -66,9 +73,17 @@ public class JCRInstrumentation extends SimpleInstrumentation {
             servletRequest.setAttribute(FRAGMENTS_BY_NAME, executionContext.getFragmentsByName());
         }
 
-        // Configure introspection through Graphql context based on user permissions
-        GqlJcrPermissionChecker.configureIntrospectionFromPermissions(executionContext.getGraphQLContext());
-
+        /*
+         * Configure introspection through Graphql context based on user permissions
+         * We ran into issues with subscription requests being denied due to missing user session.
+         * Add filter check to avoid exceptions since introspection can only be done on QUERY operations anyways
+         */
+        boolean isQueryOperation = OperationDefinition.Operation.QUERY.equals(executionContext.getOperationDefinition().getOperation());
+        boolean isIntrospectionCheckEnabled = SettingsBean.getInstance().getBoolean(INTROSPECTION_CHECK_ENABLED_PROP, false);
+        logger.debug("isIntrospectionCheckEnabled: {}", isIntrospectionCheckEnabled);
+        if (isIntrospectionCheckEnabled && isQueryOperation) {
+            GqlJcrPermissionChecker.configureIntrospectionFromPermissions(executionContext.getGraphQLContext());
+        }
         return executionContext;
     }
 }
