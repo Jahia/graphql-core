@@ -426,7 +426,20 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
                 @Override
                 public Integer doInJCR(JCRSessionWrapper jcrSessionWrapper) throws RepositoryException {
                     JCRNodeWrapper nodeWrapper = jcrSessionWrapper.getNode(node.getPath());
-                    return countReferences(nodeWrapper.getWeakReferences(), typesFilter) + countReferences(nodeWrapper.getReferences(), typesFilter);
+                    int count = 0;
+                    try {
+                        count += countReferences(nodeWrapper.getWeakReferences(), typesFilter);
+                    } catch (UnsupportedRepositoryOperationException e) {
+                        // EDP implementation (e.g., VFS mountpoints) may not support weak references
+                        return null;
+                    }
+                    try {
+                        count += countReferences(nodeWrapper.getReferences(), typesFilter);
+                    } catch (UnsupportedRepositoryOperationException e) {
+                        // EDP implementation (e.g., VFS mountpoints) may not support references
+                        return null;
+                    }
+                    return count;
                 }
             });
         } catch (RepositoryException e) {
