@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import {DocumentNode} from 'graphql';
 import {isValid} from 'date-fns';
 import {apollo} from '../../../support/apollo';
