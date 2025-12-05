@@ -44,6 +44,8 @@ import org.jahia.services.render.Resource;
 import org.jahia.services.render.Template;
 import org.jahia.services.seo.urlrewrite.UrlRewriteService;
 import org.jahia.utils.LanguageCodeConverters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.touk.throwing.ThrowingFunction;
 import pl.touk.throwing.ThrowingPredicate;
 import pl.touk.throwing.ThrowingSupplier;
@@ -74,6 +76,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     public static final List<String> DEFAULT_EXCLUDED_CHILDREN = Arrays.asList("jnt:translation");
     public static final Predicate<JCRNodeWrapper> DEFAULT_CHILDREN_PREDICATE = getTypesPredicate(new NodeTypesInput(MulticriteriaEvaluation.NONE, DEFAULT_EXCLUDED_CHILDREN));
+    private static final Logger log = LoggerFactory.getLogger(GqlJcrNodeImpl.class);
 
     private JCRNodeWrapper node;
     private String type;
@@ -419,14 +422,23 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @Override
     @GraphQLField
     @GraphQLName("referenceCount")
-    @GraphQLDescription("Returns count of all references of the node across all sites")
+    @GraphQLDescription("Returns count of all references of the node across all sites. If this property returns null, references are not supported for this node.")
     public Integer getReferenceCount(@GraphQLName("typesFilter") @GraphQLDescription("Filter out referencing types which should not be counted") NodeTypesInput typesFilter) {
         try {
             return jcrTemplate.doExecuteWithSystemSession(new JCRCallback<Integer>() {
                 @Override
                 public Integer doInJCR(JCRSessionWrapper jcrSessionWrapper) throws RepositoryException {
                     JCRNodeWrapper nodeWrapper = jcrSessionWrapper.getNode(node.getPath());
-                    return countReferences(nodeWrapper.getWeakReferences(), typesFilter) + countReferences(nodeWrapper.getReferences(), typesFilter);
+                    int count = 0;
+                    try {
+                        count += countReferences(nodeWrapper.getWeakReferences(), typesFilter);
+                        count += countReferences(nodeWrapper.getReferences(), typesFilter);
+                    } catch (UnsupportedRepositoryOperationException e) {
+                        // EDP implementation (e.g., VFS mountpoints) may not support references
+                        log.debug("References are not supported for node {}", nodeWrapper.getPath(), e);
+                        return null;
+                    }
+                    return count;
                 }
             });
         } catch (RepositoryException e) {
