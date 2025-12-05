@@ -422,7 +422,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @Override
     @GraphQLField
     @GraphQLName("referenceCount")
-    @GraphQLDescription("Returns count of all references of the node across all sites")
+    @GraphQLDescription("Returns count of all references of the node across all sites. If this property returns null, references are not supported for this node.")
     public Integer getReferenceCount(@GraphQLName("typesFilter") @GraphQLDescription("Filter out referencing types which should not be counted") NodeTypesInput typesFilter) {
         try {
             return jcrTemplate.doExecuteWithSystemSession(new JCRCallback<Integer>() {
