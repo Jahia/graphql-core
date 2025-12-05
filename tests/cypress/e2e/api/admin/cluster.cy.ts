@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 describe('Test admin jahia cluster endpoint', () => {
     it('Gets cluster details', () => {

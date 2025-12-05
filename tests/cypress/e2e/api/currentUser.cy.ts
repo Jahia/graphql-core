@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 describe('Validate ability get current User', () => {
     it('Get Current user for Authenticated user (irina)', () => {

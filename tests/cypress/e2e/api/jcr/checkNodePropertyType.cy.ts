@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 describe('Test page properties', () => {
     before('load graphql file and create node', () => {

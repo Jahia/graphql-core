@@ -1,20 +1,34 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {addUserToGroup, createUser, deleteUser} from '@jahia/cypress';
+import {getGqlConfig, setGqlConfig} from '../../fixtures/admin/configuration';
 
 describe('GraphQL Introspection Authorization', () => {
     const user = {
         username: 'introspectionUser',
         password: 'password'
     };
+    const introspectionProp = 'introspectionCheckEnabled';
+
+    let introspectionCheckEnabledOldValue = null;
 
     before('Create test user', () => {
+        // Setup introspectionCheckEnabled config
+        getGqlConfig(introspectionProp).then(config => {
+            introspectionCheckEnabledOldValue = config;
+            setGqlConfig('introspectionCheckEnabled', 'true');
+        });
+        cy.waitUntil(() => {
+            return getGqlConfig(introspectionProp).then(enabled => enabled === 'true');
+        }, {timeout: 30000, interval: 1000});
+
         // Create a regular user that can query but without introspection permission
         createUser(user.username, user.password);
         addUserToGroup(user.username, 'privileged');
     });
 
     after('Cleanup test user', () => {
+        // Restore introspectionCheckEnabled
+        setGqlConfig(introspectionProp, introspectionCheckEnabledOldValue);
         deleteUser(user.username);
     });
 

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 /* eslint max-nested-callbacks: ["error", 5] */
 import {getJahiaVersion} from '@jahia/cypress';
 import {compare} from 'compare-versions';

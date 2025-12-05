@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import {isValid} from 'date-fns';
 
 describe('admin.datetime - Jahia Server time', () => {

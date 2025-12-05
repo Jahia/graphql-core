@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 describe('Test admin jahia database endpoint', () => {
     it('Gets database details', () => {

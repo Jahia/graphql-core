@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 describe('Get properties graphql test', () => {
     const textValueEnglish = 'text EN';
