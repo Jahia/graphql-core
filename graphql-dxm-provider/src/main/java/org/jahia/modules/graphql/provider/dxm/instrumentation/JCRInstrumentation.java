@@ -26,12 +26,10 @@ import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetche
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionChecker;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
-import org.jahia.settings.SettingsBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
-import java.lang.reflect.InvocationTargetException;
 
 /**
  * JCR instrumentation implementation
@@ -40,7 +38,6 @@ public class JCRInstrumentation extends SimpleInstrumentation {
 
     public static final String GRAPHQL_VARIABLES = "graphQLVariables";
     public static final String FRAGMENTS_BY_NAME = "fragmentsByName";
-    public static final String INTROSPECTION_CHECK_ENABLED_PROP = "introspectionCheckEnabled";
 
     private static final Logger logger = LoggerFactory.getLogger(JCRInstrumentation.class);
 
@@ -79,7 +76,7 @@ public class JCRInstrumentation extends SimpleInstrumentation {
          * Add filter check to avoid exceptions since introspection can only be done on QUERY operations anyways
          */
         boolean isQueryOperation = OperationDefinition.Operation.QUERY.equals(executionContext.getOperationDefinition().getOperation());
-        boolean isIntrospectionCheckEnabled = SettingsBean.getInstance().getBoolean(INTROSPECTION_CHECK_ENABLED_PROP, false);
+        boolean isIntrospectionCheckEnabled = dxGraphQLConfig.isIntrospectionCheckEnabled();
         logger.debug("isIntrospectionCheckEnabled: {}", isIntrospectionCheckEnabled);
         if (isIntrospectionCheckEnabled && isQueryOperation) {
             GqlJcrPermissionChecker.configureIntrospectionFromPermissions(executionContext.getGraphQLContext());

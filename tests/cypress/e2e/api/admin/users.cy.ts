@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 describe('Test admin users endpont', () => {
     before('load graphql file', () => {
