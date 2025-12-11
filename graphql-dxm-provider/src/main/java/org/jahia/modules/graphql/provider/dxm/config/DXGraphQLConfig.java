@@ -36,19 +36,22 @@ import java.util.stream.Collectors;
 public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private static Logger logger = LoggerFactory.getLogger(DXGraphQLConfig.class);
-    private final static String PERMISSION_PREFIX = "permission.";
-    private final static String TYPE_PREFIX = "type.";
+    private static final String PERMISSION_PREFIX = "permission.";
+    private static final String TYPE_PREFIX = "type.";
 
-    private final static String CORS_ORIGINS = "http.cors.allow-origin";
-    private final static String NODE_LIMIT = "graphql.fields.node.limit";
+    private static final String CORS_ORIGINS = "http.cors.allow-origin";
+    private static final String NODE_LIMIT = "graphql.fields.node.limit";
+    public static final String INTROSPECTION_CHECK_ENABLED = "introspectionCheckEnabled";
 
     private Map<String, List<String>> keysByPid = new HashMap<>();
     private Map<String, String> permissions = new HashMap<>();
 
     private Set<String> corsOrigins = new HashSet<>();
     private Map<String, Set<String>> corsOriginByPid = new HashMap<>();
+    private Map<String, Boolean> introspectionCheckByPid = new HashMap<>();
 
     private int nodeLimit = 5000;
+    private boolean introspectionCheckEnabled = false;
 
     private ComponentContext componentContext;
 
@@ -68,6 +71,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         ArrayList<String> keysForPid = new ArrayList<>();
         keysByPid.put(pid, keysForPid);
         corsOriginByPid.remove(pid);
+        introspectionCheckByPid.remove(pid);
 
         // parse properties
         Enumeration<String> keys = properties.keys();
@@ -106,11 +110,15 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 } catch (NumberFormatException e) {
                     throw new ConfigurationException(key, "Node limit must be a positive integer");
                 }
+            } else if (key.equals(INTROSPECTION_CHECK_ENABLED)) {
+                // Defaults to false if value is not valid
+                introspectionCheckByPid.put(pid, StringUtils.isNotEmpty(value) && Boolean.parseBoolean(value.trim()));
             } else {
                 // store other properties than permission configuration
                 keysForPid.add(key);
             }
         }
+        introspectionCheckEnabled = introspectionCheckByPid.values().stream().anyMatch(Boolean::booleanValue);
         corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
     }
 
@@ -142,5 +150,12 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     public int getNodeLimit() {
         return nodeLimit;
+    }
+
+    /**
+     * @return true if introspection check is enabled in any configuration, false otherwise
+     */
+    public boolean isIntrospectionCheckEnabled() {
+        return introspectionCheckEnabled;
     }
 }
