@@ -21,7 +21,7 @@
     <parent>
         <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>3.6.0-SNAPSHOT</version>
+        <version>3.5.1-SNAPSHOT</version>
     </parent>
     <artifactId>graphql-extension-example</artifactId>
     <name>Jahia GraphQL Extension example</name>
@@ -29,7 +29,7 @@
     <description>This is the provider project for the DX GraphQL Core integration project</description>
 
     <properties>
-        <jahia-module-signature>MC0CFCh5eY0NcZnbBxW5JZPbnOvFYmzxAhUAiEA5bLbDxb0QClhj+bPao+2m1Xo=</jahia-module-signature>
+        <jahia-module-signature>MC0CFQCHvV36sSm0WRJvExNdU9MZsz0Y9AIUQPWD9leepSBQaZ2H5j0Ewf+9bbQ=</jahia-module-signature>
         <jahia-depends>default,graphql-dxm-provider</jahia-depends>
     </properties>
 
