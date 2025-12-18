@@ -1,6 +1,6 @@
 describe('GraphQL Workspace tests', () => {
     const GRAPHQL_WORKSPACE_URL = '/modules/graphql-dxm-provider/tools/graphql-workspace.jsp';
-    beforeEach('reset default value', () => {
+    beforeEach('prerequisites', () => {
         cy.login();
     });
 
