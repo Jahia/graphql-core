@@ -29,7 +29,7 @@
     <description>This is the provider project for the DX GraphQL Core integration project</description>
 
     <properties>
-        <jahia-module-signature>MC0CFQCHvV36sSm0WRJvExNdU9MZsz0Y9AIUQPWD9leepSBQaZ2H5j0Ewf+9bbQ=</jahia-module-signature>
+        <jahia-module-signature>MCwCFH0UchFrXi5LEyh14Dzkt7Zdl1LVAhQw7yQZMgQbXfYbKKSAxrxF7iE2/w==</jahia-module-signature>
         <jahia-depends>default,graphql-dxm-provider</jahia-depends>
     </properties>
 
