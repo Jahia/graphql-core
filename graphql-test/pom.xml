@@ -21,7 +21,7 @@
     <parent>
         <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>3.5.1-SNAPSHOT</version>
+        <version>3.5.1</version>
     </parent>
     <artifactId>graphql-test</artifactId>
     <groupId>org.jahia.test</groupId>
@@ -48,7 +48,7 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>graphql-dxm-provider</artifactId>
-            <version>3.5.1-SNAPSHOT</version>
+            <version>3.5.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
