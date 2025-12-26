@@ -37,14 +37,13 @@ describe('GraphQL Workspace tests', () => {
             .should('have.length.greaterThan', 42);
 
         // Verify errors or warnings are absent in console during loading.
-        // Ensure expected log messages are present.
+        // Ensure expected log messages are present in a proper order.
         cy.get('@warnings').should('have.callCount', 0);
         cy.get('@errors').should('have.callCount', 0);
-        cy.get('@messages').then(messages => {
-            const allMessages = messages.getCalls().map(call => call.args.join(' '));
-
-            expect(allMessages.some(msg => msg.toLowerCase().includes('starting')), 'Console should contain "starting"').to.be.true;
-            expect(allMessages.some(msg => msg.toLowerCase().includes('dom loaded')), 'Console should contain "dom loaded"').to.be.true;
+        cy.get('@messages').should('have.callCount', 2).then(messages => {
+            const calls = messages.getCalls();
+            expect(calls[0].args.join(' ')).to.equal('starting');
+            expect(calls[1].args.join(' ')).to.equal('dom loaded');
         });
     });
 });
