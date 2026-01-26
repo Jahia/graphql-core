@@ -120,7 +120,26 @@ public class RenderPropertyExtensions {
 
         request.setAttribute("value", value);
         response.setCharacterEncoding(SettingsBean.getInstance().getCharacterEncoding());
-        return RenderExtensionsHelper.clean(renderService.render(resource, renderContext));
+
+        Object savedSkipWrapper = request.getAttribute("skipWrapper");
+        Object savedTemplateSet = request.getAttribute("templateSet");
+        request.removeAttribute("skipWrapper");
+        request.removeAttribute("templateSet");
+
+        try {
+            return RenderExtensionsHelper.clean(renderService.render(resource, renderContext));
+        } finally {
+            if (savedSkipWrapper != null) {
+                request.setAttribute("skipWrapper", savedSkipWrapper);
+            } else {
+                request.removeAttribute("skipWrapper");
+            }
+            if (savedTemplateSet != null) {
+                request.setAttribute("templateSet", savedTemplateSet);
+            } else {
+                request.removeAttribute("templateSet");
+            }
+        }
     }
 
 }

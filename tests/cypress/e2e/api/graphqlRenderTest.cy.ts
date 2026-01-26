@@ -1,4 +1,5 @@
 import {addNode, addVanityUrl, createSite, deleteNode, deleteSite, removeVanityUrl} from '@jahia/cypress';
+import gql from 'graphql-tag';
 
 const sitename = 'graphql_test_render';
 describe('Test graphql rendering', () => {
@@ -449,5 +450,46 @@ describe('Test graphql rendering', () => {
             );
         });
         deleteNode('/sites/' + sitename + '/home/text1');
+    });
+
+    it('Check renderedContent works correctly for multiple nodes in single query', () => {
+        // Create two text nodes
+        addTestNode({
+            parentPath: `/sites/${sitename}/home`,
+            pageName: 'multiRenderPage',
+            pageTitle: 'Multi Render Page',
+            name: 'text1',
+            type: 'jnt:text',
+            value: 'First text content'
+        });
+
+        // Add second text node to the same page
+        addNode({
+            parentPathOrId: `/sites/${sitename}/home/multiRenderPage/landing`,
+            name: 'text2',
+            primaryNodeType: 'jnt:text',
+            properties: [{name: 'text', value: 'Second text content', language: 'en'}]
+        });
+
+        // Query both nodes' renderedContent in a single GraphQL request
+        cy.apollo({
+            query: gql`query {
+                jcr {
+                    node1: nodeByPath(path: "/sites/${sitename}/home/multiRenderPage/landing/text1") {
+                        renderedContent { output }
+                    }
+                    node2: nodeByPath(path: "/sites/${sitename}/home/multiRenderPage/landing/text2") {
+                        renderedContent { output }
+                    }
+                }
+            }`
+        }).should(result => {
+            const output1 = result?.data?.jcr?.node1?.renderedContent?.output;
+            const output2 = result?.data?.jcr?.node2?.renderedContent?.output;
+            expect(output1).to.contain('First text content');
+            expect(output2).to.contain('Second text content');
+        });
+
+        deleteNode(`/sites/${sitename}/home/multiRenderPage`);
     });
 });
