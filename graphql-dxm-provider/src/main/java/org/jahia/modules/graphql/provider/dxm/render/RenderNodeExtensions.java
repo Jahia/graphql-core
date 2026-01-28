@@ -112,13 +112,13 @@ public class RenderNodeExtensions {
 
     @GraphQLField
     @GraphQLDescription("Gets the fully rendered content for this node")
-    public RenderedNode getRenderedContent(@GraphQLName("view") @GraphQLDescription("Name of the view (leave null for default)") String view,
-                                           @GraphQLName("templateType") @GraphQLDescription("Template type") String templateType,
-                                           @GraphQLName("contextConfiguration") @GraphQLDescription("Rendering context configuration") String contextConfiguration,
+    public RenderedNode getRenderedContent(@GraphQLName("view") @GraphQLDescription("Name of the view (leave null for default). This is the value of j:view property.") String view,
+                                           @GraphQLName("templateType") @GraphQLDescription("Template type. Possible values could be 'html', 'json' etc. Default is 'html'.") String templateType,
+                                           @GraphQLName("contextConfiguration") @GraphQLDescription("Rendering context configuration. Possible values include 'module', 'gwt', 'page'. Default is 'module'.") String contextConfiguration,
                                            @GraphQLName("language") @GraphQLDescription("Language") String language,
                                            @GraphQLName("mainResourcePath") @GraphQLDescription("Main resource path") String mainResourcePath,
                                            @GraphQLName("isEditMode") @GraphQLDescription("Is edit mode") Boolean isEditMode,
-                                           @GraphQLName("requestAttributes") @GraphQLDescription("Additional request attributes") Collection<RenderRequestAttributeInput> requestAttributes, DataFetchingEnvironment environment) {
+                                           @GraphQLName("requestAttributes") @GraphQLDescription("Additional request attributes to be included in request. Array of name value pairs: [{name:\"templateSet\", value:\"true\"}]") Collection<RenderRequestAttributeInput> requestAttributes, DataFetchingEnvironment environment) {
         try {
             RenderService renderService = (RenderService) SpringContextSingleton.getBean("RenderService");
 
