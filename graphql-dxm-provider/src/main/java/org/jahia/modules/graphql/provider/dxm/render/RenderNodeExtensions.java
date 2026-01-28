@@ -178,7 +178,27 @@ public class RenderNodeExtensions {
             renderContext.setSite(site);
 
             response.setCharacterEncoding(SettingsBean.getInstance().getCharacterEncoding());
-            String res = RenderExtensionsHelper.clean(renderService.render(r, renderContext));
+
+            Object savedSkipWrapper = request.getAttribute("skipWrapper");
+            Object savedTemplateSet = request.getAttribute("templateSet");
+            request.removeAttribute("skipWrapper");
+            request.removeAttribute("templateSet");
+
+            String res;
+            try {
+                res = RenderExtensionsHelper.clean(renderService.render(r, renderContext));
+            } finally {
+                if (savedSkipWrapper != null) {
+                    request.setAttribute("skipWrapper", savedSkipWrapper);
+                } else {
+                    request.removeAttribute("skipWrapper");
+                }
+                if (savedTemplateSet != null) {
+                    request.setAttribute("templateSet", savedTemplateSet);
+                } else {
+                    request.removeAttribute("templateSet");
+                }
+            }
             return new RenderedNode(res, renderContext);
         } catch (Exception e) {
             throw new DataFetchingException(e);
