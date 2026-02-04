@@ -17,7 +17,7 @@
     "cypress-file-upload": "^5.0.8",
     "cypress-multi-reporters": "^2.0.5",
     "cypress-terminal-report": "^7.1.0",
-    "cypress-wait-until": "^3.0.1",
+    "cypress-wait-until": "^3.0.2",
     "date-fns": "^2.25.0",
     "diff": "^5.0.0",
     "eslint": "8.57.1",
