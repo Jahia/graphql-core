@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rich-text xmlns:j="http://www.jahia.org/jahia/1.0"
+           xmlns:jcr="http://www.jcp.org/jcr/1.0"
+           j:lastPublished="2023-04-18T14:38:37.717+02:00"
+           j:lastPublishedBy="olive"
+           j:originWS="default"
+           j:published="true"
+           jcr:created="2023-04-12T18:04:18.750+02:00"
+           jcr:createdBy="isis"
+           jcr:lastModified="2023-04-12T18:04:18.804+02:00"
+           jcr:lastModifiedBy="isis"
+           jcr:primaryType="jnt:bigText">
+   <j:translation_en j:lastPublished="2023-04-18T14:38:37.717+02:00"
+                     j:lastPublishedBy="olive"
+                     j:published="true"
+                     jcr:language="en"
+                     jcr:lastModified="2023-04-18T14:38:04.945+02:00"
+                     jcr:lastModifiedBy="alice"
+                     jcr:primaryType="jnt:translation"
+                     text="&lt;p&gt;According to a 2017 report by the International Union for Conservation of Nature, there are an estimated 220 million owned cats and 480 million stray or feral cats worldwide. These numbers are subject to change and may vary depending on the methodology used for estimating cat populations.&lt;/p&gt;&#xA;"/>
+   <j:translation_fr j:lastPublished="2023-04-12T18:22:12.980+02:00"
+                     j:lastPublishedBy="olive"
+                     j:published="true"
+                     jcr:language="fr"
+                     jcr:lastModified="2023-04-12T18:04:39.617+02:00"
+                     jcr:lastModifiedBy="isis"
+                     jcr:primaryType="jnt:translation"
+                     text="&lt;p&gt;Selon un rapport de 2017 de l&amp;#39;Union internationale pour la conservation de la nature, il y aurait environ 220 millions de chats domestiques et 480 millions de chats errants ou f&amp;eacute;raux dans le monde. Ces chiffres sont susceptibles de changer et peuvent varier en fonction de la m&amp;eacute;thodologie utilis&amp;eacute;e pour estimer les populations de chats.&lt;/p&gt;&#xA;"/>
+</rich-text>

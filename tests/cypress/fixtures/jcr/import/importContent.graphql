@@ -1,0 +1,9 @@
+mutation importContent($path: String!, $file: String!, $rootBehaviour: Int! = 1) {
+    jcr {
+        importContent(
+            parentPathOrId: $path
+            file: $file
+            rootBehaviour: $rootBehaviour
+        )
+    }
+}

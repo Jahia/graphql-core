@@ -197,6 +197,7 @@ public class GqlJcrMutationSupport {
                         FileUtils.deleteQuietly(fileToImport);
                     }
                     break;
+                case "application/xml":
                 case "text/xml":
                     importExportBaseService.importXML(node.getPath(), part.getInputStream(), rootBehaviour);
                     break;
