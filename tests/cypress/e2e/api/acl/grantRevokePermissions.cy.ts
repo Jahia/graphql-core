@@ -22,6 +22,7 @@ describe('roles API permissions test', () => {
         [adminRoleUser, editorUser, testUser]
             .forEach(({username}) => deleteUser(username));
         deleteSite(siteKey);
+        cy.executeGroovy('groovy/flushCache.groovy', {CACHE_NAME: 'org.jahia.sitesService.sitesListCache'});
     });
 
     const rolesApiCall = (apiUser, mutationFile, variables) => {
