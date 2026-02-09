@@ -21,6 +21,7 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 
 @GraphQLTypeExtension(GqlJcrNode.class)
 public class JCRNodeExtensions {
@@ -32,8 +33,32 @@ public class JCRNodeExtensions {
     }
 
     @GraphQLField
-    @GraphQLDescription("Sample extension") 
+    @GraphQLDescription("Sample extension")
     public String testExtension(@GraphQLName("arg") @GraphQLDescription("Sample extension argument") String arg) {
         return "test " + node.getName() + " - " + arg;
+    }
+
+    /**
+     * To allow access to this endpoint, add user to a server-type role e.g. web designer role,
+     * and enable myApiAdmin permissions
+     */
+    @GraphQLField
+    @GraphQLDescription("Sample extension")
+    @GraphQLRequiresPermission("myApiAdmin")
+    public String testRequiresPermission(@GraphQLName("arg") @GraphQLDescription("Sample extension argument") String arg) {
+        return "protected endpoint:  " + node.getName() + " - " + arg;
+    }
+
+    /**
+     * This endpoint is restricted using OSGi configuration entry:
+     * permission.JCRNode.testPermissionConfiguration = myApiAdmin
+     *
+     * To allow access to this endpoint, add user to a server-type role e.g. web designer role,
+     * and enable myApiAdmin permissions
+     */
+    @GraphQLField
+    @GraphQLDescription("Sample extension")
+    public String testPermissionConfiguration(@GraphQLName("arg") @GraphQLDescription("Sample extension argument") String arg) {
+        return "protected endpoint:  " + node.getName() + " - " + arg;
     }
 }
