@@ -3,7 +3,7 @@ import gql from 'graphql-tag';
 
 describe('admin.configuration', () => {
     before('load graphql file and create test dataset', () => {
-        cy.runProvisioningScript({fileName: 'admin/createConfig.json'});
+        cy.runProvisioningScript({script: {fileName: 'admin/createConfig.json', type: 'application/json'}});
     });
 
     function readConfig(variables) {
