@@ -34,6 +34,8 @@ import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.NodeIterator;
@@ -44,6 +46,8 @@ import java.util.*;
 
 @Component(service = JahiaAclService.class, immediate = true)
 public class JahiaAclServiceImpl implements JahiaAclService {
+
+    private static final Logger logger = LoggerFactory.getLogger(JahiaAclServiceImpl.class);
 
     @Reference
     private JahiaUserManagerService userService;
@@ -88,6 +92,9 @@ public class JahiaAclServiceImpl implements JahiaAclService {
         for (String r: roleNames) {
             roles.put(r, (breakInheritance || !hasInheritedPermission(jcrNode, principalKey, r)) ? Constants.GRANT : REMOVE);
         }
+        if (logger.isInfoEnabled()) {
+            logger.info("Granting roles {} for principal {} on node {}", String.join(", ", roleNames), principalKey, jcrNode.getPath());
+        }
         return jcrNode.changeRoles(principalKey, roles);
     }
 
@@ -96,6 +103,9 @@ public class JahiaAclServiceImpl implements JahiaAclService {
         boolean breakInheritance = jcrNode.getAclInheritanceBreak();
         for (String r: roleNames) {
             roles.put(r, (breakInheritance || hasInheritedPermission(jcrNode, principalKey, r)) ? Constants.DENY : REMOVE);
+        }
+        if (logger.isInfoEnabled()) {
+            logger.info("Revoking roles {} for principal {} on node {}", String.join(", ", roleNames), principalKey, jcrNode.getPath());
         }
         return jcrNode.changeRoles(principalKey, roles);
     }
