@@ -29,7 +29,7 @@
     <packaging>bundle</packaging>
 
     <properties>
-        <jahia-module-signature>MC0CFAPnUMmHucAzagQqtuJNwbJz2pYaAhUAiZTaOWsyRSJBYXR5Kb8MgkqLtIo=</jahia-module-signature>
+        <jahia-module-signature>MCwCFDoyI9OIEL0EhuujtS3Z6ACucSKMAhRryyXAnTqSvMLcOZG5GvfuvtlECQ==</jahia-module-signature>
     </properties>
 
     <dependencies>
