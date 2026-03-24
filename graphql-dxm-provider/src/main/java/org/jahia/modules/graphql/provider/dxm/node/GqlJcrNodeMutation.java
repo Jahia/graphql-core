@@ -25,7 +25,6 @@ import org.jahia.modules.graphql.provider.dxm.acl.service.JahiaAclService;
 import org.jahia.modules.graphql.provider.dxm.image.GqlJcrImageTransformMutation;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.predicate.PredicateHelper;
-import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 import org.jahia.modules.graphql.provider.dxm.user.PrincipalType;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -538,7 +537,6 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
     @GraphQLField
     @GraphQLDescription("Grant role permissions to specified principal user/group for the given node")
-    @GraphQLRequiresPermission(value = "adminRoles")
     public boolean grantRoles(
             @GraphQLName("roleNames") @GraphQLDescription("Roles to grant user/group for this node") @GraphQLNonNull List<String> roleNames,
             @GraphQLName("principalType") @GraphQLDescription("Type of principal (user/group) specified") @GraphQLNonNull PrincipalType principalType,
@@ -550,7 +548,6 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
 
     @GraphQLField
     @GraphQLDescription("Remove/deny roles to specified principal user/group for the given node")
-    @GraphQLRequiresPermission(value = "adminRoles")
     public boolean revokeRoles(
             @GraphQLName("roleNames") @GraphQLDescription("Roles to grant user/group for this node") @GraphQLNonNull List<String> roleNames,
             @GraphQLName("principalType") @GraphQLDescription("Type of principal (user/group) specified") @GraphQLNonNull PrincipalType principalType,
