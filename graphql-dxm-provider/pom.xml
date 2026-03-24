@@ -21,7 +21,7 @@
     <parent>
         <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>3.7.0-SNAPSHOT</version>
+        <version>3.6.1-SNAPSHOT</version>
     </parent>
     <artifactId>graphql-dxm-provider</artifactId>
     <name>Jahia GraphQL Core Provider</name>
@@ -194,7 +194,7 @@
             pl.touk.throwing.exception
         </import-package>
         <jahia-module-type>system</jahia-module-type>
-        <jahia-module-signature>MC0CFCFYgl6G7qnuierfXRf1rkDZDsoRAhUAhUpB/6gXrfZQa9m+gSAajGmgyPw=</jahia-module-signature>
+        <jahia-module-signature>MCwCFG3Og2zAq+RzSbxa+CC9u3clljShAhQQkXOnpNWGWAny5BC/7/s/ZPxb5w==</jahia-module-signature>
         <mockito.version>2.21.0</mockito.version>
         <powermock.version>2.0.9</powermock.version>
         <yarn.arguments>build:production</yarn.arguments>

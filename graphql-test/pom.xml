@@ -21,7 +21,7 @@
     <parent>
         <artifactId>graphql-core-root</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>3.7.0-SNAPSHOT</version>
+        <version>3.6.1-SNAPSHOT</version>
     </parent>
     <artifactId>graphql-test</artifactId>
     <groupId>org.jahia.test</groupId>
@@ -29,7 +29,7 @@
     <packaging>bundle</packaging>
 
     <properties>
-        <jahia-module-signature>MCwCFDoyI9OIEL0EhuujtS3Z6ACucSKMAhRryyXAnTqSvMLcOZG5GvfuvtlECQ==</jahia-module-signature>
+        <jahia-module-signature>MCwCFDxhXcstYKhH/vXG4eaOIJ6ha626AhR9t+YgCReh2P8dE/8G6WFd/pr7VA==</jahia-module-signature>
     </properties>
 
     <dependencies>
@@ -48,7 +48,7 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>graphql-dxm-provider</artifactId>
-            <version>3.7.0-SNAPSHOT</version>
+            <version>3.6.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
