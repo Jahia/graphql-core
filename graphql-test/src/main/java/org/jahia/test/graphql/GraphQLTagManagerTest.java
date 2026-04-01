@@ -44,11 +44,40 @@ public class GraphQLTagManagerTest extends GraphQLTestSupport {
     private static final String SITE_KEY = "graphql_tag_manager";
     private static final String OTHER_SITE_KEY = "graphql_tag_manager_other";
     private static final String SPECIAL_TAG = "ù^$ùç_\"(_çt\"à'çr(";
+    private static final String SPECIAL_RENAMED_TAG = "special-renamed";
+    private static final String ALPHA_TAG = "alpha-tag";
+    private static final String BETA_TAG = "beta-tag";
+    private static final String BETA_RENAMED_TAG = "beta-renamed";
+    private static final String BETA_LOCAL_TAG = "beta-local";
+    private static final String GAMMA_TAG = "gamma-tag";
+    private static final String SITE_ROOT = "/sites/";
+    private static final String TAGS_ROOT = "/tags/";
+    private static final String TAGS_FOLDER = "tags";
+    private static final String ALPHA_NODE_NAME = "alpha";
+    private static final String BETA_NODE_NAME = "beta";
+    private static final String GAMMA_NODE_NAME = "gamma";
+    private static final String OUTSIDE_NODE_NAME = "outside";
+    private static final String CONTENT_LIST_TYPE = "jnt:contentList";
+    private static final String DATA = "data";
+    private static final String ADMIN = "admin";
+    private static final String JAHIA = "jahia";
+    private static final String TAG_MANAGER = "tagManager";
+    private static final String TAGS = "tags";
+    private static final String TAGGED_CONTENT = "taggedContent";
+    private static final String NODES = "nodes";
+    private static final String PAGE_INFO = "pageInfo";
+    private static final String TOTAL_COUNT = "totalCount";
+    private static final String NODES_COUNT = "nodesCount";
+    private static final String OCCURRENCES = "occurrences";
+    private static final String WORKSPACE_RESULTS = "workspaceResults";
+    private static final String PROCESSED_COUNT = "processedCount";
+    private static final String QUERY_PREFIX = "{ admin { jahia { tagManager(siteKey: \"";
+    private static final String MUTATION_PREFIX = "mutation { admin { jahia { tagManager(siteKey: \"";
+    private static final String QUERY_SUFFIX = "\") {";
+    private static final String QUERY_END = "} } } }";
 
     private TaggingService taggingService;
-    private String alphaNodeId;
     private String betaNodeId;
-    private String gammaNodeId;
 
     @BeforeClass
     public static void oneTimeSetup() {
@@ -56,306 +85,290 @@ public class GraphQLTagManagerTest extends GraphQLTestSupport {
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         taggingService = BundleUtils.getOsgiService(TaggingService.class, null);
         removeSites();
         createAndSeedSites();
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         JCRSessionFactory.getInstance().closeAllSessions();
         removeSites();
     }
 
     @Test
-    public void shouldReturnManagedTagsSortedByNameAndPaginated() throws Exception {
-        JSONObject ascResult = executeQuery("{ admin { jahia { tagManager(siteKey: \"" + SITE_KEY + "\") {"
-                + " tags(sortBy: NAME, sortOrder: ASC) {"
-                + "  nodes { name occurrences }"
-                + "  pageInfo { totalCount nodesCount hasPreviousPage hasNextPage }"
-                + " }"
-                + "} } } }");
+    public void shouldReturnManagedTagsSortedByNameAndPaginated() {
+        JSONObject ascResult = executeTagManagerQuery(
+                " tags(sortBy: NAME, sortOrder: ASC) {"
+                        + "  nodes { name occurrences }"
+                        + "  pageInfo { totalCount nodesCount hasPreviousPage hasNextPage }"
+                        + " }");
 
-        JSONObject connection = ascResult.getJSONObject("data").getJSONObject("admin").getJSONObject("jahia")
-                .getJSONObject("tagManager").getJSONObject("tags");
-        JSONArray nodes = connection.getJSONArray("nodes");
+        JSONObject connection = getTagManagerResult(ascResult).getJSONObject(TAGS);
+        JSONArray nodes = connection.getJSONArray(NODES);
 
         Assert.assertEquals(3, nodes.length());
-        Assert.assertEquals("alpha-tag", nodes.getJSONObject(0).getString("name"));
-        Assert.assertEquals(1, nodes.getJSONObject(0).getLong("occurrences"));
-        Assert.assertEquals("beta-tag", nodes.getJSONObject(1).getString("name"));
-        Assert.assertEquals(2, nodes.getJSONObject(1).getLong("occurrences"));
-        Assert.assertEquals("gamma-tag", nodes.getJSONObject(2).getString("name"));
-        Assert.assertEquals(3, nodes.getJSONObject(2).getLong("occurrences"));
+        Assert.assertEquals(ALPHA_TAG, nodes.getJSONObject(0).getString("name"));
+        Assert.assertEquals(1, nodes.getJSONObject(0).getLong(OCCURRENCES));
+        Assert.assertEquals(BETA_TAG, nodes.getJSONObject(1).getString("name"));
+        Assert.assertEquals(2, nodes.getJSONObject(1).getLong(OCCURRENCES));
+        Assert.assertEquals(GAMMA_TAG, nodes.getJSONObject(2).getString("name"));
+        Assert.assertEquals(3, nodes.getJSONObject(2).getLong(OCCURRENCES));
 
-        JSONObject pageInfo = connection.getJSONObject("pageInfo");
-        Assert.assertEquals(3, pageInfo.getInt("totalCount"));
-        Assert.assertEquals(3, pageInfo.getInt("nodesCount"));
+        JSONObject pageInfo = connection.getJSONObject(PAGE_INFO);
+        Assert.assertEquals(3, pageInfo.getInt(TOTAL_COUNT));
+        Assert.assertEquals(3, pageInfo.getInt(NODES_COUNT));
         Assert.assertFalse(pageInfo.getBoolean("hasPreviousPage"));
         Assert.assertFalse(pageInfo.getBoolean("hasNextPage"));
 
-        JSONObject pagedResult = executeQuery("{ admin { jahia { tagManager(siteKey: \"" + SITE_KEY + "\") {"
-                + " tags(sortBy: NAME, sortOrder: DESC, limit: 1, offset: 1) {"
-                + "  nodes { name occurrences }"
-                + "  pageInfo { totalCount nodesCount hasPreviousPage hasNextPage }"
-                + " }"
-                + "} } } }");
+        JSONObject pagedResult = executeTagManagerQuery(
+                " tags(sortBy: NAME, sortOrder: DESC, limit: 1, offset: 1) {"
+                        + "  nodes { name occurrences }"
+                        + "  pageInfo { totalCount nodesCount hasPreviousPage hasNextPage }"
+                        + " }");
 
-        JSONObject pagedConnection = pagedResult.getJSONObject("data").getJSONObject("admin").getJSONObject("jahia")
-                .getJSONObject("tagManager").getJSONObject("tags");
-        JSONArray pagedNodes = pagedConnection.getJSONArray("nodes");
+        JSONObject pagedConnection = getTagManagerResult(pagedResult).getJSONObject(TAGS);
+        JSONArray pagedNodes = pagedConnection.getJSONArray(NODES);
         Assert.assertEquals(1, pagedNodes.length());
-        Assert.assertEquals("beta-tag", pagedNodes.getJSONObject(0).getString("name"));
+        Assert.assertEquals(BETA_TAG, pagedNodes.getJSONObject(0).getString("name"));
 
-        JSONObject pagedPageInfo = pagedConnection.getJSONObject("pageInfo");
-        Assert.assertEquals(3, pagedPageInfo.getInt("totalCount"));
-        Assert.assertEquals(1, pagedPageInfo.getInt("nodesCount"));
+        JSONObject pagedPageInfo = pagedConnection.getJSONObject(PAGE_INFO);
+        Assert.assertEquals(3, pagedPageInfo.getInt(TOTAL_COUNT));
+        Assert.assertEquals(1, pagedPageInfo.getInt(NODES_COUNT));
         Assert.assertTrue(pagedPageInfo.getBoolean("hasPreviousPage"));
         Assert.assertTrue(pagedPageInfo.getBoolean("hasNextPage"));
     }
 
     @Test
-    public void shouldReturnManagedTagsSortedByOccurrences() throws Exception {
-        JSONObject result = executeQuery("{ admin { jahia { tagManager(siteKey: \"" + SITE_KEY + "\") {"
-                + " tags(sortBy: OCCURRENCES, sortOrder: DESC) {"
-                + "  nodes { name occurrences }"
-                + " }"
-                + "} } } }");
+    public void shouldReturnManagedTagsSortedByOccurrences() {
+        JSONObject result = executeTagManagerQuery(
+                " tags(sortBy: OCCURRENCES, sortOrder: DESC) {"
+                        + "  nodes { name occurrences }"
+                        + " }");
 
-        JSONArray nodes = result.getJSONObject("data").getJSONObject("admin").getJSONObject("jahia")
-                .getJSONObject("tagManager").getJSONObject("tags").getJSONArray("nodes");
+        JSONArray nodes = getTagManagerResult(result).getJSONObject(TAGS).getJSONArray(NODES);
 
-        Assert.assertEquals("gamma-tag", nodes.getJSONObject(0).getString("name"));
-        Assert.assertEquals(3, nodes.getJSONObject(0).getLong("occurrences"));
-        Assert.assertEquals("beta-tag", nodes.getJSONObject(1).getString("name"));
-        Assert.assertEquals(2, nodes.getJSONObject(1).getLong("occurrences"));
-        Assert.assertEquals("alpha-tag", nodes.getJSONObject(2).getString("name"));
-        Assert.assertEquals(1, nodes.getJSONObject(2).getLong("occurrences"));
+        Assert.assertEquals(GAMMA_TAG, nodes.getJSONObject(0).getString("name"));
+        Assert.assertEquals(3, nodes.getJSONObject(0).getLong(OCCURRENCES));
+        Assert.assertEquals(BETA_TAG, nodes.getJSONObject(1).getString("name"));
+        Assert.assertEquals(2, nodes.getJSONObject(1).getLong(OCCURRENCES));
+        Assert.assertEquals(ALPHA_TAG, nodes.getJSONObject(2).getString("name"));
+        Assert.assertEquals(1, nodes.getJSONObject(2).getLong(OCCURRENCES));
     }
 
     @Test
-    public void shouldReturnTaggedContentScopedToTheRequestedSite() throws Exception {
-        JSONObject result = executeQuery("{ admin { jahia { tagManager(siteKey: \"" + SITE_KEY + "\") {"
-                + " taggedContent(tag: \"gamma-tag\", limit: 10, offset: 0) {"
-                + "  nodes { uuid path displayName primaryNodeType { name icon } }"
-                + "  pageInfo { totalCount nodesCount }"
-                + " }"
-                + "} } } }");
+    public void shouldReturnTaggedContentScopedToTheRequestedSite() {
+        JSONObject result = executeTagManagerQuery(
+                " taggedContent(tag: \"" + GAMMA_TAG + "\", limit: 10, offset: 0) {"
+                        + "  nodes { uuid path displayName primaryNodeType { name icon } }"
+                        + "  pageInfo { totalCount nodesCount }"
+                        + " }");
 
-        JSONObject connection = result.getJSONObject("data").getJSONObject("admin").getJSONObject("jahia")
-                .getJSONObject("tagManager").getJSONObject("taggedContent");
-        JSONArray nodes = connection.getJSONArray("nodes");
+        JSONObject connection = getTagManagerResult(result).getJSONObject(TAGGED_CONTENT);
+        JSONArray nodes = connection.getJSONArray(NODES);
 
         Assert.assertEquals(3, nodes.length());
-        Assert.assertEquals("/sites/" + SITE_KEY + "/tags/alpha", nodes.getJSONObject(0).getString("path"));
-        Assert.assertEquals("/sites/" + SITE_KEY + "/tags/beta", nodes.getJSONObject(1).getString("path"));
-        Assert.assertEquals("/sites/" + SITE_KEY + "/tags/gamma", nodes.getJSONObject(2).getString("path"));
-        Assert.assertEquals("jnt:contentList", nodes.getJSONObject(0).getJSONObject("primaryNodeType").getString("name"));
+        Assert.assertEquals(siteTagPath(ALPHA_NODE_NAME), nodes.getJSONObject(0).getString("path"));
+        Assert.assertEquals(siteTagPath(BETA_NODE_NAME), nodes.getJSONObject(1).getString("path"));
+        Assert.assertEquals(siteTagPath(GAMMA_NODE_NAME), nodes.getJSONObject(2).getString("path"));
+        Assert.assertEquals(CONTENT_LIST_TYPE, nodes.getJSONObject(0).getJSONObject("primaryNodeType").getString("name"));
         Assert.assertTrue(nodes.getJSONObject(0).getJSONObject("primaryNodeType").has("icon"));
 
-        JSONObject pageInfo = connection.getJSONObject("pageInfo");
-        Assert.assertEquals(3, pageInfo.getInt("totalCount"));
-        Assert.assertEquals(3, pageInfo.getInt("nodesCount"));
+        JSONObject pageInfo = connection.getJSONObject(PAGE_INFO);
+        Assert.assertEquals(3, pageInfo.getInt(TOTAL_COUNT));
+        Assert.assertEquals(3, pageInfo.getInt(NODES_COUNT));
     }
 
     @Test
-    public void shouldKeepTagSuggestQueryUnchanged() throws Exception {
-        JSONObject result = executeQuery("{ tag { suggest(prefix: \"ga\", limit: 10, startPath: \"/sites/" + SITE_KEY + "\", minCount: 1, offset: 0, sortByCount: true) {"
+    public void shouldKeepTagSuggestQueryUnchanged() {
+        JSONObject result = executeQuery("{ tag { suggest(prefix: \"ga\", limit: 10, startPath: \"" + sitePath(SITE_KEY) + "\", minCount: 1, offset: 0, sortByCount: true) {"
                 + " name occurences"
                 + "} } }");
 
-        JSONArray suggestions = result.getJSONObject("data").getJSONObject("tag").getJSONArray("suggest");
+        JSONArray suggestions = result.getJSONObject(DATA).getJSONObject("tag").getJSONArray("suggest");
         Assert.assertEquals(1, suggestions.length());
-        Assert.assertEquals("gamma-tag", suggestions.getJSONObject(0).getString("name"));
+        Assert.assertEquals(GAMMA_TAG, suggestions.getJSONObject(0).getString("name"));
         Assert.assertEquals(3, suggestions.getJSONObject(0).getLong("occurences"));
     }
 
     @Test
-    public void shouldHandleSpecialCharacterTagsForUsageRenameAndDelete() throws Exception {
+    public void shouldHandleSpecialCharacterTagsForUsageRenameAndDelete() {
         String escapedTag = escapeGraphQLString(SPECIAL_TAG);
 
-        JSONObject usagesResult = executeQuery("{ admin { jahia { tagManager(siteKey: \"" + SITE_KEY + "\") {"
-                + " taggedContent(tag: \"" + escapedTag + "\", limit: 10, offset: 0) {"
-                + "  nodes { uuid path }"
-                + "  pageInfo { totalCount nodesCount }"
-                + " }"
-                + "} } } }");
+        JSONObject usagesResult = executeTagManagerQuery(
+                " taggedContent(tag: \"" + escapedTag + "\", limit: 10, offset: 0) {"
+                        + "  nodes { uuid path }"
+                        + "  pageInfo { totalCount nodesCount }"
+                        + " }");
 
-        JSONObject usagesConnection = usagesResult.getJSONObject("data").getJSONObject("admin").getJSONObject("jahia")
-                .getJSONObject("tagManager").getJSONObject("taggedContent");
-        Assert.assertEquals(1, usagesConnection.getJSONObject("pageInfo").getInt("totalCount"));
-        Assert.assertEquals("/sites/" + SITE_KEY + "/tags/gamma", usagesConnection.getJSONArray("nodes").getJSONObject(0).getString("path"));
+        JSONObject usagesConnection = getTagManagerResult(usagesResult).getJSONObject(TAGGED_CONTENT);
+        Assert.assertEquals(1, usagesConnection.getJSONObject(PAGE_INFO).getInt(TOTAL_COUNT));
+        Assert.assertEquals(siteTagPath(GAMMA_NODE_NAME), usagesConnection.getJSONArray(NODES).getJSONObject(0).getString("path"));
 
-        JSONObject renameResult = executeQuery("mutation { admin { jahia { tagManager(siteKey: \"" + SITE_KEY + "\") {"
-                + " renameTag(tag: \"" + escapedTag + "\", newName: \"special-renamed\") {"
-                + "  workspaceResults { workspace processedCount errors { path } }"
-                + " }"
-                + "} } } }");
+        JSONObject renameResult = executeTagManagerMutation(
+                " renameTag(tag: \"" + escapedTag + "\", newName: \"" + SPECIAL_RENAMED_TAG + "\") {"
+                        + "  workspaceResults { workspace processedCount errors { path } }"
+                        + " }");
 
-        JSONArray renameWorkspaceResults = renameResult.getJSONObject("data").getJSONObject("admin").getJSONObject("jahia")
-                .getJSONObject("tagManager").getJSONObject("renameTag").getJSONArray("workspaceResults");
-        Assert.assertEquals(1, renameWorkspaceResults.getJSONObject(0).getInt("processedCount"));
-        Assert.assertEquals(1, renameWorkspaceResults.getJSONObject(1).getInt("processedCount"));
-        assertTags(Constants.EDIT_WORKSPACE, "/sites/" + SITE_KEY + "/tags/gamma", "gamma-tag", "special-renamed");
-        assertTags(Constants.LIVE_WORKSPACE, "/sites/" + SITE_KEY + "/tags/gamma", "gamma-tag", "special-renamed");
+        JSONArray renameWorkspaceResults = getTagManagerResult(renameResult).getJSONObject("renameTag").getJSONArray(WORKSPACE_RESULTS);
+        Assert.assertEquals(1, renameWorkspaceResults.getJSONObject(0).getInt(PROCESSED_COUNT));
+        Assert.assertEquals(1, renameWorkspaceResults.getJSONObject(1).getInt(PROCESSED_COUNT));
+        assertTags(Constants.EDIT_WORKSPACE, siteTagPath(GAMMA_NODE_NAME), GAMMA_TAG, SPECIAL_RENAMED_TAG);
+        assertTags(Constants.LIVE_WORKSPACE, siteTagPath(GAMMA_NODE_NAME), GAMMA_TAG, SPECIAL_RENAMED_TAG);
 
-        JSONObject deleteResult = executeQuery("mutation { admin { jahia { tagManager(siteKey: \"" + SITE_KEY + "\") {"
-                + " deleteTag(tag: \"special-renamed\") {"
-                + "  workspaceResults { workspace processedCount errors { path } }"
-                + " }"
-                + "} } } }");
+        JSONObject deleteResult = executeTagManagerMutation(
+                " deleteTag(tag: \"" + SPECIAL_RENAMED_TAG + "\") {"
+                        + "  workspaceResults { workspace processedCount errors { path } }"
+                        + " }");
 
-        JSONArray deleteWorkspaceResults = deleteResult.getJSONObject("data").getJSONObject("admin").getJSONObject("jahia")
-                .getJSONObject("tagManager").getJSONObject("deleteTag").getJSONArray("workspaceResults");
-        Assert.assertEquals(1, deleteWorkspaceResults.getJSONObject(0).getInt("processedCount"));
-        Assert.assertEquals(1, deleteWorkspaceResults.getJSONObject(1).getInt("processedCount"));
-        assertTags(Constants.EDIT_WORKSPACE, "/sites/" + SITE_KEY + "/tags/gamma", "gamma-tag");
-        assertTags(Constants.LIVE_WORKSPACE, "/sites/" + SITE_KEY + "/tags/gamma", "gamma-tag");
+        JSONArray deleteWorkspaceResults = getTagManagerResult(deleteResult).getJSONObject("deleteTag").getJSONArray(WORKSPACE_RESULTS);
+        Assert.assertEquals(1, deleteWorkspaceResults.getJSONObject(0).getInt(PROCESSED_COUNT));
+        Assert.assertEquals(1, deleteWorkspaceResults.getJSONObject(1).getInt(PROCESSED_COUNT));
+        assertTags(Constants.EDIT_WORKSPACE, siteTagPath(GAMMA_NODE_NAME), GAMMA_TAG);
+        assertTags(Constants.LIVE_WORKSPACE, siteTagPath(GAMMA_NODE_NAME), GAMMA_TAG);
     }
 
     @Test
-    public void shouldRenameTagInEditAndLive() throws Exception {
-        JSONObject result = executeQuery("mutation { admin { jahia { tagManager(siteKey: \"" + SITE_KEY + "\") {"
-                + " renameTag(tag: \"beta-tag\", newName: \"beta-renamed\") {"
+    public void shouldRenameTagInEditAndLive() {
+        JSONObject result = executeTagManagerMutation(
+                " renameTag(tag: \"" + BETA_TAG + "\", newName: \"" + BETA_RENAMED_TAG + "\") {"
                 + "  tag"
                 + "  workspaceResults { workspace processedCount errors { path displayableName } }"
-                + " }"
-                + "} } } }");
+                + " }");
 
-        JSONArray workspaceResults = result.getJSONObject("data").getJSONObject("admin").getJSONObject("jahia")
-                .getJSONObject("tagManager").getJSONObject("renameTag").getJSONArray("workspaceResults");
+        JSONArray workspaceResults = getTagManagerResult(result).getJSONObject("renameTag").getJSONArray(WORKSPACE_RESULTS);
         Assert.assertEquals(2, workspaceResults.length());
-        Assert.assertEquals(2, workspaceResults.getJSONObject(0).getInt("processedCount"));
+        Assert.assertEquals(2, workspaceResults.getJSONObject(0).getInt(PROCESSED_COUNT));
         Assert.assertEquals(0, workspaceResults.getJSONObject(0).getJSONArray("errors").length());
-        Assert.assertEquals(2, workspaceResults.getJSONObject(1).getInt("processedCount"));
+        Assert.assertEquals(2, workspaceResults.getJSONObject(1).getInt(PROCESSED_COUNT));
         Assert.assertEquals(0, workspaceResults.getJSONObject(1).getJSONArray("errors").length());
 
-        assertTags(Constants.EDIT_WORKSPACE, "/sites/" + SITE_KEY + "/tags/alpha", "alpha-tag", "beta-renamed", "gamma-tag");
-        assertTags(Constants.EDIT_WORKSPACE, "/sites/" + SITE_KEY + "/tags/beta", "beta-renamed", "gamma-tag");
-        assertTags(Constants.LIVE_WORKSPACE, "/sites/" + SITE_KEY + "/tags/alpha", "alpha-tag", "beta-renamed", "gamma-tag");
-        assertTags(Constants.LIVE_WORKSPACE, "/sites/" + SITE_KEY + "/tags/beta", "beta-renamed", "gamma-tag");
+        assertTags(Constants.EDIT_WORKSPACE, siteTagPath(ALPHA_NODE_NAME), ALPHA_TAG, BETA_RENAMED_TAG, GAMMA_TAG);
+        assertTags(Constants.EDIT_WORKSPACE, siteTagPath(BETA_NODE_NAME), BETA_RENAMED_TAG, GAMMA_TAG);
+        assertTags(Constants.LIVE_WORKSPACE, siteTagPath(ALPHA_NODE_NAME), ALPHA_TAG, BETA_RENAMED_TAG, GAMMA_TAG);
+        assertTags(Constants.LIVE_WORKSPACE, siteTagPath(BETA_NODE_NAME), BETA_RENAMED_TAG, GAMMA_TAG);
     }
 
     @Test
-    public void shouldDeleteTagInEditAndLive() throws Exception {
-        JSONObject result = executeQuery("mutation { admin { jahia { tagManager(siteKey: \"" + SITE_KEY + "\") {"
-                + " deleteTag(tag: \"gamma-tag\") {"
+    public void shouldDeleteTagInEditAndLive() {
+        JSONObject result = executeTagManagerMutation(
+                " deleteTag(tag: \"" + GAMMA_TAG + "\") {"
                 + "  tag"
                 + "  workspaceResults { workspace processedCount errors { path } }"
-                + " }"
-                + "} } } }");
+                + " }");
 
-        JSONArray workspaceResults = result.getJSONObject("data").getJSONObject("admin").getJSONObject("jahia")
-                .getJSONObject("tagManager").getJSONObject("deleteTag").getJSONArray("workspaceResults");
-        Assert.assertEquals(3, workspaceResults.getJSONObject(0).getInt("processedCount"));
-        Assert.assertEquals(3, workspaceResults.getJSONObject(1).getInt("processedCount"));
+        JSONArray workspaceResults = getTagManagerResult(result).getJSONObject("deleteTag").getJSONArray(WORKSPACE_RESULTS);
+        Assert.assertEquals(3, workspaceResults.getJSONObject(0).getInt(PROCESSED_COUNT));
+        Assert.assertEquals(3, workspaceResults.getJSONObject(1).getInt(PROCESSED_COUNT));
 
-        assertTags(Constants.EDIT_WORKSPACE, "/sites/" + SITE_KEY + "/tags/alpha", "alpha-tag", "beta-tag");
-        assertTags(Constants.EDIT_WORKSPACE, "/sites/" + SITE_KEY + "/tags/beta", "beta-tag");
-        assertTags(Constants.EDIT_WORKSPACE, "/sites/" + SITE_KEY + "/tags/gamma");
-        assertTags(Constants.LIVE_WORKSPACE, "/sites/" + SITE_KEY + "/tags/alpha", "alpha-tag", "beta-tag");
-        assertTags(Constants.LIVE_WORKSPACE, "/sites/" + SITE_KEY + "/tags/beta", "beta-tag");
-        assertTags(Constants.LIVE_WORKSPACE, "/sites/" + SITE_KEY + "/tags/gamma");
+        assertTags(Constants.EDIT_WORKSPACE, siteTagPath(ALPHA_NODE_NAME), ALPHA_TAG, BETA_TAG);
+        assertTags(Constants.EDIT_WORKSPACE, siteTagPath(BETA_NODE_NAME), BETA_TAG);
+        assertTags(Constants.EDIT_WORKSPACE, siteTagPath(GAMMA_NODE_NAME));
+        assertTags(Constants.LIVE_WORKSPACE, siteTagPath(ALPHA_NODE_NAME), ALPHA_TAG, BETA_TAG);
+        assertTags(Constants.LIVE_WORKSPACE, siteTagPath(BETA_NODE_NAME), BETA_TAG);
+        assertTags(Constants.LIVE_WORKSPACE, siteTagPath(GAMMA_NODE_NAME));
     }
 
     @Test
-    public void shouldDeleteTagOnNodeInEditAndLive() throws Exception {
-        JSONObject result = executeQuery("mutation { admin { jahia { tagManager(siteKey: \"" + SITE_KEY + "\") {"
-                + " deleteTagOnNode(tag: \"beta-tag\", nodeId: \"" + betaNodeId + "\") {"
+    public void shouldDeleteTagOnNodeInEditAndLive() {
+        JSONObject result = executeTagManagerMutation(
+                " deleteTagOnNode(tag: \"" + BETA_TAG + "\", nodeId: \"" + betaNodeId + "\") {"
                 + "  tag"
                 + "  nodeId"
                 + "  workspaceResults { workspace processedCount errors { path } }"
-                + " }"
-                + "} } } }");
+                + " }");
 
-        JSONArray workspaceResults = result.getJSONObject("data").getJSONObject("admin").getJSONObject("jahia")
-                .getJSONObject("tagManager").getJSONObject("deleteTagOnNode").getJSONArray("workspaceResults");
-        Assert.assertEquals(1, workspaceResults.getJSONObject(0).getInt("processedCount"));
-        Assert.assertEquals(1, workspaceResults.getJSONObject(1).getInt("processedCount"));
+        JSONArray workspaceResults = getTagManagerResult(result).getJSONObject("deleteTagOnNode").getJSONArray(WORKSPACE_RESULTS);
+        Assert.assertEquals(1, workspaceResults.getJSONObject(0).getInt(PROCESSED_COUNT));
+        Assert.assertEquals(1, workspaceResults.getJSONObject(1).getInt(PROCESSED_COUNT));
 
-        assertTags(Constants.EDIT_WORKSPACE, "/sites/" + SITE_KEY + "/tags/alpha", "alpha-tag", "beta-tag", "gamma-tag");
-        assertTags(Constants.EDIT_WORKSPACE, "/sites/" + SITE_KEY + "/tags/beta", "gamma-tag");
-        assertTags(Constants.LIVE_WORKSPACE, "/sites/" + SITE_KEY + "/tags/alpha", "alpha-tag", "beta-tag", "gamma-tag");
-        assertTags(Constants.LIVE_WORKSPACE, "/sites/" + SITE_KEY + "/tags/beta", "gamma-tag");
+        assertTags(Constants.EDIT_WORKSPACE, siteTagPath(ALPHA_NODE_NAME), ALPHA_TAG, BETA_TAG, GAMMA_TAG);
+        assertTags(Constants.EDIT_WORKSPACE, siteTagPath(BETA_NODE_NAME), GAMMA_TAG);
+        assertTags(Constants.LIVE_WORKSPACE, siteTagPath(ALPHA_NODE_NAME), ALPHA_TAG, BETA_TAG, GAMMA_TAG);
+        assertTags(Constants.LIVE_WORKSPACE, siteTagPath(BETA_NODE_NAME), GAMMA_TAG);
     }
 
     @Test
-    public void shouldRenameTagOnNodeInEditAndLive() throws Exception {
-        JSONObject result = executeQuery("mutation { admin { jahia { tagManager(siteKey: \"" + SITE_KEY + "\") {"
-                + " renameTagOnNode(tag: \"beta-tag\", newName: \"beta-local\", nodeId: \"" + betaNodeId + "\") {"
+    public void shouldRenameTagOnNodeInEditAndLive() {
+        JSONObject result = executeTagManagerMutation(
+                " renameTagOnNode(tag: \"" + BETA_TAG + "\", newName: \"" + BETA_LOCAL_TAG + "\", nodeId: \"" + betaNodeId + "\") {"
                 + "  tag"
                 + "  nodeId"
                 + "  workspaceResults { workspace processedCount errors { path } }"
-                + " }"
-                + "} } } }");
+                + " }");
 
-        JSONArray workspaceResults = result.getJSONObject("data").getJSONObject("admin").getJSONObject("jahia")
-                .getJSONObject("tagManager").getJSONObject("renameTagOnNode").getJSONArray("workspaceResults");
-        Assert.assertEquals(1, workspaceResults.getJSONObject(0).getInt("processedCount"));
-        Assert.assertEquals(1, workspaceResults.getJSONObject(1).getInt("processedCount"));
+        JSONArray workspaceResults = getTagManagerResult(result).getJSONObject("renameTagOnNode").getJSONArray(WORKSPACE_RESULTS);
+        Assert.assertEquals(1, workspaceResults.getJSONObject(0).getInt(PROCESSED_COUNT));
+        Assert.assertEquals(1, workspaceResults.getJSONObject(1).getInt(PROCESSED_COUNT));
 
-        assertTags(Constants.EDIT_WORKSPACE, "/sites/" + SITE_KEY + "/tags/alpha", "alpha-tag", "beta-tag", "gamma-tag");
-        assertTags(Constants.EDIT_WORKSPACE, "/sites/" + SITE_KEY + "/tags/beta", "beta-local", "gamma-tag");
-        assertTags(Constants.LIVE_WORKSPACE, "/sites/" + SITE_KEY + "/tags/alpha", "alpha-tag", "beta-tag", "gamma-tag");
-        assertTags(Constants.LIVE_WORKSPACE, "/sites/" + SITE_KEY + "/tags/beta", "beta-local", "gamma-tag");
+        assertTags(Constants.EDIT_WORKSPACE, siteTagPath(ALPHA_NODE_NAME), ALPHA_TAG, BETA_TAG, GAMMA_TAG);
+        assertTags(Constants.EDIT_WORKSPACE, siteTagPath(BETA_NODE_NAME), BETA_LOCAL_TAG, GAMMA_TAG);
+        assertTags(Constants.LIVE_WORKSPACE, siteTagPath(ALPHA_NODE_NAME), ALPHA_TAG, BETA_TAG, GAMMA_TAG);
+        assertTags(Constants.LIVE_WORKSPACE, siteTagPath(BETA_NODE_NAME), BETA_LOCAL_TAG, GAMMA_TAG);
     }
 
-    private void createAndSeedSites() throws Exception {
-        TestHelper.createSite(SITE_KEY);
-        TestHelper.createSite(OTHER_SITE_KEY);
-
-        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, Locale.ENGLISH, null);
+    private void createAndSeedSites() {
         try {
-            JCRNodeWrapper siteNode = session.getNode("/sites/" + SITE_KEY);
-            JCRNodeWrapper tagsFolder = siteNode.addNode("tags", "jnt:contentList");
-            JCRNodeWrapper alphaNode = tagsFolder.addNode("alpha", "jnt:contentList");
-            JCRNodeWrapper betaNode = tagsFolder.addNode("beta", "jnt:contentList");
-            JCRNodeWrapper gammaNode = tagsFolder.addNode("gamma", "jnt:contentList");
+            TestHelper.createSite(SITE_KEY);
+            TestHelper.createSite(OTHER_SITE_KEY);
 
-            taggingService.tag(alphaNode, Arrays.asList("alpha-tag", "beta-tag", "gamma-tag"));
-            taggingService.tag(betaNode, Arrays.asList("beta-tag", "gamma-tag"));
-            taggingService.tag(gammaNode, Arrays.asList("gamma-tag", SPECIAL_TAG));
+            JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, Locale.ENGLISH, null);
+            try {
+                JCRNodeWrapper siteNode = session.getNode(sitePath(SITE_KEY));
+                JCRNodeWrapper tagsFolder = siteNode.addNode(TAGS_FOLDER, CONTENT_LIST_TYPE);
+                JCRNodeWrapper alphaNode = tagsFolder.addNode(ALPHA_NODE_NAME, CONTENT_LIST_TYPE);
+                JCRNodeWrapper betaNode = tagsFolder.addNode(BETA_NODE_NAME, CONTENT_LIST_TYPE);
+                JCRNodeWrapper gammaNode = tagsFolder.addNode(GAMMA_NODE_NAME, CONTENT_LIST_TYPE);
 
-            alphaNodeId = alphaNode.getIdentifier();
-            betaNodeId = betaNode.getIdentifier();
-            gammaNodeId = gammaNode.getIdentifier();
+                taggingService.tag(alphaNode, Arrays.asList(ALPHA_TAG, BETA_TAG, GAMMA_TAG));
+                taggingService.tag(betaNode, Arrays.asList(BETA_TAG, GAMMA_TAG));
+                taggingService.tag(gammaNode, Arrays.asList(GAMMA_TAG, SPECIAL_TAG));
 
-            JCRNodeWrapper otherTagsFolder = session.getNode("/sites/" + OTHER_SITE_KEY).addNode("tags", "jnt:contentList");
-            JCRNodeWrapper otherNode = otherTagsFolder.addNode("outside", "jnt:contentList");
-            taggingService.tag(otherNode, Collections.singletonList("gamma-tag"));
+                betaNodeId = betaNode.getIdentifier();
 
-            session.save();
-            JCRPublicationService.getInstance().publishByMainId(siteNode.getIdentifier());
-            JCRPublicationService.getInstance().publishByMainId(session.getNode("/sites/" + OTHER_SITE_KEY).getIdentifier());
-        } finally {
-            session.logout();
+                JCRNodeWrapper otherTagsFolder = session.getNode(sitePath(OTHER_SITE_KEY)).addNode(TAGS_FOLDER, CONTENT_LIST_TYPE);
+                JCRNodeWrapper otherNode = otherTagsFolder.addNode(OUTSIDE_NODE_NAME, CONTENT_LIST_TYPE);
+                taggingService.tag(otherNode, Collections.singletonList(GAMMA_TAG));
+
+                session.save();
+                JCRPublicationService.getInstance().publishByMainId(siteNode.getIdentifier());
+                JCRPublicationService.getInstance().publishByMainId(session.getNode(sitePath(OTHER_SITE_KEY)).getIdentifier());
+            } finally {
+                session.logout();
+            }
+        } catch (Exception e) {
+            throw new AssertionError("Failed to create and seed tag manager test sites", e);
         }
     }
 
-    private void removeSites() throws Exception {
+    private void removeSites() {
         removeSite(Constants.EDIT_WORKSPACE, SITE_KEY);
         removeSite(Constants.EDIT_WORKSPACE, OTHER_SITE_KEY);
         removeSite(Constants.LIVE_WORKSPACE, SITE_KEY);
         removeSite(Constants.LIVE_WORKSPACE, OTHER_SITE_KEY);
     }
 
-    private void removeSite(String workspace, String siteKey) throws Exception {
+    private void removeSite(String workspace, String siteKey) {
         JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, Locale.ENGLISH, null);
         try {
-            if (session.nodeExists("/sites/" + siteKey)) {
-                session.getNode("/sites/" + siteKey).remove();
+            if (session.nodeExists(sitePath(siteKey))) {
+                session.getNode(sitePath(siteKey)).remove();
                 session.save();
             }
+        } catch (RepositoryException e) {
+            throw new AssertionError("Failed to remove site " + siteKey + " in workspace " + workspace, e);
         } finally {
             session.logout();
         }
     }
 
-    private void assertTags(String workspace, String path, String... expectedTags) throws Exception {
+    private void assertTags(String workspace, String path, String... expectedTags) {
         JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, Locale.ENGLISH, null);
         try {
             Assert.assertEquals(Arrays.asList(expectedTags), getTags(session.getNode(path)));
+        } catch (RepositoryException e) {
+            throw new AssertionError("Failed to assert tags for " + path + " in workspace " + workspace, e);
         } finally {
             session.logout();
         }
@@ -380,5 +393,25 @@ public class GraphQLTagManagerTest extends GraphQLTestSupport {
                 .replace("\n", "\\n")
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
+    }
+
+    private JSONObject executeTagManagerQuery(String body) {
+        return executeQuery(QUERY_PREFIX + SITE_KEY + QUERY_SUFFIX + body + QUERY_END);
+    }
+
+    private JSONObject executeTagManagerMutation(String body) {
+        return executeQuery(MUTATION_PREFIX + SITE_KEY + QUERY_SUFFIX + body + QUERY_END);
+    }
+
+    private JSONObject getTagManagerResult(JSONObject result) {
+        return result.getJSONObject(DATA).getJSONObject(ADMIN).getJSONObject(JAHIA).getJSONObject(TAG_MANAGER);
+    }
+
+    private String sitePath(String siteKey) {
+        return SITE_ROOT + siteKey;
+    }
+
+    private String siteTagPath(String nodeName) {
+        return sitePath(SITE_KEY) + TAGS_ROOT + nodeName;
     }
 }
