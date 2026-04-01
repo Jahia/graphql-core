@@ -52,6 +52,7 @@
             org.jahia.modules.graphql.provider.dxm.sdl.parsing.status,
             org.jahia.modules.graphql.provider.dxm.sdl.registration,
             org.jahia.modules.graphql.provider.dxm.security,
+            org.jahia.modules.graphql.provider.dxm.service.tags,
             org.jahia.modules.graphql.provider.dxm.site,
             org.jahia.modules.graphql.provider.dxm.upload,
             org.jahia.modules.graphql.provider.dxm.user,
@@ -146,6 +147,7 @@
             org.jahia.services.modulemanager.util,
             org.jahia.services.query,
             org.jahia.services.render,
+            org.jahia.services.render.filter.cache,
             org.jahia.services.render.scripting,
             org.jahia.services.scheduler,
             org.jahia.services.securityfilter,
@@ -393,6 +395,13 @@
                     <outputReactorProjects>true</outputReactorProjects>
                     <outputFormat>json</outputFormat>
                     <outputName>java-bom.cdx</outputName>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED</argLine>
                 </configuration>
             </plugin>
         </plugins>
