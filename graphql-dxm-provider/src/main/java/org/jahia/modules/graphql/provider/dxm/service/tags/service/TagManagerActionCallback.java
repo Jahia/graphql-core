@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jahia.modules.graphql.provider.dxm.service.tags;
+package org.jahia.modules.graphql.provider.dxm.service.tags.service;
 
-import org.jahia.services.content.JCRContentUtils;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import org.jahia.modules.graphql.provider.dxm.service.tags.graphql.GqlTagWorkspaceMutationResult;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.render.filter.cache.ModuleCacheProvider;
@@ -31,7 +33,8 @@ class TagManagerActionCallback implements TagActionCallback<GqlTagWorkspaceMutat
     private final ModuleCacheProvider moduleCacheProvider;
     private final JCRSessionWrapper session;
     private final String workspace;
-    private final List<GqlTagMutationError> errors = new ArrayList<>();
+    private final List<GqlJcrNode> updatedNodes = new ArrayList<>();
+    private final List<GqlJcrNode> failedNodes = new ArrayList<>();
     private int processedCount;
 
     TagManagerActionCallback(ModuleCacheProvider moduleCacheProvider, JCRSessionWrapper session, String workspace) {
@@ -47,18 +50,18 @@ class TagManagerActionCallback implements TagActionCallback<GqlTagWorkspaceMutat
             session.save();
         }
 
-        TagManagerService.flushNodeCaches(moduleCacheProvider, node.getPath());
+        updatedNodes.add(SpecializedTypesHandler.getNode(node));
+        TagManagerServiceSupport.flushNodeCaches(moduleCacheProvider, node.getPath());
     }
 
     @Override
     public void onError(JCRNodeWrapper node, RepositoryException e) throws RepositoryException {
-        JCRNodeWrapper pageNode = JCRContentUtils.getParentOfType(node, "jnt:page");
-        errors.add(new GqlTagMutationError(node.getPath(), pageNode != null ? pageNode.getDisplayableName() : null));
+        failedNodes.add(SpecializedTypesHandler.getNode(node));
     }
 
     @Override
     public GqlTagWorkspaceMutationResult end() throws RepositoryException {
         session.save();
-        return new GqlTagWorkspaceMutationResult(workspace, processedCount, errors);
+        return new GqlTagWorkspaceMutationResult(workspace, processedCount, updatedNodes, failedNodes);
     }
 }

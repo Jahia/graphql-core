@@ -53,6 +53,8 @@
             org.jahia.modules.graphql.provider.dxm.sdl.registration,
             org.jahia.modules.graphql.provider.dxm.security,
             org.jahia.modules.graphql.provider.dxm.service.tags,
+            org.jahia.modules.graphql.provider.dxm.service.tags.graphql,
+            org.jahia.modules.graphql.provider.dxm.service.tags.service,
             org.jahia.modules.graphql.provider.dxm.site,
             org.jahia.modules.graphql.provider.dxm.upload,
             org.jahia.modules.graphql.provider.dxm.user,

@@ -208,7 +208,7 @@ public class GraphQLTagManagerTest extends GraphQLTestSupport {
 
         JSONObject renameResult = executeTagManagerMutation(
                 " renameTag(tag: \"" + escapedTag + "\", newName: \"" + SPECIAL_RENAMED_TAG + "\") {"
-                        + "  workspaceResults { workspace processedCount errors { path } }"
+                        + "  workspaceResults { workspace processedCount updatedNodes { path } failedNodes { path } }"
                         + " }");
 
         JSONArray renameWorkspaceResults = getTagManagerResult(renameResult).getJSONObject("renameTag").getJSONArray(WORKSPACE_RESULTS);
@@ -219,7 +219,7 @@ public class GraphQLTagManagerTest extends GraphQLTestSupport {
 
         JSONObject deleteResult = executeTagManagerMutation(
                 " deleteTag(tag: \"" + SPECIAL_RENAMED_TAG + "\") {"
-                        + "  workspaceResults { workspace processedCount errors { path } }"
+                        + "  workspaceResults { workspace processedCount updatedNodes { path } failedNodes { path } }"
                         + " }");
 
         JSONArray deleteWorkspaceResults = getTagManagerResult(deleteResult).getJSONObject("deleteTag").getJSONArray(WORKSPACE_RESULTS);
@@ -234,15 +234,15 @@ public class GraphQLTagManagerTest extends GraphQLTestSupport {
         JSONObject result = executeTagManagerMutation(
                 " renameTag(tag: \"" + BETA_TAG + "\", newName: \"" + BETA_RENAMED_TAG + "\") {"
                 + "  tag"
-                + "  workspaceResults { workspace processedCount errors { path displayableName } }"
+                + "  workspaceResults { workspace processedCount updatedNodes { path } failedNodes { path } }"
                 + " }");
 
         JSONArray workspaceResults = getTagManagerResult(result).getJSONObject("renameTag").getJSONArray(WORKSPACE_RESULTS);
         Assert.assertEquals(2, workspaceResults.length());
         Assert.assertEquals(2, workspaceResults.getJSONObject(0).getInt(PROCESSED_COUNT));
-        Assert.assertEquals(0, workspaceResults.getJSONObject(0).getJSONArray("errors").length());
+        Assert.assertEquals(0, workspaceResults.getJSONObject(0).getJSONArray("failedNodes").length());
         Assert.assertEquals(2, workspaceResults.getJSONObject(1).getInt(PROCESSED_COUNT));
-        Assert.assertEquals(0, workspaceResults.getJSONObject(1).getJSONArray("errors").length());
+        Assert.assertEquals(0, workspaceResults.getJSONObject(1).getJSONArray("failedNodes").length());
 
         assertTags(Constants.EDIT_WORKSPACE, siteTagPath(ALPHA_NODE_NAME), ALPHA_TAG, BETA_RENAMED_TAG, GAMMA_TAG);
         assertTags(Constants.EDIT_WORKSPACE, siteTagPath(BETA_NODE_NAME), BETA_RENAMED_TAG, GAMMA_TAG);
@@ -255,7 +255,7 @@ public class GraphQLTagManagerTest extends GraphQLTestSupport {
         JSONObject result = executeTagManagerMutation(
                 " deleteTag(tag: \"" + GAMMA_TAG + "\") {"
                 + "  tag"
-                + "  workspaceResults { workspace processedCount errors { path } }"
+                + "  workspaceResults { workspace processedCount updatedNodes { path } failedNodes { path } }"
                 + " }");
 
         JSONArray workspaceResults = getTagManagerResult(result).getJSONObject("deleteTag").getJSONArray(WORKSPACE_RESULTS);
@@ -276,7 +276,7 @@ public class GraphQLTagManagerTest extends GraphQLTestSupport {
                 " deleteTagOnNode(tag: \"" + BETA_TAG + "\", nodeId: \"" + betaNodeId + "\") {"
                 + "  tag"
                 + "  nodeId"
-                + "  workspaceResults { workspace processedCount errors { path } }"
+                + "  workspaceResults { workspace processedCount updatedNodes { path } failedNodes { path } }"
                 + " }");
 
         JSONArray workspaceResults = getTagManagerResult(result).getJSONObject("deleteTagOnNode").getJSONArray(WORKSPACE_RESULTS);
@@ -295,7 +295,7 @@ public class GraphQLTagManagerTest extends GraphQLTestSupport {
                 " renameTagOnNode(tag: \"" + BETA_TAG + "\", newName: \"" + BETA_LOCAL_TAG + "\", nodeId: \"" + betaNodeId + "\") {"
                 + "  tag"
                 + "  nodeId"
-                + "  workspaceResults { workspace processedCount errors { path } }"
+                + "  workspaceResults { workspace processedCount updatedNodes { path } failedNodes { path } }"
                 + " }");
 
         JSONArray workspaceResults = getTagManagerResult(result).getJSONObject("renameTagOnNode").getJSONArray(WORKSPACE_RESULTS);
@@ -350,7 +350,13 @@ public class GraphQLTagManagerTest extends GraphQLTestSupport {
     }
 
     private void removeSite(String workspace, String siteKey) {
-        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, Locale.ENGLISH, null);
+        JCRSessionWrapper session;
+        try {
+            session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, Locale.ENGLISH, null);
+        } catch (RepositoryException e) {
+            throw new AssertionError("Failed to open system session for workspace " + workspace, e);
+        }
+
         try {
             if (session.nodeExists(sitePath(siteKey))) {
                 session.getNode(sitePath(siteKey)).remove();
@@ -364,7 +370,13 @@ public class GraphQLTagManagerTest extends GraphQLTestSupport {
     }
 
     private void assertTags(String workspace, String path, String... expectedTags) {
-        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, Locale.ENGLISH, null);
+        JCRSessionWrapper session;
+        try {
+            session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, Locale.ENGLISH, null);
+        } catch (RepositoryException e) {
+            throw new AssertionError("Failed to open system session for workspace " + workspace, e);
+        }
+
         try {
             Assert.assertEquals(Arrays.asList(expectedTags), getTags(session.getNode(path)));
         } catch (RepositoryException e) {

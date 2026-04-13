@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jahia.modules.graphql.provider.dxm.service.tags;
+package org.jahia.modules.graphql.provider.dxm.service.tags.graphql;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
@@ -22,14 +22,16 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 
 import java.util.List;
 
-@GraphQLName("TagBulkMutationResult")
-@GraphQLDescription("The result of a bulk tag mutation")
-public class GqlTagBulkMutationResult {
+@GraphQLName("TagMutationResult")
+@GraphQLDescription("The result of a tag mutation")
+public class GqlTagMutationResult {
     private final String tag;
+    private final String nodeId;
     private final List<GqlTagWorkspaceMutationResult> workspaceResults;
 
-    public GqlTagBulkMutationResult(String tag, List<GqlTagWorkspaceMutationResult> workspaceResults) {
+    public GqlTagMutationResult(String tag, String nodeId, List<GqlTagWorkspaceMutationResult> workspaceResults) {
         this.tag = tag;
+        this.nodeId = nodeId;
         this.workspaceResults = workspaceResults;
     }
 
@@ -38,6 +40,12 @@ public class GqlTagBulkMutationResult {
     @GraphQLDescription("The processed tag")
     public String getTag() {
         return tag;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The impacted node identifier when the mutation targets a specific node")
+    public String getNodeId() {
+        return nodeId;
     }
 
     @GraphQLField

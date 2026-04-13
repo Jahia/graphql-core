@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jahia.modules.graphql.provider.dxm.service.tags;
+package org.jahia.modules.graphql.provider.dxm.service.tags.graphql;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
@@ -22,25 +22,34 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
+import org.jahia.modules.graphql.provider.dxm.service.tags.service.TagManagerReadService;
+
+import javax.inject.Inject;
 
 @GraphQLName("JahiaTagManager")
 @GraphQLDescription("Tag manager queries for a site")
 public class GqlTagManagerQuery {
     private final String siteKey;
 
+    @Inject
+    @GraphQLOsgiService
+    private TagManagerReadService tagManagerReadService;
+
     public GqlTagManagerQuery(String siteKey) {
         this.siteKey = siteKey;
     }
 
     @GraphQLField
+    @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("List tags used under the site")
-    public GqlManagedTagConnection tags(@GraphQLName("sortBy") @GraphQLDescription("The field to sort by") TagManagerSortBy sortBy,
-                                        @GraphQLName("sortOrder") @GraphQLDescription("The sort order") TagManagerSortOrder sortOrder,
-                                        @GraphQLName("limit") @GraphQLDescription("Max number of tags to return") Integer limit,
-                                        @GraphQLName("offset") @GraphQLDescription("Offset within the tag list") Integer offset) {
-        return TagManagerService.getInstance().getTags(siteKey, sortBy, sortOrder, limit, offset);
+    public DXPaginatedData<GqlManagedTag> tags(@GraphQLName("sortBy") @GraphQLDescription("The field to sort by") TagManagerSortBy sortBy,
+                                               @GraphQLName("sortOrder") @GraphQLDescription("The sort order") SorterHelper.SortType sortOrder,
+                                               DataFetchingEnvironment environment) {
+        return tagManagerReadService.getTags(siteKey, sortBy, sortOrder, environment);
     }
 
     @GraphQLField
@@ -48,6 +57,6 @@ public class GqlTagManagerQuery {
     @GraphQLDescription("List content items using a specific tag")
     public DXPaginatedData<GqlJcrNode> taggedContent(@GraphQLName("tag") @GraphQLDescription("The tag to inspect") @GraphQLNonNull String tag,
                                                      DataFetchingEnvironment environment) {
-        return TagManagerService.getInstance().getTaggedContent(siteKey, tag, environment);
+        return tagManagerReadService.getTaggedContent(siteKey, tag, environment);
     }
 }

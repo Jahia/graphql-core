@@ -25,7 +25,7 @@ import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
 import org.jahia.modules.graphql.provider.dxm.osgiconfig.GqlConfigurationQuery;
 import org.jahia.modules.graphql.provider.dxm.scheduler.GqlScheduler;
-import org.jahia.modules.graphql.provider.dxm.service.tags.GqlTagManagerQuery;
+import org.jahia.modules.graphql.provider.dxm.service.tags.graphql.GqlTagManagerQuery;
 import org.jahia.utils.DatabaseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

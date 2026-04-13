@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jahia.modules.graphql.provider.dxm.service.tags;
+package org.jahia.modules.graphql.provider.dxm.service.tags.graphql;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 
 import java.util.List;
 
@@ -27,12 +28,14 @@ import java.util.List;
 public class GqlTagWorkspaceMutationResult {
     private final String workspace;
     private final int processedCount;
-    private final List<GqlTagMutationError> errors;
+    private final List<GqlJcrNode> updatedNodes;
+    private final List<GqlJcrNode> failedNodes;
 
-    public GqlTagWorkspaceMutationResult(String workspace, int processedCount, List<GqlTagMutationError> errors) {
+    public GqlTagWorkspaceMutationResult(String workspace, int processedCount, List<GqlJcrNode> updatedNodes, List<GqlJcrNode> failedNodes) {
         this.workspace = workspace;
         this.processedCount = processedCount;
-        this.errors = errors;
+        this.updatedNodes = updatedNodes;
+        this.failedNodes = failedNodes;
     }
 
     @GraphQLField
@@ -51,8 +54,15 @@ public class GqlTagWorkspaceMutationResult {
 
     @GraphQLField
     @GraphQLNonNull
-    @GraphQLDescription("Errors collected during this workspace update")
-    public List<GqlTagMutationError> getErrors() {
-        return errors;
+    @GraphQLDescription("Nodes updated during this workspace mutation")
+    public List<GqlJcrNode> getUpdatedNodes() {
+        return updatedNodes;
+    }
+
+    @GraphQLField
+    @GraphQLNonNull
+    @GraphQLDescription("Nodes that failed to update during this workspace mutation")
+    public List<GqlJcrNode> getFailedNodes() {
+        return failedNodes;
     }
 }
