@@ -43,7 +43,7 @@ describe('Test ACL/ACE query endpoint', () => {
             const aclEntry = getRole(acl.aclEntries, 'guest', 'reader');
             expect(aclEntry, `Anne has editor-in-chief role for ${path}`).to.be.not.undefined;
             expect(aclEntry.inherited).to.be.true;
-            expect(aclEntry.inheritedFrom.path).equals('/');
+            expect(aclEntry.inheritedFrom.path).equals('/sites');
         });
     });
 
