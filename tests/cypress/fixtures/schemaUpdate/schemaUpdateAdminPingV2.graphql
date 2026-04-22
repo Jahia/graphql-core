@@ -1,0 +1,4 @@
+query SchemaUpdateAdminPingV2($text: String) {
+  schemaUpdateAdminPing(text: $text)
+}
+

@@ -1,0 +1,10 @@
+query SchemaUpdateIntrospectTypes {
+  __schema {
+    types {
+      name
+      kind
+      description
+    }
+  }
+}
+

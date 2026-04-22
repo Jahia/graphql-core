@@ -45,6 +45,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private Map<String, List<String>> keysByPid = new HashMap<>();
     private Map<String, String> permissions = new HashMap<>();
+    private Map<String, String> configPermissions = new HashMap<>();
 
     private Set<String> corsOrigins = new HashSet<>();
     private Map<String, Set<String>> corsOriginByPid = new HashMap<>();
@@ -90,7 +91,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                     }
                 }
                 if (addKey) {
-                    permissions.put(key.substring(PERMISSION_PREFIX.length()), value);
+                    configPermissions.put(key.substring(PERMISSION_PREFIX.length()), value);
                     // store the key for the permission configuration
                     keysForPid.add(key);
                 }
@@ -129,7 +130,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
             for (String key : keysForPid) {
                 // parse permissions ( permission format is like: permission.Query.nodesByQuery = privileged )
                 if (key.startsWith(PERMISSION_PREFIX)) {
-                    permissions.remove(key.substring(PERMISSION_PREFIX.length()));
+                    configPermissions.remove(key.substring(PERMISSION_PREFIX.length()));
                 } else if (key.equals(CORS_ORIGINS)) {
                     corsOriginByPid.remove(pid);
                     corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
@@ -137,6 +138,16 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
             }
             keysByPid.remove(pid);
         }
+    }
+
+    public void addPermission(String pid, String permission) {
+        permissions.put(pid, permission);
+    }
+
+    public void clearPermission() {
+        permissions.clear();
+        // Restore permissions
+        permissions.putAll(configPermissions);
     }
 
 

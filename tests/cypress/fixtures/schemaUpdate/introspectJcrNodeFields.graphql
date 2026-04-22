@@ -1,0 +1,9 @@
+query SchemaUpdateIntrospectJcrNodeType {
+  __type(name: "GenericJCRNode") {
+    fields {
+      name
+      description
+    }
+  }
+}
+

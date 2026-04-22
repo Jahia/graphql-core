@@ -164,13 +164,11 @@ public class DXGraphQLProvider implements
     public void addExtensionProvider(DXGraphQLExtensionsProvider provider) {
         logger.debug("Adding extension : {}", provider.toString());
         this.extensionsProviders.add(provider);
-        registerSchema();
     }
 
     public void removeExtensionProvider(DXGraphQLExtensionsProvider provider) {
         logger.debug("Removing extension : {}", provider.toString());
         this.extensionsProviders.remove(provider);
-        registerSchema();
     }
 
     @Reference
@@ -203,6 +201,10 @@ public class DXGraphQLProvider implements
                 }
             });
         };
+
+        // Clean up annotation
+        graphQLAnnotations.setExtensionsHandler(extensionsHandler);
+        container = graphQLAnnotations.createContainer();
 
         JahiaGraphQLFieldRetriever graphQLFieldWithPermissionsRetriever = new JahiaGraphQLFieldRetriever(dxGraphQLConfig, graphQLFieldRetriever, executor);
 
@@ -299,6 +301,7 @@ public class DXGraphQLProvider implements
 
     @Deactivate
     public void deactivate() {
+        dxGraphQLConfig.clearPermission();
         pool.shutdown();
     }
 
