@@ -15,9 +15,12 @@ services:
             - jahia:127.0.0.1
         networks:
             - stack
+        volumes:
+          - ./maven-local-repo:/home/tomcat/.m2/repository
     dockerldap:
         image: "ghcr.io/jahia/docker-openldap:${LDAP_TAG}"
         container_name: dockerldap
+        platform: linux/amd64
         environment:
             LDAP_LOG_LEVEL: "256"
             LDAP_ORGANISATION: "Jahia Inc."

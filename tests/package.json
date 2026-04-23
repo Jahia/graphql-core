@@ -6,7 +6,7 @@
     "@apollo/client": "^3.13.6",
     "@cypress/code-coverage": "^3.14.0",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
-    "@jahia/cypress": "^7.0.0",
+    "@jahia/cypress": "^8.0.0",
     "@jahia/eslint-config": "^2.1.2",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
