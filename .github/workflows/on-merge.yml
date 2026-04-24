@@ -60,6 +60,7 @@ jobs:
     with:
       jahia_image: ghcr.io/jahia/jahia-ee-dev:8-SNAPSHOT
       module_id: graphql-dxm-provider
+      module_branch: main
       testrail_project: GraphQL Core module
       pagerduty_skip_notification: true
       provisioning_manifest: provisioning-manifest-build.yml
