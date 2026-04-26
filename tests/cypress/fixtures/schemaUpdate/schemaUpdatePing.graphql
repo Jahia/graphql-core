@@ -1,4 +1,3 @@
-query SchemaUpdatePing($message: String) {
-  schemaUpdatePing(message: $message)
+query SchemaUpdatePing($msg: String) {
+  schemaUpdatePing(msg: $msg)
 }
-

@@ -83,6 +83,5 @@
         <module>misc-test-module</module>
         <module>scheduler-test-module</module>
         <module>schema-update-test-module</module>
-        <module>schema-update-test-module-v2</module>
     </modules>
 </project>

@@ -1,9 +1,0 @@
-query SchemaUpdateNodeTag($path: String!) {
-  jcr {
-    nodeByPath(path: $path) {
-      name
-      schemaUpdateNodeTag
-    }
-  }
-}
-

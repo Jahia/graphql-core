@@ -1,93 +1,169 @@
 /**
  * ModuleManagement.ts
  *
- * Utilities to manage Jahia OSGi bundle lifecycle during Cypress tests.
+ * Utilities to manage Jahia OSGi component lifecycle and schema changes during Cypress tests.
  *
- * cy.executeGroovy() yields either:
- *   ['.installed']  – script completed without throwing
- *   ['.failed']     – script threw an exception
+ * Provider lifecycle (ConfigAdmin-based):
+ *   activateProvider(pid)   – creates an empty OSGi config satisfying configurationPolicy=REQUIRE
+ *   deactivateProvider(pid) – deletes that config, causing the component to deactivate
  *
- * The return value of the Groovy script itself is ignored by the runner.
+ * DXGraphQLConfig runtime permissions:
+ *   addGraphQLPermissionConfig(key, value) – adds a factory config with a permission entry
+ *   cleanupGraphQLPermissionConfig()       – removes all test-marker factory configs
  *
- * Groovy scripts used:
- *   startModule.groovy      – calls bundle.start(), throws if not found
- *   stopModule.groovy       – calls bundle.stop(), throws if not found
- *   checkModuleState.groovy – throws if bundle is not in EXPECTED_STATE;
- *                             used by waitForModuleState to poll until match
+ * Schema-change detection (introspection-based):
+ *   waitForFieldInSchema(typeName, fieldName, present) – polls until field appears/disappears
  *
- * For in-place upgrades (Scenario G) the Karaf SSH helper is still provided
- * because bundle:update has no Groovy / REST equivalent.
+ * Module install/uninstall (provisioning-based, used for initial setup):
+ *   deployModule(symbolicName, jarFixturePath) – uninstall existing, install+start new JAR
+ *   uninstallModuleSafe(symbolicName)          – idempotent uninstall
+ *
+ * Bundle state polling (Groovy-based):
+ *   waitForModuleState(key, version, state) – uses checkModuleState.groovy
  */
 
 /// <reference types="cypress-wait-until" />
+import gql from 'graphql-tag';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/**
- * Assert that a cy.executeGroovy() result is '.installed' (success).
- * Throws immediately if the script returned '.failed'.
- */
-const assertGroovyOk = (result: any, context: string): void => {
-    const status: string = Array.isArray(result) ? result[0] : String(result);
-    if (status !== '.installed') {
-        throw new Error(`[${context}] Groovy script failed (yielded: '${status}'). Check Jahia logs for details.`);
-    }
-};
-
-// ─── OSGi state constant names used as EXPECTED_STATE substitution ────────────
-// These match the Bundle constant field names: Bundle.ACTIVE, Bundle.RESOLVED …
+// ─── OSGi state constant names ────────────────────────────────────────────────
 export type OsgiStateName = 'ACTIVE' | 'RESOLVED' | 'INSTALLED' | 'STARTING' | 'STOPPING';
 
-// ─── Groovy-based start / stop ────────────────────────────────────────────────
+// ─── Provider lifecycle ───────────────────────────────────────────────────────
 
 /**
- * Start an already-installed (Resolved) bundle.
- * Fails the test immediately if the Groovy script yields '.failed'.
+ * Activate a DXGraphQLExtensionsProvider component that requires a configuration
+ * (configurationPolicy = REQUIRE). Creates an empty ConfigAdmin config for the given PID.
+ * Idempotent: does nothing if the config already exists.
+ *
+ * @param providerPid      PID of the provider to activate.
+ * @param deactivateBefore PIDs of other providers to deactivate first (mutual exclusion).
  */
-export const startModule = (bundleKey: string, bundleVersion: string): Cypress.Chainable =>
-    cy.executeGroovy('groovy/startModule.groovy', {BUNDLE_KEY: bundleKey, BUNDLE_VERSION: bundleVersion})
-        .then((result: any) => assertGroovyOk(result, `startModule(${bundleKey})`));
-
-/**
- * Stop a running bundle.
- * Fails the test immediately if the Groovy script yields '.failed'.
- */
-export const stopModule = (bundleKey: string, bundleVersion: string): Cypress.Chainable =>
-    cy.executeGroovy('groovy/stopModule.groovy', {BUNDLE_KEY: bundleKey, BUNDLE_VERSION: bundleVersion})
-        .then((result: any) => assertGroovyOk(result, `stopModule(${bundleKey})`));
-
-/**
- * Stop a bundle only if it is currently ACTIVE; does nothing if it is not found
- * or already in any other state.  Never fails the test – safe for use in teardown
- * hooks and setup guards.
- */
-export const stopModuleSafe = (bundleKey: string, bundleVersion: string): Cypress.Chainable =>
-    cy.executeGroovy('groovy/checkModuleState.groovy', {
-        BUNDLE_KEY: bundleKey,
-        BUNDLE_VERSION: bundleVersion,
-        EXPECTED_STATE: 'ACTIVE'
-    }).then((result: any) => {
-        const status: string = Array.isArray(result) ? result[0] : String(result);
-        if (status === '.installed') {
-            return stopModule(bundleKey, bundleVersion);
-        }
-        // Already stopped, not found, or in a transient state – nothing to do.
+export const activateProvider = (providerPid: string, deactivateBefore: string[] = []): void => {
+    cy.executeGroovy('groovy/activateProvider.groovy', {
+        PROVIDER_PID: providerPid,
+        PROVIDERS_TO_DEACTIVATE: deactivateBefore.join('|')
     });
-
-// ─── State polling ────────────────────────────────────────────────────────────
+};
 
 /**
- * Wait until a bundle reaches the expected OSGi state.
- *
- * Uses checkModuleState.groovy which throws (→ '.failed') when the state does
- * not match yet, and succeeds (→ '.installed') when it does.
- * cy.waitUntil polls until '.installed' is seen or the timeout is reached.
- *
- * @param bundleKey      Bundle symbolic name, e.g. 'schema-update-test-module'
- * @param bundleVersion  Bundle version,        e.g. '1.0.0-SNAPSHOT'
- * @param expectedState  OSGi Bundle constant name: 'ACTIVE' | 'RESOLVED' | 'INSTALLED'
- * @param timeoutMs      Maximum wait time in ms (default 30 000)
+ * Deactivate a DXGraphQLExtensionsProvider component by deleting its ConfigAdmin config.
+ * Idempotent: does nothing if the config does not exist.
  */
+export const deactivateProvider = (providerPid: string): void => {
+    cy.executeGroovy('groovy/deactivateProvider.groovy', {PROVIDER_PID: providerPid});
+};
+
+// ─── DXGraphQLConfig runtime permissions ─────────────────────────────────────
+// NOTE: permissions are managed via Groovy scripts that call
+// ConfigurationAdmin.createFactoryConfiguration() directly.
+// The GraphQL admin mutation (ConfigService.getConfig) creates SINGLETON configs,
+// which do NOT trigger ManagedServiceFactory.updated() — only createFactoryConfiguration()
+// produces a proper factory config instance that ConfigAdmin routes to the factory.
+
+/**
+ * Add a runtime permission entry to DXGraphQLConfig via a new factory config instance.
+ * Does NOT rebuild the schema — permission is enforced on every query execution.
+ * The config is tagged with "test.schemaupdate=true" so cleanupGraphQLPermissionConfig
+ * can find and delete it.
+ *
+ * @param permissionKey   Key without "permission." prefix, e.g. "Query.schemaUpdatePing"
+ * @param permissionValue Permission name to require, e.g. "schemaUpdateNonExistent"
+ */
+export const addGraphQLPermissionConfig = (permissionKey: string, permissionValue: string): void => {
+    cy.executeGroovy('groovy/addGraphQLPermissionConfig.groovy', {
+        PERMISSION_KEY: `permission.${permissionKey}`,
+        PERMISSION_VALUE: permissionValue
+    });
+};
+
+/**
+ * Remove all DXGraphQLConfig factory config instances created by addGraphQLPermissionConfig.
+ * Identified by the "test.schemaupdate=true" marker. Safe to call even when none exist.
+ */
+export const cleanupGraphQLPermissionConfig = (): void => {
+    cy.executeGroovy('groovy/cleanupGraphQLPermissionConfig.groovy');
+};
+
+// ─── API authorization config ─────────────────────────────────────────────────
+// The org.jahia.bundles.api.authorization YAML files define API-level access
+// scopes that gate which GraphQL fields a user may call, independently of
+// JCR @GraphQLRequiresPermission checks.
+
+/**
+ * Write the authorization YAML file that grants API access to the
+ * schemaUpdatePermTest GraphQL field for hosted-origin requests.
+ * This is the API-layer gate; @GraphQLRequiresPermission provides the second layer.
+ * Idempotent — overwrites any existing file.
+ */
+export const addAuthorizationConfig = (): void => {
+    cy.executeGroovy('groovy/addAuthorizationConfig.groovy');
+};
+
+/**
+ * Delete the authorization YAML file written by addAuthorizationConfig.
+ * Idempotent — safe to call even when the file does not exist.
+ */
+export const cleanupAuthorizationConfig = (): void => {
+    cy.executeGroovy('groovy/cleanupAuthorizationConfig.groovy');
+};
+
+// ─── Schema-change detection ──────────────────────────────────────────────────
+
+const ROOT_FOR_WAIT = {username: 'root', password: Cypress.env('SUPER_USER_PASSWORD') || 'root1234'};
+
+/**
+ * Wait until a named field appears or disappears in a GraphQL type.
+ * Uses __type introspection — works regardless of field-level permissions.
+ *
+ * @param typeName   GraphQL type name, e.g. "Query" or "JCRNode"
+ * @param fieldName  Field name to check, e.g. "schemaUpdateAPing"
+ * @param present    true = wait until present; false = wait until absent
+ * @param timeoutMs  Max wait time in ms (default 30 000)
+ */
+export const waitForFieldInSchema = (
+    typeName: string,
+    fieldName: string,
+    present: boolean,
+    timeoutMs = 30000
+): Cypress.Chainable =>
+    cy.waitUntil(
+        () =>
+            cy.apolloClient(ROOT_FOR_WAIT).apollo({
+                query: gql`query { __type(name: "${typeName}") { fields { name } } }`,
+                errorPolicy: 'all'
+            }).then((resp: any) => {
+                const fields: {name: string}[] = resp.data?.__type?.fields ?? [];
+                return fields.some((f: any) => f.name === fieldName) === present;
+            }),
+        {
+            timeout: timeoutMs,
+            interval: 2000,
+            errorMsg: `Field '${fieldName}' on type '${typeName}' did not ${present ? 'appear' : 'disappear'} within ${timeoutMs}ms`
+        }
+    );
+
+// ─── Module install/uninstall ─────────────────────────────────────────────────
+
+export const uninstallModuleSafe = (moduleSymbolicName: string): void => {
+    cy.executeGroovy('groovy/isModuleInstalled.groovy', {MODULE_KEY: moduleSymbolicName})
+        .then((result: any) => {
+            if ((Array.isArray(result) ? result[0] : String(result)) === '.installed') {
+                cy.uninstallModule(moduleSymbolicName);
+            }
+        });
+};
+
+/**
+ * Uninstall any existing version of a module then install and start a new JAR.
+ * JAR fixtures must be at cypress/fixtures/modules/<name>-<version>.jar.
+ */
+export const deployModule = (moduleSymbolicName: string, jarFixturePath: string): void => {
+    uninstallModuleSafe(moduleSymbolicName);
+    cy.installAndStartModule(jarFixturePath);
+};
+
+// ─── Bundle state polling (Groovy) ───────────────────────────────────────────
+
 export const waitForModuleState = (
     bundleKey: string,
     bundleVersion: string,
@@ -101,60 +177,12 @@ export const waitForModuleState = (
                 BUNDLE_VERSION: bundleVersion,
                 EXPECTED_STATE: expectedState
             }).then((result: any) => {
-                const status: string = Array.isArray(result) ? result[0] : String(result);
-                console.log(`[waitForModuleState] ${bundleKey}@${bundleVersion} status='${status}' (waiting for '${expectedState}')`);
+                const status = Array.isArray(result) ? result[0] : String(result);
                 return status === '.installed';
             }),
         {
             timeout: timeoutMs,
             interval: 2000,
-            errorMsg: `Bundle ${bundleKey}/${bundleVersion} did not reach state '${expectedState}' within ${timeoutMs}ms`
+            errorMsg: `Bundle ${bundleKey}/${bundleVersion} did not reach '${expectedState}' within ${timeoutMs}ms`
         }
     );
-
-// ─── Install / uninstall (REST – jar upload, rarely needed) ──────────────────
-
-/**
- * Install a module by uploading a jar via the Jahia REST API.
- * Only needed when the module is not yet present on the server at all.
- * Prefer deploying modules via provisioning manifests in CI instead.
- */
-export const installModuleFromFile = (jarFixturePath: string): Cypress.Chainable => {
-    const JAHIA_BASE_URL = Cypress.config('baseUrl') || 'http://localhost:8080';
-    const auth = `Basic ${btoa('root:' + (Cypress.env('SUPER_USER_PASSWORD') || 'root1234'))}`;
-    return cy.fixture(jarFixturePath, 'binary').then(Cypress.Blob.binaryStringToBlob).then(blob => {
-        const formData = new FormData();
-        formData.append('bundle', blob, jarFixturePath.split('/').pop());
-        return cy.request({
-            method: 'POST',
-            url: `${JAHIA_BASE_URL}/modules/api/bundles`,
-            headers: {Authorization: auth},
-            body: formData,
-            failOnStatusCode: false
-        });
-    });
-};
-
-// ─── Karaf SSH helper (upgrade only) ─────────────────────────────────────────
-
-/**
- * Upgrade an already-installed bundle in-place via Karaf SSH.
- * Uses bundle:update <id> file:<path> + bundle:refresh <id>.
- * Required for Scenario G (v1 → v2 upgrade) – no Groovy / REST equivalent.
- */
-export const upgradeModuleViaKaraf = (bundleSymbolicName: string, newJarPathOnServer: string): Cypress.Chainable => {
-    return cy.task('sshCommand', [
-        `bundle:list -s | grep ${bundleSymbolicName}`
-    ]).then((output: string) => {
-        const match = output && output.match(/^\s*(\d+)\s*\|/m);
-        if (!match) {
-            throw new Error(`[upgradeModuleViaKaraf] Bundle ${bundleSymbolicName} not found – is v1 started?`);
-        }
-
-        const id = match[1];
-        return cy.task('sshCommand', [
-            `bundle:update ${id} file:${newJarPathOnServer}`,
-            `bundle:refresh ${id}`
-        ]);
-    });
-};

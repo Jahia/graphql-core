@@ -1,3 +1,0 @@
-query SchemaUpdateAdminPing($message: String) {
-  schemaUpdateAdminPing(message: $message)
-}

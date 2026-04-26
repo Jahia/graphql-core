@@ -1,0 +1,3 @@
+query SchemaUpdateGated($msg: String) {
+  schemaUpdateGated(msg: $msg)
+}

@@ -76,7 +76,7 @@ public class JahiaGraphQLFieldRetriever extends GraphQLFieldRetriever {
         if (ann != null) {
             String key = container.getProcessing().peek() + "." + definition.getName();
             logger.debug("Adding permission : {} = {}", key, ann.value());
-            dxGraphQLConfig.addPermission(key, ann.value());
+            dxGraphQLConfig.addAnnotationPermission(key, ann.value());
         }
 
         GraphQLAsync async = element.getAnnotation(GraphQLAsync.class);

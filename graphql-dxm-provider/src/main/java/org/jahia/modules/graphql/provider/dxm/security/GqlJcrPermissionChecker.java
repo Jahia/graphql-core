@@ -82,7 +82,6 @@ public final class GqlJcrPermissionChecker {
      */
     public static void checkPermissions(final List<String> types, final List<Field> fields, final Map<String, String> permissions, JCRSessionWrapper session) throws RepositoryException {
         Map<String, String> requiredPermissionPerFields = resolvePermissionPerFields(types, fields, permissions);
-        // no permission check for root
 
         if (requiredPermissionPerFields.size() > 0) {
             // iterate on permissions to check

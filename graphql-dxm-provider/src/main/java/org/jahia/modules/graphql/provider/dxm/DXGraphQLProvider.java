@@ -202,10 +202,6 @@ public class DXGraphQLProvider implements
             });
         };
 
-        // Clean up annotation
-        graphQLAnnotations.setExtensionsHandler(extensionsHandler);
-        container = graphQLAnnotations.createContainer();
-
         JahiaGraphQLFieldRetriever graphQLFieldWithPermissionsRetriever = new JahiaGraphQLFieldRetriever(dxGraphQLConfig, graphQLFieldRetriever, executor);
 
         graphQLTypeRetriever.setGraphQLObjectInfoRetriever(graphQLObjectInfoRetriever);
@@ -301,7 +297,7 @@ public class DXGraphQLProvider implements
 
     @Deactivate
     public void deactivate() {
-        dxGraphQLConfig.clearPermission();
+        dxGraphQLConfig.clearAnnoationPermissions();
         pool.shutdown();
     }
 
