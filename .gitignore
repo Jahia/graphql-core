@@ -12,4 +12,3 @@ buildNumber.properties
 /.project
 /.settings/
 .DS_Store
-tests/cypress/fixtures/modules/*.jar

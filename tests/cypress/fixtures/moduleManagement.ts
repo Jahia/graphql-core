@@ -14,21 +14,9 @@
  * Schema-change detection (introspection-based):
  *   waitForFieldInSchema(typeName, fieldName, present) – polls until field appears/disappears
  *
- * Module install/uninstall (provisioning-based, used for initial setup):
- *   deployModule(symbolicName, jarFixturePath) – uninstall existing, install+start new JAR
- *   uninstallModuleSafe(symbolicName)          – idempotent uninstall
- *
- * Bundle state polling (Groovy-based):
- *   waitForModuleState(key, version, state) – uses checkModuleState.groovy
  */
 
-/// <reference types="cypress-wait-until" />
 import gql from 'graphql-tag';
-
-// ─── OSGi state constant names ────────────────────────────────────────────────
-export type OsgiStateName = 'ACTIVE' | 'RESOLVED' | 'INSTALLED' | 'STARTING' | 'STOPPING';
-
-// ─── Provider lifecycle ───────────────────────────────────────────────────────
 
 /**
  * Activate a DXGraphQLExtensionsProvider component that requires a configuration
@@ -139,50 +127,5 @@ export const waitForFieldInSchema = (
             timeout: timeoutMs,
             interval: 2000,
             errorMsg: `Field '${fieldName}' on type '${typeName}' did not ${present ? 'appear' : 'disappear'} within ${timeoutMs}ms`
-        }
-    );
-
-// ─── Module install/uninstall ─────────────────────────────────────────────────
-
-export const uninstallModuleSafe = (moduleSymbolicName: string): void => {
-    cy.executeGroovy('groovy/isModuleInstalled.groovy', {MODULE_KEY: moduleSymbolicName})
-        .then((result: any) => {
-            if ((Array.isArray(result) ? result[0] : String(result)) === '.installed') {
-                cy.uninstallModule(moduleSymbolicName);
-            }
-        });
-};
-
-/**
- * Uninstall any existing version of a module then install and start a new JAR.
- * JAR fixtures must be at cypress/fixtures/modules/<name>-<version>.jar.
- */
-export const deployModule = (moduleSymbolicName: string, jarFixturePath: string): void => {
-    uninstallModuleSafe(moduleSymbolicName);
-    cy.installAndStartModule(jarFixturePath);
-};
-
-// ─── Bundle state polling (Groovy) ───────────────────────────────────────────
-
-export const waitForModuleState = (
-    bundleKey: string,
-    bundleVersion: string,
-    expectedState: OsgiStateName,
-    timeoutMs = 30000
-): Cypress.Chainable =>
-    cy.waitUntil(
-        () =>
-            cy.executeGroovy('groovy/checkModuleState.groovy', {
-                BUNDLE_KEY: bundleKey,
-                BUNDLE_VERSION: bundleVersion,
-                EXPECTED_STATE: expectedState
-            }).then((result: any) => {
-                const status = Array.isArray(result) ? result[0] : String(result);
-                return status === '.installed';
-            }),
-        {
-            timeout: timeoutMs,
-            interval: 2000,
-            errorMsg: `Bundle ${bundleKey}/${bundleVersion} did not reach '${expectedState}' within ${timeoutMs}ms`
         }
     );
