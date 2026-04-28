@@ -1,0 +1,3 @@
+query SchemaUpdateAOnly($msg: String) {
+  schemaUpdateAOnly(msg: $msg)
+}

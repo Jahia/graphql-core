@@ -221,22 +221,21 @@ describe('Test graphql i18n calls', () => {
 
         // STEP 3: Fetch and validate ACTIVE languages ONLY
         cy.step('Fetch and validate ACTIVE languages ONLY', () => {
-            Log.info('Fetch and validate ACTIVE languages ONLY').then(() => {
-                cy.apollo({
-                    query: gql`
-                        query {
-                            jcr(workspace: EDIT) {
-                                nodeByPath(path: "${contentNodePath}") {
-                                    translationLanguages(isActiveOnly:true)
-                                }
+            Log.info('Fetch and validate ACTIVE languages ONLY');
+            cy.apollo({
+                query: gql`
+                    query {
+                        jcr(workspace: EDIT) {
+                            nodeByPath(path: "${contentNodePath}") {
+                                translationLanguages(isActiveOnly:true)
                             }
                         }
-                    `
-                }).then(response => {
-                    const property = response?.data?.jcr?.nodeByPath?.translationLanguages;
-                    expect(property).to.have.length(1);
-                    expect(property).to.include('en');
-                });
+                    }
+                `
+            }).then(response => {
+                const property = response?.data?.jcr?.nodeByPath?.translationLanguages;
+                expect(property).to.have.length(1);
+                expect(property).to.include('en');
             });
         });
     });

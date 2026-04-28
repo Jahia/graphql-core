@@ -60,7 +60,7 @@
     <description>This is the custom module (text-field-initializer) for content-editor cypress tests.</description>
 
     <properties>
-        <graphql-dxm-provider.version>3.5.0-SNAPSHOT</graphql-dxm-provider.version>
+        <graphql-dxm-provider.version>3.6.1-SNAPSHOT</graphql-dxm-provider.version>
     </properties>
 
     <repositories>
@@ -82,5 +82,6 @@
         <module>sdl-test-module</module>
         <module>misc-test-module</module>
         <module>scheduler-test-module</module>
+        <module>schema-update-test-module</module>
     </modules>
 </project>

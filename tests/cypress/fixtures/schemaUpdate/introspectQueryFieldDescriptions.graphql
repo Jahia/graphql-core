@@ -1,0 +1,8 @@
+query IntrospectQueryFieldDescriptions {
+  __type(name: "Query") {
+    fields {
+      name
+      description
+    }
+  }
+}
