@@ -28,6 +28,7 @@ import org.jahia.services.usermanager.JahiaUserManagerService;
 
 import javax.inject.Inject;
 import javax.jcr.RepositoryException;
+import java.util.Optional;
 
 /**
  * User metadata extensions for the JCR node.
@@ -146,15 +147,20 @@ public class UserJCRNodeExtension {
         if (username == null || username.isEmpty()) {
             return null;
         }
+        String siteKey = getSiteKey(node);
+
+        Optional<GqlUser> cached = UserResolutionCache.getIfPresent(username, siteKey);
+        if (cached != null) {
+            return cached.orElse(null);
+        }
+
         if (userManagerService == null) {
             userManagerService = BundleUtils.getOsgiService(JahiaUserManagerService.class, null);
         }
-        String siteKey = getSiteKey(node);
         JCRUserNode userNode = userManagerService.lookupUser(username, siteKey);
-        if (userNode == null) {
-            return null;
-        }
-        return new GqlUser(userNode.getJahiaUser());
+        GqlUser result = userNode != null ? new GqlUser(userNode.getJahiaUser()) : null;
+        UserResolutionCache.put(username, siteKey, result);
+        return result;
     }
 
     private String getSiteKey(JCRNodeWrapper node) {
