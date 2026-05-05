@@ -19,23 +19,43 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
-import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 
 import java.util.List;
 
+/**
+ * Lightweight summary of a tag mutation applied to a single JCR workspace.
+ *
+ * <p>The result intentionally avoids carrying full {@code GqlJcrNode} objects for updated nodes.
+ * Returning a potentially unbounded list of heavy node instances for the success path would load
+ * large amounts of data into memory on sites with many tagged nodes, while providing little value
+ * to callers — the UI only needs a count to display "X nodes updated". A separate query using the
+ * returned {@link #getFailedPaths()} can fetch full node details on demand when recovery action
+ * is needed.
+ *
+ * <p>For the failure path, at most {@value #MAX_REPORTED_FAILURES} node paths are included in the
+ * payload. The total count is always available via {@link #getFailedCount()}. Callers that need to
+ * display or process more failures should paginate using a follow-up tagged-content query.
+ */
 @GraphQLName("TagWorkspaceMutationResult")
 @GraphQLDescription("The result of a tag mutation for one workspace")
 public class GqlTagWorkspaceMutationResult {
+
+    /**
+     * Maximum number of failure paths included in a single response payload.
+     * Additional failures are counted in {@link #getFailedCount()} but not listed.
+     */
+    public static final int MAX_REPORTED_FAILURES = 10;
+
     private final String workspace;
     private final int processedCount;
-    private final List<GqlJcrNode> updatedNodes;
-    private final List<GqlJcrNode> failedNodes;
+    private final int failedCount;
+    private final List<String> failedPaths;
 
-    public GqlTagWorkspaceMutationResult(String workspace, int processedCount, List<GqlJcrNode> updatedNodes, List<GqlJcrNode> failedNodes) {
+    public GqlTagWorkspaceMutationResult(String workspace, int processedCount, int failedCount, List<String> failedPaths) {
         this.workspace = workspace;
         this.processedCount = processedCount;
-        this.updatedNodes = updatedNodes;
-        this.failedNodes = failedNodes;
+        this.failedCount = failedCount;
+        this.failedPaths = failedPaths;
     }
 
     @GraphQLField
@@ -47,22 +67,23 @@ public class GqlTagWorkspaceMutationResult {
 
     @GraphQLField
     @GraphQLNonNull
-    @GraphQLDescription("How many nodes were updated in this workspace")
+    @GraphQLDescription("Number of nodes successfully updated in this workspace")
     public Integer getProcessedCount() {
         return processedCount;
     }
 
     @GraphQLField
     @GraphQLNonNull
-    @GraphQLDescription("Nodes updated during this workspace mutation")
-    public List<GqlJcrNode> getUpdatedNodes() {
-        return updatedNodes;
+    @GraphQLDescription("Total number of nodes that failed to update in this workspace (may exceed the size of failedPaths)")
+    public Integer getFailedCount() {
+        return failedCount;
     }
 
     @GraphQLField
     @GraphQLNonNull
-    @GraphQLDescription("Nodes that failed to update during this workspace mutation")
-    public List<GqlJcrNode> getFailedNodes() {
-        return failedNodes;
+    @GraphQLDescription("JCR paths of nodes that failed to update, capped at " + MAX_REPORTED_FAILURES +
+            ". Use a follow-up taggedContent query with these paths for full node details.")
+    public List<String> getFailedPaths() {
+        return failedPaths;
     }
 }

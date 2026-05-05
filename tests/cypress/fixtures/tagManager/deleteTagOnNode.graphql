@@ -1,0 +1,16 @@
+mutation DeleteTagOnNode($siteKey: String!, $tag: String!, $nodeId: String!) {
+    admin {
+        tagManager(siteKey: $siteKey) {
+            deleteTagOnNode(tag: $tag, nodeId: $nodeId) {
+                tag
+                nodeId
+                workspaceResults {
+                    workspace
+                    processedCount
+                    failedCount
+                    failedPaths
+                }
+            }
+        }
+    }
+}

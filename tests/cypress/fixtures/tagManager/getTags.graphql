@@ -1,0 +1,12 @@
+query GetTags($siteKey: String!, $sortBy: TagManagerSortBy, $sortOrder: SortType) {
+    admin {
+        tagManager(siteKey: $siteKey) {
+            tags(sortBy: $sortBy, sortOrder: $sortOrder) {
+                nodes {
+                    name
+                    occurrences
+                }
+            }
+        }
+    }
+}

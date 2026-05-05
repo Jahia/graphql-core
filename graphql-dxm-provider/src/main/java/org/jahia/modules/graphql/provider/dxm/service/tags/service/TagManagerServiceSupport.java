@@ -15,8 +15,6 @@
  */
 package org.jahia.modules.graphql.provider.dxm.service.tags.service;
 
-import org.jahia.api.Constants;
-import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -33,22 +31,16 @@ import java.util.Locale;
 
 abstract class TagManagerServiceSupport {
 
-    protected static void flushNodeCaches(ModuleCacheProvider moduleCacheProvider, String path) {
-        moduleCacheProvider.invalidate(path, true);
-        moduleCacheProvider.flushRegexpDependenciesOfPath(path, true);
-    }
-
-    protected JCRSessionWrapper getCurrentUserEditSession() throws RepositoryException {
-        return JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
-    }
-
-    protected JCRNodeWrapper getAuthorizedSiteNode(String siteKey, JCRSessionWrapper session) throws RepositoryException {
-        JCRNodeWrapper siteNode = session.getNode("/sites/" + siteKey);
-        if (!siteNode.hasPermission("tagManager")) {
-            throw new DataFetchingException("Permission denied");
-        }
-
-        return siteNode;
+    /**
+     * Invalidates all module caches associated with the given JCR path.
+     * The {@link ModuleCacheProvider} instance is resolved internally; callers do not own it.
+     *
+     * @param path the JCR path whose caches should be flushed; must not be {@code null}
+     */
+    protected static void flushNodeCaches(String path) {
+        ModuleCacheProvider cacheProvider = ModuleCacheProvider.getInstance();
+        cacheProvider.invalidate(path, true);
+        cacheProvider.flushRegexpDependenciesOfPath(path, true);
     }
 
     protected void validateNodeBelongsToSite(JCRSessionWrapper session, String nodeId, String sitePath) throws RepositoryException {

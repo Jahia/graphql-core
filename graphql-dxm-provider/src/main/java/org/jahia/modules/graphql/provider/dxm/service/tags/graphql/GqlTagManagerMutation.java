@@ -19,10 +19,14 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.service.tags.service.TagManagerMutationService;
+import org.jahia.services.content.JCRSessionFactory;
 
 import javax.inject.Inject;
+import javax.jcr.RepositoryException;
 
 @GraphQLName("JahiaTagManagerMutation")
 @GraphQLDescription("Tag manager mutations for a site")
@@ -35,6 +39,16 @@ public class GqlTagManagerMutation {
 
     public GqlTagManagerMutation(String siteKey) {
         this.siteKey = siteKey;
+        try {
+            if (!JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE)
+                    .getNode("/sites/" + siteKey).hasPermission("tagManager")) {
+                throw new DataFetchingException("Permission denied");
+            }
+        } catch (DataFetchingException e) {
+            throw e;
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
     }
 
     @GraphQLField

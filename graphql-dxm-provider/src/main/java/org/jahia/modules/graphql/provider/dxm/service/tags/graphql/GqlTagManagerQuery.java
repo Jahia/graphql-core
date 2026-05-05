@@ -21,14 +21,18 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.connection.GraphQLConnection;
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
 import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
 import org.jahia.modules.graphql.provider.dxm.service.tags.service.TagManagerReadService;
+import org.jahia.services.content.JCRSessionFactory;
 
 import javax.inject.Inject;
+import javax.jcr.RepositoryException;
 
 @GraphQLName("JahiaTagManager")
 @GraphQLDescription("Tag manager queries for a site")
@@ -41,6 +45,16 @@ public class GqlTagManagerQuery {
 
     public GqlTagManagerQuery(String siteKey) {
         this.siteKey = siteKey;
+        try {
+            if (!JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE)
+                    .getNode("/sites/" + siteKey).hasPermission("tagManager")) {
+                throw new DataFetchingException("Permission denied");
+            }
+        } catch (DataFetchingException e) {
+            throw e;
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
     }
 
     @GraphQLField
