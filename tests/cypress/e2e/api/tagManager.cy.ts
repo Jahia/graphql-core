@@ -1,4 +1,4 @@
-import {addNode, createSite, createUser, deleteSite, deleteUser, publishNode} from '@jahia/cypress';
+import {addNode, createSite, createUser, deleteSite, deleteUser, publishAndWaitJobEnding} from '@jahia/cypress';
 import {grantUserRole} from '../../fixtures/acl';
 import gql from 'graphql-tag';
 
@@ -50,8 +50,8 @@ describe('Tag Manager GraphQL API', () => {
         }).then((result: any) => {
             nodeBUuid = result.data.jcr.addNode.uuid;
             // Publish both nodes so LIVE workspace is populated
-            publishNode(`/sites/${siteKey}/contents/taggedNodeA`);
-            publishNode(`/sites/${siteKey}/contents/taggedNodeB`);
+            publishAndWaitJobEnding(`/sites/${siteKey}/contents/taggedNodeA`);
+            publishAndWaitJobEnding(`/sites/${siteKey}/contents/taggedNodeB`);
         });
     });
 
@@ -70,7 +70,7 @@ describe('Tag Manager GraphQL API', () => {
                 queryFile: 'tagManager/getTags.graphql',
                 variables: {siteKey}
             }).should((result: any) => {
-                const tags = result.data.admin.tagManager.tags.nodes;
+                const tags = result.data.admin.jahia.tagManager.tags.nodes;
                 expect(tags).to.be.an('array').with.length.greaterThan(0);
 
                 const alpha = tags.find((t: any) => t.name === 'alpha');
@@ -88,7 +88,7 @@ describe('Tag Manager GraphQL API', () => {
                 queryFile: 'tagManager/getTags.graphql',
                 variables: {siteKey, sortBy: 'OCCURRENCES', sortOrder: 'DESC'}
             }).should((result: any) => {
-                const tags = result.data.admin.tagManager.tags.nodes;
+                const tags = result.data.admin.jahia.tagManager.tags.nodes;
                 for (let i = 1; i < tags.length; i++) {
                     expect(tags[i - 1].occurrences).to.be.greaterThan(tags[i].occurrences - 1);
                 }
@@ -103,7 +103,7 @@ describe('Tag Manager GraphQL API', () => {
                     errorPolicy: 'all'
                 }).should((result: any) => {
                     expect(result.errors, 'should contain a permission error').to.exist.and.not.be.empty;
-                    expect(result.data?.admin?.tagManager).to.be.null;
+                    expect(result.data?.admin?.jahia?.tagManager).to.not.exist;
                 });
         });
 
@@ -124,7 +124,7 @@ describe('Tag Manager GraphQL API', () => {
                 queryFile: 'tagManager/getTaggedContent.graphql',
                 variables: {siteKey, tag: 'alpha'}
             }).should((result: any) => {
-                const nodes = result.data.admin.tagManager.taggedContent.nodes;
+                const nodes = result.data.admin.jahia.tagManager.taggedContent.nodes;
                 expect(nodes).to.have.length(2);
                 const paths = nodes.map((n: any) => n.path);
                 expect(paths).to.include(`/sites/${siteKey}/contents/taggedNodeA`);
@@ -137,7 +137,7 @@ describe('Tag Manager GraphQL API', () => {
                 queryFile: 'tagManager/getTaggedContent.graphql',
                 variables: {siteKey, tag: 'beta'}
             }).should((result: any) => {
-                const nodes = result.data.admin.tagManager.taggedContent.nodes;
+                const nodes = result.data.admin.jahia.tagManager.taggedContent.nodes;
                 expect(nodes).to.have.length(1);
                 expect(nodes[0].path).to.equal(`/sites/${siteKey}/contents/taggedNodeA`);
             });
@@ -148,7 +148,7 @@ describe('Tag Manager GraphQL API', () => {
                 queryFile: 'tagManager/getTaggedContent.graphql',
                 variables: {siteKey, tag: 'nonExistentTag'}
             }).should((result: any) => {
-                const nodes = result.data.admin.tagManager.taggedContent.nodes;
+                const nodes = result.data.admin.jahia.tagManager.taggedContent.nodes;
                 expect(nodes).to.have.length(0);
             });
         });
@@ -161,7 +161,7 @@ describe('Tag Manager GraphQL API', () => {
                     errorPolicy: 'all'
                 }).should((result: any) => {
                     expect(result.errors).to.exist.and.not.be.empty;
-                    expect(result.data?.admin?.tagManager).to.be.null;
+                    expect(result.data?.admin?.jahia?.tagManager).to.not.exist;
                 });
         });
     });
@@ -176,7 +176,7 @@ describe('Tag Manager GraphQL API', () => {
                 mutationFile: 'tagManager/renameTag.graphql',
                 variables: {siteKey, tag: 'beta', newName: 'beta-renamed'}
             }).should((result: any) => {
-                const {tag, nodeId, workspaceResults} = result.data.admin.tagManager.renameTag;
+                const {tag, nodeId, workspaceResults} = result.data.admin.jahia.tagManager.renameTag;
                 expect(tag).to.equal('beta');
                 expect(nodeId).to.be.null;
                 expect(workspaceResults).to.have.length(2);
@@ -193,7 +193,7 @@ describe('Tag Manager GraphQL API', () => {
                 queryFile: 'tagManager/getTags.graphql',
                 variables: {siteKey}
             }).should((result: any) => {
-                const names = result.data.admin.tagManager.tags.nodes.map((t: any) => t.name);
+                const names = result.data.admin.jahia.tagManager.tags.nodes.map((t: any) => t.name);
                 expect(names).to.not.include('beta');
                 expect(names).to.include('beta-renamed');
             });
@@ -217,7 +217,7 @@ describe('Tag Manager GraphQL API', () => {
                     errorPolicy: 'all'
                 }).should((result: any) => {
                     expect(result.errors).to.exist.and.not.be.empty;
-                    expect(result.data?.admin?.tagManager).to.be.null;
+                    expect(result.data?.admin?.jahia?.tagManager).to.not.exist;
                 });
         });
     });
@@ -229,7 +229,7 @@ describe('Tag Manager GraphQL API', () => {
                 mutationFile: 'tagManager/deleteTag.graphql',
                 variables: {siteKey, tag: 'beta-renamed'}
             }).should((result: any) => {
-                const {tag, nodeId, workspaceResults} = result.data.admin.tagManager.deleteTag;
+                const {tag, nodeId, workspaceResults} = result.data.admin.jahia.tagManager.deleteTag;
                 expect(tag).to.equal('beta-renamed');
                 expect(nodeId).to.be.null;
                 expect(workspaceResults).to.have.length(2);
@@ -246,7 +246,7 @@ describe('Tag Manager GraphQL API', () => {
                 queryFile: 'tagManager/getTags.graphql',
                 variables: {siteKey}
             }).should((result: any) => {
-                const names = result.data.admin.tagManager.tags.nodes.map((t: any) => t.name);
+                const names = result.data.admin.jahia.tagManager.tags.nodes.map((t: any) => t.name);
                 expect(names).to.not.include('beta-renamed');
             });
         });
@@ -259,7 +259,7 @@ describe('Tag Manager GraphQL API', () => {
                     errorPolicy: 'all'
                 }).should((result: any) => {
                     expect(result.errors).to.exist.and.not.be.empty;
-                    expect(result.data?.admin?.tagManager).to.be.null;
+                    expect(result.data?.admin?.jahia?.tagManager).to.not.exist;
                 });
         });
     });
@@ -274,7 +274,7 @@ describe('Tag Manager GraphQL API', () => {
                 mutationFile: 'tagManager/renameTagOnNode.graphql',
                 variables: {siteKey, tag: 'alpha', newName: 'alpha-node-renamed', nodeId: nodeAUuid}
             }).should((result: any) => {
-                const {tag, nodeId, workspaceResults} = result.data.admin.tagManager.renameTagOnNode;
+                const {tag, nodeId, workspaceResults} = result.data.admin.jahia.tagManager.renameTagOnNode;
                 expect(tag).to.equal('alpha');
                 expect(nodeId).to.equal(nodeAUuid);
                 expect(workspaceResults).to.have.length(2);
@@ -291,7 +291,7 @@ describe('Tag Manager GraphQL API', () => {
                 queryFile: 'tagManager/getTaggedContent.graphql',
                 variables: {siteKey, tag: 'alpha-node-renamed'}
             }).should((result: any) => {
-                const nodes = result.data.admin.tagManager.taggedContent.nodes;
+                const nodes = result.data.admin.jahia.tagManager.taggedContent.nodes;
                 expect(nodes).to.have.length(1);
                 expect(nodes[0].path).to.equal(`/sites/${siteKey}/contents/taggedNodeA`);
             });
@@ -303,7 +303,7 @@ describe('Tag Manager GraphQL API', () => {
                 mutationFile: 'tagManager/renameTagOnNode.graphql',
                 variables: {siteKey, tag: 'alpha', newName: 'alpha-again', nodeId: nodeAUuid}
             }).should((result: any) => {
-                const workspaceResults = result.data.admin.tagManager.renameTagOnNode.workspaceResults;
+                const workspaceResults = result.data.admin.jahia.tagManager.renameTagOnNode.workspaceResults;
                 for (const wsResult of workspaceResults) {
                     expect(wsResult.processedCount).to.equal(0);
                     expect(wsResult.failedCount).to.equal(0);
@@ -330,7 +330,7 @@ describe('Tag Manager GraphQL API', () => {
                     errorPolicy: 'all'
                 }).should((result: any) => {
                     expect(result.errors).to.exist.and.not.be.empty;
-                    expect(result.data?.admin?.tagManager).to.be.null;
+                    expect(result.data?.admin?.jahia?.tagManager).to.not.exist;
                 });
         });
     });
@@ -342,7 +342,7 @@ describe('Tag Manager GraphQL API', () => {
                 mutationFile: 'tagManager/deleteTagOnNode.graphql',
                 variables: {siteKey, tag: 'alpha', nodeId: nodeBUuid}
             }).should((result: any) => {
-                const {tag, nodeId, workspaceResults} = result.data.admin.tagManager.deleteTagOnNode;
+                const {tag, nodeId, workspaceResults} = result.data.admin.jahia.tagManager.deleteTagOnNode;
                 expect(tag).to.equal('alpha');
                 expect(nodeId).to.equal(nodeBUuid);
                 expect(workspaceResults).to.have.length(2);
@@ -359,7 +359,7 @@ describe('Tag Manager GraphQL API', () => {
                 queryFile: 'tagManager/getTaggedContent.graphql',
                 variables: {siteKey, tag: 'alpha'}
             }).should((result: any) => {
-                const uuids = result.data.admin.tagManager.taggedContent.nodes.map((n: any) => n.uuid);
+                const uuids = result.data.admin.jahia.tagManager.taggedContent.nodes.map((n: any) => n.uuid);
                 expect(uuids).to.not.include(nodeBUuid);
             });
         });
@@ -382,7 +382,7 @@ describe('Tag Manager GraphQL API', () => {
                     errorPolicy: 'all'
                 }).should((result: any) => {
                     expect(result.errors).to.exist.and.not.be.empty;
-                    expect(result.data?.admin?.tagManager).to.be.null;
+                    expect(result.data?.admin?.jahia?.tagManager).to.not.exist;
                 });
         });
     });

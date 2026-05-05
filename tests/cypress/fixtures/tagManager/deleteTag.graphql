@@ -1,14 +1,16 @@
 mutation DeleteTag($siteKey: String!, $tag: String!) {
     admin {
-        tagManager(siteKey: $siteKey) {
-            deleteTag(tag: $tag) {
-                tag
-                nodeId
-                workspaceResults {
-                    workspace
-                    processedCount
-                    failedCount
-                    failedPaths
+        jahia {
+            tagManager(siteKey: $siteKey) {
+                deleteTag(tag: $tag) {
+                    tag
+                    nodeId
+                    workspaceResults {
+                        workspace
+                        processedCount
+                        failedCount
+                        failedPaths
+                    }
                 }
             }
         }

@@ -1,10 +1,12 @@
 query GetTaggedContent($siteKey: String!, $tag: String!) {
     admin {
-        tagManager(siteKey: $siteKey) {
-            taggedContent(tag: $tag) {
-                nodes {
-                    uuid
-                    path
+        jahia {
+            tagManager(siteKey: $siteKey) {
+                taggedContent(tag: $tag) {
+                    nodes {
+                        uuid
+                        path
+                    }
                 }
             }
         }

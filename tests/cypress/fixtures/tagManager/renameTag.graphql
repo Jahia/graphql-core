@@ -1,14 +1,16 @@
 mutation RenameTag($siteKey: String!, $tag: String!, $newName: String!) {
     admin {
-        tagManager(siteKey: $siteKey) {
-            renameTag(tag: $tag, newName: $newName) {
-                tag
-                nodeId
-                workspaceResults {
-                    workspace
-                    processedCount
-                    failedCount
-                    failedPaths
+        jahia {
+            tagManager(siteKey: $siteKey) {
+                renameTag(tag: $tag, newName: $newName) {
+                    tag
+                    nodeId
+                    workspaceResults {
+                        workspace
+                        processedCount
+                        failedCount
+                        failedPaths
+                    }
                 }
             }
         }
