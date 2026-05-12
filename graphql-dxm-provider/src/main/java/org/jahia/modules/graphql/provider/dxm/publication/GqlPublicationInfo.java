@@ -24,6 +24,7 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.services.content.ComplexPublicationService;
 import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.content.PublicationInfo;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
@@ -50,6 +51,19 @@ public class GqlPublicationInfo {
     @GraphQLNonNull
     @GraphQLDescription("Aggregated publication status of the node")
     public GqlPublicationStatus getPublicationStatus() {
+        try {
+            // jmix:nolive nodes can never be published to live. Jahia core returns PUBLISHED
+            // for them (treating "no live counterpart needed" as "in sync"), but that is
+            // semantically wrong from the UI perspective. Correct it here so consumers
+            // receive NO_LIVE regardless of the Jahia core version deployed.
+            if (aggregatedInfo.getPublicationStatus() == PublicationInfo.PUBLISHED
+                    && JCRTemplate.getInstance().getSessionFactory().getCurrentUserSession()
+                        .getNodeByIdentifier(node.getUuid()).isNodeType("jmix:nolive")) {
+                return GqlPublicationStatus.NO_LIVE;
+            }
+        } catch (RepositoryException e) {
+            throw new DataFetchingException(e);
+        }
         return GqlPublicationStatus.fromStatusValue(aggregatedInfo.getPublicationStatus());
     }
 
