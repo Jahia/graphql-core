@@ -37,7 +37,9 @@ public enum GqlPublicationStatus {
     CONFLICT(PublicationInfo.CONFLICT),
     MANDATORY_LANGUAGE_VALID(PublicationInfo.MANDATORY_LANGUAGE_VALID),
     DELETED(PublicationInfo.DELETED),
-    MARKED_FOR_DELETION(PublicationInfo.MARKED_FOR_DELETION);
+    MARKED_FOR_DELETION(PublicationInfo.MARKED_FOR_DELETION),
+    // PublicationInfo.NO_LIVE = 13, introduced in Jahia 8.2.4.0 — inlined to stay compatible with earlier versions
+    NO_LIVE(13);
 
     private static final Map<Integer, GqlPublicationStatus> PUBLICATION_STATUS_BY_STATUS_VALUE = new HashMap<Integer,GqlPublicationStatus>();
     static {
