@@ -15,6 +15,8 @@
  */
 package org.jahia.modules.graphql.provider.dxm.user;
 
+import org.jahia.services.content.decorator.JCRUserNode;
+import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,21 +58,14 @@ public final class UserResolutionCache {
     }
 
     /**
-     * Returns the cached user for {@code (username, siteKey)}, or {@code null} if not present.
-     * A return value of {@link Optional#empty()} means the user was looked up and does not exist.
+     * Returns whether the cache contains an entry for {@code (username, siteKey)}.
      *
      * @param username the username to look up (never {@code null})
      * @param siteKey  the site key, or {@code null} for global users
-     * @return the cached {@link Optional} entry, or {@code null} if not in cache
+     * @return {@code true} if a cache entry exists (even for a non-existent user)
      */
-    public static Optional<GqlUser> getIfPresent(String username, String siteKey) {
-        Optional<GqlUser> cached = CACHE.get().get(cacheKey(username, siteKey));
-        if (cached != null) {
-            STATS.get()[0]++;
-        } else {
-            STATS.get()[1]++;
-        }
-        return cached;
+    private static boolean isCached(String username, String siteKey) {
+        return CACHE.get().containsKey(cacheKey(username, siteKey));
     }
 
     /**
@@ -101,6 +96,30 @@ public final class UserResolutionCache {
         }
         CACHE.remove();
         STATS.remove();
+    }
+
+    /**
+     * Resolves a {@link GqlUser} for the given username, using the request-scoped cache to
+     * avoid repeated {@code lookupUser} calls within the same GraphQL execution.
+     *
+     * @param username           the username to resolve; {@code null} or blank returns {@code null}
+     * @param siteKey            the site key for site-scoped lookup, or {@code null} for global users
+     * @param userManagerService the OSGi user manager service
+     * @return the resolved {@link GqlUser}, or {@code null} if the user does not exist, or if the user manager service is {@code null}
+     */
+    public static GqlUser resolve(String username, String siteKey, JahiaUserManagerService userManagerService) {
+        if (username == null || username.isEmpty() || userManagerService == null) {
+            return null;
+        }
+        if (isCached(username, siteKey)) {
+            STATS.get()[0]++;
+            return CACHE.get().get(cacheKey(username, siteKey)).orElse(null);
+        }
+        STATS.get()[1]++;
+        JCRUserNode userNode = userManagerService.lookupUser(username, siteKey);
+        GqlUser result = userNode != null ? new GqlUser(userNode.getJahiaUser()) : null;
+        put(username, siteKey, result);
+        return result;
     }
 
     private static String cacheKey(String username, String siteKey) {

@@ -20,15 +20,12 @@ import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
-import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
-import org.jahia.services.content.decorator.JCRUserNode;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 
 import javax.inject.Inject;
 import javax.jcr.RepositoryException;
-import java.util.Optional;
 
 /**
  * User metadata extensions for the JCR node.
@@ -143,24 +140,9 @@ public class UserJCRNodeExtension {
         }
     }
 
-    private GqlUser resolveUser(String username, JCRNodeWrapper node) throws RepositoryException {
-        if (username == null || username.isEmpty()) {
-            return null;
-        }
+    private GqlUser resolveUser(String username, JCRNodeWrapper node) {
         String siteKey = getSiteKey(node);
-
-        Optional<GqlUser> cached = UserResolutionCache.getIfPresent(username, siteKey);
-        if (cached != null) {
-            return cached.orElse(null);
-        }
-
-        if (userManagerService == null) {
-            userManagerService = BundleUtils.getOsgiService(JahiaUserManagerService.class, null);
-        }
-        JCRUserNode userNode = userManagerService.lookupUser(username, siteKey);
-        GqlUser result = userNode != null ? new GqlUser(userNode.getJahiaUser()) : null;
-        UserResolutionCache.put(username, siteKey, result);
-        return result;
+        return UserResolutionCache.resolve(username, siteKey, userManagerService);
     }
 
     private String getSiteKey(JCRNodeWrapper node) {
