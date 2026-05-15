@@ -20,11 +20,12 @@ import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldEvaluator;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.jahia.modules.graphql.provider.dxm.service.tags.graphql.GqlManagedTag;
-import org.jahia.modules.graphql.provider.dxm.service.tags.graphql.TagManagerSortBy;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -36,6 +37,7 @@ import org.osgi.service.component.annotations.Component;
 
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
+import javax.jcr.Value;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import java.util.ArrayList;
@@ -63,8 +65,7 @@ import java.util.stream.Collectors;
  *       {@link DXPaginatedData} wrapper compatible with the GraphQL Relay pagination
  *       specification.</li>
  *   <li><strong>Authorization</strong> – access requires the {@code tagManager} permission on
- *       the target site node, enforced by the shared {@link TagManagerServiceSupport} base
- *       class.</li>
+ *       the target site node, enforced by the GraphQL resolver layer.</li>
  * </ul>
  *
  * <p><strong>Threading model:</strong> this is a singleton OSGi component. Each public method
@@ -76,7 +77,7 @@ import java.util.stream.Collectors;
  * @see TaggingService
  */
 @Component(service = TagManagerReadService.class, immediate = true)
-public class TagManagerReadService extends TagManagerServiceSupport {
+public class TagManagerReadService {
     private static final int READ_BATCH_SIZE = 500;
 
     /**
@@ -93,10 +94,8 @@ public class TagManagerReadService extends TagManagerServiceSupport {
      * @param siteKey     the Jahia site identifier; must not be {@code null}; the current user
      *                    must hold the {@code tagManager} permission on
      *                    {@code /sites/{siteKey}}
-     * @param sortBy      the field to sort results by; if {@code null}, defaults to
-     *                    {@link TagManagerSortBy#NAME}
-     * @param sortOrder   the sort direction; if {@code null}, defaults to
-     *                    {@link SorterHelper.SortType#ASC}
+     * @param fieldSorter optional sort descriptor; if {@code null} results are returned in
+     *                    natural map-iteration order
      * @param environment the GraphQL {@link DataFetchingEnvironment} providing Relay pagination
      *                    arguments ({@code first}, {@code after}, {@code last}, {@code before});
      *                    must not be {@code null}
@@ -105,11 +104,14 @@ public class TagManagerReadService extends TagManagerServiceSupport {
      * @throws DataFetchingException wrapping a {@link RepositoryException} if session
      *                               acquisition, permission checks, or JCR query execution fails
      */
-    public DXPaginatedData<GqlManagedTag> getTags(String siteKey, TagManagerSortBy sortBy, SorterHelper.SortType sortOrder, DataFetchingEnvironment environment) {
+    public DXPaginatedData<GqlManagedTag> getTags(String siteKey, FieldSorterInput fieldSorter, DataFetchingEnvironment environment) {
         try {
             JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
             String sitePath = "/sites/" + siteKey;
-            List<GqlManagedTag> allTags = loadManagedTags(sitePath, session, sortBy, sortOrder);
+            List<GqlManagedTag> allTags = loadManagedTags(sitePath, session);
+            if (fieldSorter != null) {
+                allTags.sort(SorterHelper.getFieldComparator(fieldSorter, FieldEvaluator.forConnection(environment)));
+            }
             return PaginationHelper.paginate(allTags, tag -> PaginationHelper.encodeCursor(tag.getName()), PaginationHelper.parseArguments(environment));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
@@ -144,14 +146,27 @@ public class TagManagerReadService extends TagManagerServiceSupport {
         try {
             JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
             String sitePath = "/sites/" + siteKey;
-            List<GqlJcrNode> nodes = loadTaggedContent(sitePath, tag, session);
+
+            String query = "SELECT * FROM [jmix:tagged] AS result WHERE ISDESCENDANTNODE(result, '" +
+                    JCRContentUtils.sqlEncode(sitePath) + "') AND (result.[j:tagList] = $tag)";
+            QueryManager queryManager = session.getWorkspace().getQueryManager();
+            Query jcrQuery = queryManager.createQuery(query, Query.JCR_SQL2);
+            jcrQuery.bindValue("tag", session.getValueFactory().createValue(tag));
+            NodeIterator nodeIterator = jcrQuery.execute().getNodes();
+
+            List<GqlJcrNode> nodes = new ArrayList<>();
+            while (nodeIterator.hasNext()) {
+                nodes.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) nodeIterator.nextNode()));
+            }
+            nodes.sort(Comparator.comparing(gqlNode -> gqlNode.getNode().getPath()));
+
             return PaginationHelper.paginate(nodes, gqlNode -> PaginationHelper.encodeCursor(gqlNode.getUuid()), PaginationHelper.parseArguments(environment));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
     }
 
-    private List<GqlManagedTag> loadManagedTags(String sitePath, JCRSessionWrapper session, TagManagerSortBy sortBy, SorterHelper.SortType sortOrder) throws RepositoryException {
+    private List<GqlManagedTag> loadManagedTags(String sitePath, JCRSessionWrapper session) throws RepositoryException {
         String query = "SELECT * FROM [jmix:tagged] AS result WHERE ISDESCENDANTNODE(result, '" +
                 JCRContentUtils.sqlEncode(sitePath) + "') AND (result.[j:tagList] IS NOT NULL)";
         QueryManager queryManager = session.getWorkspace().getQueryManager();
@@ -185,41 +200,8 @@ public class TagManagerReadService extends TagManagerServiceSupport {
             }
         });
 
-        Comparator<GqlManagedTag> comparator = getSortComparator(sortBy, sortOrder);
         return occurrences.entrySet().stream()
                 .map(entry -> new GqlManagedTag(entry.getKey(), entry.getValue()))
-                .sorted(comparator)
                 .collect(Collectors.toList());
-    }
-
-    private List<GqlJcrNode> loadTaggedContent(String sitePath, String tag, JCRSessionWrapper session) throws RepositoryException {
-        NodeIterator nodeIterator = findTaggedNodes(sitePath, tag, session);
-        List<GqlJcrNode> result = new ArrayList<>();
-        while (nodeIterator.hasNext()) {
-            result.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) nodeIterator.nextNode()));
-        }
-        result.sort(Comparator.comparing(gqlNode -> gqlNode.getNode().getPath()));
-        return result;
-    }
-
-    private Comparator<GqlManagedTag> getSortComparator(TagManagerSortBy sortBy, SorterHelper.SortType sortOrder) {
-        TagManagerSortBy effectiveSortBy = sortBy != null ? sortBy : TagManagerSortBy.NAME;
-        SorterHelper.SortType effectiveSortOrder = sortOrder != null ? sortOrder : SorterHelper.SortType.ASC;
-
-        Comparator<GqlManagedTag> comparator;
-        if (effectiveSortBy == TagManagerSortBy.OCCURRENCES) {
-            comparator = Comparator.comparing(GqlManagedTag::getOccurrences)
-                    .thenComparing(GqlManagedTag::getName, String.CASE_INSENSITIVE_ORDER)
-                    .thenComparing(GqlManagedTag::getName);
-        } else {
-            comparator = Comparator.comparing(GqlManagedTag::getName, String.CASE_INSENSITIVE_ORDER)
-                    .thenComparing(GqlManagedTag::getName);
-        }
-
-        if (effectiveSortOrder == SorterHelper.SortType.DESC) {
-            comparator = comparator.reversed();
-        }
-
-        return comparator;
     }
 }

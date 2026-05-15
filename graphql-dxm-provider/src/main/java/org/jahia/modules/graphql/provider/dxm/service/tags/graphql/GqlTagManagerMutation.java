@@ -44,8 +44,6 @@ public class GqlTagManagerMutation {
                     .getNode("/sites/" + siteKey).hasPermission("tagManager")) {
                 throw new DataFetchingException("Permission denied");
             }
-        } catch (DataFetchingException e) {
-            throw e;
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }

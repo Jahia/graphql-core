@@ -25,6 +25,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRObservationManager;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.render.filter.cache.ModuleCacheProvider;
 import org.jahia.services.tags.TaggingService;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * GraphQL-facing OSGi service that orchestrates tag mutation operations (rename and delete)
@@ -67,7 +67,7 @@ import java.util.Locale;
  * @see TaggingService
  */
 @Component(service = TagManagerMutationService.class, immediate = true)
-public class TagManagerMutationService extends TagManagerServiceSupport {
+public class TagManagerMutationService {
     private static final List<String> WORKSPACES = Arrays.asList(Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE);
 
     @Reference
@@ -99,15 +99,12 @@ public class TagManagerMutationService extends TagManagerServiceSupport {
         ensureMutationTagName(newName);
         String sitePath = "/sites/" + siteKey;
         try {
-            JCRSessionWrapper userSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
-            Locale locale = userSession.getLocale();
-            Locale fallbackLocale = userSession.getFallbackLocale();
             List<GqlTagWorkspaceMutationResult> results = new ArrayList<>();
 
             JCRObservationManager.setAllEventListenersDisabled(Boolean.TRUE);
             try {
                 for (String workspace : WORKSPACES) {
-                    JCRSessionWrapper systemSession = getSystemSession(workspace, locale, fallbackLocale);
+                    JCRSessionWrapper systemSession = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
                     results.add(taggingService.renameTagUnderPath(sitePath, systemSession, tag, newName, new TagManagerActionCallback(systemSession, workspace)));
                 }
             } finally {
@@ -139,15 +136,12 @@ public class TagManagerMutationService extends TagManagerServiceSupport {
     public GqlTagMutationResult deleteTag(String siteKey, String tag) {
         String sitePath = "/sites/" + siteKey;
         try {
-            JCRSessionWrapper userSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
-            Locale locale = userSession.getLocale();
-            Locale fallbackLocale = userSession.getFallbackLocale();
             List<GqlTagWorkspaceMutationResult> results = new ArrayList<>();
 
             JCRObservationManager.setAllEventListenersDisabled(Boolean.TRUE);
             try {
                 for (String workspace : WORKSPACES) {
-                    JCRSessionWrapper systemSession = getSystemSession(workspace, locale, fallbackLocale);
+                    JCRSessionWrapper systemSession = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
                     results.add(taggingService.deleteTagUnderPath(sitePath, systemSession, tag, new TagManagerActionCallback(systemSession, workspace)));
                 }
             } finally {
@@ -185,16 +179,13 @@ public class TagManagerMutationService extends TagManagerServiceSupport {
     public GqlTagMutationResult deleteTagOnNode(String siteKey, String tag, String nodeId) {
         String sitePath = "/sites/" + siteKey;
         try {
-            JCRSessionWrapper userSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
-            validateNodeBelongsToSite(userSession, nodeId, sitePath);
-            Locale locale = userSession.getLocale();
-            Locale fallbackLocale = userSession.getFallbackLocale();
+            validateNodeBelongsToSite(JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null), nodeId, sitePath);
             List<GqlTagWorkspaceMutationResult> workspaceResults = new ArrayList<>();
 
             JCRObservationManager.setAllEventListenersDisabled(Boolean.TRUE);
             try {
                 for (String workspace : WORKSPACES) {
-                    workspaceResults.add(deleteTagOnNodeInWorkspace(workspace, locale, fallbackLocale, tag, nodeId));
+                    workspaceResults.add(deleteTagOnNodeInWorkspace(workspace, tag, nodeId));
                 }
             } finally {
                 JCRObservationManager.setAllEventListenersDisabled(Boolean.FALSE);
@@ -239,16 +230,13 @@ public class TagManagerMutationService extends TagManagerServiceSupport {
         ensureMutationTagName(newName);
         String sitePath = "/sites/" + siteKey;
         try {
-            JCRSessionWrapper userSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
-            validateNodeBelongsToSite(userSession, nodeId, sitePath);
-            Locale locale = userSession.getLocale();
-            Locale fallbackLocale = userSession.getFallbackLocale();
+            validateNodeBelongsToSite(JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null), nodeId, sitePath);
             List<GqlTagWorkspaceMutationResult> workspaceResults = new ArrayList<>();
 
             JCRObservationManager.setAllEventListenersDisabled(Boolean.TRUE);
             try {
                 for (String workspace : WORKSPACES) {
-                    workspaceResults.add(renameTagOnNodeInWorkspace(workspace, locale, fallbackLocale, tag, newName, nodeId));
+                    workspaceResults.add(renameTagOnNodeInWorkspace(workspace, tag, newName, nodeId));
                 }
             } finally {
                 JCRObservationManager.setAllEventListenersDisabled(Boolean.FALSE);
@@ -260,8 +248,8 @@ public class TagManagerMutationService extends TagManagerServiceSupport {
         }
     }
 
-    private GqlTagWorkspaceMutationResult deleteTagOnNodeInWorkspace(String workspace, Locale locale, Locale fallbackLocale, String tag, String nodeId) throws RepositoryException {
-        JCRSessionWrapper systemSession = getSystemSession(workspace, locale, fallbackLocale);
+    private GqlTagWorkspaceMutationResult deleteTagOnNodeInWorkspace(String workspace, String tag, String nodeId) throws RepositoryException {
+        JCRSessionWrapper systemSession = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
         JCRNodeWrapper node = null;
         try {
             node = systemSession.getNodeByIdentifier(nodeId);
@@ -275,36 +263,33 @@ public class TagManagerMutationService extends TagManagerServiceSupport {
         }
     }
 
-    private GqlTagWorkspaceMutationResult renameTagOnNodeInWorkspace(String workspace, Locale locale, Locale fallbackLocale, String tag, String newName, String nodeId) throws RepositoryException {
-        JCRSessionWrapper systemSession = getSystemSession(workspace, locale, fallbackLocale);
+    private GqlTagWorkspaceMutationResult renameTagOnNodeInWorkspace(String workspace, String tag, String newName, String nodeId) throws RepositoryException {
+        JCRSessionWrapper systemSession = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
         JCRNodeWrapper node = null;
         try {
             node = systemSession.getNodeByIdentifier(nodeId);
-            if (nodeHasTag(node, tag)) {
-                taggingService.renameTag(node, tag, newName);
-                systemSession.save();
-                flushNodeCaches(node.getPath());
-                return new GqlTagWorkspaceMutationResult(workspace, 1, 0, Collections.emptyList());
-            }
-            return new GqlTagWorkspaceMutationResult(workspace, 0, 0, Collections.emptyList());
+            taggingService.renameTag(node, tag, newName);
+            systemSession.save();
+            flushNodeCaches(node.getPath());
+            return new GqlTagWorkspaceMutationResult(workspace, 1, 0, Collections.emptyList());
         } catch (RepositoryException e) {
             String failedPath = node != null ? node.getPath() : nodeId;
             return new GqlTagWorkspaceMutationResult(workspace, 0, 1, Collections.singletonList(failedPath));
         }
     }
 
-    private boolean nodeHasTag(JCRNodeWrapper node, String tag) throws RepositoryException {
-        if (!node.hasProperty(TaggingService.J_TAG_LIST)) {
-            return false;
-        }
+    static void flushNodeCaches(String path) {
+        ModuleCacheProvider cacheProvider = ModuleCacheProvider.getInstance();
+        cacheProvider.invalidate(path, true);
+        cacheProvider.flushRegexpDependenciesOfPath(path, true);
+    }
 
-        for (org.jahia.services.content.JCRValueWrapper tagValue : node.getProperty(TaggingService.J_TAG_LIST).getValues()) {
-            if (tag.equals(tagValue.getString())) {
-                return true;
-            }
+    private void validateNodeBelongsToSite(JCRSessionWrapper session, String nodeId, String sitePath) throws RepositoryException {
+        JCRNodeWrapper node = session.getNodeByIdentifier(nodeId);
+        String nodePath = node.getPath();
+        if (!nodePath.equals(sitePath) && !nodePath.startsWith(sitePath + "/")) {
+            throw new GqlJcrWrongInputException("Node does not belong to the requested site");
         }
-
-        return false;
     }
 
     private void ensureMutationTagName(String newName) {

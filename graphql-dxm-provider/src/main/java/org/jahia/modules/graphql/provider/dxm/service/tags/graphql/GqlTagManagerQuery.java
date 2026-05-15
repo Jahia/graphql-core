@@ -27,7 +27,7 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
-import org.jahia.modules.graphql.provider.dxm.predicate.SorterHelper;
+import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.service.tags.service.TagManagerReadService;
 import org.jahia.services.content.JCRSessionFactory;
 
@@ -50,8 +50,6 @@ public class GqlTagManagerQuery {
                     .getNode("/sites/" + siteKey).hasPermission("tagManager")) {
                 throw new DataFetchingException("Permission denied");
             }
-        } catch (DataFetchingException e) {
-            throw e;
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -60,10 +58,9 @@ public class GqlTagManagerQuery {
     @GraphQLField
     @GraphQLConnection(connectionFetcher = DXPaginatedDataConnectionFetcher.class)
     @GraphQLDescription("List tags used under the site")
-    public DXPaginatedData<GqlManagedTag> tags(@GraphQLName("sortBy") @GraphQLDescription("The field to sort by") TagManagerSortBy sortBy,
-                                               @GraphQLName("sortOrder") @GraphQLDescription("The sort order") SorterHelper.SortType sortOrder,
+    public DXPaginatedData<GqlManagedTag> tags(@GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
                                                DataFetchingEnvironment environment) {
-        return tagManagerReadService.getTags(siteKey, sortBy, sortOrder, environment);
+        return tagManagerReadService.getTags(siteKey, fieldSorter, environment);
     }
 
     @GraphQLField

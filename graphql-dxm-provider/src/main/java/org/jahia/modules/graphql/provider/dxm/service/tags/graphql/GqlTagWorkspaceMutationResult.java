@@ -19,6 +19,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.jahia.modules.graphql.provider.dxm.service.tags.service.TagManagerActionCallback;
 
 import java.util.List;
 
@@ -32,19 +33,13 @@ import java.util.List;
  * returned {@link #getFailedPaths()} can fetch full node details on demand when recovery action
  * is needed.
  *
- * <p>For the failure path, at most {@value #MAX_REPORTED_FAILURES} node paths are included in the
+ * <p>For the failure path, at most {@value TagManagerActionCallback#MAX_REPORTED_FAILURES} node paths are included in the
  * payload. The total count is always available via {@link #getFailedCount()}. Callers that need to
  * display or process more failures should paginate using a follow-up tagged-content query.
  */
 @GraphQLName("TagWorkspaceMutationResult")
 @GraphQLDescription("The result of a tag mutation for one workspace")
 public class GqlTagWorkspaceMutationResult {
-
-    /**
-     * Maximum number of failure paths included in a single response payload.
-     * Additional failures are counted in {@link #getFailedCount()} but not listed.
-     */
-    public static final int MAX_REPORTED_FAILURES = 10;
 
     private final String workspace;
     private final int processedCount;
@@ -81,7 +76,7 @@ public class GqlTagWorkspaceMutationResult {
 
     @GraphQLField
     @GraphQLNonNull
-    @GraphQLDescription("JCR paths of nodes that failed to update, capped at " + MAX_REPORTED_FAILURES +
+    @GraphQLDescription("JCR paths of nodes that failed to update, capped at " + TagManagerActionCallback.MAX_REPORTED_FAILURES +
             ". Use a follow-up taggedContent query with these paths for full node details.")
     public List<String> getFailedPaths() {
         return failedPaths;

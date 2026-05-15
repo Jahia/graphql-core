@@ -27,6 +27,12 @@ import java.util.List;
 class TagManagerActionCallback implements TagActionCallback<GqlTagWorkspaceMutationResult> {
     private static final int SAVE_BATCH_SIZE = 100;
 
+    /**
+     * Maximum number of failure paths included in a single response payload.
+     * Additional failures are counted but not listed.
+     */
+    public static final int MAX_REPORTED_FAILURES = 10;
+
     private final JCRSessionWrapper session;
     private final String workspace;
     private final List<String> failedPaths = new ArrayList<>();
@@ -45,13 +51,13 @@ class TagManagerActionCallback implements TagActionCallback<GqlTagWorkspaceMutat
             session.save();
         }
 
-        TagManagerServiceSupport.flushNodeCaches(node.getPath());
+        TagManagerMutationService.flushNodeCaches(node.getPath());
     }
 
     @Override
     public void onError(JCRNodeWrapper node, RepositoryException e) throws RepositoryException {
         failedCount++;
-        if (failedPaths.size() < GqlTagWorkspaceMutationResult.MAX_REPORTED_FAILURES) {
+        if (failedPaths.size() < MAX_REPORTED_FAILURES) {
             failedPaths.add(node.getPath());
         }
     }

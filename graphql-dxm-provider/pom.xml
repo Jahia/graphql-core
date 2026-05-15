@@ -52,9 +52,6 @@
             org.jahia.modules.graphql.provider.dxm.sdl.parsing.status,
             org.jahia.modules.graphql.provider.dxm.sdl.registration,
             org.jahia.modules.graphql.provider.dxm.security,
-            org.jahia.modules.graphql.provider.dxm.service.tags,
-            org.jahia.modules.graphql.provider.dxm.service.tags.graphql,
-            org.jahia.modules.graphql.provider.dxm.service.tags.service,
             org.jahia.modules.graphql.provider.dxm.site,
             org.jahia.modules.graphql.provider.dxm.upload,
             org.jahia.modules.graphql.provider.dxm.user,
@@ -403,6 +400,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <!-- Required for BeanWrapper, which calls setAccessible(true) on fields and methods
+                         from java.lang and java.lang.reflect — blocked by the Java module system without these opens. -->
                     <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED</argLine>
                 </configuration>
             </plugin>
