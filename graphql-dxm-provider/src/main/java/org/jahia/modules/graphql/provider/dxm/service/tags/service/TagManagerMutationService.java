@@ -70,6 +70,12 @@ import java.util.List;
 public class TagManagerMutationService {
     private static final List<String> WORKSPACES = Arrays.asList(Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE);
 
+    /**
+     * Maximum number of failure paths included in a single response payload.
+     * Additional failures are counted but not listed.
+     */
+    public static final int MAX_REPORTED_FAILURES = 10;
+
     @Reference
     private TaggingService taggingService;
 
