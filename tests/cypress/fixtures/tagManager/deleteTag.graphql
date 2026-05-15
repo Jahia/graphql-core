@@ -1,0 +1,18 @@
+mutation DeleteTag($siteKey: String!, $tag: String!) {
+    admin {
+        jahia {
+            tagManager(siteKey: $siteKey) {
+                deleteTag(tag: $tag) {
+                    tag
+                    nodeId
+                    workspaceResults {
+                        workspace
+                        processedCount
+                        failedCount
+                        failedPaths
+                    }
+                }
+            }
+        }
+    }
+}
