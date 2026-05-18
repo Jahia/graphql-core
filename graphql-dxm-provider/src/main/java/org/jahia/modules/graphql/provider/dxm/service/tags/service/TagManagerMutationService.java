@@ -185,13 +185,26 @@ public class TagManagerMutationService {
     public GqlTagMutationResult deleteTagOnNode(String siteKey, String tag, String nodeId) {
         String sitePath = "/sites/" + siteKey;
         try {
-            validateNodeBelongsToSite(JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null), nodeId, sitePath);
+            JCRSessionWrapper editSession = JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null);
+            validateNodeBelongsToSite(editSession, nodeId, sitePath);
             List<GqlTagWorkspaceMutationResult> workspaceResults = new ArrayList<>();
 
             JCRObservationManager.setAllEventListenersDisabled(Boolean.TRUE);
             try {
                 for (String workspace : WORKSPACES) {
-                    workspaceResults.add(deleteTagOnNodeInWorkspace(workspace, tag, nodeId));
+                    JCRSessionWrapper systemSession = workspace.equals(Constants.EDIT_WORKSPACE) ? editSession
+                            : JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
+                    JCRNodeWrapper node = null;
+                    try {
+                        node = systemSession.getNodeByIdentifier(nodeId);
+                        taggingService.untag(node, tag);
+                        systemSession.save();
+                        flushNodeCaches(node.getPath());
+                        workspaceResults.add(new GqlTagWorkspaceMutationResult(workspace, 1, 0, Collections.emptyList()));
+                    } catch (RepositoryException e) {
+                        String failedPath = node != null ? node.getPath() : nodeId;
+                        workspaceResults.add(new GqlTagWorkspaceMutationResult(workspace, 0, 1, Collections.singletonList(failedPath)));
+                    }
                 }
             } finally {
                 JCRObservationManager.setAllEventListenersDisabled(Boolean.FALSE);
@@ -236,13 +249,26 @@ public class TagManagerMutationService {
         ensureMutationTagName(newName);
         String sitePath = "/sites/" + siteKey;
         try {
-            validateNodeBelongsToSite(JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null), nodeId, sitePath);
+            JCRSessionWrapper editSession = JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null);
+            validateNodeBelongsToSite(editSession, nodeId, sitePath);
             List<GqlTagWorkspaceMutationResult> workspaceResults = new ArrayList<>();
 
             JCRObservationManager.setAllEventListenersDisabled(Boolean.TRUE);
             try {
                 for (String workspace : WORKSPACES) {
-                    workspaceResults.add(renameTagOnNodeInWorkspace(workspace, tag, newName, nodeId));
+                    JCRSessionWrapper systemSession = workspace.equals(Constants.EDIT_WORKSPACE) ? editSession
+                            : JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
+                    JCRNodeWrapper node = null;
+                    try {
+                        node = systemSession.getNodeByIdentifier(nodeId);
+                        taggingService.renameTag(node, tag, newName);
+                        systemSession.save();
+                        flushNodeCaches(node.getPath());
+                        workspaceResults.add(new GqlTagWorkspaceMutationResult(workspace, 1, 0, Collections.emptyList()));
+                    } catch (RepositoryException e) {
+                        String failedPath = node != null ? node.getPath() : nodeId;
+                        workspaceResults.add(new GqlTagWorkspaceMutationResult(workspace, 0, 1, Collections.singletonList(failedPath)));
+                    }
                 }
             } finally {
                 JCRObservationManager.setAllEventListenersDisabled(Boolean.FALSE);
@@ -251,36 +277,6 @@ public class TagManagerMutationService {
             return new GqlTagMutationResult(tag, nodeId, workspaceResults);
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
-        }
-    }
-
-    private GqlTagWorkspaceMutationResult deleteTagOnNodeInWorkspace(String workspace, String tag, String nodeId) throws RepositoryException {
-        JCRSessionWrapper systemSession = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
-        JCRNodeWrapper node = null;
-        try {
-            node = systemSession.getNodeByIdentifier(nodeId);
-            taggingService.untag(node, tag);
-            systemSession.save();
-            flushNodeCaches(node.getPath());
-            return new GqlTagWorkspaceMutationResult(workspace, 1, 0, Collections.emptyList());
-        } catch (RepositoryException e) {
-            String failedPath = node != null ? node.getPath() : nodeId;
-            return new GqlTagWorkspaceMutationResult(workspace, 0, 1, Collections.singletonList(failedPath));
-        }
-    }
-
-    private GqlTagWorkspaceMutationResult renameTagOnNodeInWorkspace(String workspace, String tag, String newName, String nodeId) throws RepositoryException {
-        JCRSessionWrapper systemSession = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
-        JCRNodeWrapper node = null;
-        try {
-            node = systemSession.getNodeByIdentifier(nodeId);
-            taggingService.renameTag(node, tag, newName);
-            systemSession.save();
-            flushNodeCaches(node.getPath());
-            return new GqlTagWorkspaceMutationResult(workspace, 1, 0, Collections.emptyList());
-        } catch (RepositoryException e) {
-            String failedPath = node != null ? node.getPath() : nodeId;
-            return new GqlTagWorkspaceMutationResult(workspace, 0, 1, Collections.singletonList(failedPath));
         }
     }
 
