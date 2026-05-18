@@ -396,15 +396,7 @@
                     <outputName>java-bom.cdx</outputName>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <!-- Required for BeanWrapper, which calls setAccessible(true) on fields and methods
-                         from java.lang and java.lang.reflect — blocked by the Java module system without these opens. -->
-                    <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED</argLine>
-                </configuration>
-            </plugin>
+
         </plugins>
 
     </build>
