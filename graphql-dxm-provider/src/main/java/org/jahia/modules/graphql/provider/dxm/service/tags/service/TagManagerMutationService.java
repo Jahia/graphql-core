@@ -15,7 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.service.tags.service;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
