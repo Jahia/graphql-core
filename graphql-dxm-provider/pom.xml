@@ -146,6 +146,7 @@
             org.jahia.services.modulemanager.util,
             org.jahia.services.query,
             org.jahia.services.render,
+            org.jahia.services.render.filter.cache,
             org.jahia.services.render.scripting,
             org.jahia.services.scheduler,
             org.jahia.services.securityfilter,
@@ -395,6 +396,7 @@
                     <outputName>java-bom.cdx</outputName>
                 </configuration>
             </plugin>
+
         </plugins>
 
     </build>
