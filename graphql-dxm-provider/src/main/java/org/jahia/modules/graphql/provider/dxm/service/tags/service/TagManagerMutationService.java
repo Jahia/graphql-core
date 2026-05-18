@@ -280,6 +280,12 @@ public class TagManagerMutationService {
         }
     }
 
+    /**
+     * Invalidates all module caches associated with the given JCR path.
+     * Static so that {@link TagManagerActionCallback} can call it without holding a service reference.
+     *
+     * @param path the JCR path whose caches should be flushed; must not be {@code null}
+     */
     static void flushNodeCaches(String path) {
         ModuleCacheProvider cacheProvider = ModuleCacheProvider.getInstance();
         cacheProvider.invalidate(path, true);
