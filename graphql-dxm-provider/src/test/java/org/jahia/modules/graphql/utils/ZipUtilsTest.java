@@ -17,7 +17,7 @@ package org.jahia.modules.graphql.utils;
 
 import org.jahia.modules.graphql.provider.dxm.util.ZipUtils;
 import org.junit.Test;
-import org.testng.Assert;
+import org.junit.Assert;
 
 import java.io.IOException;
 
@@ -25,11 +25,11 @@ public class ZipUtilsTest {
 
     @Test
     public void testMimeType() throws IOException {
-        Assert.assertEquals(ZipUtils.getMimeType("test.css", null), "text/css");
-        Assert.assertEquals(ZipUtils.getMimeType("test", getClass().getResourceAsStream("/mime-samples/text")), "text/plain");
-        Assert.assertEquals(ZipUtils.getMimeType("test", getClass().getResourceAsStream("/mime-samples/text-csv")), "text/plain");
-        Assert.assertEquals(ZipUtils.getMimeType("excel.xlsx", null), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        Assert.assertEquals(ZipUtils.getMimeType("excel-xlsx", getClass().getResourceAsStream("/mime-samples/excel.xlsx")), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        Assert.assertEquals(ZipUtils.getMimeType("excel-xlsx", getClass().getResourceAsStream("/mime-samples/excel")), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        Assert.assertEquals("text/css", ZipUtils.getMimeType("test.css", null));
+        Assert.assertEquals("text/plain", ZipUtils.getMimeType("test", getClass().getResourceAsStream("/mime-samples/text")));
+        Assert.assertEquals("text/plain", ZipUtils.getMimeType("test", getClass().getResourceAsStream("/mime-samples/text-csv")));
+        Assert.assertEquals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ZipUtils.getMimeType("excel.xlsx", null));
+        Assert.assertEquals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ZipUtils.getMimeType("excel-xlsx", getClass().getResourceAsStream("/mime-samples/excel.xlsx")));
+        Assert.assertEquals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ZipUtils.getMimeType("excel-xlsx", getClass().getResourceAsStream("/mime-samples/excel")));
     }
 }

@@ -74,7 +74,7 @@ import static org.jahia.modules.graphql.provider.dxm.node.NodeHelper.getTypesPre
 @GraphQLDescription("GraphQL representation of a generic JCR node")
 public class GqlJcrNodeImpl implements GqlJcrNode {
 
-    public static final List<String> DEFAULT_EXCLUDED_CHILDREN = Arrays.asList("jnt:translation");
+    public static final List<String> DEFAULT_EXCLUDED_CHILDREN = Arrays.asList("jnt:translation", "jmix:hiddenNode");
     public static final Predicate<JCRNodeWrapper> DEFAULT_CHILDREN_PREDICATE = getTypesPredicate(new NodeTypesInput(MulticriteriaEvaluation.NONE, DEFAULT_EXCLUDED_CHILDREN));
     private static final Logger log = LoggerFactory.getLogger(GqlJcrNodeImpl.class);
 
