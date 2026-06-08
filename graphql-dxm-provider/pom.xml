@@ -395,6 +395,13 @@
                     <outputName>java-bom.cdx</outputName>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <testNGArtifactName>none:none</testNGArtifactName>
+                </configuration>
+            </plugin>
         </plugins>
 
     </build>
