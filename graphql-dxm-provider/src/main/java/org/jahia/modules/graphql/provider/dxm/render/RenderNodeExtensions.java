@@ -154,7 +154,12 @@ public class RenderNodeExtensions {
 
             if (view == null) {
                 String definedView = node.hasProperty("j:view") ? node.getPropertyAsString("j:view") : null;
-                view = definedView != null && !definedView.isEmpty() ? definedView : "cm";
+                if (definedView != null && !definedView.isEmpty()) {
+                    view = definedView;
+                } else {
+                    // Use 'default' view for page rendering if no view is defined; otherwise we use cm template
+                    view = Resource.CONFIGURATION_PAGE.equals(contextConfiguration) ? "default" : "cm";
+                }
             }
 
             Resource r = new Resource(node, templateType, view, contextConfiguration);
