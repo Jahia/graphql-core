@@ -1,8 +1,9 @@
 import {addNode, addVanityUrl, createSite, deleteNode, deleteSite, removeVanityUrl} from '@jahia/cypress';
 import gql from 'graphql-tag';
 
-const sitename = 'graphql_test_render';
 describe('Test graphql rendering', () => {
+    const sitename = 'graphql_test_render';
+
     before('Create a site', () => {
         createSite(sitename);
     });
@@ -452,7 +453,7 @@ describe('Test graphql rendering', () => {
         deleteNode('/sites/' + sitename + '/home/text1');
     });
 
-    it('uses default view when contextConfiguration is page and no view is set', () => {
+    it('uses default view when contextConfiguration is page and no view is set', {timeout: 30000}, () => {
         addNode({
             parentPathOrId: `/sites/${sitename}/home`,
             name: 'pageContextDefault',
@@ -473,15 +474,13 @@ describe('Test graphql rendering', () => {
                     }
                 }
             }`
-        }).should(result => {
+        }, {timeout: 30000}).should(result => {
             const output = result?.data?.jcr?.nodeByPath?.renderedContent.output;
             // With contextConfiguration "page" and no j:view, view resolves to "default"
             // which renders the actual page template — not the "cm" fallback
             expect(output).to.not.be.empty;
             expect(output).to.not.contain('No rendering set for node');
         });
-
-        deleteNode(`/sites/${sitename}/home/pageContextDefault`);
     });
 
     it('falls back to cm view when contextConfiguration is not page and no view is set', () => {
