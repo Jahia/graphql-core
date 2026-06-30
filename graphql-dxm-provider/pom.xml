@@ -60,6 +60,7 @@
         <import-package>
             com.fasterxml.jackson.annotation,
             graphql,
+            graphql.analysis,
             graphql.annotations.annotationTypes,
             graphql.annotations.connection,
             graphql.annotations.processor,
