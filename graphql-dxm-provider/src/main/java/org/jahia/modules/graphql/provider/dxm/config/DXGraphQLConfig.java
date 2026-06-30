@@ -45,7 +45,11 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private static final String CORS_ORIGINS = "http.cors.allow-origin";
     private static final String NODE_LIMIT = "graphql.fields.node.limit";
+    private static final String MAX_QUERY_COMPLEXITY = "graphql.query.maxComplexity";
+    private static final String MAX_QUERY_DEPTH = "graphql.query.maxDepth";
     public static final String INTROSPECTION_CHECK_ENABLED = "introspectionCheckEnabled";
+
+    private static final String DEFAULT_CONFIG_FILE_SUFFIX = "org.jahia.modules.graphql.provider-default.cfg";
 
     private final Map<String, List<String>> keysByPid = new ConcurrentHashMap<>();
     private final Map<String, String> annotationPermissions = new ConcurrentHashMap<>();
@@ -57,6 +61,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private final Map<String, Boolean> introspectionCheckByPid = new ConcurrentHashMap<>();
 
     private int nodeLimit = 5000;
+    private int maxQueryComplexity = 0;
+    private int maxQueryDepth = 0;
     private boolean introspectionCheckEnabled = false;
 
     @Override
@@ -76,6 +82,11 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         keysByPid.put(pid, keysForPid);
         corsOriginByPid.remove(pid);
         introspectionCheckByPid.remove(pid);
+
+        // Some limits (node limit, query-cost guards) are global and may only be set from the default config file,
+        // so that a third-party module configuration cannot loosen them.
+        Object filename = properties.get("felix.fileinstall.filename");
+        boolean isDefaultConfig = filename != null && filename.toString().endsWith(DEFAULT_CONFIG_FILE_SUFFIX);
 
         // parse properties
         Enumeration<String> keys = properties.keys();
@@ -100,7 +111,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 }
             } else if (key.equals(CORS_ORIGINS)) {
                 corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split(value," ,"))));
-            } else if (key.equals(NODE_LIMIT) && properties.get("felix.fileinstall.filename") != null && properties.get("felix.fileinstall.filename").toString().endsWith("org.jahia.modules.graphql.provider-default.cfg")) {
+            } else if (key.equals(NODE_LIMIT) && isDefaultConfig) {
                 try {
                     int newNodeLimit = Integer.parseInt(value);
                     if (newNodeLimit < 0) {
@@ -114,6 +125,10 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 } catch (NumberFormatException e) {
                     throw new ConfigurationException(key, "Node limit must be a positive integer");
                 }
+            } else if (key.equals(MAX_QUERY_COMPLEXITY) && isDefaultConfig) {
+                maxQueryComplexity = parseNonNegativeLimit(key, value, "Max query complexity");
+            } else if (key.equals(MAX_QUERY_DEPTH) && isDefaultConfig) {
+                maxQueryDepth = parseNonNegativeLimit(key, value, "Max query depth");
             } else if (key.equals(INTROSPECTION_CHECK_ENABLED)) {
                 // Defaults to false if value is not valid
                 introspectionCheckByPid.put(pid, StringUtils.isNotEmpty(value) && Boolean.parseBoolean(value.trim()));
@@ -165,6 +180,32 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     public int getNodeLimit() {
         return nodeLimit;
+    }
+
+    /**
+     * @return the maximum allowed query complexity (estimated resolver cost), or 0 when the guard is disabled
+     */
+    public int getMaxQueryComplexity() {
+        return maxQueryComplexity;
+    }
+
+    /**
+     * @return the maximum allowed query depth, or 0 when the guard is disabled
+     */
+    public int getMaxQueryDepth() {
+        return maxQueryDepth;
+    }
+
+    private static int parseNonNegativeLimit(String key, String value, String label) throws ConfigurationException {
+        try {
+            int parsed = Integer.parseInt(StringUtils.trim(value));
+            if (parsed < 0) {
+                throw new ConfigurationException(key, label + " must be a non-negative integer (0 disables the limit)");
+            }
+            return parsed;
+        } catch (NumberFormatException e) {
+            throw new ConfigurationException(key, label + " must be a non-negative integer (0 disables the limit)");
+        }
     }
 
     /**
