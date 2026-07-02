@@ -6,6 +6,16 @@ describe('Test graphql rendering', () => {
 
     before('Create a site', () => {
         createSite(sitename);
+
+        addNode({
+            parentPathOrId: `/sites/${sitename}/home`,
+            name: 'pageContextDefault',
+            primaryNodeType: 'jnt:page',
+            properties: [
+                {name: 'jcr:title', value: 'Page Context Default', language: 'en'},
+                {name: 'j:templateName', value: 'simple'}
+            ]
+        });
     });
 
     after('Delete the site', () => {
@@ -453,17 +463,7 @@ describe('Test graphql rendering', () => {
         deleteNode('/sites/' + sitename + '/home/text1');
     });
 
-    it('uses default view when contextConfiguration is page and no view is set', {timeout: 30000}, () => {
-        addNode({
-            parentPathOrId: `/sites/${sitename}/home`,
-            name: 'pageContextDefault',
-            primaryNodeType: 'jnt:page',
-            properties: [
-                {name: 'jcr:title', value: 'Page Context Default', language: 'en'},
-                {name: 'j:templateName', value: 'simple'}
-            ]
-        });
-
+    it('uses default view when contextConfiguration is page and no view is set', () => {
         cy.apollo({
             query: gql`query {
                 jcr {
@@ -474,7 +474,8 @@ describe('Test graphql rendering', () => {
                     }
                 }
             }`
-        }, {timeout: 30000}).should(result => {
+        }).should(result => {
+            cy.log(`[graphqlRenderTest]: ${JSON.stringify(result, null, 2)}`);
             const output = result?.data?.jcr?.nodeByPath?.renderedContent.output;
             // With contextConfiguration "page" and no j:view, view resolves to "default"
             // which renders the actual page template — not the "cm" fallback
