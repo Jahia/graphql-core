@@ -154,6 +154,10 @@ interface JCRNode {
         "The name of the permission"
         permissionName: String!
     ): Boolean
+    "Returns content history for the node"
+    history: GqlContentHistory
+    "Return if a node of type jnt:condition is matching for the current node."
+    isConditionMatching: Boolean
     "Check if the node as a renderable template associated with it (not a view a template)."
     isDisplayableNode: Boolean
     "true if node is under a mounted node"
@@ -163,6 +167,8 @@ interface JCRNode {
         "Node type name"
         type: InputNodeTypesInput!
     ): Boolean!
+    "Returns true if the node is visible according to the visibility conditions defined for its type."
+    isVisible: Boolean
     "Check if the given locales need translation, by comparing last modifications dates with already existing translations"
     languagesToTranslate(
         "List of languages potentially to be translated"
@@ -249,7 +255,7 @@ interface JCRNode {
     ): String
     "Gets the fully rendered content for this node"
     renderedContent(
-        "Rendering context configuration"
+        "Rendering context configuration. Possible values include 'module', 'gwt', 'page'. Default is 'module'."
         contextConfiguration: String,
         "Is edit mode"
         isEditMode: Boolean,
@@ -257,11 +263,11 @@ interface JCRNode {
         language: String,
         "Main resource path"
         mainResourcePath: String,
-        "Additional request attributes"
+        "Additional request attributes to be included in request. Array of name value pairs: [{name:\"templateSet\", value:\"true\"}]"
         requestAttributes: [InputRenderRequestAttributeInput],
-        "Template type"
+        "Template type. Possible values could be 'html', 'json' etc. Default is 'html'."
         templateType: String,
-        "Name of the view (leave null for default)"
+        "Name of the view (leave null for default). This is the value of j:view property."
         view: String
     ): RenderedNode
     "GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site"
@@ -308,6 +314,8 @@ interface JCRNode {
         "Languages"
         languages: [String]
     ): [VanityUrl]
+    "Returns the details of the visibility conditions evaluation for the node."
+    visibilityDetails: [VisibilityConditionEvaluationResult]
     "Read work in progress information for a given node"
     wipInfo: wipInfo
     "Get the workspace of the query"
@@ -390,6 +398,11 @@ type AdminMutation {
 
 "Admin queries root"
 type AdminQuery {
+    "List all available locales in the JVM"
+    availableLocales(
+        "List all available locales for the given language code"
+        language: String!
+    ): [GqlLocale]
     "Details about the Jahia cluster"
     cluster: Cluster
     "Current datetime"
@@ -423,6 +436,8 @@ type AdminTools {
         "When set to 'true', only return bundles that have at least one dependency with an unsupported version range (to be considered supported, a version range should be open to minor upgrade based on SemVer)"
         withUnsupportedDependenciesOnly: Boolean = false
     ): [BundleWithDependencies]
+    "Returns all active OSGi package wires that match the deprecated-package patterns configured via the DeprecationConfig OSGi service (configuration PID prefix: 'org.jahia.modules.tools.deprecatedpackagewires-*'). Each configuration entry maps a provider bundle symbolic name to a list of Java regex patterns; only wires whose provider and package name match an entry are returned. Only active Jahia module bundles are analyzed as requirers. Returns an error if the DeprecationConfig service is unavailable or no patterns are configured. Results are sorted by provider bundle id, then requirer bundle id, then package name."
+    deprecatedPackageWires: [PackageWire]
     "Will return all the duplicate export packages and the bundles that export them"
     findMatchingExportPackages(
         "Regular expression for the export packages. When specified, only export packages matching this regular expression are retrieved."
@@ -439,6 +454,13 @@ type AdminTools {
         "Filter the import packages on whether their version is missing (when the flag is set to 'true') or is set (when the flag is set to 'false'). If not specified, import packages with and without version are retrieved"
         versionMissing: Boolean = false
     ): FindImportPackage
+    "Returns all active OSGi package wires matching the given provider and package patterns. Only wires from active Jahia module bundles (requirers) are returned. Each pattern is a Java regex matched against the fully-qualified package name (e.g. 'org\\\\.springframework\\\\..*'). If providerBundleSymbolicName is specified, only wires whose provider matches that bundle are returned; omit it to match wires from any provider. Results are sorted by provider bundle id, then requirer bundle id, then package name."
+    packageWires(
+        "One or more Java regex patterns matched against fully-qualified package names (e.g. 'org\\\\.springframework\\\\..*'). At least one pattern is required."
+        packageRegexes: [String!],
+        "Symbolic name of the provider bundle to filter by (e.g. 'org.apache.felix.framework'). Omit to match wires from any provider."
+        providerBundleSymbolicName: String
+    ): [PackageWire]
 }
 
 "Asset type for files"
@@ -832,6 +854,10 @@ type GenericJCRNode implements JCRNode {
         "The name of the permission"
         permissionName: String!
     ): Boolean
+    "Returns content history for the node"
+    history: GqlContentHistory
+    "Return if a node of type jnt:condition is matching for the current node."
+    isConditionMatching: Boolean
     "Check if the node as a renderable template associated with it (not a view a template)."
     isDisplayableNode: Boolean
     "true if node is under a mounted node"
@@ -841,6 +867,8 @@ type GenericJCRNode implements JCRNode {
         "Node type name"
         type: InputNodeTypesInput!
     ): Boolean!
+    "Returns true if the node is visible according to the visibility conditions defined for its type."
+    isVisible: Boolean
     "Check if the given locales need translation, by comparing last modifications dates with already existing translations"
     languagesToTranslate(
         "The languages to check"
@@ -892,7 +920,7 @@ type GenericJCRNode implements JCRNode {
         "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): JCRProperty
-    "Returns count of all references of the node across all sites"
+    "Returns count of all references of the node across all sites. If this property returns null, references are not supported for this node."
     referenceCount(
         "Filter out referencing types which should not be counted"
         typesFilter: InputNodeTypesInput
@@ -927,7 +955,7 @@ type GenericJCRNode implements JCRNode {
     ): String
     "Gets the fully rendered content for this node"
     renderedContent(
-        "Rendering context configuration"
+        "Rendering context configuration. Possible values include 'module', 'gwt', 'page'. Default is 'module'."
         contextConfiguration: String,
         "Is edit mode"
         isEditMode: Boolean,
@@ -935,11 +963,11 @@ type GenericJCRNode implements JCRNode {
         language: String,
         "Main resource path"
         mainResourcePath: String,
-        "Additional request attributes"
+        "Additional request attributes to be included in request. Array of name value pairs: [{name:\"templateSet\", value:\"true\"}]"
         requestAttributes: [InputRenderRequestAttributeInput],
-        "Template type"
+        "Template type. Possible values could be 'html', 'json' etc. Default is 'html'."
         templateType: String,
-        "Name of the view (leave null for default)"
+        "Name of the view (leave null for default). This is the value of j:view property."
         view: String
     ): RenderedNode
     "GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site"
@@ -986,6 +1014,8 @@ type GenericJCRNode implements JCRNode {
         "Languages"
         languages: [String]
     ): [VanityUrl]
+    "Returns the details of the visibility conditions evaluation for the node."
+    visibilityDetails: [VisibilityConditionEvaluationResult]
     "Read work in progress information for a given node"
     wipInfo: wipInfo
     "Get the workspace of the query"
@@ -1174,6 +1204,66 @@ type GqlConfigurationQuery {
     values: [GqlConfigurationProperty]
 }
 
+"Content history information for a node"
+type GqlContentHistory {
+    "Get total count of history entries for the node"
+    count(
+        "Filter count by action (e.g., 'published', 'created', 'updated', 'deleted')"
+        action: String,
+        "Include language-specific nodes in the count (default: false)"
+        withLanguageNodes: Boolean
+    ): Int
+    "Get paginated content history entries for the node, the maximum number of returned entries is 100"
+    entries(
+        "Filter entries by action (e.g., 'published', 'created', 'updated', 'deleted')"
+        action: String,
+        "Maximum number of entries to return (default: 20)"
+        limit: Int,
+        "Number of entries to skip (default: 0)"
+        offset: Int,
+        "Include language-specific nodes in the result (default: false)"
+        withLanguageNodes: Boolean
+    ): [GqlContentHistoryEntry]
+}
+
+"Represents a content change event entry"
+type GqlContentHistoryEntry {
+    "The action performed (e.g., created, updated, deleted, published)"
+    action: String
+    "The timestamp of the history entry in ISO 8601 format"
+    date: String
+    "The unique identifier of the history entry"
+    id: String
+    "The language code if the entry is for a language-specific node"
+    language: String
+    "Additional message about the event"
+    message: String
+    "The technical name of the node"
+    nodeName: String
+    "The localized display name of the node"
+    nodeNameDisplay(
+        "Language code for the display name"
+        language: String!
+    ): String
+    "The path of the node at the time of the event"
+    path: String
+    "The property name if the action was on a specific property"
+    propertyName: String
+    "The localized display name of the property if the action was on a specific property"
+    propertyNameDisplay(
+        "Language code for the display name"
+        language: String!
+    ): String
+    "The timestamp of the history entry as milliseconds since epoch"
+    timestamp: Long
+    "The user who performed the action, resolved from the user key"
+    user: User
+    "The user key who performed the action"
+    userKey: String
+    "The UUID of the node"
+    uuid: String
+}
+
 type GqlDashboard {
     "Retrieves the list of modules currently available on the platform"
     modules: [GqlModule]
@@ -1262,6 +1352,21 @@ type GqlEditorFormMutations {
         "UUID or path of the edited node."
         uuidOrPath: String!
     ): Boolean
+    "Save the visibility condition for the given node"
+    saveVisibilityCondition(
+        "When true, all conditions must match for the node to be visible; when false, any single match is sufficient"
+        isMatchingAllConditions: Boolean = false,
+        "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
+        locale: String!,
+        "New visibility conditions to create"
+        newConditions: [InputVisibilityConditionInput],
+        "UUIDs of visibility conditions to remove"
+        removedConditions: [String],
+        "Existing visibility conditions to update"
+        updatedConditions: [InputVisibilityConditionInput],
+        "UUID of the parent nodes ofr teh visibility condition"
+        uuid: String!
+    ): Boolean
     "Unlock the given node for edition, if the node is locked."
     unlockEditor(
         "An ID generated client side used to identify the lock"
@@ -1311,6 +1416,7 @@ type GqlEditorFormValueConstraint {
     value: GqlEditorFormValue
 }
 
+"Main entry point for the Content Editor form API — provides queries for form definitions, field constraints, content type trees, and node type information"
 type GqlEditorForms {
     "Retrieve the custom configuration path for CKEditor"
     ckeditorConfigPath(
@@ -1350,7 +1456,7 @@ type GqlEditorForms {
         "uuid or path of an existing node under with the new content will be created."
         uuidOrPath: String!
     ): GqlEditorForm
-    "Get a editor form from a locale and an existing node"
+    "Get an editor form from a locale and an existing node"
     editForm(
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
         locale: String!,
@@ -1378,6 +1484,13 @@ type GqlEditorForms {
         "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
         uiLocale: String!
     ): [GqlEditorFormValueConstraint]
+    "Retrieve info for given node types"
+    nodeTypeInfo(
+        "node types"
+        nodeTypes: [String]!,
+        "A string representation of a locale, in IETF BCP 47 language tag format, ie en_US, en, fr, fr_CH, ..."
+        uiLocale: String!
+    ): [NodeTypeInfo]
     "Retrieve the number of sub contents under the node for given types"
     subContentsCount(
         "List of node types to check for"
@@ -1397,7 +1510,15 @@ type GqlHealthCheck {
         health: GqlProbeHealth
     ): [GqlProbe]
     "Highest reported status across all probes"
-    status: GqlProbeStatus
+    status: GqlHealthCheckStatus
+}
+
+"HealthCheck Status"
+type GqlHealthCheckStatus {
+    "Health of the probe"
+    health: GqlProbeHealth
+    "Message explaining probe status"
+    message: String @deprecated(reason: "When multiple probe return the same error status (YELLOW or RED), the message does not guarantee which of the probe will get its message returned. We recommend using the \"health\" parameter and corresponding individual probe message instead.")
 }
 
 "jContent API"
@@ -1411,6 +1532,56 @@ type GqlJContent {
         "Original html"
         originalHtml: String
     ): String
+    "Search groups through Jahia group manager services. Provider-aware, unlike a raw 'SELECT * FROM [jnt:group]' query."
+    groupSearch(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "Sort by GraphQL field values"
+        fieldSorter: InputFieldSorterInput,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int,
+        "Optional provider keys to restrict the search; null targets all providers"
+        providers: [String],
+        "Search scope: '/' (site + global), '/groups' (global only) or '/sites/{site}/groups' (site only)"
+        scopePath: String,
+        "Search term matched against all group properties; blank lists everything"
+        searchTerm: String,
+        "Site key used to resolve site-scoped groups"
+        siteKey: String
+    ): JCRNodeConnection
+    "Search users through Jahia user manager services. Provider-aware (incl. LDAP) and bounded by the configured jahiaJCRUserCountLimit, unlike a raw 'SELECT * FROM [jnt:user]' query."
+    userSearch(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "Sort by GraphQL field values"
+        fieldSorter: InputFieldSorterInput,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int,
+        "Optional provider keys to restrict the search; null targets all providers"
+        providers: [String],
+        "Search scope: '/' (site + global), '/users' (global only) or '/sites/{site}/users' (site only)"
+        scopePath: String,
+        "Search term matched against all user properties; blank lists everything (up to the count limit)"
+        searchTerm: String,
+        "Site key used to resolve site-scoped users"
+        siteKey: String
+    ): JCRNodeConnection
 }
 
 "jContent API"
@@ -1453,6 +1624,17 @@ type GqlJcrImageTransformMutation {
         "angle in degrees"
         angle: Float!
     ): Boolean
+}
+
+"GQL type representing a locale"
+type GqlLocale {
+    "Display name"
+    displayName(
+        "Language"
+        language: String
+    ): String
+    "Language code"
+    language: String
 }
 
 "Details on a lock"
@@ -1613,7 +1795,7 @@ type GqlProbeStatus {
     "Health of the probe"
     health: GqlProbeHealth
     "Message explaining probe status"
-    message: String @deprecated(reason: "When multiple probe return the same error status (YELLOW or RED), the message does not guarantee which of the probe will get its message returned. We recommend using the \"health\" parameter and corresponding individual probe message instead.")
+    message: String
 }
 
 "Publication background job"
@@ -2084,7 +2266,7 @@ type JCRNodeMutation {
     "Unlock all nodes under the specified node"
     clearAllLocks: Boolean
     "Create new version for the node if the node supports versioning"
-    createVersion: Boolean
+    createVersion: Boolean @deprecated(reason: "Use content-versioning module instead. Versions are now managed through the content-versioning module (Jahia 8.2.4.0+).")
     "Add wip information"
     createWipInfo(
         "Work in progress information to save"
@@ -2787,12 +2969,16 @@ type JCRSite implements JCRNode {
         "The name of the permission"
         permissionName: String!
     ): Boolean
+    "Returns content history for the node"
+    history: GqlContentHistory
     "Returns the node of the home page or null if no home page is defined or is not accessible"
     homePage: JCRNode
     "Retrieves a collection of module IDs, which are installed on the site, the node belongs to"
     installedModules: [String]
     "Retrieves a collection of module IDs, which are installed on the site, the node belongs to, as well as dependencies of those modules"
     installedModulesWithAllDependencies: [String]
+    "Return if a node of type jnt:condition is matching for the current node."
+    isConditionMatching: Boolean
     "Check if the node as a renderable template associated with it (not a view a template)."
     isDisplayableNode: Boolean
     "true if node is under a mounted node"
@@ -2802,6 +2988,8 @@ type JCRSite implements JCRNode {
         "Node type name"
         type: InputNodeTypesInput!
     ): Boolean!
+    "Returns true if the node is visible according to the visibility conditions defined for its type."
+    isVisible: Boolean
     "Site languages"
     languages: [JCRSiteLanguage]
     "Check if the given locales need translation, by comparing last modifications dates with already existing translations"
@@ -2855,7 +3043,7 @@ type JCRSite implements JCRNode {
         "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): JCRProperty
-    "Returns count of all references of the node across all sites"
+    "Returns count of all references of the node across all sites. If this property returns null, references are not supported for this node."
     referenceCount(
         "Filter out referencing types which should not be counted"
         typesFilter: InputNodeTypesInput
@@ -2890,7 +3078,7 @@ type JCRSite implements JCRNode {
     ): String
     "Gets the fully rendered content for this node"
     renderedContent(
-        "Rendering context configuration"
+        "Rendering context configuration. Possible values include 'module', 'gwt', 'page'. Default is 'module'."
         contextConfiguration: String,
         "Is edit mode"
         isEditMode: Boolean,
@@ -2898,11 +3086,11 @@ type JCRSite implements JCRNode {
         language: String,
         "Main resource path"
         mainResourcePath: String,
-        "Additional request attributes"
+        "Additional request attributes to be included in request. Array of name value pairs: [{name:\"templateSet\", value:\"true\"}]"
         requestAttributes: [InputRenderRequestAttributeInput],
-        "Template type"
+        "Template type. Possible values could be 'html', 'json' etc. Default is 'html'."
         templateType: String,
-        "Name of the view (leave null for default)"
+        "Name of the view (leave null for default). This is the value of j:view property."
         view: String
     ): RenderedNode
     "Site server name"
@@ -2953,6 +3141,8 @@ type JCRSite implements JCRNode {
         "Languages"
         languages: [String]
     ): [VanityUrl]
+    "Returns the details of the visibility conditions evaluation for the node."
+    visibilityDetails: [VisibilityConditionEvaluationResult]
     "Read work in progress information for a given node"
     wipInfo: wipInfo
     "Get the workspace of the query"
@@ -2965,6 +3155,11 @@ type JCRSiteLanguage {
     activeInEdit: Boolean
     "Is this language active in live"
     activeInLive: Boolean
+    "Count languages usage"
+    count(
+        "The path to check the language usage for"
+        path: String!
+    ): Long
     "Display name"
     displayName(
         "Language"
@@ -3224,11 +3419,21 @@ type Mutation {
         "Should save"
         save: Boolean = true,
         "The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default"
-        workspace: Workspace
+        workspace: Workspace = EDIT
     ): JCRMutation
     "Generate a new JWT token"
     jwtToken(ips: [String], referer: [String], scopes: [String]!): JWTToken
     mutateWorkflows(definition: String): [WorkflowMutation]
+}
+
+"GraphQL representation of node type information"
+type NodeTypeInfo {
+    "Returns icon url of the node type"
+    iconURL: String
+    "Returns the localized label of the node type"
+    label: String
+    "Returns the name of the node type"
+    name: String
 }
 
 "GraphQL representation of node type tree entry"
@@ -3250,6 +3455,16 @@ type NodeTypeTreeEntry {
     nodeType: JCRNodeType
     "Return the parent tree entry (if any)"
     parent: NodeTypeTreeEntry
+}
+
+"Represents a single resolved OSGi package wire: a runtime binding between a requirer bundle (one that declares an Import-Package or DynamicImport-Package) and the provider bundle that satisfies it (one that declares a matching Export-Package). Only wires from active Jahia module bundles are returned."
+type PackageWire {
+    "The fully-qualified Java package name that is wired, e.g. 'org.springframework.core.io'."
+    packageName: String
+    "The bundle that exports the package — i.e. the one whose Export-Package manifest header satisfies this wire."
+    providerBundle: ProviderBundle
+    "The Jahia module bundle that imports the package — i.e. the one whose Import-Package or DynamicImport-Package manifest header created this wire."
+    requirerBundle: RequirerBundle
 }
 
 "Information about pagination in a connection."
@@ -3308,7 +3523,7 @@ type PersonalApiTokenEdge {
 
 "Mutations for Personal Api Tokens"
 type PersonalApiTokensMutation {
-    "Create a new token"
+    "Create a new token for connected user"
     createToken(
         "Expiration date of the token"
         expireAt: String,
@@ -3316,8 +3531,6 @@ type PersonalApiTokensMutation {
         name: String!,
         "Scopes attached to this token"
         scopes: [String],
-        "The site the user belongs to, null if global user"
-        site: String,
         "State to give the newly created token"
         state: TokenState
     ): String
@@ -3407,6 +3620,28 @@ type PrincipalEdge {
     node: Principal
 }
 
+"The OSGi bundle that exports a package, satisfying another bundle's Import-Package or DynamicImport-Package declaration. Exposes the bundle's id, symbolic name, and display name."
+type ProviderBundle {
+    "Display name of the bundle."
+    bundleDisplayName: String @deprecated(reason: "Use displayName instead")
+    "ID of the bundle."
+    bundleId: Long @deprecated(reason: "Use id instead")
+    "Name of the bundle."
+    bundleName: String @deprecated(reason: "Use name instead")
+    "Symbolic name of the bundle."
+    bundleSymbolicName: String @deprecated(reason: "Use symbolicName instead")
+    "Display name of the bundle."
+    displayName: String
+    "ID of the bundle."
+    id: Long
+    "Name of the bundle."
+    name: String
+    "Symbolic name of the bundle."
+    symbolicName: String
+    "Version of the bundle."
+    version: String
+}
+
 "Root query type"
 type Query {
     "Admin Queries"
@@ -3440,7 +3675,7 @@ type Query {
     "JCR Queries"
     jcr(
         "The name of the workspace to fetch the node from; either EDIT, LIVE, or null to use EDIT by default"
-        workspace: Workspace
+        workspace: Workspace = EDIT
     ): JCRQuery!
     "Tag Queries"
     tag: JCRTags
@@ -3459,6 +3694,28 @@ type RenderedNode {
         "Assets type"
         type: String!
     ): [StaticAsset]
+}
+
+"An active Jahia module bundle that imports a package via an Import-Package or DynamicImport-Package declaration, creating a wire to the provider bundle that exports it. Exposes the bundle's id, symbolic name, and display name."
+type RequirerBundle {
+    "Display name of the bundle."
+    bundleDisplayName: String @deprecated(reason: "Use displayName instead")
+    "ID of the bundle."
+    bundleId: Long @deprecated(reason: "Use id instead")
+    "Name of the bundle."
+    bundleName: String @deprecated(reason: "Use name instead")
+    "Symbolic name of the bundle."
+    bundleSymbolicName: String @deprecated(reason: "Use symbolicName instead")
+    "Display name of the bundle."
+    displayName: String
+    "ID of the bundle."
+    id: Long
+    "Name of the bundle."
+    name: String
+    "Symbolic name of the bundle."
+    symbolicName: String
+    "Version of the bundle."
+    version: String
 }
 
 "Simple numeric aggregation on properties values"
@@ -3849,6 +4106,10 @@ type VanityUrl implements JCRNode {
         "The name of the permission"
         permissionName: String!
     ): Boolean
+    "Returns content history for the node"
+    history: GqlContentHistory
+    "Return if a node of type jnt:condition is matching for the current node."
+    isConditionMatching: Boolean
     "Check if the node as a renderable template associated with it (not a view a template)."
     isDisplayableNode: Boolean
     "true if node is under a mounted node"
@@ -3858,6 +4119,8 @@ type VanityUrl implements JCRNode {
         "Node type name"
         type: InputNodeTypesInput!
     ): Boolean!
+    "Returns true if the node is visible according to the visibility conditions defined for its type."
+    isVisible: Boolean
     "The language of the content object to which the vanity URL maps to"
     language: String
     "Check if the given locales need translation, by comparing last modifications dates with already existing translations"
@@ -3911,7 +4174,7 @@ type VanityUrl implements JCRNode {
         "When set to true, returns the node in the default language if there is no translation for the requested language. Returns null if the option \"Replace untranslated content with the default language content\" is not activated for the site of the requested node. Will also return null if there is no translation for the default language."
         useFallbackLanguage: Boolean = false
     ): JCRProperty
-    "Returns count of all references of the node across all sites"
+    "Returns count of all references of the node across all sites. If this property returns null, references are not supported for this node."
     referenceCount(
         "Filter out referencing types which should not be counted"
         typesFilter: InputNodeTypesInput
@@ -3946,7 +4209,7 @@ type VanityUrl implements JCRNode {
     ): String
     "Gets the fully rendered content for this node"
     renderedContent(
-        "Rendering context configuration"
+        "Rendering context configuration. Possible values include 'module', 'gwt', 'page'. Default is 'module'."
         contextConfiguration: String,
         "Is edit mode"
         isEditMode: Boolean,
@@ -3954,11 +4217,11 @@ type VanityUrl implements JCRNode {
         language: String,
         "Main resource path"
         mainResourcePath: String,
-        "Additional request attributes"
+        "Additional request attributes to be included in request. Array of name value pairs: [{name:\"templateSet\", value:\"true\"}]"
         requestAttributes: [InputRenderRequestAttributeInput],
-        "Template type"
+        "Template type. Possible values could be 'html', 'json' etc. Default is 'html'."
         templateType: String,
-        "Name of the view (leave null for default)"
+        "Name of the view (leave null for default). This is the value of j:view property."
         view: String
     ): RenderedNode
     "GraphQL representation of the site the JCR node belongs to, or the system site in case the node does not belong to any site"
@@ -4007,6 +4270,8 @@ type VanityUrl implements JCRNode {
         "Languages"
         languages: [String]
     ): [VanityUrl]
+    "Returns the details of the visibility conditions evaluation for the node."
+    visibilityDetails: [VisibilityConditionEvaluationResult]
     "Read work in progress information for a given node"
     wipInfo: wipInfo
     "Get the workspace of the query"
@@ -4036,6 +4301,14 @@ type VanityUrlMappingMutation {
     ): Boolean
     "Get the identifier of the node currently being mutated"
     uuid: String
+}
+
+"Result of evaluating a single visibility condition on a node"
+type VisibilityConditionEvaluationResult {
+    "The JCR node representing the visibility condition"
+    conditionNode: JCRNode
+    "True if the visibility condition matches for the current context"
+    matches: Boolean
 }
 
 "Workflow process"
@@ -4418,8 +4691,11 @@ input InputCarriedJCRNode {
     pathOrId: String!
 }
 
+"Input type representing a key-value context entry used to pass additional information for field constraint resolution"
 input InputContextEntryInput {
+    "The context entry key"
     key: String
+    "The context entry values"
     value: [String]
 }
 
@@ -4654,6 +4930,16 @@ input InputVanityUrl {
     language: String!
     "The vanity URL"
     url: String!
+}
+
+"Input type representing a visibility condition to be saved on a node"
+input InputVisibilityConditionInput {
+    "The properties to set on the visibility condition node"
+    properties: [InputJCRProperty]
+    "The primary node type of the visibility condition"
+    type: String
+    "The UUID of an existing visibility condition node, null for new conditions"
+    uuid: String
 }
 
 "Work in progress information"
