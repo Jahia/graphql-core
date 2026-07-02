@@ -140,7 +140,7 @@ describe('Test tracker instrumentation (setting HTTP response headers)', () => {
         }).then(result => {
             // Ensure the operation completes
             const addNodeOperation = result?.data?.jcr?.addNode;
-            expect(addNodeOperation).to.have.property('createVersion', true);
+            expect(addNodeOperation).to.have.property('uuid');
         });
     }
 
