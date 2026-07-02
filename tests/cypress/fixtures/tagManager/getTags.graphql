@@ -1,8 +1,8 @@
-query GetTags($siteKey: String!, $sortBy: TagManagerSortBy, $sortOrder: SortType) {
+query GetTags($siteKey: String!, $fieldSorter: FieldSorterInput) {
     admin {
         jahia {
             tagManager(siteKey: $siteKey) {
-                tags(sortBy: $sortBy, sortOrder: $sortOrder) {
+                tags(fieldSorter: $fieldSorter) {
                     nodes {
                         name
                         occurrences
