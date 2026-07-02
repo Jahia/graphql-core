@@ -60,7 +60,9 @@ public class JCRInstrumentationProvider implements InstrumentationProvider {
         // permission-checked or serialized). A value <= 0 disables the corresponding guard.
         int maxQueryComplexity = dxGraphQLConfig.getMaxQueryComplexity();
         if (maxQueryComplexity > 0) {
-            instns.add(new MaxQueryComplexityInstrumentation(maxQueryComplexity, new JCRFieldComplexityCalculator()));
+            // graphql-java's built-in field-cost calculator (each field costs 1 + its children) is enough to catch
+            // the alias amplification; result-set fan-out is bounded separately by graphql.fields.node.limit.
+            instns.add(new MaxQueryComplexityInstrumentation(maxQueryComplexity));
         }
         int maxQueryDepth = dxGraphQLConfig.getMaxQueryDepth();
         if (maxQueryDepth > 0) {
