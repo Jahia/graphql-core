@@ -452,6 +452,105 @@ describe('Test graphql rendering', () => {
         deleteNode('/sites/' + sitename + '/home/text1');
     });
 
+    // https://github.com/Jahia/graphql-core/issues/618
+    it.skip('uses default view when contextConfiguration is page and no view is set', () => {
+        addNode({
+            parentPathOrId: `/sites/${sitename}/home`,
+            name: 'pageContextDefault',
+            primaryNodeType: 'jnt:page',
+            properties: [
+                {name: 'jcr:title', value: 'Page Context Default', language: 'en'},
+                {name: 'j:templateName', value: 'simple'}
+            ]
+        });
+
+        cy.apollo({
+            query: gql`query {
+                jcr {
+                    nodeByPath(path: "/sites/${sitename}/home/pageContextDefault") {
+                        renderedContent(contextConfiguration: "page") {
+                            output
+                        }
+                    }
+                }
+            }`
+        }).should(result => {
+            const output = result?.data?.jcr?.nodeByPath?.renderedContent.output;
+            // With contextConfiguration "page" and no j:view, view resolves to "default"
+            // which renders the actual page template — not the "cm" fallback
+            expect(output).to.not.be.empty;
+            expect(output).to.not.contain('No rendering set for node');
+        });
+
+        deleteNode(`/sites/${sitename}/home/pageContextDefault`);
+    });
+
+    it('falls back to cm view when contextConfiguration is not page and no view is set', () => {
+        addNode({
+            parentPathOrId: `/sites/${sitename}/home`,
+            name: 'newsCmFallback',
+            primaryNodeType: 'gqltest:news',
+            properties: [
+                {name: 'title', language: 'en', value: 'CM Fallback News'},
+                {name: 'author', value: 'Test Author'}
+            ]
+        });
+
+        cy.apollo({
+            query: gql`query {
+                jcr {
+                    nodeByPath(path: "/sites/${sitename}/home/newsCmFallback") {
+                        renderedContent(contextConfiguration: "module") {
+                            output
+                        }
+                    }
+                }
+            }`
+        }).should(result => {
+            const output = result?.data?.jcr?.nodeByPath?.renderedContent.output;
+            // With contextConfiguration "module" and no j:view, view resolves to "cm"
+            // which renders news.cm.jsp — the distinctive cm view for gqltest:news
+            expect(output).to.contain('gqltest-news-cm');
+            expect(output).to.contain('newsCmFallback');
+        });
+
+        deleteNode(`/sites/${sitename}/home/newsCmFallback`);
+    });
+
+    it('j:view property takes priority over cm fallback when no view is set', () => {
+        addNode({
+            parentPathOrId: `/sites/${sitename}/home`,
+            name: 'jviewPriorityNode',
+            primaryNodeType: 'jnt:bigText',
+            properties: [
+                {name: 'text', language: 'en', value: 'priority test'},
+                {name: 'j:view', language: 'en', value: 'link'}
+            ],
+            mixins: ['jmix:renderable']
+        });
+
+        cy.apollo({
+            query: gql`query {
+                jcr {
+                    nodeByPath(path: "/sites/${sitename}/home/jviewPriorityNode") {
+                        renderedContent(contextConfiguration: "module") {
+                            output
+                        }
+                    }
+                }
+            }`
+        }).should(result => {
+            const output = result?.data?.jcr?.nodeByPath?.renderedContent.output;
+            // 'j:view' "link" must be used instead of the "cm" fallback;
+            // the link view renders an anchor tag for this node
+            expect(output).to.contain(
+                `<a target="" href="/cms/render/default/en/sites/${sitename}/home/jviewPriorityNode.html">jviewPriorityNode</a>`
+            );
+        });
+
+        deleteNode(`/sites/${sitename}/home/jviewPriorityNode`);
+    });
+
     it('Check renderedContent works correctly for multiple nodes in single query', () => {
         // Create two text nodes
         addTestNode({

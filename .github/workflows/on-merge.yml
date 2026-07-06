@@ -1,12 +1,12 @@
 # This workflow is triggered every time a change is pushed to any branches
 # Github actions command reference: https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions
-name: On merge to master
+name: On merge to main
 
 # The workflow could also be triggered on PRs
 on:
   push:
     branches:
-      - 'master'
+      - 'main'
     tags-ignore:
       - '**'
 
@@ -60,6 +60,7 @@ jobs:
     with:
       jahia_image: ghcr.io/jahia/jahia-ee-dev:8-SNAPSHOT
       module_id: graphql-dxm-provider
+      module_branch: ${{ github.ref }}
       testrail_project: GraphQL Core module
       pagerduty_skip_notification: true
       provisioning_manifest: provisioning-manifest-build.yml
@@ -69,7 +70,7 @@ jobs:
   publish:
     name: Publish module
     needs: [build]
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     runs-on: self-hosted
     container:
       image: ghcr.io/jahia/jahia-docker-mvn-cache:11-jdk-noble-mvn-loaded

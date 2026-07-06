@@ -1,0 +1,3 @@
+query SchemaUpdatePermTest($msg: String!) {
+    schemaUpdatePermTest(msg: $msg)
+}

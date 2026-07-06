@@ -19,12 +19,12 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
-import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -32,10 +32,14 @@ import java.util.stream.Collectors;
  *
  * Created by kevan
  */
-@Component(service = {DXGraphQLConfig.class, ManagedServiceFactory.class}, property = "service.pid=org.jahia.modules.graphql.provider", immediate = true)
+@Component(
+        service = {DXGraphQLConfig.class, ManagedServiceFactory.class},
+        property = "service.pid=org.jahia.modules.graphql.provider",
+        immediate = true
+)
 public class DXGraphQLConfig implements ManagedServiceFactory {
 
-    private static Logger logger = LoggerFactory.getLogger(DXGraphQLConfig.class);
+    private static final Logger logger = LoggerFactory.getLogger(DXGraphQLConfig.class);
     private static final String PERMISSION_PREFIX = "permission.";
     private static final String TYPE_PREFIX = "type.";
 
@@ -43,17 +47,17 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private static final String NODE_LIMIT = "graphql.fields.node.limit";
     public static final String INTROSPECTION_CHECK_ENABLED = "introspectionCheckEnabled";
 
-    private Map<String, List<String>> keysByPid = new HashMap<>();
-    private Map<String, String> permissions = new HashMap<>();
+    private final Map<String, List<String>> keysByPid = new ConcurrentHashMap<>();
+    private final Map<String, String> annotationPermissions = new ConcurrentHashMap<>();
+    private final Map<String, String> configPermissions = new ConcurrentHashMap<>();
+    private volatile Map<String, String> permissions = Collections.emptyMap();
 
-    private Set<String> corsOrigins = new HashSet<>();
-    private Map<String, Set<String>> corsOriginByPid = new HashMap<>();
-    private Map<String, Boolean> introspectionCheckByPid = new HashMap<>();
+    private volatile Set<String> corsOrigins = new HashSet<>();
+    private final  Map<String, Set<String>> corsOriginByPid = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> introspectionCheckByPid = new ConcurrentHashMap<>();
 
     private int nodeLimit = 5000;
     private boolean introspectionCheckEnabled = false;
-
-    private ComponentContext componentContext;
 
     @Override
     public String getName() {
@@ -90,7 +94,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                     }
                 }
                 if (addKey) {
-                    permissions.put(key.substring(PERMISSION_PREFIX.length()), value);
+                    configPermissions.put(key.substring(PERMISSION_PREFIX.length()), value);
                     // store the key for the permission configuration
                     keysForPid.add(key);
                 }
@@ -118,25 +122,36 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 keysForPid.add(key);
             }
         }
+        rebuildPermissions();
         introspectionCheckEnabled = introspectionCheckByPid.values().stream().anyMatch(Boolean::booleanValue);
         corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
     }
 
     @Override
     public void deleted(String pid) {
-        List<String> keysForPid = keysByPid.get(pid);
+        List<String> keysForPid = keysByPid.remove(pid);
         if (keysForPid != null) {
             for (String key : keysForPid) {
-                // parse permissions ( permission format is like: permission.Query.nodesByQuery = privileged )
                 if (key.startsWith(PERMISSION_PREFIX)) {
-                    permissions.remove(key.substring(PERMISSION_PREFIX.length()));
-                } else if (key.equals(CORS_ORIGINS)) {
-                    corsOriginByPid.remove(pid);
-                    corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
+                    configPermissions.remove(key.substring(PERMISSION_PREFIX.length()));
                 }
             }
-            keysByPid.remove(pid);
         }
+        corsOriginByPid.remove(pid);
+        corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
+        introspectionCheckByPid.remove(pid);
+        introspectionCheckEnabled = introspectionCheckByPid.values().stream().anyMatch(Boolean::booleanValue);
+        rebuildPermissions();
+    }
+
+    public void addAnnotationPermission(String pid, String permission) {
+        annotationPermissions.put(pid, permission);
+        rebuildPermissions();
+    }
+
+    public void clearAnnoationPermissions() {
+        annotationPermissions.clear();
+        rebuildPermissions();
     }
 
 
@@ -157,5 +172,11 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
      */
     public boolean isIntrospectionCheckEnabled() {
         return introspectionCheckEnabled;
+    }
+
+    private synchronized void  rebuildPermissions() {
+        Map<String, String> merged = new HashMap<>(configPermissions);
+        merged.putAll(annotationPermissions);
+        permissions = Collections.unmodifiableMap(merged);
     }
 }

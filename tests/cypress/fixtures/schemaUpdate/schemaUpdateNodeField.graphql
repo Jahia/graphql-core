@@ -1,0 +1,7 @@
+query SchemaUpdateNodeField($path: String!) {
+  jcr {
+    nodeByPath(path: $path) {
+      schemaUpdateNodeField
+    }
+  }
+}

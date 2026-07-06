@@ -21,6 +21,13 @@ describe('Test for GraphQL schema description', () => {
         'AdminQuery/jahia/JahiaAdminQuery/GqlHealthCheck',
         'AdminQuery/jahia/JahiaAdminQuery/load',
 
+        // Fixed in https://github.com/Jahia/siteSettings/pull/211
+        'AdminQuery/availableLocales',
+        'AdminQuery/userGroup/UserGroupQuery/group/Group/site/JCRSite/languages/JCRSiteLanguage/count',
+
+        // Fixed in https://github.com/Jahia/richtext-ckeditor5/pull/343
+        'Query/jcontent/GqlJContent/richtext/RichTextQuery',
+
         // Missing but provided by: https://github.com/Jahia/personal-api-tokens
         'AdminQuery/personalApiTokens/PersonalApiTokensQuery',
 
