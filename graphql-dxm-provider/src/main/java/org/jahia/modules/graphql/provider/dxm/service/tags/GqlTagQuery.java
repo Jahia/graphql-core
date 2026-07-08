@@ -19,13 +19,14 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
-import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
-import org.jahia.osgi.BundleUtils;
+import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.tags.TaggingService;
 
+import javax.inject.Inject;
 import javax.jcr.RepositoryException;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,10 @@ import java.util.stream.Collectors;
 @GraphQLDescription("JCR Queries")
 public class GqlTagQuery {
 
+    @Inject
+    @GraphQLOsgiService
+    private TaggingService taggingService;
+
     /**
      * Get GraphQL representations of query for tags suggestions.
      *
@@ -48,7 +53,7 @@ public class GqlTagQuery {
      * @param offset Offset value
      * @param sortByCount Sort the tags by occurences
      * @return GraphQL representations of tags fetched
-     * @throws BaseGqlClientException In case of issues fetching nodes
+     * @throws DataFetchingException In case of issues fetching nodes
      */
     @GraphQLField
     @GraphQLName("suggest")
@@ -60,12 +65,10 @@ public class GqlTagQuery {
             @GraphQLName("minCount") @GraphQLDescription("Minimal occurrences to return a tag") Long minCount,
             @GraphQLName("offset") @GraphQLDescription("Offset value") Long offset,
             @GraphQLName("sortByCount") @GraphQLDescription("Sort the tags by occurrences") Boolean sortByCount
-    ) throws RepositoryException {
+    ) {
 
         try {
             JCRSessionWrapper jcrSessionWrapper = getSession();
-
-            TaggingService taggingService = BundleUtils.getOsgiService(TaggingService.class, null);
             Map<String, Long> suggestions = taggingService.getTagsSuggester().suggest(prefix, startPath, minCount, limit, offset,
                     sortByCount != null ? sortByCount : Boolean.FALSE,
                     jcrSessionWrapper);
@@ -76,7 +79,7 @@ public class GqlTagQuery {
                     .map(GqlTagNodeImpl::new)
                     .collect(Collectors.toList());
         } catch (RepositoryException e) {
-            throw new RuntimeException(e);
+            throw new DataFetchingException(e);
         }
     }
 

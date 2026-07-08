@@ -1,0 +1,18 @@
+mutation RenameTagOnNode($siteKey: String!, $tag: String!, $newName: String!, $nodeId: String!) {
+    admin {
+        jahia {
+            tagManager(siteKey: $siteKey) {
+                renameTagOnNode(tag: $tag, newName: $newName, nodeId: $nodeId) {
+                    tag
+                    nodeId
+                    workspaceResults {
+                        workspace
+                        processedCount
+                        failedCount
+                        failedPaths
+                    }
+                }
+            }
+        }
+    }
+}
