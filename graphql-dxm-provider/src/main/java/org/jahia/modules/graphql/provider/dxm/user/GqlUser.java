@@ -55,8 +55,7 @@ public class GqlUser implements GqlPrincipal {
 
     @GraphQLField
     @GraphQLNonNull
-    @GraphQLDeprecate
-    @GraphQLDescription("User name")
+    @GraphQLDescription("Username (same as .username)")
     @Override
     public String getName() {
         return user.getName();
@@ -64,7 +63,7 @@ public class GqlUser implements GqlPrincipal {
 
     @GraphQLField
     @GraphQLNonNull
-    @GraphQLDescription("Username of the user")
+    @GraphQLDescription("Username (same as .name)")
     public String getUsername() {
         return user.getName();
     }
