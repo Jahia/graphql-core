@@ -13,3 +13,6 @@ buildNumber.properties
 /.settings/
 .DS_Store
 .vscode/
+
+# Claude Code local files
+.claude/
