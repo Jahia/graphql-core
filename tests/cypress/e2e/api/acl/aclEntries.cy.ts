@@ -1,7 +1,4 @@
-
 import {getAclEntries} from '../../../fixtures/acl';
-import {getJahiaVersion} from '@jahia/cypress';
-import {compare} from 'compare-versions';
 
 describe('Test ACL/ACE query endpoint', () => {
     const parentPath = '/sites/digitall/files/images';
