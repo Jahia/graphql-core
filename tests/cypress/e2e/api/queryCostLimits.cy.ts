@@ -94,4 +94,14 @@ describe('GraphQL query-cost guards', () => {
             expect(response.errors[0].message).to.match(/maximum query complexity exceeded \d+ > 5/);
         });
     });
+
+    it('reverts to the default (guard disabled) when the properties are removed', () => {
+        // Enable a strict limit, confirm it is active...
+        setLimits(5, 0);
+        waitUntilRejected(overComplexQuery, 'maximum query complexity exceeded');
+        // ...then remove the properties from the default config. The guard must revert to its code default
+        // (0 = disabled) rather than sticking at 5, so the previously-rejected query is accepted again.
+        cy.executeGroovy('groovy/removeQueryCostLimits.groovy', {});
+        waitUntilAccepted(overComplexQuery);
+    });
 });

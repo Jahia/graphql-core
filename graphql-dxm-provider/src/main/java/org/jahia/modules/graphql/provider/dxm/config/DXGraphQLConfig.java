@@ -51,6 +51,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private static final String DEFAULT_CONFIG_FILE_SUFFIX = "org.jahia.modules.graphql.provider-default.cfg";
 
+    private static final int DEFAULT_NODE_LIMIT = 5000;
+
     private final Map<String, List<String>> keysByPid = new ConcurrentHashMap<>();
     private final Map<String, String> annotationPermissions = new ConcurrentHashMap<>();
     private final Map<String, String> configPermissions = new ConcurrentHashMap<>();
@@ -59,11 +61,17 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private volatile Set<String> corsOrigins = new HashSet<>();
     private final  Map<String, Set<String>> corsOriginByPid = new ConcurrentHashMap<>();
     private final Map<String, Boolean> introspectionCheckByPid = new ConcurrentHashMap<>();
+    // Global limits are only accepted from the default config file. We track the source value per pid so that when
+    // that source stops providing a value (property removed, or config deleted) the effective value reverts to the
+    // code default instead of sticking at the last value that was ever set.
+    private final Map<String, Integer> nodeLimitByPid = new ConcurrentHashMap<>();
+    private final Map<String, Integer> maxQueryComplexityByPid = new ConcurrentHashMap<>();
+    private final Map<String, Integer> maxQueryDepthByPid = new ConcurrentHashMap<>();
 
-    private int nodeLimit = 5000;
-    private int maxQueryComplexity = 0;
-    private int maxQueryDepth = 0;
-    private boolean introspectionCheckEnabled = false;
+    private volatile int nodeLimit = DEFAULT_NODE_LIMIT;
+    private volatile int maxQueryComplexity = 0;
+    private volatile int maxQueryDepth = 0;
+    private volatile boolean introspectionCheckEnabled = false;
 
     @Override
     public String getName() {
@@ -76,12 +84,10 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
             return;
         }
 
-        deleted(pid);
+        clearConfigForPid(pid);
 
         ArrayList<String> keysForPid = new ArrayList<>();
         keysByPid.put(pid, keysForPid);
-        corsOriginByPid.remove(pid);
-        introspectionCheckByPid.remove(pid);
 
         // Some limits (node limit, query-cost guards) are global and may only be set from the default config file,
         // so that a third-party module configuration cannot loosen them.
@@ -111,24 +117,24 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 }
             } else if (key.equals(CORS_ORIGINS)) {
                 corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split(value," ,"))));
-            } else if (key.equals(NODE_LIMIT) && isDefaultConfig) {
-                try {
-                    int newNodeLimit = Integer.parseInt(value);
-                    if (newNodeLimit < 0) {
-                        throw new ConfigurationException(key, "Node limit must be a positive integer");
-                    }
-                    if (newNodeLimit != nodeLimit) {
-                        logger.info("Node limit has been updated to {} by pid {} (file/config) {}.cfg", newNodeLimit, pid, pid);
-                        nodeLimit = newNodeLimit;
-                        PaginationHelper.updateLimit(nodeLimit);
-                    }
-                } catch (NumberFormatException e) {
-                    throw new ConfigurationException(key, "Node limit must be a positive integer");
+            } else if (key.equals(NODE_LIMIT)) {
+                if (isDefaultConfig) {
+                    nodeLimitByPid.put(pid, parseNonNegativeLimit(key, value, "Node limit"));
+                } else {
+                    warnGatedPropertyIgnored(key, pid);
                 }
-            } else if (key.equals(MAX_QUERY_COMPLEXITY) && isDefaultConfig) {
-                maxQueryComplexity = parseNonNegativeLimit(key, value, "Max query complexity");
-            } else if (key.equals(MAX_QUERY_DEPTH) && isDefaultConfig) {
-                maxQueryDepth = parseNonNegativeLimit(key, value, "Max query depth");
+            } else if (key.equals(MAX_QUERY_COMPLEXITY)) {
+                if (isDefaultConfig) {
+                    maxQueryComplexityByPid.put(pid, parseNonNegativeLimit(key, value, "Max query complexity"));
+                } else {
+                    warnGatedPropertyIgnored(key, pid);
+                }
+            } else if (key.equals(MAX_QUERY_DEPTH)) {
+                if (isDefaultConfig) {
+                    maxQueryDepthByPid.put(pid, parseNonNegativeLimit(key, value, "Max query depth"));
+                } else {
+                    warnGatedPropertyIgnored(key, pid);
+                }
             } else if (key.equals(INTROSPECTION_CHECK_ENABLED)) {
                 // Defaults to false if value is not valid
                 introspectionCheckByPid.put(pid, StringUtils.isNotEmpty(value) && Boolean.parseBoolean(value.trim()));
@@ -137,13 +143,20 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 keysForPid.add(key);
             }
         }
-        rebuildPermissions();
-        introspectionCheckEnabled = introspectionCheckByPid.values().stream().anyMatch(Boolean::booleanValue);
-        corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
+        recomputeConfig();
     }
 
     @Override
     public void deleted(String pid) {
+        clearConfigForPid(pid);
+        recomputeConfig();
+    }
+
+    /**
+     * Removes all state contributed by the given configuration pid. Does not recompute the effective values;
+     * callers pair this with {@link #recomputeConfig()} so a single recompute covers both add and remove.
+     */
+    private void clearConfigForPid(String pid) {
         List<String> keysForPid = keysByPid.remove(pid);
         if (keysForPid != null) {
             for (String key : keysForPid) {
@@ -153,10 +166,41 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
             }
         }
         corsOriginByPid.remove(pid);
-        corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
         introspectionCheckByPid.remove(pid);
+        nodeLimitByPid.remove(pid);
+        maxQueryComplexityByPid.remove(pid);
+        maxQueryDepthByPid.remove(pid);
+    }
+
+    /**
+     * Recomputes every effective value from the current per-pid state. Global limits fall back to their code default
+     * when no configuration provides them, so removing a property (or deleting the default config) reverts the limit
+     * instead of keeping the last value that was ever set.
+     */
+    private void recomputeConfig() {
+        corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
         introspectionCheckEnabled = introspectionCheckByPid.values().stream().anyMatch(Boolean::booleanValue);
+
+        int newNodeLimit = firstValueOrDefault(nodeLimitByPid, DEFAULT_NODE_LIMIT);
+        if (newNodeLimit != nodeLimit) {
+            nodeLimit = newNodeLimit;
+            PaginationHelper.updateLimit(nodeLimit);
+        }
+        maxQueryComplexity = firstValueOrDefault(maxQueryComplexityByPid, 0);
+        maxQueryDepth = firstValueOrDefault(maxQueryDepthByPid, 0);
+
         rebuildPermissions();
+    }
+
+    private static int firstValueOrDefault(Map<String, Integer> valuesByPid, int defaultValue) {
+        // These limits are only accepted from the default config file, which is a single source: at most one entry.
+        return valuesByPid.values().stream().findFirst().orElse(defaultValue);
+    }
+
+    private static void warnGatedPropertyIgnored(String key, String pid) {
+        logger.warn("Ignoring GraphQL limit '{}' set by configuration '{}': this limit is only honored from the " +
+                "default configuration file (a file whose name ends with {}), so that a non-default configuration " +
+                "cannot change it.", key, pid, DEFAULT_CONFIG_FILE_SUFFIX);
     }
 
     public void addAnnotationPermission(String pid, String permission) {
@@ -200,11 +244,11 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         try {
             int parsed = Integer.parseInt(StringUtils.trim(value));
             if (parsed < 0) {
-                throw new ConfigurationException(key, label + " must be a non-negative integer (0 disables the limit)");
+                throw new ConfigurationException(key, label + " must be a non-negative integer");
             }
             return parsed;
         } catch (NumberFormatException e) {
-            throw new ConfigurationException(key, label + " must be a non-negative integer (0 disables the limit)");
+            throw new ConfigurationException(key, label + " must be a non-negative integer");
         }
     }
 
