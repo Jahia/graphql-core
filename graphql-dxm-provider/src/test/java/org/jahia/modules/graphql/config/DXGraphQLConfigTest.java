@@ -166,6 +166,76 @@ public class DXGraphQLConfigTest {
         }
     }
 
+    // --- updated() must be atomic: a rejected reload must not corrupt previously-good state ---
+
+    @Test
+    public void badReloadMustNotRevertPreviouslyGoodLimits() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE,
+                "graphql.query.maxComplexity", "2000",
+                "graphql.query.maxDepth", "30",
+                "graphql.fields.node.limit", "100"));
+
+        // Reload the same config with one bad value: the update must be rejected as a whole...
+        try {
+            config.updated("pid1", props(DEFAULT_CONFIG_FILE,
+                    "graphql.query.maxComplexity", "not-a-number",
+                    "graphql.query.maxDepth", "30",
+                    "graphql.fields.node.limit", "100"));
+            fail("Expected a ConfigurationException for the invalid value");
+        } catch (ConfigurationException expected) {
+            // expected
+        }
+
+        // ...and the previously-good values must still be in effect right after the failed update.
+        assertEquals(2000, config.getMaxQueryComplexity());
+        assertEquals(30, config.getMaxQueryDepth());
+        assertEquals(100, config.getNodeLimit());
+
+        // A later unrelated config event triggers a recompute: values must NOT silently revert to defaults.
+        config.deleted("some-other-pid");
+        assertEquals(2000, config.getMaxQueryComplexity());
+        assertEquals(30, config.getMaxQueryDepth());
+        assertEquals(100, config.getNodeLimit());
+    }
+
+    @Test
+    public void badReloadMustNotDropPreviouslyGoodPermission() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE,
+                "permission.Query.foo", "myPermission",
+                "graphql.query.maxComplexity", "2000"));
+        assertEquals("myPermission", config.getPermissions().get("Query.foo"));
+
+        try {
+            config.updated("pid1", props(DEFAULT_CONFIG_FILE,
+                    "permission.Query.foo", "myPermission",
+                    "graphql.query.maxComplexity", "boom"));
+            fail("Expected a ConfigurationException for the invalid value");
+        } catch (ConfigurationException expected) {
+            // expected
+        }
+
+        // The permission from the last good load must survive the rejected reload.
+        assertEquals("myPermission", config.getPermissions().get("Query.foo"));
+    }
+
+    @Test
+    public void firstLoadRejectionMustNotActivatePartialState() throws ConfigurationException {
+        // A brand-new config that fails validation must not leave any of its parsed-so-far values in effect,
+        // even after a later recompute.
+        try {
+            config.updated("pid1", props(DEFAULT_CONFIG_FILE,
+                    "graphql.query.maxDepth", "15",
+                    "graphql.query.maxComplexity", "nope"));
+            fail("Expected a ConfigurationException for the invalid value");
+        } catch (ConfigurationException expected) {
+            // expected
+        }
+
+        config.deleted("some-other-pid"); // force a recompute
+        assertEquals(0, config.getMaxQueryDepth());
+        assertEquals(0, config.getMaxQueryComplexity());
+    }
+
     // --- introspection check flag: secure by default (true) ---
 
     @Test

@@ -80,74 +80,102 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     }
 
     @Override
-    public void updated(String pid, Dictionary<String, ?> properties) throws ConfigurationException {
+    public synchronized void updated(String pid, Dictionary<String, ?> properties) throws ConfigurationException {
         if (properties == null) {
             return;
         }
-
-        clearConfigForPid(pid);
-
-        ArrayList<String> keysForPid = new ArrayList<>();
-        keysByPid.put(pid, keysForPid);
 
         // Some limits (node limit, query-cost guards) are global and may only be set from the default config file,
         // so that a third-party module configuration cannot loosen them.
         Object filename = properties.get("felix.fileinstall.filename");
         boolean isDefaultConfig = filename != null && filename.toString().endsWith(DEFAULT_CONFIG_FILE_SUFFIX);
 
-        // parse properties
+        // Parse everything into locals first. A validation failure throws HERE, before any shared state is mutated,
+        // so a rejected configuration leaves the last-known-good state intact instead of half-applied. Only once the
+        // whole document parses successfully do we swap in the new state and recompute (the apply block never throws).
+        List<String> newKeys = new ArrayList<>();
+        Map<String, String> newPermissions = new HashMap<>();
+        Set<String> newCorsOrigins = null;
+        Integer newNodeLimit = null;
+        Integer newMaxQueryComplexity = null;
+        Integer newMaxQueryDepth = null;
+        Boolean newIntrospectionCheck = null;
+
         Enumeration<String> keys = properties.keys();
         while (keys.hasMoreElements()) {
             String key = keys.nextElement();
-            boolean addKey = true;
             // parse permissions ( permission format is like: permission.Query.nodesByQuery = privileged )
             String value = (String) properties.get(key);
             if (key.startsWith(PERMISSION_PREFIX) && value != null) {
-                // check if any configuration also contains the same permission configuration
-                for (String p : keysByPid.keySet()) {
-                    if (!StringUtils.equals(p, pid) && keysByPid.get(p).contains(key)) {
-                        addKey = false;
-                        logger.warn("Unable to register permission for {} because it has been already registered by the config with id {}", key, p);
+                // check if any OTHER configuration also contains the same permission configuration
+                boolean alreadyRegistered = false;
+                for (Map.Entry<String, List<String>> entry : keysByPid.entrySet()) {
+                    if (!StringUtils.equals(entry.getKey(), pid) && entry.getValue().contains(key)) {
+                        alreadyRegistered = true;
+                        logger.warn("Unable to register permission for {} because it has been already registered by the config with id {}", key, entry.getKey());
                         break;
                     }
                 }
-                if (addKey) {
-                    configPermissions.put(key.substring(PERMISSION_PREFIX.length()), value);
+                if (!alreadyRegistered) {
+                    newPermissions.put(key.substring(PERMISSION_PREFIX.length()), value);
                     // store the key for the permission configuration
-                    keysForPid.add(key);
+                    newKeys.add(key);
                 }
             } else if (key.equals(CORS_ORIGINS)) {
-                corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split(value," ,"))));
+                newCorsOrigins = new HashSet<>(Arrays.asList(StringUtils.split(value," ,")));
             } else if (key.equals(NODE_LIMIT)) {
                 if (isDefaultConfig) {
-                    nodeLimitByPid.put(pid, parseNonNegativeLimit(key, value, "Node limit"));
+                    newNodeLimit = parseNonNegativeLimit(key, value, "Node limit");
                 } else {
                     warnGatedPropertyIgnored(key, pid);
                 }
             } else if (key.equals(MAX_QUERY_COMPLEXITY)) {
                 if (isDefaultConfig) {
-                    maxQueryComplexityByPid.put(pid, parseNonNegativeLimit(key, value, "Max query complexity"));
+                    newMaxQueryComplexity = parseNonNegativeLimit(key, value, "Max query complexity");
                 } else {
                     warnGatedPropertyIgnored(key, pid);
                 }
             } else if (key.equals(MAX_QUERY_DEPTH)) {
                 if (isDefaultConfig) {
-                    maxQueryDepthByPid.put(pid, parseNonNegativeLimit(key, value, "Max query depth"));
+                    newMaxQueryDepth = parseNonNegativeLimit(key, value, "Max query depth");
                 } else {
                     warnGatedPropertyIgnored(key, pid);
                 }
             } else if (key.equals(INTROSPECTION_CHECK_ENABLED)) {
-                introspectionCheckByPid.put(pid, parseIntrospectionCheckEnabled(key, value, pid));
+                // Unlike the limits above this is intentionally NOT restricted to the default config file: any config
+                // may contribute, but the "true wins" aggregation (see recomputeConfig) means a configuration can only
+                // tighten the check (force it on), never loosen it, so allowing multiple sources is safe.
+                newIntrospectionCheck = parseIntrospectionCheckEnabled(key, value, pid);
             } else {
                 // store other properties than permission configuration
-                keysForPid.add(key);
+                newKeys.add(key);
             }
+        }
+
+        // Parse succeeded: apply atomically. Nothing below throws.
+        clearConfigForPid(pid);
+        keysByPid.put(pid, newKeys);
+        newPermissions.forEach(configPermissions::put);
+        if (newCorsOrigins != null) {
+            corsOriginByPid.put(pid, newCorsOrigins);
+        }
+        if (newNodeLimit != null) {
+            nodeLimitByPid.put(pid, newNodeLimit);
+        }
+        if (newMaxQueryComplexity != null) {
+            maxQueryComplexityByPid.put(pid, newMaxQueryComplexity);
+        }
+        if (newMaxQueryDepth != null) {
+            maxQueryDepthByPid.put(pid, newMaxQueryDepth);
+        }
+        if (newIntrospectionCheck != null) {
+            introspectionCheckByPid.put(pid, newIntrospectionCheck);
         }
         recomputeConfig();
     }
 
     @Override
-    public void deleted(String pid) {
+    public synchronized void deleted(String pid) {
         clearConfigForPid(pid);
         recomputeConfig();
     }
@@ -196,8 +224,14 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     }
 
     private static int firstValueOrDefault(Map<String, Integer> valuesByPid, int defaultValue) {
-        // These limits are only accepted from the default config file, which is a single source: at most one entry.
-        return valuesByPid.values().stream().findFirst().orElse(defaultValue);
+        // These limits are only accepted from the default config file, which is a single source: normally at most one
+        // entry. Should more than one ever coexist, pick by lowest pid so the result is deterministic regardless of
+        // map iteration order. (We intentionally do NOT reduce by min value: for the guards, 0 means "disabled", so a
+        // min-by-value could silently turn a guard off.)
+        return valuesByPid.entrySet().stream()
+                .min(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .orElse(defaultValue);
     }
 
     /**
