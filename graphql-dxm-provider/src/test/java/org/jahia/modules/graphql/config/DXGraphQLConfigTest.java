@@ -24,6 +24,8 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
@@ -162,5 +164,56 @@ public class DXGraphQLConfigTest {
         } catch (ConfigurationException e) {
             assertEquals("graphql.query.maxDepth", e.getProperty());
         }
+    }
+
+    // --- introspection check flag: secure by default (true) ---
+
+    @Test
+    public void shouldEnableIntrospectionCheckByDefault() {
+        // No configuration processed yet: the secure default is enabled.
+        assertTrue(config.isIntrospectionCheckEnabled());
+    }
+
+    @Test
+    public void shouldEnableIntrospectionCheckWhenNoConfigProvidesTheFlag() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.query.maxComplexity", "2000"));
+        assertTrue(config.isIntrospectionCheckEnabled());
+    }
+
+    @Test
+    public void shouldDisableIntrospectionCheckOnlyOnExplicitFalse() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "introspectionCheckEnabled", "false"));
+        assertFalse(config.isIntrospectionCheckEnabled());
+    }
+
+    @Test
+    public void shouldEnableIntrospectionCheckForExplicitTrue() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "introspectionCheckEnabled", "true"));
+        assertTrue(config.isIntrospectionCheckEnabled());
+    }
+
+    @Test
+    public void shouldDefaultIntrospectionCheckToEnabledForInvalidValue() throws ConfigurationException {
+        // A typo must not silently open introspection: an unrecognized value falls back to the secure setting.
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "introspectionCheckEnabled", "treu"));
+        assertTrue(config.isIntrospectionCheckEnabled());
+    }
+
+    @Test
+    public void shouldKeepIntrospectionCheckEnabledWhenAnyConfigEnablesIt() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "introspectionCheckEnabled", "false"));
+        config.updated("pid2", props(OTHER_CONFIG_FILE, "introspectionCheckEnabled", "true"));
+        // "true wins" across configurations.
+        assertTrue(config.isIntrospectionCheckEnabled());
+    }
+
+    @Test
+    public void shouldRevertIntrospectionCheckToEnabledWhenDisablingConfigDeleted() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "introspectionCheckEnabled", "false"));
+        assertFalse(config.isIntrospectionCheckEnabled());
+
+        config.deleted("pid1");
+        // No configuration disables it anymore -> back to the secure default.
+        assertTrue(config.isIntrospectionCheckEnabled());
     }
 }

@@ -71,7 +71,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private volatile int nodeLimit = DEFAULT_NODE_LIMIT;
     private volatile int maxQueryComplexity = 0;
     private volatile int maxQueryDepth = 0;
-    private volatile boolean introspectionCheckEnabled = false;
+    // Secure by default: the introspection permission check is on unless a configuration explicitly disables it.
+    private volatile boolean introspectionCheckEnabled = true;
 
     @Override
     public String getName() {
@@ -136,8 +137,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                     warnGatedPropertyIgnored(key, pid);
                 }
             } else if (key.equals(INTROSPECTION_CHECK_ENABLED)) {
-                // Defaults to false if value is not valid
-                introspectionCheckByPid.put(pid, StringUtils.isNotEmpty(value) && Boolean.parseBoolean(value.trim()));
+                introspectionCheckByPid.put(pid, parseIntrospectionCheckEnabled(key, value, pid));
             } else {
                 // store other properties than permission configuration
                 keysForPid.add(key);
@@ -179,7 +179,10 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
      */
     private void recomputeConfig() {
         corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
-        introspectionCheckEnabled = introspectionCheckByPid.values().stream().anyMatch(Boolean::booleanValue);
+        // Secure by default: enabled unless a configuration is present and every configuration disables it. With no
+        // configuration at all the check stays on, and a single config that sets true keeps it on ("true wins").
+        introspectionCheckEnabled = introspectionCheckByPid.isEmpty()
+                || introspectionCheckByPid.values().stream().anyMatch(Boolean::booleanValue);
 
         int newNodeLimit = firstValueOrDefault(nodeLimitByPid, DEFAULT_NODE_LIMIT);
         if (newNodeLimit != nodeLimit) {
@@ -195,6 +198,24 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private static int firstValueOrDefault(Map<String, Integer> valuesByPid, int defaultValue) {
         // These limits are only accepted from the default config file, which is a single source: at most one entry.
         return valuesByPid.values().stream().findFirst().orElse(defaultValue);
+    }
+
+    /**
+     * Parses the introspection permission-check flag. This is a security toggle whose secure state is {@code true},
+     * so an empty or unrecognized value defaults to {@code true} (and is logged) rather than silently disabling the
+     * check. Only an explicit "false" disables it.
+     */
+    private static boolean parseIntrospectionCheckEnabled(String key, String value, String pid) {
+        String trimmed = StringUtils.trimToEmpty(value);
+        if ("true".equalsIgnoreCase(trimmed)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(trimmed)) {
+            return false;
+        }
+        logger.warn("Invalid value '{}' for '{}' in configuration '{}'; defaulting to enabled (the secure setting). " +
+                "Use 'true' or 'false'.", value, key, pid);
+        return true;
     }
 
     private static void warnGatedPropertyIgnored(String key, String pid) {
