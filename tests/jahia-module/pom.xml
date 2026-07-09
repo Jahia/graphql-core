@@ -55,12 +55,12 @@
     <groupId>org.jahia.test</groupId>
     <artifactId>graphql-core-test-module-root</artifactId>
     <name>GraphQL Core Test Module Root</name>
-    <version>3.6.1-SNAPSHOT</version>
+    <version>3.8.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>This is the custom module (text-field-initializer) for content-editor cypress tests.</description>
 
     <properties>
-        <graphql-dxm-provider.version>3.6.1-SNAPSHOT</graphql-dxm-provider.version>
+        <graphql-dxm-provider.version>3.7.0-SNAPSHOT</graphql-dxm-provider.version>
     </properties>
 
     <repositories>

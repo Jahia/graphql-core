@@ -1,7 +1,4 @@
-
 import {getAclEntries} from '../../../fixtures/acl';
-import {getJahiaVersion} from '@jahia/cypress';
-import {compare} from 'compare-versions';
 
 describe('Test ACL/ACE query endpoint', () => {
     const parentPath = '/sites/digitall/files/images';
@@ -45,15 +42,7 @@ describe('Test ACL/ACE query endpoint', () => {
             const aclEntry = getRole(acl.aclEntries, 'guest', 'reader');
             expect(aclEntry, `Guest user has reader role for ${path}`).to.be.not.undefined;
             expect(aclEntry.inherited).to.be.true;
-
-            /* Inheritance from /sites only supported >= 8.2.4.0.
-             * Before, it was defined on root node `/`
-             * https://github.com/Jahia/jahia-private/pull/4893 */
-            getJahiaVersion().then(jahiaVersion => {
-                const isSupported = compare(jahiaVersion.release.replace('-SNAPSHOT', ''), '8.2.4', '>=');
-                const expectedValue = isSupported ? '/sites' : '/';
-                expect(aclEntry.inheritedFrom.path, `ACL entry should be inherited from ${expectedValue}`).equals(expectedValue);
-            });
+            expect(aclEntry.inheritedFrom.path, 'ACL entry should be inherited from /sites').equals('/sites');
         });
     });
 

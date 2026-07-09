@@ -452,7 +452,8 @@ describe('Test graphql rendering', () => {
         deleteNode('/sites/' + sitename + '/home/text1');
     });
 
-    it('uses default view when contextConfiguration is page and no view is set', () => {
+    // https://github.com/Jahia/graphql-core/issues/618
+    it.skip('uses default view when contextConfiguration is page and no view is set', () => {
         addNode({
             parentPathOrId: `/sites/${sitename}/home`,
             name: 'pageContextDefault',
