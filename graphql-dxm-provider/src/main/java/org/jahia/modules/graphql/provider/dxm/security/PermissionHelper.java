@@ -24,6 +24,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.securityfilter.PermissionService;
 
 import javax.jcr.RepositoryException;
+import javax.websocket.Session;
 
 public class PermissionHelper {
 
@@ -31,7 +32,14 @@ public class PermissionHelper {
     }
 
     public static boolean hasPermission(JCRNodeWrapper node, DataFetchingEnvironment environment) {
-        if (ContextUtil.getHttpServletRequest(environment.getGraphQlContext()) != null) {
+        // Apply the permission check on the WebSocket subscription path consistently with HTTP.
+        // On WebSocket the GraphQL context carries a javax.websocket.Session rather than an
+        // HttpServletRequest; the subscription execution thread now restores the connection's
+        // authorization scopes (see JahiaSubscriptionExecutionStrategy), so delegate to the
+        // PermissionService there as well.
+        boolean hasRequestContext = ContextUtil.getHttpServletRequest(environment.getGraphQlContext()) != null
+                || environment.getGraphQlContext().get(Session.class) != null;
+        if (hasRequestContext) {
             PermissionService permissionService = BundleUtils.getOsgiService(PermissionService.class, null);
             if (permissionService == null) {
                 throw new DataFetchingException("Could not find permission service to validate security access. Blocking access to data.");

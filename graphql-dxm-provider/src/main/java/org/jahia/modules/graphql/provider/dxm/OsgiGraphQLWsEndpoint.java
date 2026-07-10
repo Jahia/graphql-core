@@ -20,7 +20,9 @@ import graphql.kickstart.servlet.GraphQLConfiguration;
 import graphql.kickstart.servlet.GraphQLWebsocketServlet;
 import graphql.kickstart.servlet.OsgiGraphQLHttpServlet;
 import org.jahia.api.Constants;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.services.usermanager.JahiaUser;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -42,6 +44,13 @@ import java.util.Map;
 public class OsgiGraphQLWsEndpoint extends Endpoint {
     private Logger logger = LoggerFactory.getLogger(OsgiGraphQLWsEndpoint.class);
     private static GraphQLWebsocketServlet delegate;
+
+    /**
+     * User-property key under which the authorization scopes resolved for the handshake (HTTP)
+     * request are stashed, so the subscription execution thread can restore them and apply the same
+     * permission checks as an HTTP request. Mirrors {@link Constants#SESSION_USER}.
+     */
+    public static final String SESSION_SCOPES = "org.jahia.modules.graphql.securityScopes";
 
     @Reference(service = HttpServlet.class, target = "(component.name=graphql.kickstart.servlet.OsgiGraphQLHttpServlet)")
     public void setServlet(HttpServlet servlet) {
@@ -97,6 +106,14 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
 
             // Add the current user to user props
             sec.getUserProperties().put(Constants.SESSION_USER, JCRSessionFactory.getInstance().getCurrentUser());
+
+            // Capture the authorization scopes resolved for this handshake (HTTP) request so the
+            // subscription execution thread can restore them (see JahiaSubscriptionExecutionStrategy).
+            // The handshake runs through the servlet filter chain, so the scopes are resolved here.
+            PermissionService permissionService = BundleUtils.getOsgiService(PermissionService.class, null);
+            if (permissionService != null) {
+                sec.getUserProperties().put(SESSION_SCOPES, permissionService.getCurrentScopes());
+            }
         }
     }
 
