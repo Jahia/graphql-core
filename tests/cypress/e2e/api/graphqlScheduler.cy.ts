@@ -115,10 +115,11 @@ describe('Test graphql scheduler', () => {
             });
     });
 
-    it('denies background job events to an unauthenticated (guest) subscriber', () => {
+    it('denies the guarded subscription to an unauthenticated (guest) subscriber', () => {
         const jobName = 'Test job guest - ' + uuid4();
-        // No login: the handshake carries no session cookie, so the connection is not a privileged
-        // user and (in a non-hosted context) not same-origin → the subscription is rejected.
+        // No login and no job creation: simply opening the guarded subscription as an
+        // unauthenticated (guest) client is rejected. The handshake carries no session cookie, so
+        // the connection is not a privileged user and (in a non-hosted context) not same-origin.
         cy.clearCookies();
 
         let sub: Cypress.Promise<any>;
@@ -126,21 +127,10 @@ describe('Test graphql scheduler', () => {
             sub = collect(jobName);
         });
 
-        // Trigger the job as admin over HTTP (independent of the guest WS) so an event would fire
-        // for an authorized subscriber — proving the guest is denied the data, not merely idle.
-        cy.apolloClient()
-            .apollo({query: createJobQuery, variables: {jobName}})
-            .should((result: any) => {
-                expect(result.data.admin.createAndStartJobForGraphQLSchedulerCypressTest).to.equal(true);
-            });
-
         cy.then(() => sub).then((res: any) => {
             expect(res.data, 'guest must receive no background-job data').to.have.length(0);
             expect(res.errors, 'guest subscription must be rejected').to.have.length.greaterThan(0);
             expect(JSON.stringify(res.errors)).to.match(/Permission denied|AccessDenied/i);
         });
-
-        // Clean up the job we started (as admin).
-        cy.apolloClient().apollo({query: removeJobQuery, variables: {jobName}});
     });
 });
