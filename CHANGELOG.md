@@ -1,5 +1,23 @@
 # graphql-core Changelog
 
+## 3.8.0
+
+### New Features
+
+* Added query-cost limits to the GraphQL endpoint to protect against expensive or abusive queries. Queries exceeding the configured complexity or depth are now rejected before execution. The limits are enabled by default (`graphql.query.maxComplexity = 2000`, `graphql.query.maxDepth = 30`) and can be tuned, or disabled by setting either property to `0`, in the GraphQL provider configuration. These limits, like the existing node limit, are only accepted from the default configuration file so a non-default configuration cannot loosen them; a configuration that tries is now logged instead of being silently ignored. Removing a limit property (or deleting the configuration) reverts it to its default rather than keeping the last configured value.
+
+* Added a Tag Manager GraphQL API to list, rename, and delete tags across a site or on individual nodes.
+
+  * Available under `admin.jahia.tagManager(siteKey)` with queries `tags` and `taggedContent`, and mutations `renameTag`, `deleteTag`, `renameTagOnNode`, and `deleteTagOnNode`.
+  * All mutations propagate changes to both the edit and live workspaces automatically.
+  * Requires the `tagManager` permission on the target site.
+
+### Bug Fixes
+
+* Enable the GraphQL introspection permission check by default; schema introspection now requires the developerToolsAccess permission (override introspectionCheckEnabled=false to restore the previous behaviour).
+
+* Propagate the authorization scopes resolved at connection time to the GraphQL WebSocket subscription execution thread, matching how the HTTP query/mutation executor already propagates them. Previously subscription data fetchers ran without the connection's scopes initialized, so field-level permission checks were not applied consistently on the WebSocket transport; they are now enforced the same way as on HTTP requests.
+
 ## 3.7.0
 
 ### New Features
