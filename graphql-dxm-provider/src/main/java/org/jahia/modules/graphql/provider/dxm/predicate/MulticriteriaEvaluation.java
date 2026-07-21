@@ -20,6 +20,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 /**
  * A way to evaluate a criteria consisting of multiple sub-criteria.
  */
+@GraphQLDescription("A way to evaluate a criteria consisting of multiple sub-criteria")
 public enum MulticriteriaEvaluation {
 
     /**
