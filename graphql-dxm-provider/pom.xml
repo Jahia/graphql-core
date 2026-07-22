@@ -198,6 +198,7 @@
         <powermock.version>2.0.9</powermock.version>
         <yarn.arguments>build:production</yarn.arguments>
         <jahia-depends>default</jahia-depends>
+        <sonar.sources>graphql-dxm-provider,graphql-extension-example,pom.xml</sonar.sources>
     </properties>
 
     <dependencies>
