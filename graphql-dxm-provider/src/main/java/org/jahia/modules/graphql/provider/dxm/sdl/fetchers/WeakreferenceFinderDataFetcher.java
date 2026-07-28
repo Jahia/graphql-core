@@ -95,19 +95,23 @@ public class WeakreferenceFinderDataFetcher extends FinderListDataFetcher {
         try {
             Map<String, Object> arguments = SDLUtil.getArguments(environment);
 
-            if (!arguments.containsKey(PROPERTY) && (!arguments.containsKey(EQUALS) && !arguments.containsKey(CONTAINS)))
+            // an explicitly null argument is not a value to match on
+            String contains = (String) arguments.get(CONTAINS);
+            String equals = (String) arguments.get(EQUALS);
+
+            if (!arguments.containsKey(PROPERTY) && contains == null && equals == null)
                 throw new DataFetchingException(String.format("Entry point %s must have 'property' and either 'contains' or 'equals' parameters", environment.getFieldDefinition().getName()));
 
             String statement = "";
             String weakreferenceProp = Text.escapeIllegalXpathSearchChars((String) arguments.get(PROPERTY));
             boolean invert = (Boolean) arguments.get(INVERT);
 
-            if (arguments.containsKey(CONTAINS)) {
-                String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(CONTAINS));
+            if (contains != null) {
+                String argument = JCRContentUtils.sqlEncode(contains);
                 String addOn = invert ? "not" : "";
                 statement = String.format("SELECT a.* FROM [%s] as a inner join [%s] as b on a.[%s] = b.['jcr:uuid'] where %s contains(b.['%s'], '%s')", type, ((WeakreferenceFinder) finder).getReferencedType(), finder.getProperty(), addOn, weakreferenceProp, argument);
-            } else if (arguments.containsKey(EQUALS)) {
-                String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(EQUALS));
+            } else if (equals != null) {
+                String argument = JCRContentUtils.sqlEncode(equals);
                 String addOn = invert ? "<>" : "=";
                 statement = String.format("SELECT a.* FROM [%s] as a inner join [%s] as b on a.[%s] = b.['jcr:uuid'] where b.['%s']%s'%s'", type, ((WeakreferenceFinder) finder).getReferencedType(), finder.getProperty(), weakreferenceProp, addOn, argument);
             }
