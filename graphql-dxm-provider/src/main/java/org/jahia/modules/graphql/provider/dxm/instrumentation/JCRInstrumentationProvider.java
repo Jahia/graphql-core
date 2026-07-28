@@ -15,7 +15,6 @@
  */
 package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
-import graphql.analysis.MaxQueryComplexityInstrumentation;
 import graphql.analysis.MaxQueryDepthInstrumentation;
 import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
@@ -60,13 +59,19 @@ public class JCRInstrumentationProvider implements InstrumentationProvider {
         // permission-checked or serialized). A value <= 0 disables the corresponding guard.
         int maxQueryComplexity = dxGraphQLConfig.getMaxQueryComplexity();
         if (maxQueryComplexity > 0) {
-            // graphql-java's built-in field-cost calculator (each field costs 1 + its children) is enough to catch
-            // the alias amplification; result-set fan-out is bounded separately by graphql.fields.node.limit.
-            instns.add(new MaxQueryComplexityInstrumentation(maxQueryComplexity));
+            // Jahia's own calculator rather than graphql-java's: the latter exempts __typename from the count, which
+            // let a document aliasing it thousands of times score 0 and pass any budget.
+            instns.add(new JahiaMaxQueryComplexityInstrumentation(maxQueryComplexity));
         }
         int maxQueryDepth = dxGraphQLConfig.getMaxQueryDepth();
         if (maxQueryDepth > 0) {
             instns.add(new MaxQueryDepthInstrumentation(maxQueryDepth));
+        }
+        int maxListNesting = dxGraphQLConfig.getMaxListNesting();
+        if (maxListNesting > 0) {
+            // Bounds the nesting of recursive connections (descendants/children), whose cost multiplies per level and
+            // which the complexity and depth guards cannot bound on their own.
+            instns.add(new MaxListNestingInstrumentation(maxListNesting));
         }
 
         instns.add(new JCRInstrumentation(dxGraphQLConfig));

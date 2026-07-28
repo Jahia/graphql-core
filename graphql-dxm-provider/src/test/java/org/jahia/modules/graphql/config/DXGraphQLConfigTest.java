@@ -41,7 +41,10 @@ public class DXGraphQLConfigTest {
     private static final String DEFAULT_CONFIG_FILE = "file:/opt/jahia/etc/org.jahia.modules.graphql.provider-default.cfg";
     private static final String OTHER_CONFIG_FILE = "file:/opt/jahia/etc/org.jahia.modules.graphql.provider-custom.cfg";
 
+    private static final String DEFAULT_CONFIG_PID = "org.jahia.modules.graphql.provider~default";
+
     private static final int DEFAULT_NODE_LIMIT = 5000;
+    private static final int DEFAULT_MAX_LIST_NESTING = 5;
 
     private DXGraphQLConfig config;
 
@@ -66,6 +69,54 @@ public class DXGraphQLConfigTest {
         assertEquals(0, config.getMaxQueryComplexity());
         assertEquals(0, config.getMaxQueryDepth());
         assertEquals(DEFAULT_NODE_LIMIT, config.getNodeLimit());
+        // Unlike the complexity/depth guards this one has a non-zero code default, so a deployment whose default cfg
+        // predates the property is still protected against recursive-connection fan-out.
+        assertEquals(DEFAULT_MAX_LIST_NESTING, config.getMaxListNesting());
+    }
+
+    @Test
+    public void shouldApplyLimitsFromDefaultFactoryInstanceWithoutFileName() throws ConfigurationException {
+        // Regression guard: an update written through ConfigurationAdmin against the default factory instance (what
+        // the install-time groovy patcher does to seed the guards on existing installs) carries no
+        // felix.fileinstall.filename. Keying the gate on the filename alone made such an update not merely ignored
+        // but destructive -- the limits reverted to their code default, silently switching the guards off.
+        config.updated(DEFAULT_CONFIG_PID, props(null,
+                "graphql.query.maxComplexity", "2000",
+                "graphql.query.maxDepth", "30",
+                "graphql.query.maxListNesting", "5",
+                "graphql.fields.node.limit", "100"));
+
+        assertEquals(2000, config.getMaxQueryComplexity());
+        assertEquals(30, config.getMaxQueryDepth());
+        assertEquals(5, config.getMaxListNesting());
+        assertEquals(100, config.getNodeLimit());
+    }
+
+    @Test
+    public void shouldApplyMaxListNestingFromDefaultConfigFile() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.query.maxListNesting", "3"));
+        assertEquals(3, config.getMaxListNesting());
+    }
+
+    @Test
+    public void shouldIgnoreMaxListNestingFromNonDefaultConfigFile() throws ConfigurationException {
+        config.updated("pid1", props(OTHER_CONFIG_FILE, "graphql.query.maxListNesting", "50"));
+        assertEquals(DEFAULT_MAX_LIST_NESTING, config.getMaxListNesting());
+    }
+
+    @Test
+    public void shouldRevertMaxListNestingToDefaultWhenPropertyRemoved() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.query.maxListNesting", "2"));
+        assertEquals(2, config.getMaxListNesting());
+
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE));
+        assertEquals(DEFAULT_MAX_LIST_NESTING, config.getMaxListNesting());
+    }
+
+    @Test
+    public void shouldTreatZeroMaxListNestingAsDisabled() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.query.maxListNesting", "0"));
+        assertEquals(0, config.getMaxListNesting());
     }
 
     @Test

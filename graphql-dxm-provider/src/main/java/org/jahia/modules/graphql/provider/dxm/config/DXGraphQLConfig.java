@@ -47,11 +47,16 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private static final String NODE_LIMIT = "graphql.fields.node.limit";
     private static final String MAX_QUERY_COMPLEXITY = "graphql.query.maxComplexity";
     private static final String MAX_QUERY_DEPTH = "graphql.query.maxDepth";
+    private static final String MAX_LIST_NESTING = "graphql.query.maxListNesting";
     public static final String INTROSPECTION_CHECK_ENABLED = "introspectionCheckEnabled";
 
     private static final String DEFAULT_CONFIG_FILE_SUFFIX = "org.jahia.modules.graphql.provider-default.cfg";
+    // Felix names the instances of a factory configuration "<factoryPid>~<name>", so the instance backing
+    // org.jahia.modules.graphql.provider-default.cfg is org.jahia.modules.graphql.provider~default.
+    private static final String DEFAULT_CONFIG_PID_SUFFIX = "~default";
 
     private static final int DEFAULT_NODE_LIMIT = 5000;
+    private static final int DEFAULT_MAX_LIST_NESTING = 5;
 
     private final Map<String, List<String>> keysByPid = new ConcurrentHashMap<>();
     private final Map<String, String> annotationPermissions = new ConcurrentHashMap<>();
@@ -67,10 +72,12 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private final Map<String, Integer> nodeLimitByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> maxQueryComplexityByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> maxQueryDepthByPid = new ConcurrentHashMap<>();
+    private final Map<String, Integer> maxListNestingByPid = new ConcurrentHashMap<>();
 
     private volatile int nodeLimit = DEFAULT_NODE_LIMIT;
     private volatile int maxQueryComplexity = 0;
     private volatile int maxQueryDepth = 0;
+    private volatile int maxListNesting = DEFAULT_MAX_LIST_NESTING;
     // Secure by default: the introspection permission check is on unless a configuration explicitly disables it.
     private volatile boolean introspectionCheckEnabled = true;
 
@@ -85,10 +92,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
             return;
         }
 
-        // Some limits (node limit, query-cost guards) are global and may only be set from the default config file,
+        // Some limits (node limit, query-cost guards) are global and may only be set from the default configuration,
         // so that a third-party module configuration cannot loosen them.
-        Object filename = properties.get("felix.fileinstall.filename");
-        boolean isDefaultConfig = filename != null && filename.toString().endsWith(DEFAULT_CONFIG_FILE_SUFFIX);
+        boolean isDefaultConfig = isDefaultConfig(pid, properties);
 
         // Parse everything into locals first. A validation failure throws HERE, before any shared state is mutated,
         // so a rejected configuration leaves the last-known-good state intact instead of half-applied. Only once the
@@ -99,6 +105,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         Integer newNodeLimit = null;
         Integer newMaxQueryComplexity = null;
         Integer newMaxQueryDepth = null;
+        Integer newMaxListNesting = null;
         Boolean newIntrospectionCheck = null;
 
         Enumeration<String> keys = properties.keys();
@@ -141,6 +148,12 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 } else {
                     warnGatedPropertyIgnored(key, pid);
                 }
+            } else if (key.equals(MAX_LIST_NESTING)) {
+                if (isDefaultConfig) {
+                    newMaxListNesting = parseNonNegativeLimit(key, value, "Max query list nesting");
+                } else {
+                    warnGatedPropertyIgnored(key, pid);
+                }
             } else if (key.equals(INTROSPECTION_CHECK_ENABLED)) {
                 // Unlike the limits above this is intentionally NOT restricted to the default config file: any config
                 // may contribute, but the "true wins" aggregation (see recomputeConfig) means a configuration can only
@@ -167,6 +180,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         }
         if (newMaxQueryDepth != null) {
             maxQueryDepthByPid.put(pid, newMaxQueryDepth);
+        }
+        if (newMaxListNesting != null) {
+            maxListNestingByPid.put(pid, newMaxListNesting);
         }
         if (newIntrospectionCheck != null) {
             introspectionCheckByPid.put(pid, newIntrospectionCheck);
@@ -198,6 +214,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         nodeLimitByPid.remove(pid);
         maxQueryComplexityByPid.remove(pid);
         maxQueryDepthByPid.remove(pid);
+        maxListNestingByPid.remove(pid);
     }
 
     /**
@@ -219,6 +236,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         }
         maxQueryComplexity = firstValueOrDefault(maxQueryComplexityByPid, 0);
         maxQueryDepth = firstValueOrDefault(maxQueryDepthByPid, 0);
+        maxListNesting = firstValueOrDefault(maxListNestingByPid, DEFAULT_MAX_LIST_NESTING);
 
         rebuildPermissions();
     }
@@ -254,8 +272,27 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private static void warnGatedPropertyIgnored(String key, String pid) {
         logger.warn("Ignoring GraphQL limit '{}' set by configuration '{}': this limit is only honored from the " +
-                "default configuration file (a file whose name ends with {}), so that a non-default configuration " +
-                "cannot change it.", key, pid, DEFAULT_CONFIG_FILE_SUFFIX);
+                "default configuration of this factory, normally the file named {}, so that a non-default " +
+                "configuration cannot change it.", key, pid, DEFAULT_CONFIG_FILE_SUFFIX);
+    }
+
+    /**
+     * Tells whether a configuration update is allowed to set the global limits, i.e. whether it is the default
+     * configuration of this factory.
+     *
+     * <p>The pid is the primary signal: it identifies the default instance whatever wrote the update. Keying only on
+     * {@code felix.fileinstall.filename} (as this check used to) made the gate depend on the update carrying that
+     * property, which an update written through {@code ConfigurationAdmin} - as the install-time groovy patcher that
+     * seeds the guards on existing installs does - does not. Such an update was then not merely ignored: because a
+     * limit reverts to its code default when no configuration provides it, it silently switched the guards off. The
+     * filename is still accepted so the gate keeps working if a Felix version names factory instances differently.
+     */
+    private static boolean isDefaultConfig(String pid, Dictionary<String, ?> properties) {
+        if (pid != null && pid.endsWith(DEFAULT_CONFIG_PID_SUFFIX)) {
+            return true;
+        }
+        Object filename = properties.get("felix.fileinstall.filename");
+        return filename != null && filename.toString().endsWith(DEFAULT_CONFIG_FILE_SUFFIX);
     }
 
     public void addAnnotationPermission(String pid, String permission) {
@@ -293,6 +330,13 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
      */
     public int getMaxQueryDepth() {
         return maxQueryDepth;
+    }
+
+    /**
+     * @return the maximum allowed nesting of list fields in a query, or 0 when the guard is disabled
+     */
+    public int getMaxListNesting() {
+        return maxListNesting;
     }
 
     private static int parseNonNegativeLimit(String key, String value, String label) throws ConfigurationException {
