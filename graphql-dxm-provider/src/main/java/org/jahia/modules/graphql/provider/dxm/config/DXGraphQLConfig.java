@@ -51,8 +51,6 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     public static final String INTROSPECTION_CHECK_ENABLED = "introspectionCheckEnabled";
 
     private static final String DEFAULT_CONFIG_FILE_SUFFIX = "org.jahia.modules.graphql.provider-default.cfg";
-    // Felix names the instances of a factory configuration "<factoryPid>~<name>", so the instance backing
-    // org.jahia.modules.graphql.provider-default.cfg is org.jahia.modules.graphql.provider~default.
     private static final String DEFAULT_CONFIG_PID_SUFFIX = "~default";
 
     private static final int DEFAULT_NODE_LIMIT = 5000;

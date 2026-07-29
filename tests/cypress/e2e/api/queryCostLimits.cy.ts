@@ -50,6 +50,22 @@ describe('GraphQL query-cost guards', () => {
         }
     `;
 
+    const wideButShallowQuery = gql`
+        query {
+            jcr(workspace: EDIT) {
+                nodeByPath(path: "/sites") {
+                    children {
+                        nodes {
+                            name uuid path
+                            primaryNodeType { name }
+                            properties { name values }
+                        }
+                    }
+                }
+            }
+        }
+    `;
+
     const setLimits = (maxComplexity: number, maxDepth: number, maxListNesting: number) => {
         cy.executeGroovy('groovy/setQueryCostLimits.groovy', {
             MAX_COMPLEXITY: String(maxComplexity),
@@ -58,32 +74,26 @@ describe('GraphQL query-cost guards', () => {
         });
     };
 
+    const hasCostError = (errors: any[], messageFragment: string) =>
+        Boolean(errors?.some((e: any) => e.message.includes(messageFragment)));
+
     // Poll until the given query is rejected with the expected abort message (guard has propagated).
     const waitUntilRejected = (query: any, messageFragment: string) => {
-        cy.waitUntil(() => cy.apollo({query, errorPolicy: 'all'}).then((response: any) =>
-            Boolean(response?.errors?.some((e: any) => e.message.includes(messageFragment)))
-        ), {...waitOptions, errorMsg: `Query was never rejected with "${messageFragment}"`});
+        cy.waitUntil(
+            () => cy.apollo({query, errorPolicy: 'all'}).then((r: any) => hasCostError(r?.errors, messageFragment)),
+            {...waitOptions, errorMsg: `Query was never rejected with "${messageFragment}"`}
+        );
     };
 
-    // Poll until the given query executes without any cost-guard error (guard relaxed/propagated).
-    const waitUntilAccepted = (query: any) => {
-        cy.waitUntil(() => cy.apollo({query, errorPolicy: 'all'}).then((response: any) =>
-            Boolean(response?.data?.currentUser) &&
-            !response?.errors?.some((e: any) => e.message.includes('maximum query'))
-        ), {...waitOptions, errorMsg: 'Query was never accepted after relaxing the limits'});
-    };
-
-    // Builds `{ a0:__typename a1:__typename ... }`, the payload shape from the reported amplification finding.
-    const aliasedTypenameQuery = (aliasCount: number) =>
-        `{${Array.from({length: aliasCount}, (_, i) => `a${i}:__typename`).join(' ')}}`;
-
-    // Nests `descendants { nodes { ... } }` the given number of times, i.e. that many nested list fields.
-    const nestedDescendantsQuery = (levels: number) => {
-        let inner = 'name';
-        for (let i = 0; i < levels; i++) {
-            inner = `name descendants { nodes { ${inner} } }`;
-        }
-        return `{ jcr(workspace: EDIT) { nodeByPath(path: "/") { ${inner} } } }`;
+    // Poll until the given query executes without any cost-guard error (guard relaxed/propagated). `dataPath` names a
+    // field that must be present in the response, so a query that is merely accepted but returns nothing does not
+    // count as a pass.
+    const waitUntilAccepted = (query: any, dataPath: (data: any) => unknown) => {
+        cy.waitUntil(
+            () => cy.apollo({query, errorPolicy: 'all'}).then((r: any) =>
+                Boolean(r?.data && dataPath(r.data)) && !hasCostError(r?.errors, 'maximum query')),
+            {...waitOptions, errorMsg: 'Query was never accepted after relaxing the limits'}
+        );
     };
 
     // Posts a raw document with no credentials, the way the reported proof-of-concept does. Going through cy.request
@@ -98,9 +108,44 @@ describe('GraphQL query-cost guards', () => {
         });
     };
 
+    const waitUntilRejectedAnonymously = (query: string, errorMsg: string) => {
+        cy.waitUntil(
+            () => postAnonymously(query).then((r: any) =>
+                hasCostError(r.body?.errors, 'maximum query complexity exceeded')),
+            {...waitOptions, errorMsg}
+        );
+    };
+
+    // Builds `{ a0:__typename a1:__typename ... }`, the payload shape from the reported amplification finding.
+    const aliasedTypenameQuery = (aliasCount: number) =>
+        `{${Array.from({length: aliasCount}, (_, i) => `a${i}:__typename`).join(' ')}}`;
+
+    // Nests `descendants { nodes { ... } }` the given number of times, i.e. that many nested list fields. Anchored at
+    // the repository root, this is the expensive recursive query the list-nesting guard exists to reject, so it is only
+    // ever used for cases the guard rejects before execution -- never for an accepted case.
+    const nestedDescendantsQuery = (levels: number) => {
+        let inner = 'name';
+        for (let i = 0; i < levels; i++) {
+            inner = `name descendants { nodes { ${inner} } }`;
+        }
+
+        return `{ jcr(workspace: EDIT) { nodeByPath(path: "/") { ${inner} } } }`;
+    };
+
+    // Same list-nesting shape as nestedDescendantsQuery (one `nodes` list per level) but walking only direct children
+    // of a small subtree, so a document the guard *accepts* stays cheap to execute on a populated repository.
+    const nestedChildrenQuery = (levels: number) => {
+        let inner = 'name';
+        for (let i = 0; i < levels; i++) {
+            inner = `name children(first: 5) { nodes { ${inner} } }`;
+        }
+
+        return `{ jcr(workspace: EDIT) { nodeByPath(path: "/sites") { ${inner} } } }`;
+    };
+
     after('Restore the shipped default limits', () => {
         setLimits(SHIPPED_MAX_COMPLEXITY, SHIPPED_MAX_DEPTH, SHIPPED_MAX_LIST_NESTING);
-        waitUntilAccepted(overComplexQuery);
+        waitUntilAccepted(overComplexQuery, data => data.currentUser);
     });
 
     it('rejects a query exceeding graphql.query.maxComplexity', () => {
@@ -133,7 +178,7 @@ describe('GraphQL query-cost guards', () => {
         // ...then remove the properties from the default config. The complexity guard must revert to its code default
         // (0 = disabled) rather than sticking at 5, so the previously-rejected query is accepted again.
         cy.executeGroovy('groovy/removeQueryCostLimits.groovy', {});
-        waitUntilAccepted(overComplexQuery);
+        waitUntilAccepted(overComplexQuery, data => data.currentUser);
     });
 
     /*
@@ -146,20 +191,16 @@ describe('GraphQL query-cost guards', () => {
         it('counts aliased __typename fields towards the complexity budget', () => {
             setLimits(5, 0, 0);
             // 10 aliases -> complexity 10 > 5. Before the fix this document scored 0 and was executed.
-            cy.waitUntil(() => postAnonymously(aliasedTypenameQuery(10)).then((response: any) =>
-                Boolean(response.body?.errors?.some((e: any) =>
-                    e.message.includes('maximum query complexity exceeded')))
-            ), {...waitOptions, errorMsg: 'Aliased __typename document was never charged for its aliases'});
+            waitUntilRejectedAnonymously(aliasedTypenameQuery(10),
+                'Aliased __typename document was never charged for its aliases');
         });
 
         it('rejects the reported 4000-alias payload under the shipped defaults, without amplifying the response', () => {
             setLimits(SHIPPED_MAX_COMPLEXITY, SHIPPED_MAX_DEPTH, SHIPPED_MAX_LIST_NESTING);
             const payload = aliasedTypenameQuery(4000);
 
-            cy.waitUntil(() => postAnonymously(payload).then((response: any) =>
-                Boolean(response.body?.errors?.some((e: any) =>
-                    e.message.includes('maximum query complexity exceeded')))
-            ), {...waitOptions, errorMsg: 'The 4000-alias payload was never rejected under the shipped defaults'});
+            waitUntilRejectedAnonymously(payload,
+                'The 4000-alias payload was never rejected under the shipped defaults');
 
             postAnonymously(payload).should((response: any) => {
                 // A single abort error, not one "Permission denied" object per alias: the request no longer amplifies
@@ -180,43 +221,17 @@ describe('GraphQL query-cost guards', () => {
     describe('list nesting', () => {
         it('rejects a query nesting list fields beyond graphql.query.maxListNesting', () => {
             setLimits(0, 0, 2); // Other guards disabled to isolate the list-nesting guard
-            cy.waitUntil(() => cy.apollo({query: gql(nestedDescendantsQuery(3)), errorPolicy: 'all'})
-                .then((response: any) => Boolean(response?.errors?.some((e: any) =>
-                    e.message.includes('maximum query list nesting exceeded 3 > 2')))
-                ), {...waitOptions, errorMsg: 'Deeply nested descendants query was never rejected'});
+            waitUntilRejected(gql(nestedDescendantsQuery(3)), 'maximum query list nesting exceeded 3 > 2');
         });
 
         it('accepts a query nesting list fields up to the limit', () => {
             setLimits(0, 0, 2);
-            cy.waitUntil(() => cy.apollo({query: gql(nestedDescendantsQuery(2)), errorPolicy: 'all'})
-                .then((response: any) => Boolean(response?.data?.jcr?.nodeByPath) &&
-                    !response?.errors?.some((e: any) => e.message.includes('maximum query'))
-                ), {...waitOptions, errorMsg: 'Descendants query at the allowed nesting was never accepted'});
+            waitUntilAccepted(gql(nestedChildrenQuery(2)), data => data.jcr?.nodeByPath?.children?.nodes?.length);
         });
 
         it('does not charge wide-but-shallow queries, nor lists of scalars', () => {
-            // Only nesting of object lists counts, so a query selecting one list of nodes with many fields -- and a
-            // list of scalars (a multi-valued property's values) below it -- stays at nesting 2 however wide it gets.
             setLimits(0, 0, 2);
-            const wideQuery = gql`
-                query {
-                    jcr(workspace: EDIT) {
-                        nodeByPath(path: "/sites") {
-                            children {
-                                nodes {
-                                    name uuid path
-                                    primaryNodeType { name }
-                                    properties { name values }
-                                }
-                            }
-                        }
-                    }
-                }
-            `;
-            cy.waitUntil(() => cy.apollo({query: wideQuery, errorPolicy: 'all'})
-                .then((response: any) => Boolean(response?.data?.jcr?.nodeByPath?.children?.nodes?.length) &&
-                    !response?.errors?.some((e: any) => e.message.includes('maximum query'))
-                ), {...waitOptions, errorMsg: 'Wide-but-shallow query was rejected by the list-nesting guard'});
+            waitUntilAccepted(wideButShallowQuery, data => data.jcr?.nodeByPath?.children?.nodes?.length);
         });
     });
 });
