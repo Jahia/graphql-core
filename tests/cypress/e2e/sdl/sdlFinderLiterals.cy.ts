@@ -6,6 +6,9 @@ import gql from 'graphql-tag';
  *
  * Each case expecting an empty result queries the plain value first and requires the marker back,
  * so an empty result means the argument was handled rather than the fixture being absent.
+ *
+ * jcr:title is i18n, so the field carries its own language argument: the finder's language sets the
+ * query session's locale, it does not re-resolve the node the property is then read from.
  */
 describe('SDL finder argument handling', () => {
     const PLAIN = 'sdlLit plain marker';
@@ -16,7 +19,7 @@ describe('SDL finder argument handling', () => {
     const byTitle = (args: string) => gql`
         query {
             myNewsByTitle(${args}) {
-                title
+                title(language: "en")
             }
         }
     `;
@@ -24,7 +27,7 @@ describe('SDL finder argument handling', () => {
     const byDate = (args: string) => gql`
         query {
             myNewsByDate(${args}) {
-                title
+                title(language: "en")
             }
         }
     `;
