@@ -2,22 +2,20 @@ import org.jahia.osgi.BundleUtils
 import org.osgi.service.cm.ConfigurationAdmin
 
 /**
- * Applies the default GraphQL query-cost guards (graphql.query.maxComplexity=2000, graphql.query.maxDepth=30,
- * graphql.query.maxListNesting=5) to the default GraphQL provider configuration
- * (org.jahia.modules.graphql.provider~default), so expensive or abusive queries are rejected before execution out
- * of the box.
+ * Applies the default GraphQL query-cost guards (graphql.query.maxComplexity=2000, graphql.query.maxDepth=30)
+ * to the default GraphQL provider configuration (org.jahia.modules.graphql.provider~default), so expensive or
+ * abusive queries are rejected before execution out of the box.
  *
  * Runs on bundle start (the ".started" suffix) so it reaches EXISTING installs too: the shipped default cfg is
  * NOT re-applied to an already-installed module, so these properties would otherwise stay absent on any instance
- * that already had graphql-dxm-provider (leaving the complexity and depth guards at their code default of 0, i.e.
- * disabled). The write targets the existing "default" factory instance, which the provider recognises by its pid.
+ * that already had graphql-dxm-provider, leaving both guards at their code default of 0, i.e. disabled. The write
+ * targets the existing "default" factory instance, which the provider recognises by its pid.
  *
  * Idempotent and non-intrusive: each property is only added when it is absent. An explicit administrator value
  * (in either direction, including 0 to opt out) is left untouched.
  */
 def enableQueryCostGuards() {
-    def defaults = ["graphql.query.maxComplexity": "2000", "graphql.query.maxDepth": "30",
-                    "graphql.query.maxListNesting": "5"]
+    def defaults = ["graphql.query.maxComplexity": "2000", "graphql.query.maxDepth": "30"]
 
     def configAdmin = BundleUtils.getOsgiService(ConfigurationAdmin.class, null)
     def config = configAdmin.getFactoryConfiguration("org.jahia.modules.graphql.provider", "default", null)

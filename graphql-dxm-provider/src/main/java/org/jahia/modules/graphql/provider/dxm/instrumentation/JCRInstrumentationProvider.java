@@ -15,7 +15,6 @@
  */
 package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
-import graphql.analysis.MaxQueryDepthInstrumentation;
 import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.kickstart.execution.config.InstrumentationProvider;
@@ -56,22 +55,13 @@ public class JCRInstrumentationProvider implements InstrumentationProvider {
         List<Instrumentation> instns = new ArrayList<>();
 
         // Query-cost guards: reject expensive documents before execution (i.e. before any field is fetched,
-        // permission-checked or serialized). A value <= 0 disables the corresponding guard.
+        // permission-checked or serialized). A value <= 0 disables the corresponding guard; with both disabled the
+        // document is not analysed at all. One instrumentation covers the two of them because they share a single
+        // traversal of the document - see QueryCostInstrumentation.
         int maxQueryComplexity = dxGraphQLConfig.getMaxQueryComplexity();
-        if (maxQueryComplexity > 0) {
-            // Jahia's own calculator rather than graphql-java's: the latter exempts __typename from the count, which
-            // let a document aliasing it thousands of times score 0 and pass any budget.
-            instns.add(new JahiaMaxQueryComplexityInstrumentation(maxQueryComplexity));
-        }
         int maxQueryDepth = dxGraphQLConfig.getMaxQueryDepth();
-        if (maxQueryDepth > 0) {
-            instns.add(new MaxQueryDepthInstrumentation(maxQueryDepth));
-        }
-        int maxListNesting = dxGraphQLConfig.getMaxListNesting();
-        if (maxListNesting > 0) {
-            // Bounds the nesting of recursive connections (descendants/children), whose cost multiplies per level and
-            // which the complexity and depth guards cannot bound on their own.
-            instns.add(new MaxListNestingInstrumentation(maxListNesting));
+        if (maxQueryComplexity > 0 || maxQueryDepth > 0) {
+            instns.add(new QueryCostInstrumentation(maxQueryComplexity, maxQueryDepth));
         }
 
         instns.add(new JCRInstrumentation(dxGraphQLConfig));

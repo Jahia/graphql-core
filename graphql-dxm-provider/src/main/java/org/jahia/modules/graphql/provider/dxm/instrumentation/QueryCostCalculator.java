@@ -19,18 +19,26 @@ import graphql.analysis.QueryTraverser;
 import graphql.analysis.QueryVisitorFieldEnvironment;
 import graphql.analysis.QueryVisitorStub;
 import graphql.execution.ExecutionContext;
-import graphql.schema.GraphQLCompositeType;
-import graphql.schema.GraphQLType;
-import graphql.schema.GraphQLTypeUtil;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 /**
  * Static analysis of a GraphQL document, used by the query-cost guards to reject expensive documents before execution.
  *
- * <p>Both metrics are computed from the operation's field selections only, so they are cheap (no field is fetched) and
- * they can be evaluated before anything is permission-checked or serialized.
+ * <p>Both metrics come from the operation's field selections only, so they are cheap (no field is fetched) and can be
+ * evaluated before anything is permission-checked or serialized. They are produced by a single traversal: the document
+ * is walked once per request whether one guard is enabled or both.
+ *
+ * <p>Neither metric bounds how far a document's list fields fan out, which is the dimension along which cost multiplies
+ * rather than adds - a list nested inside a list is evaluated once per item of the outer one. Bounding that statically
+ * would need a per-field notion of how many items a field can return, which this schema does not carry: {@code
+ * jcr.nodeTypes { nodes { extends { nodes } } }} and {@code descendants { nodes { descendants { nodes } } }} are the
+ * same shape over connections with the same arguments, yet the first reads a few hundred node type definitions out of
+ * an in-memory registry and the second can read millions of JCR nodes. Fan-out is bounded per connection at execution
+ * time instead, by {@code graphql.fields.node.limit}.
  */
 final class QueryCostCalculator {
 
@@ -47,74 +55,106 @@ final class QueryCostCalculator {
     }
 
     /**
-     * Computes the complexity of an operation, where every field counts as 1 plus the complexity of its sub-selection.
-     *
-     * <p>This deliberately replaces graphql-java's {@code QueryComplexityCalculator}, which scores
-     * {@code __typename} as 0 regardless of the {@code FieldComplexityCalculator} it is given (the exemption lives in
-     * a private method, so it cannot be overridden). That exemption is what let an unauthenticated document aliasing
-     * {@code __typename} a few thousand times score 0 and pass any budget, while still costing one permission check
-     * and one serialized error object per alias. Aliases are distinct selections, so they are counted individually.
+     * Measures an operation.
      *
      * @param traverser traverser over the operation being analysed
-     * @return the total complexity of the operation
+     * @return the measured cost
      */
-    static int calculateComplexity(QueryTraverser traverser) {
-        // Post-order accumulation: each field adds its own cost to its parent's running total, so by the time a field
-        // is visited its children have already contributed. The null key holds the operation's root-level total.
-        Map<QueryVisitorFieldEnvironment, Integer> childComplexityByParent = new LinkedHashMap<>();
-        traverser.visitPostOrder(new QueryVisitorStub() {
-            @Override
-            public void visitField(QueryVisitorFieldEnvironment env) {
-                int complexity = 1 + childComplexityByParent.getOrDefault(env, 0);
-                childComplexityByParent.merge(env.getParentEnvironment(), complexity, Integer::sum);
-            }
-        });
-        return childComplexityByParent.getOrDefault(null, 0);
-    }
-
-    /**
-     * Computes how deeply list-typed fields are nested in an operation, i.e. the largest number of list fields found on
-     * any single path from the operation root down to a leaf.
-     *
-     * <p>This is the dimension along which cost grows multiplicatively: a list nested inside a list is evaluated once
-     * per item of the outer list, so {@code descendants { nodes { descendants { nodes { ... } } } }} re-walks and
-     * re-serializes overlapping subtrees at every level. Neither the complexity guard (which only counts the fields
-     * that appear in the document, not the items they expand to) nor the per-connection node limit bounds that
-     * product. Plain nesting depth is a poor proxy because it also grows on wide-but-cheap documents, so this metric
-     * counts list fields exclusively.
-     *
-     * <p>Only lists of composite types count. A list of scalars (a multi-valued property's {@code values}, say) is a
-     * leaf: it fans out once and cannot recurse, so charging it would penalise ordinary documents without bounding
-     * anything.
-     *
-     * @param traverser traverser over the operation being analysed
-     * @return the maximum number of nested list fields on any path, 0 if the operation selects no list field
-     */
-    static int calculateMaxListNesting(QueryTraverser traverser) {
-        int[] maxNesting = {0};
+    static QueryCost calculate(QueryTraverser traverser) {
+        Measurement measurement = new Measurement();
+        // Pre-order, so that a field is always measured after the parent it hangs off: that makes its depth one step
+        // from the parent's rather than a walk back up to the root, which keeps the analysis linear in the size of the
+        // document. Pre-order also skips fields excluded by @skip/@include, which are never going to execute.
         traverser.visitPreOrder(new QueryVisitorStub() {
             @Override
             public void visitField(QueryVisitorFieldEnvironment env) {
-                // Walking up the parent chain per field keeps this independent of visit order and of how the
-                // traverser shares environment instances between a field and its children.
-                int nesting = 0;
-                for (QueryVisitorFieldEnvironment current = env; current != null; current = current.getParentEnvironment()) {
-                    if (isListOfCompositeType(current.getFieldDefinition().getType())) {
-                        nesting++;
-                    }
-                }
-                maxNesting[0] = Math.max(maxNesting[0], nesting);
+                measurement.measure(env);
             }
         });
-        return maxNesting[0];
+        return measurement.result();
     }
 
-    private static boolean isListOfCompositeType(GraphQLType type) {
-        // A list may be wrapped in non-null ([JCRNode]! is NonNull(List(JCRNode))), so unwrap that first; unwrapAll
-        // then reaches the element type through any further list/non-null wrappers.
-        if (!GraphQLTypeUtil.isList(GraphQLTypeUtil.unwrapNonNull(type))) {
-            return false;
+    /**
+     * What one document costs, along the two dimensions the guards bound. Kept together because a single traversal
+     * produces both.
+     */
+    static final class QueryCost {
+
+        private final int complexity;
+        private final int depth;
+
+        private QueryCost(int complexity, int depth) {
+            this.complexity = complexity;
+            this.depth = depth;
         }
-        return GraphQLTypeUtil.unwrapAll(type) instanceof GraphQLCompositeType;
+
+        /**
+         * @return the number of fields the document selects, where every field counts as 1 plus the complexity of its
+         *         sub-selection. Aliases are distinct selections and count individually, and so do meta fields such as
+         *         {@code __typename}: each one still costs a permission check and, when denied, an error object in the
+         *         response. This deliberately differs from graphql-java's {@code QueryComplexityCalculator}, which
+         *         scores {@code __typename} as 0 whatever {@code FieldComplexityCalculator} it is given - the exemption
+         *         sits in a private method - so that a document aliasing it a few thousand times scores 0 and passes
+         *         any budget.
+         */
+        int getComplexity() {
+            return complexity;
+        }
+
+        /**
+         * @return the number of fields on the longest path from the operation root down to a leaf. This matches the
+         *         depth graphql-java's {@code MaxQueryDepthInstrumentation} reports, so a configured maximum keeps the
+         *         meaning it had when that instrumentation enforced it.
+         */
+        int getDepth() {
+            return depth;
+        }
+    }
+
+    /**
+     * Accumulates the metrics over one traversal. Each field's depth is memoized so that it is charged from its
+     * parent's already-known depth instead of walking up to the root, which would make the analysis quadratic in the
+     * size of a deeply nested document - and the analysis runs on every request, before the operation is authorized.
+     * The memo is keyed by identity: the traverser hands a field's children the very environment instance it passed to
+     * the visitor, while environment equality is value-based, so two sibling selections of the same field with the same
+     * arguments compare equal yet have to be measured separately.
+     */
+    private static final class Measurement {
+
+        private final Map<QueryVisitorFieldEnvironment, Integer> depthByField = new IdentityHashMap<>();
+
+        private int complexity;
+        private int depth;
+
+        private void measure(QueryVisitorFieldEnvironment env) {
+            complexity++;
+            depth = Math.max(depth, depthOf(env));
+        }
+
+        private QueryCost result() {
+            return new QueryCost(complexity, depth);
+        }
+
+        private int depthOf(QueryVisitorFieldEnvironment env) {
+            Integer known = depthByField.get(env);
+            if (known != null) {
+                return known;
+            }
+            // Collect the ancestors not measured yet, then fill them in downwards. Under a pre-order traversal the
+            // parent is always known already and this walks a single field, but doing it this way keeps the result
+            // independent of the visit order.
+            Deque<QueryVisitorFieldEnvironment> pending = new ArrayDeque<>();
+            QueryVisitorFieldEnvironment ancestor = env;
+            while (ancestor != null && !depthByField.containsKey(ancestor)) {
+                pending.push(ancestor);
+                ancestor = ancestor.getParentEnvironment();
+            }
+            int fieldDepth = ancestor == null ? 0 : depthByField.get(ancestor);
+            while (!pending.isEmpty()) {
+                fieldDepth++;
+                depthByField.put(pending.pop(), fieldDepth);
+            }
+            return fieldDepth;
+        }
     }
 }

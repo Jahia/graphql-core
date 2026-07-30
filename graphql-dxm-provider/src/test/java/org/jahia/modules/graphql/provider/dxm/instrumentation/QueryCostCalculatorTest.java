@@ -17,6 +17,7 @@ package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
 import graphql.analysis.QueryComplexityCalculator;
 import graphql.analysis.QueryTraverser;
+import graphql.analysis.QueryVisitorFieldEnvironment;
 import graphql.execution.CoercedVariables;
 import graphql.language.Document;
 import graphql.parser.Parser;
@@ -35,19 +36,16 @@ import static org.junit.Assert.assertEquals;
 /**
  * Unit tests for {@link QueryCostCalculator}, the static analysis behind the query-cost guards.
  *
- * <p>The schema below mirrors the shape of the JCR schema that matters here: a recursive node type reachable through
- * Relay-style connections, plus a list of scalars.
+ * <p>The schema below mirrors the shape of the JCR schema that matters here: a node type that is recursive both
+ * directly and through a Relay-style connection, so that a small document can be made arbitrarily deep.
  */
 public class QueryCostCalculatorTest {
 
     private static final String SDL = "type Query { jcr: JCRQuery currentUser: User } " +
             "type User { name: String displayName: String } " +
             "type JCRQuery { nodeByPath(path: String): JCRNode } " +
-            "type JCRNode { name: String uuid: String parent: JCRNode ancestors: [JCRNode]! " +
-            "               properties: [JCRProperty] children: JCRNodeConnection descendants: JCRNodeConnection } " +
-            "type JCRNodeConnection { nodes: [JCRNode] edges: [JCRNodeEdge] } " +
-            "type JCRNodeEdge { node: JCRNode cursor: String } " +
-            "type JCRProperty { name: String values: [String] }";
+            "type JCRNode { name: String uuid: String parent: JCRNode descendants: JCRNodeConnection } " +
+            "type JCRNodeConnection { nodes: [JCRNode] }";
 
     private static GraphQLSchema schema;
 
@@ -57,36 +55,49 @@ public class QueryCostCalculatorTest {
                 new SchemaParser().parse(SDL), RuntimeWiring.newRuntimeWiring().build());
     }
 
-    private static QueryTraverser traverser(String query) {
+    private static QueryTraverser traverser(String query, CoercedVariables variables) {
         Document document = Parser.parse(query);
         return QueryTraverser.newQueryTraverser()
                 .schema(schema)
                 .document(document)
-                .coercedVariables(CoercedVariables.emptyVariables())
+                .coercedVariables(variables)
                 .build();
     }
 
+    private static QueryCostCalculator.QueryCost cost(String query) {
+        return QueryCostCalculator.calculate(traverser(query, CoercedVariables.emptyVariables()));
+    }
+
     private static int complexity(String query) {
-        return QueryCostCalculator.calculateComplexity(traverser(query));
+        return cost(query).getComplexity();
     }
 
-    private static int listNesting(String query) {
-        return QueryCostCalculator.calculateMaxListNesting(traverser(query));
+    private static int depth(String query) {
+        return cost(query).getDepth();
     }
 
-    /** Builds {@code { a0:__typename a1:__typename ... }}, the shape of the reported amplification payload. */
+    /** Builds {@code { a0:__typename a1:__typename ... }}, the shape of an alias amplification payload. */
     private static String aliasedTypenameQuery(int aliasCount) {
         return "{" + IntStream.range(0, aliasCount)
                 .mapToObj(i -> "a" + i + ":__typename")
                 .collect(Collectors.joining(" ")) + "}";
     }
 
+    /** Wraps {@code inner} in the given number of nested {@code descendants { nodes { ... } }}, none paginated. */
+    private static String nestedDescendants(int levels, String inner) {
+        StringBuilder query = new StringBuilder(inner);
+        for (int i = 0; i < levels; i++) {
+            query.insert(0, "descendants { nodes { ").append(" } }");
+        }
+        return "{ jcr { nodeByPath(path: \"/\") { " + query + " } } }";
+    }
+
     // --- complexity ---
 
     @Test
     public void shouldCountEveryAliasedTypenameField() {
-        // The reported bypass: each alias is a separate selection that costs a permission check and, once denied, an
-        // error object in the response, so each must be charged.
+        // Each alias is a separate selection that costs a permission check and, once denied, an error object in the
+        // response, so each has to be charged.
         assertEquals(500, complexity(aliasedTypenameQuery(500)));
     }
 
@@ -95,7 +106,7 @@ public class QueryCostCalculatorTest {
         // Documents WHY this class exists rather than reusing graphql-java's calculator: that one exempts __typename
         // unconditionally (the check sits in a private method, so a custom FieldComplexityCalculator cannot restore
         // it), scoring the payload above as 0 and letting it pass any budget. Should graphql-java ever charge for
-        // __typename, this test fails and JahiaMaxQueryComplexityInstrumentation can be dropped for the built-in one.
+        // __typename, this test fails and the complexity check here could be dropped for the built-in one.
         int graphqlJavaComplexity = QueryComplexityCalculator.newCalculator()
                 .fieldComplexityCalculator((env, childComplexity) -> 1 + childComplexity)
                 .schema(schema)
@@ -122,43 +133,59 @@ public class QueryCostCalculatorTest {
         assertEquals(4, complexity("{ jcr { nodeByPath(path: \"/\") { name __typename } } }"));
     }
 
-    // --- list nesting ---
-
     @Test
-    public void shouldReportZeroListNestingWhenNoListIsSelected() {
-        assertEquals(0, listNesting("{ jcr { nodeByPath(path: \"/\") { parent { parent { name } } } } }"));
+    public void shouldCountFieldsOfEveryOperationRoot() {
+        assertEquals(5, complexity("{ currentUser { name } jcr { nodeByPath(path: \"/\") { name } } }"));
     }
 
     @Test
-    public void shouldCountNestedConnections() {
-        // nodes -> nodes -> nodes; the connection wrappers themselves are single objects and do not count.
-        assertEquals(3, listNesting("{ jcr { nodeByPath(path: \"/\") { descendants { nodes { " +
-                "descendants { nodes { descendants { nodes { name } } } } } } } } }"));
+    public void shouldCountFieldsReachedThroughAFragment() {
+        assertEquals(4, complexity("{ jcr { nodeByPath(path: \"/\") { ...f } } } fragment f on JCRNode { name uuid }"));
     }
 
     @Test
-    public void shouldCountEdgesLikeNodes() {
-        assertEquals(2, listNesting("{ jcr { nodeByPath(path: \"/\") { children { edges { node { " +
-                "children { edges { node { name } } } } } } } } }"));
+    public void shouldNotCountFieldsExcludedBySkip() {
+        // A skipped field never executes, so it costs nothing.
+        assertEquals(1, complexity("{ currentUser { name @skip(if: true) } }"));
+        assertEquals(2, complexity("{ currentUser { name @skip(if: false) } }"));
+    }
+
+    // --- depth ---
+
+    @Test
+    public void shouldReportTheLongestFieldPathAsDepth() {
+        assertEquals(2, depth("{ currentUser { name } }"));
+        assertEquals(3, depth("{ jcr { nodeByPath(path: \"/\") { name } } }"));
+        // The deepest path wins over a shallower sibling.
+        assertEquals(5, depth("{ jcr { nodeByPath(path: \"/\") { name parent { parent { name } } } } }"));
     }
 
     @Test
-    public void shouldCountNonNullWrappedLists() {
-        // ancestors is [JCRNode]!, i.e. NonNull(List(JCRNode)): the non-null wrapper must not hide the list.
-        assertEquals(1, listNesting("{ jcr { nodeByPath(path: \"/\") { ancestors { name } } } }"));
+    public void shouldReportTheSameDepthAsGraphqlJava() {
+        // The depth guard used to be graphql-java's MaxQueryDepthInstrumentation; a configured maximum only keeps its
+        // meaning if this measures depth the same way it did.
+        for (String query : new String[]{
+                "{ currentUser { name } }",
+                "{ jcr { nodeByPath(path: \"/\") { name parent { parent { name } } } } }",
+                "{ jcr { nodeByPath(path: \"/\") { ...f } } } fragment f on JCRNode { parent { name } }",
+                nestedDescendants(3, "name"),
+                aliasedTypenameQuery(5)}) {
+            assertEquals("depth of " + query, graphqlJavaDepth(query), depth(query));
+        }
     }
 
-    @Test
-    public void shouldIgnoreListsOfScalars() {
-        // properties is a list of objects and counts; values is a list of scalars, a leaf that cannot recurse.
-        assertEquals(1, listNesting("{ jcr { nodeByPath(path: \"/\") { properties { name values } } } }"));
+    /** How {@link graphql.analysis.MaxQueryDepthInstrumentation} measures depth, reproduced to compare against. */
+    private static int graphqlJavaDepth(String query) {
+        return traverser(query, CoercedVariables.emptyVariables())
+                .reducePreOrder((env, acc) -> Math.max(pathLength(env.getParentEnvironment()), acc), 0);
     }
 
-    @Test
-    public void shouldReportTheDeepestPathNotTheTotal() {
-        // Two sibling branches: one nesting 1 list, one nesting 3. The guard bounds the deepest path.
-        assertEquals(3, listNesting("{ jcr { nodeByPath(path: \"/\") { " +
-                "ancestors { name } " +
-                "descendants { nodes { descendants { nodes { descendants { nodes { name } } } } } } } } }"));
+    private static int pathLength(QueryVisitorFieldEnvironment path) {
+        int length = 1;
+        while (path != null) {
+            path = path.getParentEnvironment();
+            length++;
+        }
+        return length;
     }
 }
