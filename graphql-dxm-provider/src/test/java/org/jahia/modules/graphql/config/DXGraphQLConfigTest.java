@@ -41,6 +41,8 @@ public class DXGraphQLConfigTest {
     private static final String DEFAULT_CONFIG_FILE = "file:/opt/jahia/etc/org.jahia.modules.graphql.provider-default.cfg";
     private static final String OTHER_CONFIG_FILE = "file:/opt/jahia/etc/org.jahia.modules.graphql.provider-custom.cfg";
 
+    private static final String DEFAULT_CONFIG_PID = "org.jahia.modules.graphql.provider~default";
+
     private static final int DEFAULT_NODE_LIMIT = 5000;
 
     private DXGraphQLConfig config;
@@ -66,6 +68,48 @@ public class DXGraphQLConfigTest {
         assertEquals(0, config.getMaxQueryComplexity());
         assertEquals(0, config.getMaxQueryDepth());
         assertEquals(DEFAULT_NODE_LIMIT, config.getNodeLimit());
+    }
+
+    @Test
+    public void shouldApplyLimitsFromDefaultFactoryInstanceWithoutFileName() throws ConfigurationException {
+        // Regression guard: an update written through ConfigurationAdmin against the default factory instance (what
+        // the install-time groovy patcher does to seed the guards on existing installs) carries no
+        // felix.fileinstall.filename. Keying the gate on the filename alone made such an update not merely ignored
+        // but destructive -- the limits reverted to their code default, silently switching the guards off.
+        config.updated(DEFAULT_CONFIG_PID, props(null,
+                "graphql.query.maxComplexity", "2000",
+                "graphql.query.maxDepth", "30",
+                "graphql.fields.node.limit", "100"));
+
+        assertEquals(2000, config.getMaxQueryComplexity());
+        assertEquals(30, config.getMaxQueryDepth());
+        assertEquals(100, config.getNodeLimit());
+    }
+
+    // --- the default-configuration gate matches exactly, so no other configuration can claim to be it ---
+
+    @Test
+    public void shouldIgnoreLimitsFromPidMerelyEndingInDefaultSuffix() throws ConfigurationException {
+        // Configuration Admin puts no constraint on '~' inside a factory instance name, so any bundle can create
+        // "...provider~anything~default". Were the gate a suffix match, that instance would pass it -- and win over the
+        // real one, since the effective value is picked by lowest pid.
+        config.updated("org.jahia.modules.graphql.provider~aaa~default", props(null,
+                "graphql.query.maxComplexity", "999999",
+                "graphql.fields.node.limit", "1000000"));
+
+        assertEquals(0, config.getMaxQueryComplexity());
+        assertEquals(DEFAULT_NODE_LIMIT, config.getNodeLimit());
+    }
+
+    @Test
+    public void shouldIgnoreLimitsFromFileNameMerelyEndingInDefaultFileName() throws ConfigurationException {
+        // fileinstall derives the factory pid from the part before the first '-', so this file does reach this factory
+        // while its name ends with the default configuration's name.
+        config.updated("pid1", props(
+                "file:/opt/jahia/etc/org.jahia.modules.graphql.provider-x.org.jahia.modules.graphql.provider-default.cfg",
+                "graphql.query.maxComplexity", "999999"));
+
+        assertEquals(0, config.getMaxQueryComplexity());
     }
 
     @Test

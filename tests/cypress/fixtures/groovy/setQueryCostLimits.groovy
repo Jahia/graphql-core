@@ -3,11 +3,9 @@ import org.osgi.service.cm.ConfigurationAdmin
 
 // Sets the GraphQL query-cost guards on the DEFAULT provider configuration.
 //
-// The provider only honours graphql.query.maxComplexity / graphql.query.maxDepth when they originate from the
-// default config file (it checks felix.fileinstall.filename ends with org.jahia.modules.graphql.provider-default.cfg,
-// so a third-party module config cannot loosen them). We therefore edit the EXISTING "default" factory instance via
-// getFactoryConfiguration(...,"default",...): its felix.fileinstall.filename is preserved across the update, so the
-// new values pass that gate. createFactoryConfiguration() would NOT work here (no filename -> values ignored).
+// The provider only honours graphql.query.maxComplexity / maxDepth when they come from the default configuration, so
+// that a third-party module config cannot loosen them. It recognises the default configuration by its pid, so editing
+// the existing "default" factory instance via getFactoryConfiguration(...,"default",...) is all that is needed here.
 //
 // Tokens MAX_COMPLEXITY / MAX_DEPTH are substituted by cy.executeGroovy. Use 0 to disable a guard.
 def ca = BundleUtils.getOsgiService(ConfigurationAdmin.class, null)

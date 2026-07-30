@@ -15,8 +15,6 @@
  */
 package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
-import graphql.analysis.MaxQueryComplexityInstrumentation;
-import graphql.analysis.MaxQueryDepthInstrumentation;
 import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.kickstart.execution.config.InstrumentationProvider;
@@ -57,16 +55,13 @@ public class JCRInstrumentationProvider implements InstrumentationProvider {
         List<Instrumentation> instns = new ArrayList<>();
 
         // Query-cost guards: reject expensive documents before execution (i.e. before any field is fetched,
-        // permission-checked or serialized). A value <= 0 disables the corresponding guard.
+        // permission-checked or serialized). A value <= 0 disables the corresponding guard; with both disabled the
+        // document is not analysed at all. One instrumentation covers the two of them because they share a single
+        // traversal of the document - see QueryCostInstrumentation.
         int maxQueryComplexity = dxGraphQLConfig.getMaxQueryComplexity();
-        if (maxQueryComplexity > 0) {
-            // graphql-java's built-in field-cost calculator (each field costs 1 + its children) is enough to catch
-            // the alias amplification; result-set fan-out is bounded separately by graphql.fields.node.limit.
-            instns.add(new MaxQueryComplexityInstrumentation(maxQueryComplexity));
-        }
         int maxQueryDepth = dxGraphQLConfig.getMaxQueryDepth();
-        if (maxQueryDepth > 0) {
-            instns.add(new MaxQueryDepthInstrumentation(maxQueryDepth));
+        if (maxQueryComplexity > 0 || maxQueryDepth > 0) {
+            instns.add(new QueryCostInstrumentation(maxQueryComplexity, maxQueryDepth));
         }
 
         instns.add(new JCRInstrumentation(dxGraphQLConfig));

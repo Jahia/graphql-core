@@ -49,7 +49,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private static final String MAX_QUERY_DEPTH = "graphql.query.maxDepth";
     public static final String INTROSPECTION_CHECK_ENABLED = "introspectionCheckEnabled";
 
-    private static final String DEFAULT_CONFIG_FILE_SUFFIX = "org.jahia.modules.graphql.provider-default.cfg";
+    private static final String FACTORY_PID = "org.jahia.modules.graphql.provider";
+    private static final String DEFAULT_CONFIG_FILE_NAME = FACTORY_PID + "-default.cfg";
+    private static final String DEFAULT_CONFIG_PID = FACTORY_PID + "~default";
 
     private static final int DEFAULT_NODE_LIMIT = 5000;
 
@@ -85,10 +87,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
             return;
         }
 
-        // Some limits (node limit, query-cost guards) are global and may only be set from the default config file,
+        // Some limits (node limit, query-cost guards) are global and may only be set from the default configuration,
         // so that a third-party module configuration cannot loosen them.
-        Object filename = properties.get("felix.fileinstall.filename");
-        boolean isDefaultConfig = filename != null && filename.toString().endsWith(DEFAULT_CONFIG_FILE_SUFFIX);
+        boolean isDefaultConfig = isDefaultConfig(pid, properties);
 
         // Parse everything into locals first. A validation failure throws HERE, before any shared state is mutated,
         // so a rejected configuration leaves the last-known-good state intact instead of half-applied. Only once the
@@ -254,8 +255,44 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private static void warnGatedPropertyIgnored(String key, String pid) {
         logger.warn("Ignoring GraphQL limit '{}' set by configuration '{}': this limit is only honored from the " +
-                "default configuration file (a file whose name ends with {}), so that a non-default configuration " +
-                "cannot change it.", key, pid, DEFAULT_CONFIG_FILE_SUFFIX);
+                "default configuration of this factory, normally the file named {}, so that a non-default " +
+                "configuration cannot change it.", key, pid, DEFAULT_CONFIG_FILE_NAME);
+    }
+
+    /**
+     * Tells whether a configuration update is allowed to set the global limits, i.e. whether it is the default
+     * configuration of this factory.
+     *
+     * <p>The pid is the primary signal: it identifies the default instance whatever wrote the update. Keying only on
+     * {@code felix.fileinstall.filename} (as this check used to) made the gate depend on the update carrying that
+     * property, which an update written through {@code ConfigurationAdmin} - as the install-time groovy patcher that
+     * seeds the guards on existing installs does - does not. Such an update was then not merely ignored: because a
+     * limit reverts to its code default when no configuration provides it, it silently switched the guards off.
+     *
+     * <p>Both comparisons are exact on purpose. Configuration Admin builds a factory instance pid as
+     * {@code factoryPid + '~' + name} but puts no constraint on {@code ~} appearing in the name, so matching a
+     * {@code ~default} suffix would also accept an instance any bundle can create by asking for the name
+     * {@code something~default} - and {@link #firstValueOrDefault} picks the lowest pid, so such an instance would win
+     * over the real one. Matching the file name as a suffix of the whole path had the same hole, since fileinstall
+     * derives the factory pid from the part of the name before the first {@code -}: a file called
+     * {@code org.jahia.modules.graphql.provider-x.org.jahia.modules.graphql.provider-default.cfg} reaches this factory
+     * and ends with the default file name. The file name is still accepted as a fallback so the gate keeps working on a
+     * Felix version that names factory instances differently (older ones used a generated pid).
+     */
+    private static boolean isDefaultConfig(String pid, Dictionary<String, ?> properties) {
+        if (DEFAULT_CONFIG_PID.equals(pid)) {
+            return true;
+        }
+        Object filename = properties.get("felix.fileinstall.filename");
+        return filename != null && DEFAULT_CONFIG_FILE_NAME.equals(fileName(filename.toString()));
+    }
+
+    /**
+     * @return the last segment of a {@code felix.fileinstall.filename}, which is a file URL or a path
+     */
+    private static String fileName(String path) {
+        int lastSeparator = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        return path.substring(lastSeparator + 1);
     }
 
     public void addAnnotationPermission(String pid, String permission) {

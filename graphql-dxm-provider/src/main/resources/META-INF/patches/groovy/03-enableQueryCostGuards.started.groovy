@@ -7,11 +7,9 @@ import org.osgi.service.cm.ConfigurationAdmin
  * abusive queries are rejected before execution out of the box.
  *
  * Runs on bundle start (the ".started" suffix) so it reaches EXISTING installs too: the shipped default cfg is
- * NOT re-applied to an already-installed module, so these properties would otherwise stay absent (code default 0,
- * i.e. disabled) on any instance that already had graphql-dxm-provider. Writing through ConfigurationAdmin against
- * the existing "default" factory instance preserves its felix.fileinstall.filename, which the provider requires:
- * the two limits are only honoured when they originate from org.jahia.modules.graphql.provider-default.cfg, so that
- * a third-party module configuration cannot loosen them.
+ * NOT re-applied to an already-installed module, so these properties would otherwise stay absent on any instance
+ * that already had graphql-dxm-provider, leaving both guards at their code default of 0, i.e. disabled. The write
+ * targets the existing "default" factory instance, which the provider recognises by its pid.
  *
  * Idempotent and non-intrusive: each property is only added when it is absent. An explicit administrator value
  * (in either direction, including 0 to opt out) is left untouched.
