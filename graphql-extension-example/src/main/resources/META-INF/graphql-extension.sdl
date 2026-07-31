@@ -24,6 +24,8 @@ extend type Query {
     newsByChecked: [NewsSDL]
     """This is myNewsByDate"""
     myNewsByDate: [NewsSDL]
+    """This is myNewsByTitle"""
+    myNewsByTitle: [NewsSDL]
     """This is myImagesByHeight"""
     myImagesByHeight: [Images]
 }
