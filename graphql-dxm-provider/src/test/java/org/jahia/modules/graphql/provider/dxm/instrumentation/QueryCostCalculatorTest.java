@@ -28,6 +28,10 @@ import graphql.schema.idl.SchemaParser;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -45,7 +49,13 @@ public class QueryCostCalculatorTest {
             "type User { name: String displayName: String } " +
             "type JCRQuery { nodeByPath(path: String): JCRNode } " +
             "type JCRNode { name: String uuid: String parent: JCRNode descendants: JCRNodeConnection } " +
-            "type JCRNodeConnection { nodes: [JCRNode] }";
+            "type JCRNodeConnection { nodes: [JCRNode] } " +
+            "type Mutation { jcr: JCRMutation } " +
+            "input InputJCRNode { name: String children: [InputJCRNode] mixins: [String] } " +
+            "type JCRMutation { addNodesBatch(nodes: [InputJCRNode]): [JCRNodeMutation] " +
+            "  mutateNodes(pathsOrIds: [String]): [JCRNodeMutation] " +
+            "  mutateNode(pathOrId: String): JCRNodeMutation } " +
+            "type JCRNodeMutation { uuid: String }";
 
     private static GraphQLSchema schema;
 
@@ -74,6 +84,25 @@ public class QueryCostCalculatorTest {
 
     private static int depth(String query) {
         return cost(query).getDepth();
+    }
+
+    private static int batchSize(String query) {
+        return cost(query).getBatchSize();
+    }
+
+    private static int batchSize(String query, CoercedVariables variables) {
+        return QueryCostCalculator.calculate(traverser(query, variables)).getBatchSize();
+    }
+
+    /** Builds a mutation selecting {@code mutateNodes} under {@code aliasCount} aliases, each given {@code items} paths. */
+    private static String aliasedMutateNodes(int aliasCount, int items) {
+        String paths = IntStream.range(0, items)
+                .mapToObj(i -> "\"/p" + i + "\"")
+                .collect(Collectors.joining(", "));
+        String selections = IntStream.range(0, aliasCount)
+                .mapToObj(i -> "a" + i + ": mutateNodes(pathsOrIds: [" + paths + "]) { uuid }")
+                .collect(Collectors.joining(" "));
+        return "mutation { jcr { " + selections + " } }";
     }
 
     /** Builds {@code { a0:__typename a1:__typename ... }}, the shape of an alias amplification payload. */
@@ -188,4 +217,59 @@ public class QueryCostCalculatorTest {
         }
         return length;
     }
+    @Test
+    public void shouldCountTheItemsAnEnumeratedArgumentCarries() {
+        assertEquals(3, batchSize("mutation { jcr { mutateNodes(pathsOrIds: [\"/a\", \"/b\", \"/c\"]) { uuid } } }"));
+    }
+
+    @Test
+    public void shouldSumEnumeratedItemsAcrossAliasesSoAliasingCannotMultiplyTheBound() {
+        // Why the document is measured rather than each call: every alias below is small, the request is not.
+        assertEquals(30, batchSize(aliasedMutateNodes(10, 3)));
+        // Batch size is its own metric: the same document's complexity reflects only its shape.
+        assertEquals(21, complexity(aliasedMutateNodes(10, 3)));
+    }
+
+    @Test
+    public void shouldCountItemsSuppliedThroughAVariableLikeInlineOnes() {
+        // Arguments reach the traverser coerced, so the variable form is measured exactly like an inline one.
+        String query = "mutation ($paths: [String]) { jcr { mutateNodes(pathsOrIds: $paths) { uuid } } }";
+        CoercedVariables variables = CoercedVariables.of(
+                Collections.singletonMap("paths", Arrays.asList("/a", "/b", "/c", "/d")));
+        assertEquals(4, batchSize(query, variables));
+    }
+
+    @Test
+    public void shouldNotCountScalarArgumentsOrArgumentlessFields() {
+        assertEquals(0, batchSize("mutation { jcr { mutateNode(pathOrId: \"/a\") { uuid } } }"));
+        assertEquals(0, batchSize("{ jcr { nodeByPath(path: \"/\") { name } } }"));
+        assertEquals(0, batchSize("{ currentUser { name } }"));
+    }
+
+    @Test
+    public void shouldCountItemsBuriedInsideNestedInputObjects() {
+        // InputJCRNode holds a list of itself, so one outer item can describe a whole tree of nodes to create. Counting
+        // only the outer list would score this as 1 while it asks for six nodes.
+        String query = "mutation { jcr { addNodesBatch(nodes: [" +
+                "{name: \"a\", children: [{name: \"a1\"}, {name: \"a2\"}]}, " +
+                "{name: \"b\", children: [{name: \"b1\", children: [{name: \"b1x\"}]}]}" +
+                "]) { uuid } } }";
+        // 2 outer + 2 children of a + 1 child of b + 1 grandchild = 6
+        assertEquals(6, batchSize(query));
+    }
+
+    @Test
+    public void shouldCountNestedItemsSuppliedThroughAVariable() {
+        String query = "mutation ($nodes: [InputJCRNode]) { jcr { addNodesBatch(nodes: $nodes) { uuid } } }";
+        Map<String, Object> child = new HashMap<>();
+        child.put("name", "c1");
+        Map<String, Object> parent = new HashMap<>();
+        parent.put("name", "p");
+        parent.put("children", Arrays.asList(child, child, child));
+        CoercedVariables variables = CoercedVariables.of(
+                Collections.singletonMap("nodes", Collections.singletonList(parent)));
+        // 1 outer + 3 children
+        assertEquals(4, batchSize(query, variables));
+    }
+
 }
