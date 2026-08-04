@@ -25,6 +25,7 @@ import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.sdl.validation.ArgumentValidator;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -177,7 +178,7 @@ public class DateRangeDataFetcher extends FinderListDataFetcher {
         }
 
         public String castDate(String value) {
-            return StringUtils.isBlank(value) ? null : "CAST('" + value + "' AS DATE)";
+            return StringUtils.isBlank(value) ? null : "CAST('" + JCRContentUtils.sqlEncode(value) + "' AS DATE)";
         }
 
         public String getStatement() {
