@@ -1,5 +1,5 @@
 import {addNode, createSite, createUser, deleteSite, deleteUser, publishAndWaitJobEnding} from '@jahia/cypress';
-import {grantUserRole} from '../../fixtures/acl';
+import {grantUserRole, revokeUserRole} from '../../fixtures/acl';
 
 /**
  * End-to-end tests for the Tag Manager GraphQL API.
@@ -9,6 +9,7 @@ import {grantUserRole} from '../../fixtures/acl';
  *  - Mutation happy paths: renameTag, deleteTag, renameTagOnNode, deleteTagOnNode
  *  - Dual-workspace propagation (EDIT + LIVE)
  *  - Authorization failures (user without tagManager permission, wrong site key)
+ *  - Per-node write rights: a caller holding tagManager still only writes the nodes it may write
  */
 describe('Tag Manager GraphQL API', () => {
     const siteKey = 'tagManagerTestSite';
@@ -388,6 +389,173 @@ describe('Tag Manager GraphQL API', () => {
                     expect(result.errors).to.exist.and.not.be.empty;
                     expect(result.data?.admin?.jahia?.tagManager).to.not.exist;
                 });
+        });
+    });
+
+    // ────────────────────────────────────────────────────────────────────────────
+    // PER-NODE WRITE RIGHTS
+    //
+    // Holding tagManager on the site opens the Tag Manager; it does not make every node
+    // under the site writable. A node the caller's roles are denied on is out of reach and
+    // must keep its tags, in BOTH workspaces — the live copy is updated by the same
+    // operation, so the edit workspace decides for both.
+    // ────────────────────────────────────────────────────────────────────────────
+
+    describe('per-node write rights', () => {
+        const tagManagerUser = 'tagManagerScoped';
+        const restrictedNodePath = `/sites/${siteKey}/contents/restrictedNode`;
+        let restrictedNodeUuid: string;
+
+        before('Create a tag-manager user, a reachable node and an out-of-reach node', () => {
+            createUser(tagManagerUser, password);
+            // The server-administrator role carries the admin GraphQL entry permissions
+            // (graphqlAdminQuery / graphqlAdminMutation); site-administrator carries tagManager
+            // plus jcr:all_default on the site, which a per-node DENY takes back
+            grantUserRole('/', 'server-administrator', tagManagerUser);
+            grantUserRole(`/sites/${siteKey}`, 'site-administrator', tagManagerUser);
+
+            addNode({
+                parentPathOrId: `/sites/${siteKey}/contents`,
+                name: 'reachableNode',
+                primaryNodeType: 'jnt:contentList',
+                mixins: ['jmix:tagged'],
+                properties: [
+                    {name: 'j:tagList', values: ['scoped'], type: 'STRING'}
+                ]
+            });
+
+            addNode({
+                parentPathOrId: `/sites/${siteKey}/contents`,
+                name: 'restrictedNode',
+                primaryNodeType: 'jnt:contentList',
+                mixins: ['jmix:tagged'],
+                properties: [
+                    {name: 'j:tagList', values: ['restricted'], type: 'STRING'}
+                ]
+            }).then((result: any) => {
+                restrictedNodeUuid = result.data.jcr.addNode.uuid;
+                // Publish first, so the tag exists in both workspaces...
+                publishAndWaitJobEnding(restrictedNodePath);
+                // ...then DENY both roles on this node only, putting it out of the user's reach
+                // while tagManager on the site itself is untouched
+                revokeUserRole(restrictedNodePath, 'site-administrator', tagManagerUser);
+                revokeUserRole(restrictedNodePath, 'server-administrator', tagManagerUser);
+            });
+        });
+
+        after('Remove the test user', () => {
+            deleteUser(tagManagerUser);
+        });
+
+        it('renames a tag the caller may write (site-wide)', () => {
+            cy.apolloClient({username: tagManagerUser, password})
+                .apollo({
+                    mutationFile: 'tagManager/renameTag.graphql',
+                    variables: {siteKey, tag: 'scoped', newName: 'scoped-renamed'}
+                }).should((result: any) => {
+                    const workspaceResults = result.data.admin.jahia.tagManager.renameTag.workspaceResults;
+                    // eslint-disable-next-line max-nested-callbacks
+                    const editResult = workspaceResults.find((wsResult: any) => wsResult.workspace === 'default');
+                    expect(editResult.processedCount).to.equal(1);
+                    expect(editResult.failedCount).to.equal(0);
+                });
+
+            cy.apollo({
+                queryFile: 'tagManager/getTaggedContent.graphql',
+                variables: {siteKey, tag: 'scoped-renamed'}
+            }).should((result: any) => {
+                const nodes = result.data.admin.jahia.tagManager.taggedContent.nodes;
+                expect(nodes).to.have.length(1);
+                expect(nodes[0].path).to.equal(`/sites/${siteKey}/contents/reachableNode`);
+            });
+        });
+
+        it('leaves a node the caller may not write untouched on a site-wide rename', () => {
+            cy.apolloClient({username: tagManagerUser, password})
+                .apollo({
+                    mutationFile: 'tagManager/renameTag.graphql',
+                    variables: {siteKey, tag: 'restricted', newName: 'restricted-renamed'}
+                }).should((result: any) => {
+                    const workspaceResults = result.data.admin.jahia.tagManager.renameTag.workspaceResults;
+                    // eslint-disable-next-line max-nested-callbacks
+                    const processed = workspaceResults.reduce((total: number, wsResult: any) => total + wsResult.processedCount, 0);
+                    // eslint-disable-next-line max-nested-callbacks
+                    const failed = workspaceResults.reduce((total: number, wsResult: any) => total + wsResult.failedCount, 0);
+                    expect(processed, 'no node is written').to.equal(0);
+                    expect(failed, 'the out-of-reach node is reported as a failure').to.be.greaterThan(0);
+                });
+
+            // As root: the tag is still on the node, under its original name
+            cy.apollo({
+                queryFile: 'tagManager/getTaggedContent.graphql',
+                variables: {siteKey, tag: 'restricted'}
+            }).should((result: any) => {
+                // eslint-disable-next-line max-nested-callbacks
+                const paths = result.data.admin.jahia.tagManager.taggedContent.nodes.map((node: any) => node.path);
+                expect(paths).to.include(restrictedNodePath);
+            });
+        });
+
+        it('leaves a node the caller may not write untouched on a site-wide delete', () => {
+            cy.apolloClient({username: tagManagerUser, password})
+                .apollo({
+                    mutationFile: 'tagManager/deleteTag.graphql',
+                    variables: {siteKey, tag: 'restricted'}
+                }).should((result: any) => {
+                    const workspaceResults = result.data.admin.jahia.tagManager.deleteTag.workspaceResults;
+                    // eslint-disable-next-line max-nested-callbacks
+                    const processed = workspaceResults.reduce((total: number, wsResult: any) => total + wsResult.processedCount, 0);
+                    expect(processed, 'no node is written').to.equal(0);
+                });
+
+            cy.apollo({
+                queryFile: 'tagManager/getTaggedContent.graphql',
+                variables: {siteKey, tag: 'restricted'}
+            }).should((result: any) => {
+                // eslint-disable-next-line max-nested-callbacks
+                const paths = result.data.admin.jahia.tagManager.taggedContent.nodes.map((node: any) => node.path);
+                expect(paths).to.include(restrictedNodePath);
+            });
+        });
+
+        it('rejects renameTagOnNode on a node the caller may not write', () => {
+            cy.apolloClient({username: tagManagerUser, password})
+                .apollo({
+                    mutationFile: 'tagManager/renameTagOnNode.graphql',
+                    variables: {siteKey, tag: 'restricted', newName: 'restricted-renamed', nodeId: restrictedNodeUuid},
+                    errorPolicy: 'all'
+                }).should((result: any) => {
+                    expect(result.errors).to.exist.and.not.be.empty;
+                });
+
+            cy.apollo({
+                queryFile: 'tagManager/getTaggedContent.graphql',
+                variables: {siteKey, tag: 'restricted'}
+            }).should((result: any) => {
+                // eslint-disable-next-line max-nested-callbacks
+                const paths = result.data.admin.jahia.tagManager.taggedContent.nodes.map((node: any) => node.path);
+                expect(paths).to.include(restrictedNodePath);
+            });
+        });
+
+        it('rejects deleteTagOnNode on a node the caller may not write', () => {
+            cy.apolloClient({username: tagManagerUser, password})
+                .apollo({
+                    mutationFile: 'tagManager/deleteTagOnNode.graphql',
+                    variables: {siteKey, tag: 'restricted', nodeId: restrictedNodeUuid},
+                    errorPolicy: 'all'
+                }).should((result: any) => {
+                    expect(result.errors).to.exist.and.not.be.empty;
+                });
+
+            cy.apollo({
+                queryFile: 'tagManager/getTaggedContent.graphql',
+                variables: {siteKey, tag: 'restricted'}
+            }).should((result: any) => {
+                // eslint-disable-next-line max-nested-callbacks
+                const paths = result.data.admin.jahia.tagManager.taggedContent.nodes.map((node: any) => node.path);
+                expect(paths).to.include(restrictedNodePath);
+            });
         });
     });
 });

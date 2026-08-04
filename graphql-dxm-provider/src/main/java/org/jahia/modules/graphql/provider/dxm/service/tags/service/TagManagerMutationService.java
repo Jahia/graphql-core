@@ -21,6 +21,7 @@ import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.modules.graphql.provider.dxm.service.tags.graphql.GqlTagMutationResult;
 import org.jahia.modules.graphql.provider.dxm.service.tags.graphql.GqlTagWorkspaceMutationResult;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRObservationManager;
 import org.jahia.services.content.JCRSessionFactory;
@@ -30,7 +31,9 @@ import org.jahia.services.tags.TaggingService;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
+import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
+import javax.jcr.query.Query;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,7 +58,9 @@ import java.util.List;
  *       per-node errors and continue processing; callers receive a structured result describing
  *       which nodes succeeded and which failed, without a full transaction rollback.</li>
  *   <li><strong>Authorization</strong> – every operation checks that the current user holds the
- *       {@code tagManager} permission on the target site node before performing any write.</li>
+ *       {@code tagManager} permission on the target site node before performing any write, and each
+ *       individual node is additionally checked against the caller's own rights on it — the
+ *       site-level permission opens the screen, it does not widen what the caller may write.</li>
  * </ul>
  *
  * <p><strong>Threading model:</strong> this is a singleton OSGi component. Each public method
@@ -70,6 +75,9 @@ import java.util.List;
 public class TagManagerMutationService {
     private static final List<String> WORKSPACES = Arrays.asList(Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE);
 
+    /** Right the caller must hold on a node for its tag list to be rewritten. */
+    private static final String MODIFY_PROPERTIES_PERMISSION = "jcr:modifyProperties";
+
     /**
      * Maximum number of failure paths included in a single response payload.
      * Additional failures are counted but not listed.
@@ -83,11 +91,12 @@ public class TagManagerMutationService {
      * Renames a tag across <em>all</em> nodes in the site that carry it, in both the
      * {@code default} and {@code live} workspaces.
      *
-     * <p>Delegates to {@link TaggingService#renameTagUnderPath} for each workspace, which handles
-     * node iteration and per-node post-processing via {@link TagManagerActionCallback}. JCR
-     * observation listeners are disabled for the entire batch and restored in a {@code finally}
-     * block. Individual node failures do not abort the batch — they are captured in the
-     * returned result with partial-failure semantics.
+     * <p>Iterates the tagged nodes of each workspace and delegates the per-node rewrite to
+     * {@link TaggingService#renameTag(JCRNodeWrapper, String, String)}, with post-processing via
+     * {@link TagManagerActionCallback}. A node the caller may not write is left untouched and
+     * counted as a failure. JCR observation listeners are disabled for the entire batch and
+     * restored in a {@code finally} block. Individual node failures do not abort the batch — they
+     * are captured in the returned result with partial-failure semantics.
      *
      * @param siteKey the Jahia site identifier (e.g. {@code "digitall"}); must not be
      *                {@code null}; authorization is pre-validated by the GraphQL resolver
@@ -103,15 +112,51 @@ public class TagManagerMutationService {
      */
     public GqlTagMutationResult renameTag(String siteKey, String tag, String newName) {
         ensureMutationTagName(newName);
+        return applyUnderSite(siteKey, tag, newName);
+    }
+
+    /**
+     * Removes a tag from <em>all</em> nodes in the site that carry it, in both the
+     * {@code default} and {@code live} workspaces.
+     *
+     * <p>Iterates the tagged nodes of each workspace and delegates the per-node removal to
+     * {@link TaggingService#untag(JCRNodeWrapper, String)}. A node the caller may not write is left
+     * untouched and counted as a failure. Observation listeners are suppressed across both
+     * workspace operations with the same guarantees as {@link #renameTag}. Individual node failures
+     * are captured with partial-failure semantics.
+     *
+     * @param siteKey the Jahia site identifier; must not be {@code null}; authorization is
+     *                pre-validated by the GraphQL resolver
+     * @param tag     the tag value to remove; must not be {@code null} or empty
+     * @return a {@link GqlTagMutationResult} carrying the tag name, a {@code null} node
+     *         identifier (bulk mode), and one {@link GqlTagWorkspaceMutationResult} per workspace
+     * @throws DataFetchingException wrapping a {@link RepositoryException} if session
+     *                               acquisition or query execution fails
+     */
+    public GqlTagMutationResult deleteTag(String siteKey, String tag) {
+        return applyUnderSite(siteKey, tag, null);
+    }
+
+    /**
+     * Shared body of the two site-wide operations: rename when {@code newName} is non-{@code null},
+     * removal otherwise.
+     *
+     * <p>The writes stay on a system session — the {@code live} copy is updated in the same pass, and
+     * the caller is not expected to hold live write rights — so every candidate node is checked
+     * against the caller's own view of it before it is touched (see
+     * {@link #isModifiableByCaller(JCRSessionWrapper, String)}).
+     */
+    private GqlTagMutationResult applyUnderSite(String siteKey, String tag, String newName) {
         String sitePath = "/sites/" + siteKey;
         try {
+            JCRSessionWrapper callerSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
             List<GqlTagWorkspaceMutationResult> results = new ArrayList<>();
 
             JCRObservationManager.setAllEventListenersDisabled(Boolean.TRUE);
             try {
                 for (String workspace : WORKSPACES) {
                     JCRSessionWrapper systemSession = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
-                    results.add(taggingService.renameTagUnderPath(sitePath, systemSession, tag, newName, new TagManagerActionCallback(systemSession, workspace)));
+                    results.add(applyInWorkspace(systemSession, callerSession, workspace, sitePath, tag, newName));
                 }
             } finally {
                 JCRObservationManager.setAllEventListenersDisabled(Boolean.FALSE);
@@ -123,41 +168,36 @@ public class TagManagerMutationService {
         }
     }
 
-    /**
-     * Removes a tag from <em>all</em> nodes in the site that carry it, in both the
-     * {@code default} and {@code live} workspaces.
-     *
-     * <p>Delegates to {@link TaggingService#deleteTagUnderPath} for each workspace. Observation
-     * listeners are suppressed across both workspace operations with the same guarantees as
-     * {@link #renameTag}. Individual node failures are captured with partial-failure semantics.
-     *
-     * @param siteKey the Jahia site identifier; must not be {@code null}; authorization is
-     *                pre-validated by the GraphQL resolver
-     * @param tag     the tag value to remove; must not be {@code null} or empty
-     * @return a {@link GqlTagMutationResult} carrying the tag name, a {@code null} node
-     *         identifier (bulk mode), and one {@link GqlTagWorkspaceMutationResult} per workspace
-     * @throws DataFetchingException wrapping a {@link RepositoryException} if session
-     *                               acquisition or query execution fails
-     */
-    public GqlTagMutationResult deleteTag(String siteKey, String tag) {
-        String sitePath = "/sites/" + siteKey;
-        try {
-            List<GqlTagWorkspaceMutationResult> results = new ArrayList<>();
-
-            JCRObservationManager.setAllEventListenersDisabled(Boolean.TRUE);
+    private GqlTagWorkspaceMutationResult applyInWorkspace(JCRSessionWrapper systemSession, JCRSessionWrapper callerSession,
+                                                           String workspace, String sitePath, String tag, String newName) throws RepositoryException {
+        TagManagerActionCallback callback = new TagManagerActionCallback(systemSession, workspace);
+        NodeIterator taggedNodes = queryTaggedNodes(systemSession, sitePath, tag);
+        while (taggedNodes.hasNext()) {
+            JCRNodeWrapper node = (JCRNodeWrapper) taggedNodes.nextNode();
             try {
-                for (String workspace : WORKSPACES) {
-                    JCRSessionWrapper systemSession = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
-                    results.add(taggingService.deleteTagUnderPath(sitePath, systemSession, tag, new TagManagerActionCallback(systemSession, workspace)));
+                if (!isModifiableByCaller(callerSession, node.getIdentifier())) {
+                    callback.onSkipped();
+                    continue;
                 }
-            } finally {
-                JCRObservationManager.setAllEventListenersDisabled(Boolean.FALSE);
+                if (newName != null) {
+                    taggingService.renameTag(node, tag, newName);
+                } else {
+                    taggingService.untag(node, tag);
+                }
+                callback.afterTagAction(node);
+            } catch (RepositoryException e) {
+                callback.onError(node, e);
             }
-
-            return new GqlTagMutationResult(tag, null, results);
-        } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
         }
+        return callback.end();
+    }
+
+    private NodeIterator queryTaggedNodes(JCRSessionWrapper session, String sitePath, String tag) throws RepositoryException {
+        String statement = "SELECT * FROM [jmix:tagged] AS result WHERE ISDESCENDANTNODE(result, '" +
+                JCRContentUtils.sqlEncode(sitePath) + "') AND (result.[j:tagList] = $tag)";
+        Query query = session.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2);
+        query.bindValue("tag", session.getValueFactory().createValue(tag));
+        return query.execute().getNodes();
     }
 
     /**
@@ -187,6 +227,7 @@ public class TagManagerMutationService {
         try {
             JCRSessionWrapper editSession = JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null);
             validateNodeBelongsToSite(editSession, nodeId, sitePath);
+            ensureCallerCanModify(nodeId);
             List<GqlTagWorkspaceMutationResult> workspaceResults = new ArrayList<>();
 
             JCRObservationManager.setAllEventListenersDisabled(Boolean.TRUE);
@@ -251,6 +292,7 @@ public class TagManagerMutationService {
         try {
             JCRSessionWrapper editSession = JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null);
             validateNodeBelongsToSite(editSession, nodeId, sitePath);
+            ensureCallerCanModify(nodeId);
             List<GqlTagWorkspaceMutationResult> workspaceResults = new ArrayList<>();
 
             JCRObservationManager.setAllEventListenersDisabled(Boolean.TRUE);
@@ -290,6 +332,37 @@ public class TagManagerMutationService {
         ModuleCacheProvider cacheProvider = ModuleCacheProvider.getInstance();
         cacheProvider.invalidate(path, true);
         cacheProvider.flushRegexpDependenciesOfPath(path, true);
+    }
+
+    /**
+     * Rejects a single-node operation the caller has no right to perform on that node.
+     *
+     * @param nodeIdentifier the JCR UUID of the node about to be written
+     * @throws DataFetchingException if the caller may not write the node's properties
+     */
+    private void ensureCallerCanModify(String nodeIdentifier) throws RepositoryException {
+        JCRSessionWrapper callerSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
+        if (!isModifiableByCaller(callerSession, nodeIdentifier)) {
+            throw new DataFetchingException("Permission denied");
+        }
+    }
+
+    /**
+     * Reports whether the caller may rewrite the tag list of a node, resolving it in the caller's own
+     * ACL-bounded session so the node's access control is honoured rather than the system session's
+     * unrestricted rights.
+     *
+     * <p>The {@code default} workspace is the authority for both workspaces: the live copy is updated by
+     * the same operation to keep the two in sync, and a caller who may edit content is not expected to
+     * hold live write rights. A node the caller cannot resolve there at all — unreadable, or no longer
+     * present in the edit workspace — is reported as not modifiable.
+     */
+    private boolean isModifiableByCaller(JCRSessionWrapper callerSession, String nodeIdentifier) {
+        try {
+            return callerSession.getNodeByIdentifier(nodeIdentifier).hasPermission(MODIFY_PROPERTIES_PERMISSION);
+        } catch (RepositoryException e) {
+            return false;
+        }
     }
 
     private void validateNodeBelongsToSite(JCRSessionWrapper session, String nodeId, String sitePath) throws RepositoryException {
