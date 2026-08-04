@@ -19,6 +19,7 @@ import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.kickstart.execution.config.InstrumentationProvider;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
+import org.jahia.modules.graphql.provider.dxm.config.GraphQLLimits;
 import org.osgi.service.component.annotations.*;
 
 import java.util.ArrayList;
@@ -60,8 +61,11 @@ public class JCRInstrumentationProvider implements InstrumentationProvider {
         // traversal of the document - see QueryCostInstrumentation.
         int maxQueryComplexity = dxGraphQLConfig.getMaxQueryComplexity();
         int maxQueryDepth = dxGraphQLConfig.getMaxQueryDepth();
-        if (maxQueryComplexity > 0 || maxQueryDepth > 0) {
-            instns.add(new QueryCostInstrumentation(maxQueryComplexity, maxQueryDepth));
+        // Read the batch bound from GraphQLLimits rather than the config directly, so that this guard and the per-field
+        // check in the mutation resolvers can never disagree about the value in force.
+        int maxMutationBatchSize = GraphQLLimits.getMutationBatchLimit();
+        if (maxQueryComplexity > 0 || maxQueryDepth > 0 || maxMutationBatchSize > 0) {
+            instns.add(new QueryCostInstrumentation(maxQueryComplexity, maxQueryDepth, maxMutationBatchSize));
         }
 
         instns.add(new JCRInstrumentation(dxGraphQLConfig));

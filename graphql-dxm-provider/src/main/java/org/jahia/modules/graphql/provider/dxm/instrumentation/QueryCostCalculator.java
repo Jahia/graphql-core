@@ -21,6 +21,7 @@ import graphql.analysis.QueryVisitorStub;
 import graphql.execution.ExecutionContext;
 
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -28,17 +29,23 @@ import java.util.Map;
 /**
  * Static analysis of a GraphQL document, used by the query-cost guards to reject expensive documents before execution.
  *
- * <p>Both metrics come from the operation's field selections only, so they are cheap (no field is fetched) and can be
- * evaluated before anything is permission-checked or serialized. They are produced by a single traversal: the document
- * is walked once per request whether one guard is enabled or both.
+ * <p>Every metric comes from the operation's own document - its field selections and the arguments they carry - so they
+ * are cheap (no field is fetched) and can be evaluated before anything is permission-checked or serialized. They are
+ * produced by a single traversal: the document is walked once per request however many guards are enabled.
  *
- * <p>Neither metric bounds how far a document's list fields fan out, which is the dimension along which cost multiplies
- * rather than adds - a list nested inside a list is evaluated once per item of the outer one. Bounding that statically
- * would need a per-field notion of how many items a field can return, which this schema does not carry: {@code
- * jcr.nodeTypes { nodes { extends { nodes } } }} and {@code descendants { nodes { descendants { nodes } } }} are the
- * same shape over connections with the same arguments, yet the first reads a few hundred node type definitions out of
- * an in-memory registry and the second can read millions of JCR nodes. Fan-out is bounded per connection at execution
- * time instead, by {@code graphql.fields.node.limit}.
+ * <p>The first two metrics measure the document's shape and cannot see how much data a field will touch, which is why
+ * batch size is measured separately. A field handed an explicit list of things to act on states its own size up front,
+ * in an argument, so it is knowable here: that is the one cardinality this class can bound, and it is bounded across the
+ * whole document so that aliasing a field cannot multiply it.
+ *
+ * <p>What none of them bounds is how far a document's list <em>fields</em> fan out, which is the dimension along which
+ * cost multiplies rather than adds - a list nested inside a list is evaluated once per item of the outer one. Bounding
+ * that statically would need a per-field notion of how many items a field can return, which this schema does not carry:
+ * {@code jcr.nodeTypes { nodes { extends { nodes } } }} and {@code descendants { nodes { descendants { nodes } } }} are
+ * the same shape over connections with the same arguments, yet the first reads a few hundred node type definitions out
+ * of an in-memory registry and the second can read millions of JCR nodes. Fan-out is bounded per connection at execution
+ * time instead, by {@code graphql.fields.node.limit}, and a query-driven mutation the same way - how many nodes a
+ * JCR-SQL2 statement matches is not knowable until it runs.
  */
 final class QueryCostCalculator {
 
@@ -82,10 +89,12 @@ final class QueryCostCalculator {
 
         private final int complexity;
         private final int depth;
+        private final int batchSize;
 
-        private QueryCost(int complexity, int depth) {
+        private QueryCost(int complexity, int depth, int batchSize) {
             this.complexity = complexity;
             this.depth = depth;
+            this.batchSize = batchSize;
         }
 
         /**
@@ -109,6 +118,18 @@ final class QueryCostCalculator {
         int getDepth() {
             return depth;
         }
+
+        /**
+         * @return how many items the document hands the operation's fields in list arguments, summed over every
+         *         selection. Unlike the two metrics above this counts input rather than selections, which is what makes
+         *         it able to size a mutation batch: how many items a field is handed is stated in its arguments, not in
+         *         the shape of the document. Summing over selections is deliberate - the bound is on what one request
+         *         asks for in total, so selecting a field several times under aliases does not raise it - and nested
+         *         input objects are followed, so items carried inside a recursive input type count the same.
+         */
+        int getBatchSize() {
+            return batchSize;
+        }
     }
 
     /**
@@ -125,14 +146,54 @@ final class QueryCostCalculator {
 
         private int complexity;
         private int depth;
+        private int batchSize;
 
         private void measure(QueryVisitorFieldEnvironment env) {
             complexity++;
             depth = Math.max(depth, depthOf(env));
+            batchSize += enumeratedItems(env);
         }
 
         private QueryCost result() {
-            return new QueryCost(complexity, depth);
+            return new QueryCost(complexity, depth, batchSize);
+        }
+
+        /**
+         * How many items this field was handed in its arguments. Only list arguments count, and only their own length -
+         * the items are input values rather than selections, so nothing recurses here. Arguments arrive coerced, so a
+         * list supplied through a variable is measured exactly like an inline one.
+         */
+        private static int enumeratedItems(QueryVisitorFieldEnvironment env) {
+            int items = 0;
+            for (Object argument : env.getArguments().values()) {
+                items += countItems(argument);
+            }
+            return items;
+        }
+
+        /**
+         * Counts every item an argument value carries, descending through nested input objects rather than stopping at
+         * the outermost list. Nesting has to be followed because an input type can hold a list of itself - {@code
+         * InputJCRNode.children} is a list of {@code InputJCRNode} - so one outer item can describe an arbitrarily large
+         * tree of nodes to create, and counting only the outer list would score that as a single item however much work
+         * it asks for.
+         */
+        private static int countItems(Object value) {
+            if (value instanceof Collection) {
+                int items = ((Collection<?>) value).size();
+                for (Object element : (Collection<?>) value) {
+                    items += countItems(element);
+                }
+                return items;
+            }
+            if (value instanceof Map) {
+                int items = 0;
+                for (Object element : ((Map<?, ?>) value).values()) {
+                    items += countItems(element);
+                }
+                return items;
+            }
+            return 0;
         }
 
         private int depthOf(QueryVisitorFieldEnvironment env) {

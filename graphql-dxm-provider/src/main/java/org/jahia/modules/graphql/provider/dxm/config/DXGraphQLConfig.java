@@ -47,6 +47,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private static final String NODE_LIMIT = "graphql.fields.node.limit";
     private static final String MAX_QUERY_COMPLEXITY = "graphql.query.maxComplexity";
     private static final String MAX_QUERY_DEPTH = "graphql.query.maxDepth";
+    private static final String MUTATION_BATCH_LIMIT = "graphql.mutation.batch.limit";
     public static final String INTROSPECTION_CHECK_ENABLED = "introspectionCheckEnabled";
 
     private static final String FACTORY_PID = "org.jahia.modules.graphql.provider";
@@ -69,10 +70,12 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private final Map<String, Integer> nodeLimitByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> maxQueryComplexityByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> maxQueryDepthByPid = new ConcurrentHashMap<>();
+    private final Map<String, Integer> mutationBatchLimitByPid = new ConcurrentHashMap<>();
 
     private volatile int nodeLimit = DEFAULT_NODE_LIMIT;
     private volatile int maxQueryComplexity = 0;
     private volatile int maxQueryDepth = 0;
+    private volatile int mutationBatchLimit = GraphQLLimits.DEFAULT_MUTATION_BATCH_LIMIT;
     // Secure by default: the introspection permission check is on unless a configuration explicitly disables it.
     private volatile boolean introspectionCheckEnabled = true;
 
@@ -100,6 +103,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         Integer newNodeLimit = null;
         Integer newMaxQueryComplexity = null;
         Integer newMaxQueryDepth = null;
+        Integer newMutationBatchLimit = null;
         Boolean newIntrospectionCheck = null;
 
         Enumeration<String> keys = properties.keys();
@@ -142,6 +146,12 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 } else {
                     warnGatedPropertyIgnored(key, pid);
                 }
+            } else if (key.equals(MUTATION_BATCH_LIMIT)) {
+                if (isDefaultConfig) {
+                    newMutationBatchLimit = parseNonNegativeLimit(key, value, "Mutation batch limit");
+                } else {
+                    warnGatedPropertyIgnored(key, pid);
+                }
             } else if (key.equals(INTROSPECTION_CHECK_ENABLED)) {
                 // Unlike the limits above this is intentionally NOT restricted to the default config file: any config
                 // may contribute, but the "true wins" aggregation (see recomputeConfig) means a configuration can only
@@ -168,6 +178,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         }
         if (newMaxQueryDepth != null) {
             maxQueryDepthByPid.put(pid, newMaxQueryDepth);
+        }
+        if (newMutationBatchLimit != null) {
+            mutationBatchLimitByPid.put(pid, newMutationBatchLimit);
         }
         if (newIntrospectionCheck != null) {
             introspectionCheckByPid.put(pid, newIntrospectionCheck);
@@ -199,6 +212,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         nodeLimitByPid.remove(pid);
         maxQueryComplexityByPid.remove(pid);
         maxQueryDepthByPid.remove(pid);
+        mutationBatchLimitByPid.remove(pid);
     }
 
     /**
@@ -220,6 +234,12 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         }
         maxQueryComplexity = firstValueOrDefault(maxQueryComplexityByPid, 0);
         maxQueryDepth = firstValueOrDefault(maxQueryDepthByPid, 0);
+
+        int newMutationBatchLimit = firstValueOrDefault(mutationBatchLimitByPid, GraphQLLimits.DEFAULT_MUTATION_BATCH_LIMIT);
+        if (newMutationBatchLimit != mutationBatchLimit) {
+            mutationBatchLimit = newMutationBatchLimit;
+            GraphQLLimits.updateMutationBatchLimit(mutationBatchLimit);
+        }
 
         rebuildPermissions();
     }
