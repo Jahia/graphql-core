@@ -19,12 +19,18 @@ import graphql.analysis.QueryTraverser;
 import graphql.analysis.QueryVisitorFieldEnvironment;
 import graphql.analysis.QueryVisitorStub;
 import graphql.execution.ExecutionContext;
+import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLTypeUtil;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Static analysis of a GraphQL document, used by the query-cost guards to reject expensive documents before execution.
@@ -49,6 +55,14 @@ import java.util.Map;
  */
 final class QueryCostCalculator {
 
+    /** Input types whose items are nodes. */
+    private static final Set<String> NODE_INPUT_TYPES = new HashSet<>(
+            Arrays.asList("InputJCRNode", "InputJCRNodeWithParent", "InputCarriedJCRNode"));
+    /** Argument naming the nodes a mutation targets. */
+    private static final String NODE_PATHS_ARGUMENT = "pathsOrIds";
+    /** Field under which a node input nests further nodes. */
+    private static final String NESTED_NODES_FIELD = "children";
+
     private QueryCostCalculator() {
     }
 
@@ -64,11 +78,12 @@ final class QueryCostCalculator {
     /**
      * Measures an operation.
      *
-     * @param traverser traverser over the operation being analysed
+     * @param traverser     traverser over the operation being analysed
+     * @param batchCeiling  batch size above which the count may stop, 0 to skip measuring it
      * @return the measured cost
      */
-    static QueryCost calculate(QueryTraverser traverser) {
-        Measurement measurement = new Measurement();
+    static QueryCost calculate(QueryTraverser traverser, int batchCeiling) {
+        Measurement measurement = new Measurement(batchCeiling);
         // Pre-order, so that a field is always measured after the parent it hangs off: that makes its depth one step
         // from the parent's rather than a walk back up to the root, which keeps the analysis linear in the size of the
         // document. Pre-order also skips fields excluded by @skip/@include, which are never going to execute.
@@ -143,15 +158,22 @@ final class QueryCostCalculator {
     private static final class Measurement {
 
         private final Map<QueryVisitorFieldEnvironment, Integer> depthByField = new IdentityHashMap<>();
+        private final int batchCeiling;
 
         private int complexity;
         private int depth;
         private int batchSize;
 
+        private Measurement(int batchCeiling) {
+            this.batchCeiling = batchCeiling;
+        }
+
         private void measure(QueryVisitorFieldEnvironment env) {
             complexity++;
             depth = Math.max(depth, depthOf(env));
-            batchSize += enumeratedItems(env);
+            if (batchCeiling > 0 && batchSize <= batchCeiling) {
+                batchSize += nodeItems(env);
+            }
         }
 
         private QueryCost result() {
@@ -159,41 +181,59 @@ final class QueryCostCalculator {
         }
 
         /**
-         * How many items this field was handed in its arguments. Only list arguments count, and only their own length -
-         * the items are input values rather than selections, so nothing recurses here. Arguments arrive coerced, so a
-         * list supplied through a variable is measured exactly like an inline one.
+         * How many nodes this field was handed in its arguments.
+         * <p>
+         * Only arguments that denote nodes count: a list of one of the node input types, or a {@code pathsOrIds} list.
+         * Lists of anything else - property values, mixin names, role names, languages - are cardinality of a different
+         * kind and must not consume a node allowance. Arguments arrive coerced, so a list passed in a variable is
+         * measured like an inline one.
          */
-        private static int enumeratedItems(QueryVisitorFieldEnvironment env) {
+        private int nodeItems(QueryVisitorFieldEnvironment env) {
+            GraphQLFieldDefinition field = env.getFieldDefinition();
+            if (field == null) {
+                return 0;
+            }
             int items = 0;
-            for (Object argument : env.getArguments().values()) {
-                items += countItems(argument);
+            for (Map.Entry<String, Object> argument : env.getArguments().entrySet()) {
+                GraphQLArgument definition = field.getArgument(argument.getKey());
+                if (definition == null) {
+                    continue;
+                }
+                String type = GraphQLTypeUtil.unwrapAll(definition.getType()).getName();
+                if (NODE_INPUT_TYPES.contains(type)) {
+                    items += countNodes(argument.getValue());
+                } else if (NODE_PATHS_ARGUMENT.equals(argument.getKey()) && argument.getValue() instanceof Collection) {
+                    items += ((Collection<?>) argument.getValue()).size();
+                }
             }
             return items;
         }
 
         /**
-         * Counts every item an argument value carries, descending through nested input objects rather than stopping at
-         * the outermost list. Nesting has to be followed because an input type can hold a list of itself - {@code
-         * InputJCRNode.children} is a list of {@code InputJCRNode} - so one outer item can describe an arbitrarily large
-         * tree of nodes to create, and counting only the outer list would score that as a single item however much work
-         * it asks for.
+         * Counts a node-input value and the nodes nested under it. Iterative, and stops once the running total is past
+         * the ceiling: a node input holds a list of itself, so the nesting an argument can carry is caller-controlled and
+         * recursion here would be a stack-depth risk on a request that is going to be rejected anyway.
          */
-        private static int countItems(Object value) {
-            if (value instanceof Collection) {
-                int items = ((Collection<?>) value).size();
-                for (Object element : (Collection<?>) value) {
-                    items += countItems(element);
+        private int countNodes(Object value) {
+            int items = 0;
+            Deque<Object> pending = new ArrayDeque<>();
+            pending.push(value);
+            while (!pending.isEmpty() && items <= batchCeiling) {
+                Object current = pending.pop();
+                if (current instanceof Collection) {
+                    Collection<?> nodes = (Collection<?>) current;
+                    items += nodes.size();
+                    for (Object node : nodes) {
+                        pending.push(node);
+                    }
+                } else if (current instanceof Map) {
+                    Object children = ((Map<?, ?>) current).get(NESTED_NODES_FIELD);
+                    if (children != null) {
+                        pending.push(children);
+                    }
                 }
-                return items;
             }
-            if (value instanceof Map) {
-                int items = 0;
-                for (Object element : ((Map<?, ?>) value).values()) {
-                    items += countItems(element);
-                }
-                return items;
-            }
-            return 0;
+            return items;
         }
 
         private int depthOf(QueryVisitorFieldEnvironment env) {

@@ -186,7 +186,8 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
             QueryManagerWrapper queryManager = getSession().getWorkspace().getQueryManager();
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
             if (effectiveLimit != null) {
-                q.setLimit(effectiveLimit.longValue());
+                // One more than the bound, so that reaching it can be told apart from matching it exactly.
+                q.setLimit(effectiveLimit.longValue() + 1);
             }
             if (offset != null && offset.longValue() > 0) {
                 q.setOffset(offset.longValue());
@@ -195,16 +196,21 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
+        boolean truncated = false;
         while (nodes.hasNext()) {
+            if (effectiveLimit != null && result.size() == effectiveLimit.longValue()) {
+                truncated = true;
+                break;
+            }
             JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();
             result.add(new GqlJcrNodeMutation(node));
         }
         if (remaining != null) {
             remaining.addAndGet(-result.size());
         }
-        if (effectiveLimit != null && result.size() == effectiveLimit.longValue() && logger.isWarnEnabled()) {
-            logger.warn("mutateNodesByQuery reached its result-set bound of {} node(s); additional matching nodes, if any,"
-                    + " were not returned. Use the limit/offset arguments to page through the result set.", effectiveLimit);
+        if (truncated && logger.isWarnEnabled()) {
+            logger.warn("mutateNodesByQuery returned {} node(s) and stopped there; more matched. Use the limit/offset"
+                    + " arguments to page through the result set.", effectiveLimit);
         }
         return result;
     }

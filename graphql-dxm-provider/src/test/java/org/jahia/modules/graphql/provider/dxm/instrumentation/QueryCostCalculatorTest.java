@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit tests for {@link QueryCostCalculator}, the static analysis behind the query-cost guards.
@@ -54,8 +55,12 @@ public class QueryCostCalculatorTest {
             "input InputJCRNode { name: String children: [InputJCRNode] mixins: [String] } " +
             "type JCRMutation { addNodesBatch(nodes: [InputJCRNode]): [JCRNodeMutation] " +
             "  mutateNodes(pathsOrIds: [String]): [JCRNodeMutation] " +
-            "  mutateNode(pathOrId: String): JCRNodeMutation } " +
-            "type JCRNodeMutation { uuid: String }";
+            "  mutateNode(pathOrId: String): JCRNodeMutation } "
+            + "type JCRNodeMutation2 { x: String } " +
+            "type JCRNodeMutation { uuid: String addMixins(mixins: [String]): Boolean setValues(values: [String]): Boolean }";
+
+    /** High enough that no test is cut short by the early exit. */
+    private static final int NO_CEILING = Integer.MAX_VALUE;
 
     private static GraphQLSchema schema;
 
@@ -75,7 +80,7 @@ public class QueryCostCalculatorTest {
     }
 
     private static QueryCostCalculator.QueryCost cost(String query) {
-        return QueryCostCalculator.calculate(traverser(query, CoercedVariables.emptyVariables()));
+        return QueryCostCalculator.calculate(traverser(query, CoercedVariables.emptyVariables()), NO_CEILING);
     }
 
     private static int complexity(String query) {
@@ -91,7 +96,7 @@ public class QueryCostCalculatorTest {
     }
 
     private static int batchSize(String query, CoercedVariables variables) {
-        return QueryCostCalculator.calculate(traverser(query, variables)).getBatchSize();
+        return QueryCostCalculator.calculate(traverser(query, variables), NO_CEILING).getBatchSize();
     }
 
     /** Builds a mutation selecting {@code mutateNodes} under {@code aliasCount} aliases, each given {@code items} paths. */
@@ -270,6 +275,56 @@ public class QueryCostCalculatorTest {
                 Collections.singletonMap("nodes", Collections.singletonList(parent)));
         // 1 outer + 3 children
         assertEquals(4, batchSize(query, variables));
+    }
+
+    @Test
+    public void shouldNotCountListArgumentsThatDoNotDenoteNodes() {
+        // Property values, mixin names and the like are cardinality of a different kind: they must not consume a node
+        // allowance, or setting one multivalued property to many values would be refused as an oversized node batch.
+        assertEquals(0, batchSize("mutation { jcr { mutateNodes(pathsOrIds: []) { setValues(values: " +
+                stringList(4000) + ") } } }"));
+        assertEquals(0, batchSize("mutation { jcr { mutateNodes(pathsOrIds: []) { addMixins(mixins: " +
+                stringList(50) + ") } } }"));
+    }
+
+    @Test
+    public void shouldStopCountingOnceTheCeilingIsPassed() {
+        String query = "mutation { jcr { mutateNodes(pathsOrIds: " + stringList(100) + ") { uuid } } }";
+        QueryCostCalculator.QueryCost cost =
+                QueryCostCalculator.calculate(traverser(query, CoercedVariables.emptyVariables()), 10);
+        // Enough to decide the request is over, without having counted all of it.
+        assertTrue("expected the count to exceed the ceiling, got " + cost.getBatchSize(), cost.getBatchSize() > 10);
+    }
+
+    @Test
+    public void shouldNotMeasureBatchSizeWhenNoCeilingIsGiven() {
+        // What a query operation asks for: the count is skipped rather than computed and discarded.
+        String query = "mutation { jcr { mutateNodes(pathsOrIds: " + stringList(20) + ") { uuid } } }";
+        assertEquals(0, QueryCostCalculator.calculate(
+                traverser(query, CoercedVariables.emptyVariables()), 0).getBatchSize());
+    }
+
+    @Test
+    public void shouldCountDeeplyNestedNodesWithoutRecursing() {
+        // A node input holds a list of itself, so nesting depth is caller-controlled. Depth like this only arrives in a
+        // variable - the parser rejects it inline - and counting it must not use the stack.
+        Map<String, Object> node = new HashMap<>();
+        node.put("name", "leaf");
+        for (int i = 0; i < 20000; i++) {
+            Map<String, Object> parent = new HashMap<>();
+            parent.put("name", "n");
+            parent.put("children", Collections.singletonList(node));
+            node = parent;
+        }
+        CoercedVariables variables = CoercedVariables.of(
+                Collections.singletonMap("nodes", Collections.singletonList(node)));
+        String query = "mutation ($nodes: [InputJCRNode]) { jcr { addNodesBatch(nodes: $nodes) { uuid } } }";
+        assertEquals(20001, batchSize(query, variables));
+    }
+
+    /** A GraphQL list literal of {@code size} distinct strings. */
+    private static String stringList(int size) {
+        return "[" + IntStream.range(0, size).mapToObj(i -> "\"v" + i + "\"").collect(Collectors.joining(", ")) + "]";
     }
 
 }

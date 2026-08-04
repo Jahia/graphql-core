@@ -67,8 +67,10 @@ public class QueryCostInstrumentation extends SimplePerformantInstrumentation {
     @Override
     public InstrumentationContext<ExecutionResult> beginExecuteOperation(InstrumentationExecuteOperationParameters parameters, InstrumentationState state) {
         ExecutionContext executionContext = parameters.getExecutionContext();
+        // Batch size is only enforced on mutations, so only measured there: a query would pay for a count it never uses.
+        int batchCeiling = isMutation(executionContext) ? maxBatchSize : 0;
         QueryCostCalculator.QueryCost cost =
-                QueryCostCalculator.calculate(QueryCostCalculator.newTraverser(executionContext));
+                QueryCostCalculator.calculate(QueryCostCalculator.newTraverser(executionContext), batchCeiling);
         if (logger.isDebugEnabled()) {
             logger.debug("Query cost: complexity {}, depth {}, batch size {}",
                     cost.getComplexity(), cost.getDepth(), cost.getBatchSize());
@@ -81,10 +83,9 @@ public class QueryCostInstrumentation extends SimplePerformantInstrumentation {
             throw new AbortExecutionException(
                     "maximum query depth exceeded " + cost.getDepth() + " > " + maxDepth);
         }
-        // Only mutations: the bound exists because the items are things to write, accumulated in one JCR session and
-        // committed together. A query handed a list of paths to read is bounded per connection at execution time
-        // instead, and applying a write-sized budget to it here would reject reads that are cheap today.
-        if (maxBatchSize > 0 && isMutation(executionContext)) {
+        // Mutations only: the items are things to write, committed together in one JCR session. A query handed a list of
+        // paths to read is bounded per connection at execution time instead.
+        if (batchCeiling > 0) {
             if (cost.getBatchSize() > maxBatchSize) {
                 throw new AbortExecutionException(
                         "maximum mutation batch size exceeded " + cost.getBatchSize() + " > " + maxBatchSize);

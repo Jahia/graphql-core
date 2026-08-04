@@ -41,11 +41,12 @@ describe('GraphQL mutation batch bound', () => {
         }
     `;
 
-    const expectRejectedForSize = (response: any, batchSize: number) => {
-        const messages = (response?.errors ?? []).map((error: any) => error.message);
-        expect(messages.join(' | ')).to.contain(
-            `maximum mutation batch size exceeded ${batchSize} > ${shippedLimit}`
-        );
+    // The count stops once it is past the bound, so the reported figure is a lower bound rather than the full total.
+    const expectRejectedForSize = (response: any) => {
+        const messages = (response?.errors ?? []).map((error: any) => error.message).join(' | ');
+        const reported = new RegExp(`maximum mutation batch size exceeded (\\d+) > ${shippedLimit}`).exec(messages);
+        expect(reported, `expected a batch-size rejection, got: ${messages}`).to.not.be.null;
+        expect(Number(reported[1])).to.be.greaterThan(shippedLimit);
         expect(response?.data?.jcr?.mutateNodes ?? null).to.be.null;
         expect(response?.data?.jcr?.addNodesBatch ?? null).to.be.null;
     };
@@ -56,7 +57,7 @@ describe('GraphQL mutation batch bound', () => {
             variables: {paths: overSizedPaths},
             errorPolicy: 'all'
         }).then((response: any) => {
-            expectRejectedForSize(response, overSizedPaths.length);
+            expectRejectedForSize(response);
         });
     });
 
@@ -66,7 +67,7 @@ describe('GraphQL mutation batch bound', () => {
             variables: {nodes: overSizedNodes},
             errorPolicy: 'all'
         }).then((response: any) => {
-            expectRejectedForSize(response, overSizedNodes.length);
+            expectRejectedForSize(response);
             // Refused on size alone, so nothing may have been created along the way.
             cy.apollo({
                 query: gql`
@@ -107,7 +108,7 @@ describe('GraphQL mutation batch bound', () => {
             variables: {paths: Array.from({length: perAlias}, () => existingPath)},
             errorPolicy: 'all'
         }).then((response: any) => {
-            expectRejectedForSize(response, perAlias * 3);
+            expectRejectedForSize(response);
             expect(response?.data?.jcr?.a ?? null).to.be.null;
         });
     });
@@ -131,7 +132,7 @@ describe('GraphQL mutation batch bound', () => {
             variables: {nodes: nested},
             errorPolicy: 'all'
         }).then((response: any) => {
-            expectRejectedForSize(response, 3 + (3 * childrenPerNode));
+            expectRejectedForSize(response);
         });
     });
 
