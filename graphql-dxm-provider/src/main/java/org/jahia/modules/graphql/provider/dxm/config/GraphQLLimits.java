@@ -69,7 +69,6 @@ public final class GraphQLLimits {
     /**
      * Verifies that a caller-supplied batch is within the configured bound.
      * <p>
-     * Unlike {@link #resolveMutationLimit(Long)} this REJECTS rather than truncates, and the difference is deliberate.
      * A query-driven mutation never enumerated its targets, so returning fewer of them is a reasonable bound. Here the
      * caller listed the nodes explicitly, so silently operating on a prefix of that list would quietly not do what was
      * asked — a correctness problem dressed up as a limit. Failing tells the caller to split the batch instead.
@@ -100,9 +99,10 @@ public final class GraphQLLimits {
     }
 
     /**
-     * Resolves the limit for a query-driven mutation, which the pre-execution guard cannot measure - how many nodes a
-     * JCR statement matches is only known once it runs. Such a field therefore draws from what the request has left
-     * rather than from the whole allowance, so that repeating it under several aliases cannot multiply the bound.
+     * Resolves how many nodes a query-driven mutation may operate on. The pre-execution guard cannot measure it - how
+     * many nodes a JCR statement matches is only known once it runs - so the field checks the result against this and
+     * fails if more matched. It draws from what the request has left rather than from the whole allowance, so several
+     * aliased calls share one budget.
      *
      * @param requestedLimit the limit requested by the caller, may be {@code null}
      * @param remaining      the request's remaining allowance, or {@code null} when the guard is not in play

@@ -577,6 +577,9 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     // The aggregate guard runs before execution, so an oversized batch is refused with graphql-java's wording rather
     // than by the per-field backstop inside the resolver.
     private static final String BATCH_TOO_LARGE = "maximum mutation batch size exceeded %d > %d";
+    private static final String QUERY_MATCHED_TOO_MANY =
+            "This mutation matched more nodes than the maximum of %d it may operate on;"
+                    + " narrow the query, or use the limit/offset arguments.";
 
     /**
      * Runs the given assertions with the mutation batch limit temporarily set, restoring it afterwards. The limit is
@@ -642,8 +645,10 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         // Bound below the number of matching nodes: the query matches all three sub-lists, so without a bound the
         // mutation would return a handle for every one of them.
         withMutationBatchLimit(2, () -> {
-            mutateSubListTitlesByQuery("", "bounded");
-            assertTitledSubLists("bounded", SUB_LIST_1, SUB_LIST_2);
+            JSONObject result = mutateSubListTitlesByQuery("", "bounded");
+            validateError(result, String.format(QUERY_MATCHED_TOO_MANY, 2));
+            // Nothing persisted: the session is only saved when the request completes without errors.
+            assertTitledSubLists("bounded");
             return null;
         });
     }
@@ -652,8 +657,9 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     public void mutateNodesByQueryShouldCapExplicitLimitToConfiguredMutationBatchLimit() throws Exception {
         // An explicit limit argument is honoured, but may not raise the result set above the configured bound.
         withMutationBatchLimit(1, () -> {
-            mutateSubListTitlesByQuery(",limit:3", "capped");
-            assertTitledSubLists("capped", SUB_LIST_1);
+            JSONObject result = mutateSubListTitlesByQuery(",limit:3", "capped");
+            validateError(result, String.format(QUERY_MATCHED_TOO_MANY, 1));
+            assertTitledSubLists("capped");
             return null;
         });
     }
@@ -694,18 +700,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                     "    }\n" +
                     "  }\n" +
                     "}\n");
-            // The first alias consumes the whole allowance of 2, so the second one gets nothing: exactly two of the
-            // three sub-lists may end up titled, never all three.
-            inJcr(session -> {
-                int titled = 0;
-                for (String path : Arrays.asList(SUB_LIST_1, SUB_LIST_2, SUB_LIST_3)) {
-                    if (session.getNode(path).hasProperty(TITLE)) {
-                        titled++;
-                    }
-                }
-                assertEquals("Aliased query-driven mutations must share one allowance", 2, titled);
-                return null;
-            });
+            // The first alias uses the allowance of 2, so the second is over it and the whole request fails.
+            assertTitledSubLists("first");
             return null;
         });
     }

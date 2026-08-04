@@ -22,6 +22,7 @@ import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLFieldCompleter;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.GqlLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.config.GraphQLLimits;
 import org.jahia.services.content.*;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
@@ -29,8 +30,6 @@ import org.jahia.services.importexport.DocumentViewImportHandler;
 import org.jahia.services.importexport.ReferencesHelper;
 import org.jahia.services.query.QueryWrapper;
 import org.jahia.settings.SettingsBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import java.util.*;
@@ -44,8 +43,6 @@ import java.util.stream.Collectors;
 @GraphQLName("JCRMutation")
 @GraphQLDescription("JCR Mutations")
 public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFieldCompleter {
-
-    private static final Logger logger = LoggerFactory.getLogger(GqlJcrMutation.class);
 
     private final NodeQueryExtensions.Workspace workspace;
     private boolean save = true;
@@ -161,7 +158,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
      *
      * @param query         the query to retrieve the nodes to be modified
      * @param queryLanguage the query language
-     * @param limit         the maximum size of the result set, capped by the configured mutation batch limit
+     * @param limit         the maximum size of the result set; the request fails if more nodes match
      * @param offset        the start offset of the result set
      * @return a collection of mutation objects
      * @throws BaseGqlClientException in case of node retrieval errors
@@ -196,21 +193,18 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
-        boolean truncated = false;
         while (nodes.hasNext()) {
             if (effectiveLimit != null && result.size() == effectiveLimit.longValue()) {
-                truncated = true;
-                break;
+                // Over the bound: fail rather than mutate a subset. Nothing is persisted, because the session is only
+                // saved once the whole request completes without errors.
+                throw new GqlLimitExceededException("This mutation matched more nodes than the maximum of "
+                        + effectiveLimit + " it may operate on; narrow the query, or use the limit/offset arguments.");
             }
             JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();
             result.add(new GqlJcrNodeMutation(node));
         }
         if (remaining != null) {
             remaining.addAndGet(-result.size());
-        }
-        if (truncated && logger.isWarnEnabled()) {
-            logger.warn("mutateNodesByQuery returned {} node(s) and stopped there; more matched. Use the limit/offset"
-                    + " arguments to page through the result set.", effectiveLimit);
         }
         return result;
     }
