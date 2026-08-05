@@ -30,6 +30,8 @@ import org.jahia.services.render.filter.cache.ModuleCacheProvider;
 import org.jahia.services.tags.TaggingService;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
@@ -37,7 +39,9 @@ import javax.jcr.query.Query;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * GraphQL-facing OSGi service that orchestrates tag mutation operations (rename and delete)
@@ -73,6 +77,8 @@ import java.util.List;
  */
 @Component(service = TagManagerMutationService.class, immediate = true)
 public class TagManagerMutationService {
+    private static final Logger logger = LoggerFactory.getLogger(TagManagerMutationService.class);
+
     private static final List<String> WORKSPACES = Arrays.asList(Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE);
 
     /** Right the caller must hold on a node for its tag list to be rewritten. */
@@ -144,19 +150,22 @@ public class TagManagerMutationService {
      * <p>The writes stay on a system session — the {@code live} copy is updated in the same pass, and
      * the caller is not expected to hold live write rights — so every candidate node is checked
      * against the caller's own view of it before it is touched (see
-     * {@link #isModifiableByCaller(JCRSessionWrapper, String)}).
+     * {@link #isModifiableByCaller(JCRSessionWrapper, String)}). The verdict depends only on the
+     * identifier and the caller's session, both of which are the same for the two workspace passes,
+     * so it is computed once per node and reused.
      */
     private GqlTagMutationResult applyUnderSite(String siteKey, String tag, String newName) {
         String sitePath = "/sites/" + siteKey;
         try {
             JCRSessionWrapper callerSession = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
+            Map<String, Boolean> modifiableByCaller = new HashMap<>();
             List<GqlTagWorkspaceMutationResult> results = new ArrayList<>();
 
             JCRObservationManager.setAllEventListenersDisabled(Boolean.TRUE);
             try {
                 for (String workspace : WORKSPACES) {
                     JCRSessionWrapper systemSession = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
-                    results.add(applyInWorkspace(systemSession, callerSession, workspace, sitePath, tag, newName));
+                    results.add(applyInWorkspace(systemSession, callerSession, modifiableByCaller, workspace, sitePath, tag, newName));
                 }
             } finally {
                 JCRObservationManager.setAllEventListenersDisabled(Boolean.FALSE);
@@ -169,13 +178,14 @@ public class TagManagerMutationService {
     }
 
     private GqlTagWorkspaceMutationResult applyInWorkspace(JCRSessionWrapper systemSession, JCRSessionWrapper callerSession,
-                                                           String workspace, String sitePath, String tag, String newName) throws RepositoryException {
+                                                           Map<String, Boolean> modifiableByCaller, String workspace,
+                                                           String sitePath, String tag, String newName) throws RepositoryException {
         TagManagerActionCallback callback = new TagManagerActionCallback(systemSession, workspace);
         NodeIterator taggedNodes = queryTaggedNodes(systemSession, sitePath, tag);
         while (taggedNodes.hasNext()) {
             JCRNodeWrapper node = (JCRNodeWrapper) taggedNodes.nextNode();
             try {
-                if (!isModifiableByCaller(callerSession, node.getIdentifier())) {
+                if (!modifiableByCaller.computeIfAbsent(node.getIdentifier(), id -> isModifiableByCaller(callerSession, id))) {
                     callback.onSkipped();
                     continue;
                 }
@@ -361,6 +371,11 @@ public class TagManagerMutationService {
         try {
             return callerSession.getNodeByIdentifier(nodeIdentifier).hasPermission(MODIFY_PROPERTIES_PERMISSION);
         } catch (RepositoryException e) {
+            // Resolving an identifier walks every store provider and reports whatever went wrong as a
+            // missing item, so an access decision and an infrastructure failure both land here. The
+            // answer stays fail-closed either way, but the reason has to be recoverable: the node is
+            // left untouched and only counted, never named, in the result payload.
+            logger.debug("Node {} left untouched: the caller's session cannot resolve it", nodeIdentifier, e);
             return false;
         }
     }
@@ -373,8 +388,19 @@ public class TagManagerMutationService {
         }
     }
 
+    /**
+     * Rejects a replacement tag name that would end up empty once written.
+     *
+     * <p>Both the raw argument and its normalized form are checked: {@link TaggingService} runs the
+     * configured {@code TagHandler} on the value it stores, and that strategy is replaceable — a
+     * sanitizing implementation can reduce a non-blank argument to nothing, which would otherwise be
+     * written as an empty tag.
+     *
+     * @param newName the replacement tag value
+     * @throws GqlJcrWrongInputException if the value is blank, or normalizes to nothing
+     */
     private void ensureMutationTagName(String newName) {
-        if (StringUtils.isBlank(newName)) {
+        if (StringUtils.isBlank(newName) || StringUtils.isBlank(taggingService.getTagHandler().execute(newName))) {
             throw new GqlJcrWrongInputException("Argument 'newName' can't be empty");
         }
     }
