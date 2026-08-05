@@ -10,6 +10,7 @@ import {grantUserRole, revokeUserRole} from '../../fixtures/acl';
  *  - Dual-workspace propagation (EDIT + LIVE)
  *  - Authorization failures (user without tagManager permission, wrong site key)
  *  - Per-node write rights: a caller holding tagManager still only writes the nodes it may write
+ *  - Candidate selection: a tag carrying a quote is matched by the same rule as on the read side
  */
 describe('Tag Manager GraphQL API', () => {
     const siteKey = 'tagManagerTestSite';
@@ -200,6 +201,42 @@ describe('Tag Manager GraphQL API', () => {
                 const names = result.data.admin.jahia.tagManager.tags.nodes.map((t: any) => t.name);
                 expect(names).to.not.include('beta');
                 expect(names).to.include('beta-renamed');
+            });
+        });
+
+        // The candidate nodes are selected by binding the tag as a query parameter, the same way the
+        // read side does, so a tag carrying a quote is matched by one rule on both sides.
+        it('renames a tag containing a quote on all nodes that carry it', () => {
+            const quotedTag = 'o\'brien';
+
+            addNode({
+                parentPathOrId: `/sites/${siteKey}/contents`,
+                name: 'quotedTagNode',
+                primaryNodeType: 'jnt:contentList',
+                mixins: ['jmix:tagged'],
+                properties: [
+                    {name: 'j:tagList', values: [quotedTag], type: 'STRING'}
+                ]
+            });
+
+            cy.apollo({
+                mutationFile: 'tagManager/renameTag.graphql',
+                variables: {siteKey, tag: quotedTag, newName: 'obrien-renamed'}
+            }).should((result: any) => {
+                const workspaceResults = result.data.admin.jahia.tagManager.renameTag.workspaceResults;
+                // eslint-disable-next-line max-nested-callbacks
+                const editResult = workspaceResults.find((wsResult: any) => wsResult.workspace === 'default');
+                expect(editResult.processedCount, 'the quoted tag selects its node').to.equal(1);
+                expect(editResult.failedCount).to.equal(0);
+            });
+
+            cy.apollo({
+                queryFile: 'tagManager/getTaggedContent.graphql',
+                variables: {siteKey, tag: 'obrien-renamed'}
+            }).should((result: any) => {
+                // eslint-disable-next-line max-nested-callbacks
+                const paths = result.data.admin.jahia.tagManager.taggedContent.nodes.map((node: any) => node.path);
+                expect(paths).to.include(`/sites/${siteKey}/contents/quotedTagNode`);
             });
         });
 
