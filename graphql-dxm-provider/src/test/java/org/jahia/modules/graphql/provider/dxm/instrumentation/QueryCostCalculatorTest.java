@@ -55,9 +55,13 @@ public class QueryCostCalculatorTest {
             "input InputJCRNode { name: String children: [InputJCRNode] mixins: [String] } " +
             "type JCRMutation { addNodesBatch(nodes: [InputJCRNode]): [JCRNodeMutation] " +
             "  mutateNodes(pathsOrIds: [String]): [JCRNodeMutation] " +
+            "  mutateVanityUrls(pathsOrIds: [String]!): [VanityUrlMutation]! " +
             "  mutateNode(pathOrId: String): JCRNodeMutation } "
             + "type JCRNodeMutation2 { x: String } " +
-            "type JCRNodeMutation { uuid: String addMixins(mixins: [String]): Boolean setValues(values: [String]): Boolean }";
+            "type VanityUrlMutation { uuid: String } " +
+            "type ZipFileMutation { addToZip(pathsOrIds: [String]!): Boolean } " +
+            "type JCRNodeMutation { uuid: String zip: ZipFileMutation " +
+            "  addMixins(mixins: [String]): Boolean setValues(values: [String]): Boolean }";
 
     /** High enough that no test is cut short by the early exit. */
     private static final int NO_CEILING = Integer.MAX_VALUE;
@@ -285,6 +289,35 @@ public class QueryCostCalculatorTest {
                 stringList(4000) + ") } } }"));
         assertEquals(0, batchSize("mutation { jcr { mutateNodes(pathsOrIds: []) { addMixins(mixins: " +
                 stringList(50) + ") } } }"));
+    }
+
+    @Test
+    public void shouldCountAPathListOnEveryFieldThatBatchesOverIt() {
+        // mutateNodes is not the only field handed a list of nodes to act on one by one: mutateVanityUrls is another,
+        // extension providers contribute more, and each yields one mutation object per path. What they have in common is
+        // the pair - a pathsOrIds list, and a list of mutations as their own type - so that is what is matched, rather
+        // than a set of field names this class would have to be told about.
+        assertEquals(3, batchSize("mutation { jcr { mutateVanityUrls(pathsOrIds: [\"/a\", \"/b\", \"/c\"]) { uuid } } }"));
+        // The non-null wrappers on that field are part of the point: a batch is a batch however its type is qualified.
+    }
+
+    @Test
+    public void shouldShareOneAllowanceAcrossDifferentBatchFields() {
+        assertEquals(5, batchSize("mutation { jcr { " +
+                "mutateNodes(pathsOrIds: [\"/a\", \"/b\"]) { uuid } " +
+                "mutateVanityUrls(pathsOrIds: [\"/c\", \"/d\", \"/e\"]) { uuid } } }"));
+    }
+
+    @Test
+    public void shouldNotCountAPathListOnAFieldThatProducesOneResultFromTheWholeSet() {
+        // addToZip takes the same argument name to write a single archive: its cardinality is one whatever it is handed,
+        // so it has no node batch to size and must not consume a node allowance. Its own type is what says so - a scalar
+        // rather than a list of mutations - and a request adding many files to an archive stays within the bound.
+        assertEquals(0, batchSize("mutation { jcr { mutateNode(pathOrId: \"/a\") { zip { addToZip(pathsOrIds: " +
+                stringList(4000) + ") } } } }"));
+        // The node the archive itself hangs off is still counted where it is named as a batch.
+        assertEquals(2, batchSize("mutation { jcr { mutateNodes(pathsOrIds: [\"/a\", \"/b\"]) " +
+                "{ zip { addToZip(pathsOrIds: " + stringList(4000) + ") } } } }"));
     }
 
     @Test

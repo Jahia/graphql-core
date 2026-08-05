@@ -183,10 +183,10 @@ final class QueryCostCalculator {
         /**
          * How many nodes this field was handed in its arguments.
          * <p>
-         * Only arguments that denote nodes count: a list of one of the node input types, or a {@code pathsOrIds} list.
-         * Lists of anything else - property values, mixin names, role names, languages - are cardinality of a different
-         * kind and must not consume a node allowance. Arguments arrive coerced, so a list passed in a variable is
-         * measured like an inline one.
+         * Only arguments that denote nodes count: a list of one of the node input types, or a {@code pathsOrIds} list on
+         * a field that batches over it. Lists of anything else - property values, mixin names, role names, languages -
+         * are cardinality of a different kind and must not consume a node allowance. Arguments arrive coerced, so a list
+         * passed in a variable is measured like an inline one.
          */
         private int nodeItems(QueryVisitorFieldEnvironment env) {
             GraphQLFieldDefinition field = env.getFieldDefinition();
@@ -202,11 +202,26 @@ final class QueryCostCalculator {
                 String type = GraphQLTypeUtil.unwrapAll(definition.getType()).getName();
                 if (NODE_INPUT_TYPES.contains(type)) {
                     items += countNodes(argument.getValue());
-                } else if (NODE_PATHS_ARGUMENT.equals(argument.getKey()) && argument.getValue() instanceof Collection) {
+                } else if (isNodeBatch(field, argument.getKey()) && argument.getValue() instanceof Collection) {
                     items += ((Collection<?>) argument.getValue()).size();
                 }
             }
             return items;
+        }
+
+        /**
+         * Whether an argument hands a field the nodes it will operate on one at a time.
+         * <p>
+         * A batch mutation names its targets in a {@code pathsOrIds} list and yields one mutation object per target, so
+         * its own type is a list. That pairing is what tells it apart from a field taking the same argument to produce a
+         * single result out of the whole set - the archive a set of files is added to, say - whose cardinality is one
+         * however many paths it is given, and which therefore has no node batch to size. Matching on the pair rather
+         * than on a set of field names also keeps the measure open to the batch mutations that extension providers add
+         * to this schema, which are named here in no list this class could hold.
+         */
+        private boolean isNodeBatch(GraphQLFieldDefinition field, String argumentName) {
+            return NODE_PATHS_ARGUMENT.equals(argumentName)
+                    && GraphQLTypeUtil.isList(GraphQLTypeUtil.unwrapNonNull(field.getType()));
         }
 
         /**
