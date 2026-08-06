@@ -17,6 +17,9 @@ package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
 import graphql.ExecutionResult;
 import graphql.execution.AbortExecutionException;
+import graphql.execution.ExecutionContext;
+import graphql.language.OperationDefinition;
+import org.jahia.modules.graphql.provider.dxm.config.GraphQLLimits;
 import graphql.execution.instrumentation.InstrumentationContext;
 import graphql.execution.instrumentation.InstrumentationState;
 import graphql.execution.instrumentation.SimpleInstrumentationContext;
@@ -24,6 +27,8 @@ import graphql.execution.instrumentation.SimplePerformantInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecuteOperationParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Aborts execution when a document is too expensive, along either of the dimensions {@link QueryCostCalculator}
@@ -45,22 +50,30 @@ public class QueryCostInstrumentation extends SimplePerformantInstrumentation {
 
     private final int maxComplexity;
     private final int maxDepth;
+    private final int maxBatchSize;
 
     /**
      * @param maxComplexity maximum number of selected fields, 0 to disable that check
      * @param maxDepth      maximum nesting depth, 0 to disable that check
+     * @param maxBatchSize  maximum number of items a mutation may be handed in list arguments across the whole
+     *                      document, 0 to disable that check
      */
-    public QueryCostInstrumentation(int maxComplexity, int maxDepth) {
+    public QueryCostInstrumentation(int maxComplexity, int maxDepth, int maxBatchSize) {
         this.maxComplexity = maxComplexity;
         this.maxDepth = maxDepth;
+        this.maxBatchSize = maxBatchSize;
     }
 
     @Override
     public InstrumentationContext<ExecutionResult> beginExecuteOperation(InstrumentationExecuteOperationParameters parameters, InstrumentationState state) {
+        ExecutionContext executionContext = parameters.getExecutionContext();
+        // Batch size is only enforced on mutations, so only measured there: a query would pay for a count it never uses.
+        int batchCeiling = isMutation(executionContext) ? maxBatchSize : 0;
         QueryCostCalculator.QueryCost cost =
-                QueryCostCalculator.calculate(QueryCostCalculator.newTraverser(parameters.getExecutionContext()));
+                QueryCostCalculator.calculate(QueryCostCalculator.newTraverser(executionContext), batchCeiling);
         if (logger.isDebugEnabled()) {
-            logger.debug("Query cost: complexity {}, depth {}", cost.getComplexity(), cost.getDepth());
+            logger.debug("Query cost: complexity {}, depth {}, batch size {}",
+                    cost.getComplexity(), cost.getDepth(), cost.getBatchSize());
         }
         if (maxComplexity > 0 && cost.getComplexity() > maxComplexity) {
             throw new AbortExecutionException(
@@ -70,6 +83,23 @@ public class QueryCostInstrumentation extends SimplePerformantInstrumentation {
             throw new AbortExecutionException(
                     "maximum query depth exceeded " + cost.getDepth() + " > " + maxDepth);
         }
+        // Mutations only: the items are things to write, committed together in one JCR session. A query handed a list of
+        // paths to read is bounded per connection at execution time instead.
+        if (batchCeiling > 0) {
+            if (cost.getBatchSize() > maxBatchSize) {
+                throw new AbortExecutionException(
+                        "maximum mutation batch size exceeded " + cost.getBatchSize() + " > " + maxBatchSize);
+            }
+            // Hand the rest of the allowance to the fields whose cardinality could not be measured here, so that a
+            // query-driven mutation draws from what this request has left instead of from the full limit each time.
+            executionContext.getGraphQLContext().put(GraphQLLimits.REMAINING_BATCH_ALLOWANCE,
+                    new AtomicInteger(maxBatchSize - cost.getBatchSize()));
+        }
         return SimpleInstrumentationContext.noOp();
+    }
+
+    private static boolean isMutation(ExecutionContext executionContext) {
+        OperationDefinition operation = executionContext.getOperationDefinition();
+        return operation != null && OperationDefinition.Operation.MUTATION.equals(operation.getOperation());
     }
 }
