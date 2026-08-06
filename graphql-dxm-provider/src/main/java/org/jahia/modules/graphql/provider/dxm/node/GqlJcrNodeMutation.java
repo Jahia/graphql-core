@@ -554,10 +554,14 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     }
 
     @GraphQLField
-    @GraphQLDescription("Create new version for the node if the node supports versioning (removed)")
+    @GraphQLDescription("No longer creates a version, always returns false")
     @GraphQLDeprecate("Use content-versioning module instead. Versions are now managed through the content-versioning module (Jahia 8.2.4.0+).")
-    public boolean createVersion() throws DataFetchingException {
-        throw new DataFetchingException("Version creation is not supported. Use the content-versioning module for version management.");
+    public boolean createVersion() {
+        // Kept as an inert no-op rather than removed or made to fail: this provider discards every write of a
+        // mutation that produced an error (see JahiaMutationExecutionStrategy#completeField), so raising here would
+        // drop the sibling fields of any caller still selecting it. False is what this field already returned when
+        // versioning was unavailable, so no caller regresses.
+        return false;
     }
 
     private void validateChildNamesToReorder(List<String> names, ReorderedChildrenPosition position) {

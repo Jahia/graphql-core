@@ -2265,7 +2265,7 @@ type JCRNodeMutation {
     ): [VanityUrlMappingMutation]
     "Unlock all nodes under the specified node"
     clearAllLocks: Boolean
-    "Create new version for the node if the node supports versioning"
+    "No longer creates a version, always returns false"
     createVersion: Boolean @deprecated(reason: "Use content-versioning module instead. Versions are now managed through the content-versioning module (Jahia 8.2.4.0+).")
     "Add wip information"
     createWipInfo(
