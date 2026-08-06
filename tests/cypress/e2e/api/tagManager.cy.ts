@@ -250,6 +250,31 @@ describe('Tag Manager GraphQL API', () => {
             });
         });
 
+        // The stored value is one tag per segment of the separator, each normalized on its own, so a name
+        // that is non-blank as a whole can still store an empty tag — or no tag at all, which would drop
+        // the renamed tag with nothing in its place.
+        for (const newName of [' , ', ',']) {
+            it(`returns an error when newName yields no usable tag (${JSON.stringify(newName)})`, () => {
+                cy.apollo({
+                    mutationFile: 'tagManager/renameTag.graphql',
+                    variables: {siteKey, tag: 'alpha', newName},
+                    errorPolicy: 'all'
+                }).should((result: any) => {
+                    expect(result.errors, 'the mutation is refused').to.exist.and.not.be.empty;
+                });
+
+                // As root: 'alpha' is still there, so nothing was renamed away
+                cy.apollo({
+                    queryFile: 'tagManager/getTags.graphql',
+                    variables: {siteKey}
+                }).should((result: any) => {
+                    // eslint-disable-next-line max-nested-callbacks
+                    const names = result.data.admin.jahia.tagManager.tags.nodes.map((t: any) => t.name);
+                    expect(names).to.include('alpha');
+                });
+            });
+        }
+
         it('denies bulk rename for a user without tagManager permission', () => {
             cy.apolloClient({username: unauthorizedUser, password})
                 .apollo({

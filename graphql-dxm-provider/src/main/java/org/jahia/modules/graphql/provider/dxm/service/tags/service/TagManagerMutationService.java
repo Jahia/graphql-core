@@ -26,6 +26,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRObservationManager;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.services.render.filter.cache.ModuleCacheProvider;
 import org.jahia.services.tags.TaggingService;
 import org.osgi.service.component.annotations.Component;
@@ -33,15 +34,21 @@ import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.AccessDeniedException;
+import javax.jcr.ItemNotFoundException;
 import javax.jcr.NodeIterator;
+import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.query.Query;
+import javax.jcr.security.Privilege;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * GraphQL-facing OSGi service that orchestrates tag mutation operations (rename and delete)
@@ -81,8 +88,15 @@ public class TagManagerMutationService {
 
     private static final List<String> WORKSPACES = Arrays.asList(Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE);
 
-    /** Right the caller must hold on a node for its tag list to be rewritten. */
-    private static final String MODIFY_PROPERTIES_PERMISSION = "jcr:modifyProperties";
+    /**
+     * Right the caller must hold on a node for its tag list to be rewritten. The JCR constant carries the
+     * expanded form; the privilege registry expands the prefixed form to the same key before looking it up,
+     * so both spellings resolve identically.
+     */
+    private static final String MODIFY_PROPERTIES_PERMISSION = Privilege.JCR_MODIFY_PROPERTIES;
+
+    /** Selector option of {@code j:tagList} that decides how a tag value is split — the source core reads. */
+    private static final String TAG_SEPARATOR_OPTION = "separator";
 
     /**
      * Maximum number of failure paths included in a single response payload.
@@ -372,12 +386,29 @@ public class TagManagerMutationService {
             return callerSession.getNodeByIdentifier(nodeIdentifier).hasPermission(MODIFY_PROPERTIES_PERMISSION);
         } catch (RepositoryException e) {
             // Resolving an identifier walks every store provider and reports whatever went wrong as a
-            // missing item, so an access decision and an infrastructure failure both land here. The
-            // answer stays fail-closed either way, but the reason has to be recoverable: the node is
-            // left untouched and only counted, never named, in the result payload.
-            logger.debug("Node {} left untouched: the caller's session cannot resolve it", nodeIdentifier, e);
+            // missing item, so the exception TYPE cannot separate an access decision from an
+            // infrastructure failure — only the cause can: a node that is simply absent or unreadable
+            // arrives with no cause (or a missing-item one), while a provider that broke arrives wrapped.
+            // The answer stays fail-closed either way, but a bulk run reporting "30 failed" must not
+            // hide a store outage at DEBUG, since the paths are deliberately not reported.
+            if (isExpectedAbsence(e.getCause())) {
+                logger.debug("Node {} left untouched: the caller's session cannot resolve it", nodeIdentifier, e);
+            } else {
+                logger.warn("Node {} left untouched: resolving it in the caller's session failed unexpectedly", nodeIdentifier, e);
+            }
             return false;
         }
+    }
+
+    /**
+     * Reports whether a wrapped resolution failure is the ordinary "the caller cannot see this node" case
+     * rather than something that went wrong underneath it.
+     */
+    private static boolean isExpectedAbsence(Throwable cause) {
+        return cause == null
+                || cause instanceof ItemNotFoundException
+                || cause instanceof PathNotFoundException
+                || cause instanceof AccessDeniedException;
     }
 
     private void validateNodeBelongsToSite(JCRSessionWrapper session, String nodeId, String sitePath) throws RepositoryException {
@@ -391,17 +422,49 @@ public class TagManagerMutationService {
     /**
      * Rejects a replacement tag name that would end up empty once written.
      *
-     * <p>Both the raw argument and its normalized form are checked: {@link TaggingService} runs the
-     * configured {@code TagHandler} on the value it stores, and that strategy is replaceable — a
-     * sanitizing implementation can reduce a non-blank argument to nothing, which would otherwise be
-     * written as an empty tag.
+     * <p>The check is made on the values that actually reach {@code j:tagList}, not on the argument:
+     * {@link TaggingService} splits the replacement on the property's own separator and runs the
+     * configured {@code TagHandler} on each segment, so inspecting the whole string lets two shapes
+     * through — one that stores an empty tag value, and one whose segment list comes out empty, which
+     * drops the renamed tag with no replacement. Both are what this guard exists to prevent.
      *
      * @param newName the replacement tag value
-     * @throws GqlJcrWrongInputException if the value is blank, or normalizes to nothing
+     * @throws GqlJcrWrongInputException if the value is blank, or yields no usable tag once stored
      */
     private void ensureMutationTagName(String newName) {
-        if (StringUtils.isBlank(newName) || StringUtils.isBlank(taggingService.getTagHandler().execute(newName))) {
+        if (StringUtils.isBlank(newName)) {
             throw new GqlJcrWrongInputException("Argument 'newName' can't be empty");
+        }
+        List<String> storedValues = storedTagValues(newName);
+        if (storedValues.isEmpty() || storedValues.stream().anyMatch(StringUtils::isBlank)) {
+            throw new GqlJcrWrongInputException("Argument 'newName' can't be empty");
+        }
+    }
+
+    /**
+     * Values the replacement name will be stored as, derived the way {@link TaggingService} derives them:
+     * split on the {@code j:tagList} separator, each segment run through the configured tag handler.
+     */
+    private List<String> storedTagValues(String newName) {
+        String separator = tagSeparator();
+        String[] segments = separator != null ? newName.split(separator) : new String[] { newName };
+        return Arrays.stream(segments)
+                .map(segment -> taggingService.getTagHandler().execute(segment))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Separator declared on the {@code j:tagList} property definition, read from the same selector option
+     * {@link TaggingService} reads at startup. A repository without the mixin yields {@code null}, which
+     * means "no split", matching how the tagging service behaves when the option is absent.
+     */
+    private String tagSeparator() {
+        try {
+            return NodeTypeRegistry.getInstance().getNodeType(TaggingService.JMIX_TAGGED)
+                    .getPropertyDefinition(TaggingService.J_TAG_LIST).getSelectorOptions().get(TAG_SEPARATOR_OPTION);
+        } catch (NoSuchNodeTypeException e) {
+            logger.debug("Node type {} is not registered, so no tag separator applies", TaggingService.JMIX_TAGGED, e);
+            return null;
         }
     }
 }
