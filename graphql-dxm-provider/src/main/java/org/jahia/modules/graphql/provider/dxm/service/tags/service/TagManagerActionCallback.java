@@ -48,6 +48,14 @@ class TagManagerActionCallback implements TagActionCallback<GqlTagWorkspaceMutat
         TagManagerMutationService.flushNodeCaches(node.getPath());
     }
 
+    /**
+     * Counts a node that was left untouched because the caller may not write it. The path is
+     * deliberately not reported: the caller has no right to read it either.
+     */
+    void onSkipped() {
+        failedCount++;
+    }
+
     @Override
     public void onError(JCRNodeWrapper node, RepositoryException e) throws RepositoryException {
         failedCount++;
