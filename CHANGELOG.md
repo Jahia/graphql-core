@@ -1,5 +1,19 @@
 # graphql-core Changelog
 
+## 3.9.0
+
+### New Features
+
+* Mutations that operate on many nodes at once are now bounded by a dedicated configuration property, `graphql.mutation.batch.limit` (default `5000`, `0` disables), read only from the default configuration file so a non-default configuration cannot loosen it.
+
+  **Are you affected?** Only if a single request operates on more than 5000 nodes. Such a request now fails rather than being applied to a subset, and nothing is persisted. Split the work into smaller requests, using `limit`/`offset` for `mutateNodesByQuery`, or raise the property in `org.jahia.modules.graphql.provider-default.cfg`.
+
+### Bug Fixes
+
+* Tag Manager mutations now only write the nodes the caller has rights on, and refuse a replacement tag name that would be stored as an empty tag or as no tag at all. Note one consequence of the per-node scoping: a site-wide rename or delete no longer touches a node that exists only in the live workspace — published, then removed from the edit workspace — so tags left on such nodes are no longer swept by these mutations
+
+* SDL finder arguments are now consistently treated as literal values when they are placed into the generated JCR-SQL2 query, across the String, weak-reference and date finders. A value containing an apostrophe is matched as exactly the text it contains, an empty value is accepted where it previously failed, and an argument passed explicitly as null is treated as absent rather than as a value to match on.
+
 ## 3.8.1
 
 ### New Features
