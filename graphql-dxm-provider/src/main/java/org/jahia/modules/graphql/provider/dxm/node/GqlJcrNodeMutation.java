@@ -18,7 +18,6 @@ package org.jahia.modules.graphql.provider.dxm.node;
 import graphql.annotations.annotationTypes.*;
 import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.time.FastDateFormat;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.acl.service.JahiaAclService;
@@ -29,13 +28,10 @@ import org.jahia.modules.graphql.provider.dxm.user.PrincipalType;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.JCRVersionService;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 
 import javax.inject.Inject;
-import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
-import javax.jcr.version.VersionManager;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -558,31 +554,13 @@ public class GqlJcrNodeMutation extends GqlJcrMutationSupport {
     }
 
     @GraphQLField
-    @GraphQLDescription("Create new version for the node if the node supports versioning")
-    public boolean createVersion() throws DataFetchingException {
-        FastDateFormat DF = FastDateFormat.getInstance("yyyy_MM_dd_HH_mm_ss");
-        JCRVersionService versionService = JCRVersionService.getInstance();
-
-        try {
-            boolean supportVersioning = jcrNode.getProvider().getRepository().getDescriptorValue(Repository.OPTION_VERSIONING_SUPPORTED).getBoolean();
-            if(supportVersioning) {
-                JCRSessionWrapper session = jcrNode.getSession();
-                session.save();
-                VersionManager versionManager = session.getWorkspace().getVersionManager();
-                String label = "uploaded_at_" + DF.format(jcrNode.getProperty("jcr:lastModified").getDate().getTime().getTime());
-                if (!jcrNode.isVersioned()) {
-                    jcrNode.versionFile();
-                    session.save();
-                }
-                versionManager.checkout(jcrNode.getPath());
-                session.getWorkspace().getVersionManager().checkpoint(jcrNode.getPath());
-                versionService.addVersionLabel(jcrNode, label);
-                return true;
-            }
-        } catch (RepositoryException e) {
-            throw new DataFetchingException(e);
-        }
-
+    @GraphQLDescription("No longer creates a version, always returns false")
+    @GraphQLDeprecate("Use content-versioning module instead. Versions are now managed through the content-versioning module (Jahia 8.2.4.0+).")
+    public boolean createVersion() {
+        // Kept as an inert no-op rather than removed or made to fail: this provider discards every write of a
+        // mutation that produced an error (see JahiaMutationExecutionStrategy#completeField), so raising here would
+        // drop the sibling fields of any caller still selecting it. False is what this field already returned when
+        // versioning was unavailable, so no caller regresses.
         return false;
     }
 
