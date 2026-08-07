@@ -45,7 +45,16 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private static final String CORS_ORIGINS = "http.cors.allow-origin";
     private static final String NODE_LIMIT = "graphql.fields.node.limit";
+    private static final String MAX_QUERY_COMPLEXITY = "graphql.query.maxComplexity";
+    private static final String MAX_QUERY_DEPTH = "graphql.query.maxDepth";
+    private static final String MUTATION_BATCH_LIMIT = "graphql.mutation.batch.limit";
     public static final String INTROSPECTION_CHECK_ENABLED = "introspectionCheckEnabled";
+
+    private static final String FACTORY_PID = "org.jahia.modules.graphql.provider";
+    private static final String DEFAULT_CONFIG_FILE_NAME = FACTORY_PID + "-default.cfg";
+    private static final String DEFAULT_CONFIG_PID = FACTORY_PID + "~default";
+
+    private static final int DEFAULT_NODE_LIMIT = 5000;
 
     private final Map<String, List<String>> keysByPid = new ConcurrentHashMap<>();
     private final Map<String, String> annotationPermissions = new ConcurrentHashMap<>();
@@ -55,9 +64,20 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private volatile Set<String> corsOrigins = new HashSet<>();
     private final  Map<String, Set<String>> corsOriginByPid = new ConcurrentHashMap<>();
     private final Map<String, Boolean> introspectionCheckByPid = new ConcurrentHashMap<>();
+    // Global limits are only accepted from the default config file. We track the source value per pid so that when
+    // that source stops providing a value (property removed, or config deleted) the effective value reverts to the
+    // code default instead of sticking at the last value that was ever set.
+    private final Map<String, Integer> nodeLimitByPid = new ConcurrentHashMap<>();
+    private final Map<String, Integer> maxQueryComplexityByPid = new ConcurrentHashMap<>();
+    private final Map<String, Integer> maxQueryDepthByPid = new ConcurrentHashMap<>();
+    private final Map<String, Integer> mutationBatchLimitByPid = new ConcurrentHashMap<>();
 
-    private int nodeLimit = 5000;
-    private boolean introspectionCheckEnabled = false;
+    private volatile int nodeLimit = DEFAULT_NODE_LIMIT;
+    private volatile int maxQueryComplexity = 0;
+    private volatile int maxQueryDepth = 0;
+    private volatile int mutationBatchLimit = GraphQLLimits.DEFAULT_MUTATION_BATCH_LIMIT;
+    // Secure by default: the introspection permission check is on unless a configuration explicitly disables it.
+    private volatile boolean introspectionCheckEnabled = true;
 
     @Override
     public String getName() {
@@ -65,70 +85,120 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     }
 
     @Override
-    public void updated(String pid, Dictionary<String, ?> properties) throws ConfigurationException {
+    public synchronized void updated(String pid, Dictionary<String, ?> properties) throws ConfigurationException {
         if (properties == null) {
             return;
         }
 
-        deleted(pid);
+        // Some limits (node limit, query-cost guards) are global and may only be set from the default configuration,
+        // so that a third-party module configuration cannot loosen them.
+        boolean isDefaultConfig = isDefaultConfig(pid, properties);
 
-        ArrayList<String> keysForPid = new ArrayList<>();
-        keysByPid.put(pid, keysForPid);
-        corsOriginByPid.remove(pid);
-        introspectionCheckByPid.remove(pid);
+        // Parse everything into locals first. A validation failure throws HERE, before any shared state is mutated,
+        // so a rejected configuration leaves the last-known-good state intact instead of half-applied. Only once the
+        // whole document parses successfully do we swap in the new state and recompute (the apply block never throws).
+        List<String> newKeys = new ArrayList<>();
+        Map<String, String> newPermissions = new HashMap<>();
+        Set<String> newCorsOrigins = null;
+        Integer newNodeLimit = null;
+        Integer newMaxQueryComplexity = null;
+        Integer newMaxQueryDepth = null;
+        Integer newMutationBatchLimit = null;
+        Boolean newIntrospectionCheck = null;
 
-        // parse properties
         Enumeration<String> keys = properties.keys();
         while (keys.hasMoreElements()) {
             String key = keys.nextElement();
-            boolean addKey = true;
             // parse permissions ( permission format is like: permission.Query.nodesByQuery = privileged )
             String value = (String) properties.get(key);
             if (key.startsWith(PERMISSION_PREFIX) && value != null) {
-                // check if any configuration also contains the same permission configuration
-                for (String p : keysByPid.keySet()) {
-                    if (!StringUtils.equals(p, pid) && keysByPid.get(p).contains(key)) {
-                        addKey = false;
-                        logger.warn("Unable to register permission for {} because it has been already registered by the config with id {}", key, p);
+                // check if any OTHER configuration also contains the same permission configuration
+                boolean alreadyRegistered = false;
+                for (Map.Entry<String, List<String>> entry : keysByPid.entrySet()) {
+                    if (!StringUtils.equals(entry.getKey(), pid) && entry.getValue().contains(key)) {
+                        alreadyRegistered = true;
+                        logger.warn("Unable to register permission for {} because it has been already registered by the config with id {}", key, entry.getKey());
                         break;
                     }
                 }
-                if (addKey) {
-                    configPermissions.put(key.substring(PERMISSION_PREFIX.length()), value);
+                if (!alreadyRegistered) {
+                    newPermissions.put(key.substring(PERMISSION_PREFIX.length()), value);
                     // store the key for the permission configuration
-                    keysForPid.add(key);
+                    newKeys.add(key);
                 }
             } else if (key.equals(CORS_ORIGINS)) {
-                corsOriginByPid.put(pid, new HashSet<>(Arrays.asList(StringUtils.split(value," ,"))));
-            } else if (key.equals(NODE_LIMIT) && properties.get("felix.fileinstall.filename") != null && properties.get("felix.fileinstall.filename").toString().endsWith("org.jahia.modules.graphql.provider-default.cfg")) {
-                try {
-                    int newNodeLimit = Integer.parseInt(value);
-                    if (newNodeLimit < 0) {
-                        throw new ConfigurationException(key, "Node limit must be a positive integer");
-                    }
-                    if (newNodeLimit != nodeLimit) {
-                        logger.info("Node limit has been updated to {} by pid {} (file/config) {}.cfg", newNodeLimit, pid, pid);
-                        nodeLimit = newNodeLimit;
-                        PaginationHelper.updateLimit(nodeLimit);
-                    }
-                } catch (NumberFormatException e) {
-                    throw new ConfigurationException(key, "Node limit must be a positive integer");
+                newCorsOrigins = new HashSet<>(Arrays.asList(StringUtils.split(value," ,")));
+            } else if (key.equals(NODE_LIMIT)) {
+                if (isDefaultConfig) {
+                    newNodeLimit = parseNonNegativeLimit(key, value, "Node limit");
+                } else {
+                    warnGatedPropertyIgnored(key, pid);
+                }
+            } else if (key.equals(MAX_QUERY_COMPLEXITY)) {
+                if (isDefaultConfig) {
+                    newMaxQueryComplexity = parseNonNegativeLimit(key, value, "Max query complexity");
+                } else {
+                    warnGatedPropertyIgnored(key, pid);
+                }
+            } else if (key.equals(MAX_QUERY_DEPTH)) {
+                if (isDefaultConfig) {
+                    newMaxQueryDepth = parseNonNegativeLimit(key, value, "Max query depth");
+                } else {
+                    warnGatedPropertyIgnored(key, pid);
+                }
+            } else if (key.equals(MUTATION_BATCH_LIMIT)) {
+                if (isDefaultConfig) {
+                    newMutationBatchLimit = parseNonNegativeLimit(key, value, "Mutation batch limit");
+                } else {
+                    warnGatedPropertyIgnored(key, pid);
                 }
             } else if (key.equals(INTROSPECTION_CHECK_ENABLED)) {
-                // Defaults to false if value is not valid
-                introspectionCheckByPid.put(pid, StringUtils.isNotEmpty(value) && Boolean.parseBoolean(value.trim()));
+                // Unlike the limits above this is intentionally NOT restricted to the default config file: any config
+                // may contribute, but the "true wins" aggregation (see recomputeConfig) means a configuration can only
+                // tighten the check (force it on), never loosen it, so allowing multiple sources is safe.
+                newIntrospectionCheck = parseIntrospectionCheckEnabled(key, value, pid);
             } else {
                 // store other properties than permission configuration
-                keysForPid.add(key);
+                newKeys.add(key);
             }
         }
-        rebuildPermissions();
-        introspectionCheckEnabled = introspectionCheckByPid.values().stream().anyMatch(Boolean::booleanValue);
-        corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
+
+        // Parse succeeded: apply atomically. Nothing below throws.
+        clearConfigForPid(pid);
+        keysByPid.put(pid, newKeys);
+        newPermissions.forEach(configPermissions::put);
+        if (newCorsOrigins != null) {
+            corsOriginByPid.put(pid, newCorsOrigins);
+        }
+        if (newNodeLimit != null) {
+            nodeLimitByPid.put(pid, newNodeLimit);
+        }
+        if (newMaxQueryComplexity != null) {
+            maxQueryComplexityByPid.put(pid, newMaxQueryComplexity);
+        }
+        if (newMaxQueryDepth != null) {
+            maxQueryDepthByPid.put(pid, newMaxQueryDepth);
+        }
+        if (newMutationBatchLimit != null) {
+            mutationBatchLimitByPid.put(pid, newMutationBatchLimit);
+        }
+        if (newIntrospectionCheck != null) {
+            introspectionCheckByPid.put(pid, newIntrospectionCheck);
+        }
+        recomputeConfig();
     }
 
     @Override
-    public void deleted(String pid) {
+    public synchronized void deleted(String pid) {
+        clearConfigForPid(pid);
+        recomputeConfig();
+    }
+
+    /**
+     * Removes all state contributed by the given configuration pid. Does not recompute the effective values;
+     * callers pair this with {@link #recomputeConfig()} so a single recompute covers both add and remove.
+     */
+    private void clearConfigForPid(String pid) {
         List<String> keysForPid = keysByPid.remove(pid);
         if (keysForPid != null) {
             for (String key : keysForPid) {
@@ -138,10 +208,111 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
             }
         }
         corsOriginByPid.remove(pid);
-        corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
         introspectionCheckByPid.remove(pid);
-        introspectionCheckEnabled = introspectionCheckByPid.values().stream().anyMatch(Boolean::booleanValue);
+        nodeLimitByPid.remove(pid);
+        maxQueryComplexityByPid.remove(pid);
+        maxQueryDepthByPid.remove(pid);
+        mutationBatchLimitByPid.remove(pid);
+    }
+
+    /**
+     * Recomputes every effective value from the current per-pid state. Global limits fall back to their code default
+     * when no configuration provides them, so removing a property (or deleting the default config) reverts the limit
+     * instead of keeping the last value that was ever set.
+     */
+    private void recomputeConfig() {
+        corsOrigins = corsOriginByPid.keySet().stream().flatMap(k -> corsOriginByPid.get(k).stream()).collect(Collectors.toSet());
+        // Secure by default: enabled unless a configuration is present and every configuration disables it. With no
+        // configuration at all the check stays on, and a single config that sets true keeps it on ("true wins").
+        introspectionCheckEnabled = introspectionCheckByPid.isEmpty()
+                || introspectionCheckByPid.values().stream().anyMatch(Boolean::booleanValue);
+
+        int newNodeLimit = firstValueOrDefault(nodeLimitByPid, DEFAULT_NODE_LIMIT);
+        if (newNodeLimit != nodeLimit) {
+            nodeLimit = newNodeLimit;
+            PaginationHelper.updateLimit(nodeLimit);
+        }
+        maxQueryComplexity = firstValueOrDefault(maxQueryComplexityByPid, 0);
+        maxQueryDepth = firstValueOrDefault(maxQueryDepthByPid, 0);
+
+        int newMutationBatchLimit = firstValueOrDefault(mutationBatchLimitByPid, GraphQLLimits.DEFAULT_MUTATION_BATCH_LIMIT);
+        if (newMutationBatchLimit != mutationBatchLimit) {
+            mutationBatchLimit = newMutationBatchLimit;
+            GraphQLLimits.updateMutationBatchLimit(mutationBatchLimit);
+        }
+
         rebuildPermissions();
+    }
+
+    private static int firstValueOrDefault(Map<String, Integer> valuesByPid, int defaultValue) {
+        // These limits are only accepted from the default config file, which is a single source: normally at most one
+        // entry. Should more than one ever coexist, pick by lowest pid so the result is deterministic regardless of
+        // map iteration order. (We intentionally do NOT reduce by min value: for the guards, 0 means "disabled", so a
+        // min-by-value could silently turn a guard off.)
+        return valuesByPid.entrySet().stream()
+                .min(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .orElse(defaultValue);
+    }
+
+    /**
+     * Parses the introspection permission-check flag. This is a security toggle whose secure state is {@code true},
+     * so an empty or unrecognized value defaults to {@code true} (and is logged) rather than silently disabling the
+     * check. Only an explicit "false" disables it.
+     */
+    private static boolean parseIntrospectionCheckEnabled(String key, String value, String pid) {
+        String trimmed = StringUtils.trimToEmpty(value);
+        if ("true".equalsIgnoreCase(trimmed)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(trimmed)) {
+            return false;
+        }
+        logger.warn("Invalid value '{}' for '{}' in configuration '{}'; defaulting to enabled (the secure setting). " +
+                "Use 'true' or 'false'.", value, key, pid);
+        return true;
+    }
+
+    private static void warnGatedPropertyIgnored(String key, String pid) {
+        logger.warn("Ignoring GraphQL limit '{}' set by configuration '{}': this limit is only honored from the " +
+                "default configuration of this factory, normally the file named {}, so that a non-default " +
+                "configuration cannot change it.", key, pid, DEFAULT_CONFIG_FILE_NAME);
+    }
+
+    /**
+     * Tells whether a configuration update is allowed to set the global limits, i.e. whether it is the default
+     * configuration of this factory.
+     *
+     * <p>The pid is the primary signal: it identifies the default instance whatever wrote the update. Keying only on
+     * {@code felix.fileinstall.filename} (as this check used to) made the gate depend on the update carrying that
+     * property, which an update written through {@code ConfigurationAdmin} - as the install-time groovy patcher that
+     * seeds the guards on existing installs does - does not. Such an update was then not merely ignored: because a
+     * limit reverts to its code default when no configuration provides it, it silently switched the guards off.
+     *
+     * <p>Both comparisons are exact on purpose. Configuration Admin builds a factory instance pid as
+     * {@code factoryPid + '~' + name} but puts no constraint on {@code ~} appearing in the name, so matching a
+     * {@code ~default} suffix would also accept an instance any bundle can create by asking for the name
+     * {@code something~default} - and {@link #firstValueOrDefault} picks the lowest pid, so such an instance would win
+     * over the real one. Matching the file name as a suffix of the whole path had the same hole, since fileinstall
+     * derives the factory pid from the part of the name before the first {@code -}: a file called
+     * {@code org.jahia.modules.graphql.provider-x.org.jahia.modules.graphql.provider-default.cfg} reaches this factory
+     * and ends with the default file name. The file name is still accepted as a fallback so the gate keeps working on a
+     * Felix version that names factory instances differently (older ones used a generated pid).
+     */
+    private static boolean isDefaultConfig(String pid, Dictionary<String, ?> properties) {
+        if (DEFAULT_CONFIG_PID.equals(pid)) {
+            return true;
+        }
+        Object filename = properties.get("felix.fileinstall.filename");
+        return filename != null && DEFAULT_CONFIG_FILE_NAME.equals(fileName(filename.toString()));
+    }
+
+    /**
+     * @return the last segment of a {@code felix.fileinstall.filename}, which is a file URL or a path
+     */
+    private static String fileName(String path) {
+        int lastSeparator = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        return path.substring(lastSeparator + 1);
     }
 
     public void addAnnotationPermission(String pid, String permission) {
@@ -165,6 +336,32 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     public int getNodeLimit() {
         return nodeLimit;
+    }
+
+    /**
+     * @return the maximum allowed query complexity (estimated resolver cost), or 0 when the guard is disabled
+     */
+    public int getMaxQueryComplexity() {
+        return maxQueryComplexity;
+    }
+
+    /**
+     * @return the maximum allowed query depth, or 0 when the guard is disabled
+     */
+    public int getMaxQueryDepth() {
+        return maxQueryDepth;
+    }
+
+    private static int parseNonNegativeLimit(String key, String value, String label) throws ConfigurationException {
+        try {
+            int parsed = Integer.parseInt(StringUtils.trim(value));
+            if (parsed < 0) {
+                throw new ConfigurationException(key, label + " must be a non-negative integer");
+            }
+            return parsed;
+        } catch (NumberFormatException e) {
+            throw new ConfigurationException(key, label + " must be a non-negative integer");
+        }
     }
 
     /**

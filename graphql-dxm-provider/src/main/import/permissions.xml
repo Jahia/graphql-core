@@ -7,4 +7,7 @@
         <graphqlAdminQuery jcr:primaryType="jnt:permission"/>
         <graphqlAdminMutation jcr:primaryType="jnt:permission"/>
     </admin>
+    <site-admin jcr:primaryType="jnt:permission">
+        <tagManager jcr:primaryType="jnt:permission"/>
+    </site-admin>
 </permissions>

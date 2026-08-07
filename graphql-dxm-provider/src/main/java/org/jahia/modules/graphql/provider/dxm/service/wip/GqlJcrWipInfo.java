@@ -55,6 +55,7 @@ public class GqlJcrWipInfo {
         return languages;
     }
 
+    @GraphQLDescription("Work in progress status of a JCR node")
     public enum WipStatus {
         @GraphQLDescription("Work in progress disabled")
         DISABLED,

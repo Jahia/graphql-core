@@ -28,6 +28,7 @@ import java.util.Map;
  */
 public class SorterHelper {
 
+    @GraphQLDescription("Sort order direction")
     public enum SortType {
 
         /**

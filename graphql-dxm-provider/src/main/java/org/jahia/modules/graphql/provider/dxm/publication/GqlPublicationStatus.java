@@ -15,6 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.publication;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.services.content.PublicationInfo;
 
@@ -25,6 +26,7 @@ import java.util.Map;
  * Possible publication statuses of the JCR node.
  */
 @GraphQLName("PublicationStatus")
+@GraphQLDescription("Possible publication statuses of a JCR node")
 public enum GqlPublicationStatus {
 
     PUBLISHED(PublicationInfo.PUBLISHED),

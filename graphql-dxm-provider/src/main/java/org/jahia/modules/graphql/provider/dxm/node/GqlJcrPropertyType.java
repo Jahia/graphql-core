@@ -15,6 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLName;
 
 import javax.jcr.PropertyType;
@@ -23,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @GraphQLName("JCRPropertyType")
+@GraphQLDescription("Type of a JCR property (as defined by javax.jcr.PropertyType)")
 public enum GqlJcrPropertyType {
     BOOLEAN(PropertyType.BOOLEAN),
     DATE(PropertyType.DATE),

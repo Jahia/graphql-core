@@ -17,13 +17,13 @@ package org.jahia.modules.graphql.provider.dxm.sdl.fetchers;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
-import org.apache.jackrabbit.util.Text;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLUtil;
 import org.jahia.modules.graphql.provider.dxm.sdl.validation.ArgumentValidator;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -92,15 +92,19 @@ public class StringFinderDataFetcher extends FinderListDataFetcher {
             Map<String, Object> arguments = SDLUtil.getArguments(environment);
             boolean invert = (Boolean) arguments.get(INVERT);
 
-            if (!arguments.containsKey(EQUALS) && !arguments.containsKey(CONTAINS))
+            // an explicitly null argument is not a value to match on
+            String contains = (String) arguments.get(CONTAINS);
+            String equals = (String) arguments.get(EQUALS);
+
+            if (contains == null && equals == null)
                 throw new DataFetchingException(String.format("Entry point %s must have either 'contains' or 'equals' parameter", environment.getFieldDefinition().getName()));
 
-            if (arguments.containsKey(CONTAINS)) {
-                String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(CONTAINS));
+            if (contains != null) {
+                String argument = JCRContentUtils.sqlEncode(contains);
                 String addOn = invert ? "not" : "";
                 statement = String.format("SELECT * FROM [%s] as n where %s contains(n.[%s], '%s')", type, addOn, finder.getProperty(), argument);
-            } else if (arguments.containsKey(EQUALS)) {
-                String argument = Text.escapeIllegalXpathSearchChars((String) arguments.get(EQUALS));
+            } else {
+                String argument = JCRContentUtils.sqlEncode(equals);
                 String addOn = invert ? "<>" : "=";
                 statement = String.format("SELECT * FROM [%s] as n where n.[%s]%s'%s'", type, finder.getProperty(), addOn, argument);
             }

@@ -33,6 +33,7 @@ public class GroupingHelper {
 
     private static final String UNGROUPED_LIST = "theRest";
 
+    @GraphQLDescription("How grouped items are positioned relative to the ungrouped ones")
     public enum GroupingType {
 
         @GraphQLDescription("Put grouped items at the end in the order groups appear in the 'groups' list")

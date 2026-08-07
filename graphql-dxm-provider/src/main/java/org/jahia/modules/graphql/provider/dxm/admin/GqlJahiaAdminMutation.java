@@ -21,6 +21,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.osgiconfig.GqlConfigurationMutation;
+import org.jahia.modules.graphql.provider.dxm.service.tags.graphql.GqlTagManagerMutation;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.services.modulemanager.spi.Config;
 import org.jahia.services.modulemanager.spi.ConfigService;
@@ -65,5 +66,11 @@ public class GqlJahiaAdminMutation {
         } catch (IOException e) {
             throw new DataFetchingException(e);
         }
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Manage tags for a site")
+    public GqlTagManagerMutation tagManager(@GraphQLName("siteKey") @GraphQLDescription("The site key") @GraphQLNonNull String siteKey) {
+        return new GqlTagManagerMutation(siteKey);
     }
 }

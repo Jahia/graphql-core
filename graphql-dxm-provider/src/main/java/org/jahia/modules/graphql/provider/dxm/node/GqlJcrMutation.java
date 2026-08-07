@@ -22,6 +22,8 @@ import org.jahia.exceptions.JahiaRuntimeException;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLFieldCompleter;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.GqlLimitExceededException;
+import org.jahia.modules.graphql.provider.dxm.config.GraphQLLimits;
 import org.jahia.services.content.*;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.importexport.DocumentViewImportHandler;
@@ -31,6 +33,7 @@ import org.jahia.settings.SettingsBean;
 
 import javax.jcr.RepositoryException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -98,13 +101,15 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
      *
      * @param nodes the collection of {@link GqlJcrNodeWithParentInput} objects, representing add-child operation request
      * @return a collection of created mutation objects
-     * @throws BaseGqlClientException in case of JCR related errors during adding of child nodes
+     * @throws BaseGqlClientException in case of JCR related errors during adding of child nodes, or if the batch
+     *                                exceeds the configured mutation batch limit
      */
     @GraphQLField
     @GraphQLDescription("Batch creates a number of new JCR nodes under the specified parent")
     public Collection<GqlJcrNodeMutation> addNodesBatch(
             @GraphQLName("nodes") @GraphQLNonNull @GraphQLDescription("The collection of nodes to create") Collection<GqlJcrNodeWithParentInput> nodes
     ) throws BaseGqlClientException {
+        GraphQLLimits.checkMutationBatchSize(nodes.size());
         List<GqlJcrNodeMutation> result = new ArrayList<>();
         for (GqlJcrNodeWithParentInput node : nodes) {
             result.add(new GqlJcrNodeMutation(addNode(getNodeFromPathOrId(getSession(), node.getParentPathOrId()), node)));
@@ -132,13 +137,15 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
      *
      * @param pathsOrIds the collection of path or UUIDs of the nodes to be modified
      * @return a collection with mutation objects for the specified nodes
-     * @throws BaseGqlClientException in case of node retrieval error
+     * @throws BaseGqlClientException in case of node retrieval error, or if the batch exceeds the configured
+     *                                mutation batch limit
      */
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on path or id")
     public Collection<GqlJcrNodeMutation> mutateNodes(
             @GraphQLName("pathsOrIds") @GraphQLNonNull @GraphQLDescription("The paths or id ofs the nodes to mutate") Collection<String> pathsOrIds
     ) throws BaseGqlClientException {
+        GraphQLLimits.checkMutationBatchSize(pathsOrIds.size());
         List<GqlJcrNodeMutation> result = new ArrayList<>();
         for (String pathOrId : pathsOrIds) {
             result.add(new GqlJcrNodeMutation(getNodeFromPathOrId(getSession(), pathOrId)));
@@ -151,7 +158,7 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
      *
      * @param query         the query to retrieve the nodes to be modified
      * @param queryLanguage the query language
-     * @param limit         the maximum size of the result set
+     * @param limit         the maximum size of the result set; the request fails if more nodes match
      * @param offset        the start offset of the result set
      * @return a collection of mutation objects
      * @throws BaseGqlClientException in case of node retrieval errors
@@ -162,15 +169,22 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
             @GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
             @GraphQLName("queryLanguage") @GraphQLDefaultValue(GqlJcrQuery.QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") GqlJcrQuery.QueryLanguage queryLanguage,
             @GraphQLName("limit") @GraphQLDescription("The maximum size of the result set") Long limit,
-            @GraphQLName("offset") @GraphQLDescription("The start offset of the result set") Long offset
+            @GraphQLName("offset") @GraphQLDescription("The start offset of the result set") Long offset,
+            DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
         List<GqlJcrNodeMutation> result = new LinkedList<>();
         JCRNodeIteratorWrapper nodes;
+        // Draw from what this request has left rather than the whole allowance: how many nodes the statement matches is
+        // not knowable before it runs, so the pre-execution guard could not account for it and several aliased calls
+        // would otherwise each be entitled to the full limit.
+        AtomicInteger remaining = remainingBatchAllowance(environment);
+        Long effectiveLimit = GraphQLLimits.resolveMutationLimit(limit, remaining);
         try {
             QueryManagerWrapper queryManager = getSession().getWorkspace().getQueryManager();
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
-            if (limit != null && limit.longValue() > 0) {
-                q.setLimit(limit.longValue());
+            if (effectiveLimit != null) {
+                // One more than the bound, so that reaching it can be told apart from matching it exactly.
+                q.setLimit(effectiveLimit.longValue() + 1);
             }
             if (offset != null && offset.longValue() > 0) {
                 q.setOffset(offset.longValue());
@@ -180,11 +194,32 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
             throw new DataFetchingException(e);
         }
         while (nodes.hasNext()) {
+            if (effectiveLimit != null && result.size() == effectiveLimit.longValue()) {
+                // Over the bound: fail rather than mutate a subset. Nothing is persisted, because the session is only
+                // saved once the whole request completes without errors.
+                throw new GqlLimitExceededException("This mutation matched more nodes than the maximum of "
+                        + effectiveLimit + " it may operate on; narrow the query, or use the limit/offset arguments.");
+            }
             JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();
             result.add(new GqlJcrNodeMutation(node));
         }
+        if (remaining != null) {
+            remaining.addAndGet(-result.size());
+        }
         return result;
     }
+
+    /**
+     * @return what is left of this request's mutation batch allowance, or {@code null} when the guard is not in play
+     *         (bound disabled, or a caller that reaches this method outside a GraphQL execution)
+     */
+    private static AtomicInteger remainingBatchAllowance(DataFetchingEnvironment environment) {
+        if (environment == null || environment.getGraphQlContext() == null) {
+            return null;
+        }
+        return environment.getGraphQlContext().get(GraphQLLimits.REMAINING_BATCH_ALLOWANCE);
+    }
+
 
     /**
      * Performs the deletion of the specified node (and all the subtree).

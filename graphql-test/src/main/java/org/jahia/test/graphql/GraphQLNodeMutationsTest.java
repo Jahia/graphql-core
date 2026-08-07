@@ -19,12 +19,14 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNodeMutation.ReorderedChildrenPosition;
+import org.jahia.modules.graphql.provider.dxm.config.GraphQLLimits;
 import org.jahia.services.content.*;
 import org.jahia.settings.readonlymode.ReadOnlyModeController;
 import org.jahia.settings.readonlymode.ReadOnlyModeController.ReadOnlyModeStatus;
 import org.jahia.test.graphql.utils.TestFileUtils;
 import org.jahia.utils.EncryptionUtils;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.*;
 
@@ -34,6 +36,7 @@ import javax.servlet.http.Part;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -563,6 +566,191 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             assertFalse(session.nodeExists("/testList/testSubList1"));
             assertFalse(session.nodeExists("/testList/testSubList2"));
             assertFalse(session.nodeExists("/testList/testSubList3"));
+            return null;
+        });
+    }
+
+    private static final String SUB_LIST_1 = "/testList/testSubList1";
+    private static final String SUB_LIST_2 = "/testList/testSubList2";
+    private static final String SUB_LIST_3 = "/testList/testSubList3";
+    private static final String TITLE = "jcr:title";
+    // The aggregate guard runs before execution, so an oversized batch is refused with graphql-java's wording rather
+    // than by the per-field backstop inside the resolver.
+    private static final String BATCH_TOO_LARGE = "maximum mutation batch size exceeded %d > %d";
+    private static final String QUERY_MATCHED_TOO_MANY =
+            "This mutation matched more nodes than the maximum of %d it may operate on;"
+                    + " narrow the query, or use the limit/offset arguments.";
+
+    /**
+     * Runs the given assertions with the mutation batch limit temporarily set, restoring it afterwards. The limit is
+     * global state, so every test that changes it has to put it back.
+     */
+    private static void withMutationBatchLimit(int limit, Callable<Void> body) throws Exception {
+        int originalLimit = GraphQLLimits.getMutationBatchLimit();
+        try {
+            GraphQLLimits.updateMutationBatchLimit(limit);
+            body.call();
+        } finally {
+            GraphQLLimits.updateMutationBatchLimit(originalLimit);
+        }
+    }
+
+    /** Sets jcr:title on every contentList under /testList that the query matches, optionally with extra arguments. */
+    private static JSONObject mutateSubListTitlesByQuery(String extraArguments, String value) throws JSONException {
+        return executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList')"
+                + " order by localname()\",queryLanguage:SQL2" + extraArguments + ") {\n" +
+                "      mutateProperty(name: \"jcr:title\") {\n" +
+                "        setValue(language: \"en\", value: \"" + value + "\")\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+    }
+
+    /** Sets jcr:title on the nodes named explicitly, i.e. through mutateNodes rather than a query. */
+    private static JSONObject mutateNamedNodeTitles(String value, String... pathsOrIds) throws JSONException {
+        String paths = Arrays.stream(pathsOrIds).map(p -> '"' + p + '"').collect(Collectors.joining(","));
+        return executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    mutateNodes(pathsOrIds: [" + paths + "]) {\n" +
+                "      mutateProperty(name: \"jcr:title\") {\n" +
+                "        setValue(language: \"en\", value: \"" + value + "\")\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+    }
+
+    /** Asserts which of the three sub-lists carry the given title, and that the rest carry no title at all. */
+    private static void assertTitledSubLists(String expectedTitle, String... expectedTitledPaths) throws Exception {
+        Set<String> titled = new HashSet<>(Arrays.asList(expectedTitledPaths));
+        inJcr(session -> {
+            for (String path : Arrays.asList(SUB_LIST_1, SUB_LIST_2, SUB_LIST_3)) {
+                if (titled.contains(path)) {
+                    assertEquals("Expected " + path + " to have been mutated",
+                            expectedTitle, session.getNode(path).getProperty(TITLE).getString());
+                } else {
+                    assertFalse("Expected " + path + " to be outside the configured mutation batch limit",
+                            session.getNode(path).hasProperty(TITLE));
+                }
+            }
+            return null;
+        });
+    }
+
+    @Test
+    public void mutateNodesByQueryShouldNotExceedConfiguredMutationBatchLimit() throws Exception {
+        // Bound below the number of matching nodes: the query matches all three sub-lists, so without a bound the
+        // mutation would return a handle for every one of them.
+        withMutationBatchLimit(2, () -> {
+            JSONObject result = mutateSubListTitlesByQuery("", "bounded");
+            validateError(result, String.format(QUERY_MATCHED_TOO_MANY, 2));
+            // Nothing persisted: the session is only saved when the request completes without errors.
+            assertTitledSubLists("bounded");
+            return null;
+        });
+    }
+
+    @Test
+    public void mutateNodesByQueryShouldCapExplicitLimitToConfiguredMutationBatchLimit() throws Exception {
+        // An explicit limit argument is honoured, but may not raise the result set above the configured bound.
+        withMutationBatchLimit(1, () -> {
+            JSONObject result = mutateSubListTitlesByQuery(",limit:3", "capped");
+            validateError(result, String.format(QUERY_MATCHED_TOO_MANY, 1));
+            assertTitledSubLists("capped");
+            return null;
+        });
+    }
+
+    @Test
+    public void mutationBatchLimitOfZeroShouldDisableTheBound() throws Exception {
+        withMutationBatchLimit(0, () -> {
+            mutateSubListTitlesByQuery("", "unbounded");
+            assertTitledSubLists("unbounded", SUB_LIST_1, SUB_LIST_2, SUB_LIST_3);
+            return null;
+        });
+    }
+
+    @Test
+    public void mutateNodesShouldRejectABatchLargerThanTheConfiguredMutationBatchLimit() throws Exception {
+        // The caller enumerated the nodes explicitly, so an oversized batch must fail rather than have a prefix of the
+        // supplied list quietly mutated.
+        withMutationBatchLimit(2, () -> {
+            JSONObject result = mutateNamedNodeTitles("rejected", SUB_LIST_1, SUB_LIST_2, SUB_LIST_3);
+            validateError(result, String.format(BATCH_TOO_LARGE, 3, 2));
+            assertTitledSubLists("rejected");
+            return null;
+        });
+    }
+
+    @Test
+    public void aliasingAQueryDrivenMutationShouldNotMultiplyTheConfiguredMutationBatchLimit() throws Exception {
+        // A query-driven mutation cannot be measured before it runs, so it truncates instead of being refused, and
+        // each alias draws from what the request has left rather than from the whole bound.
+        withMutationBatchLimit(2, () -> {
+            executeQuery("mutation {\n" +
+                    "  jcr {\n" +
+                    "    a: mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList') order by localname()\",queryLanguage:SQL2) {\n" +
+                    "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"first\") }\n" +
+                    "    }\n" +
+                    "    b: mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList') order by localname()\",queryLanguage:SQL2) {\n" +
+                    "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"second\") }\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}\n");
+            // The first alias uses the allowance of 2, so the second is over it and the whole request fails.
+            assertTitledSubLists("first");
+            return null;
+        });
+    }
+
+    @Test
+    public void aliasingAMutationShouldNotMultiplyTheConfiguredMutationBatchLimit() throws Exception {
+        // The bound is on what one request asks for in total, so selecting the field three times does not raise it:
+        // each alias below is within the limit on its own, while together they are not.
+        withMutationBatchLimit(2, () -> {
+            JSONObject result = executeQuery("mutation {\n" +
+                    "  jcr {\n" +
+                    "    a: mutateNodes(pathsOrIds: [\"" + SUB_LIST_1 + "\"]) {\n" +
+                    "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"aliased\") }\n" +
+                    "    }\n" +
+                    "    b: mutateNodes(pathsOrIds: [\"" + SUB_LIST_2 + "\"]) {\n" +
+                    "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"aliased\") }\n" +
+                    "    }\n" +
+                    "    c: mutateNodes(pathsOrIds: [\"" + SUB_LIST_3 + "\"]) {\n" +
+                    "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"aliased\") }\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}\n");
+            validateError(result, String.format(BATCH_TOO_LARGE, 3, 2));
+            assertTitledSubLists("aliased");
+            return null;
+        });
+    }
+
+    @Test
+    public void addNodesBatchShouldRejectABatchLargerThanTheConfiguredMutationBatchLimit() throws Exception {
+        withMutationBatchLimit(1, () -> {
+            JSONObject result = executeQuery("mutation {\n" +
+                    "  jcr {\n" +
+                    "    addNodesBatch(nodes: [\n" +
+                    "      {parentPathOrId: \"/testList\", name: \"batched1\", primaryNodeType: \"jnt:contentList\"},\n" +
+                    "      {parentPathOrId: \"/testList\", name: \"batched2\", primaryNodeType: \"jnt:contentList\"}\n" +
+                    "    ]) {\n" +
+                    "      uuid\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}\n");
+            validateError(result, String.format(BATCH_TOO_LARGE, 2, 1));
+            inJcr(session -> {
+                assertFalse("A rejected batch must not create any of the supplied nodes",
+                        session.nodeExists("/testList/batched1"));
+                assertFalse("A rejected batch must not create any of the supplied nodes",
+                        session.nodeExists("/testList/batched2"));
+                return null;
+            });
             return null;
         });
     }

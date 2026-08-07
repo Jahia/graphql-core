@@ -1,0 +1,14 @@
+query GetTags($siteKey: String!, $fieldSorter: InputFieldSorterInput) {
+    admin {
+        jahia {
+            tagManager(siteKey: $siteKey) {
+                tags(fieldSorter: $fieldSorter) {
+                    nodes {
+                        name
+                        occurrences
+                    }
+                }
+            }
+        }
+    }
+}

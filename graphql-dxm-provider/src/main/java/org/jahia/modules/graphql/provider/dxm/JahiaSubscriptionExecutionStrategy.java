@@ -20,11 +20,15 @@ import graphql.execution.*;
 import graphql.kickstart.servlet.context.DefaultGraphQLWebSocketContext;
 import org.jahia.api.Constants;
 import org.jahia.bin.filters.jcr.JcrSessionFilter;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.securityfilter.PermissionService;
+import org.jahia.services.securityfilter.ScopeDefinition;
 import org.jahia.services.usermanager.JahiaUser;
 
 import javax.servlet.http.HttpSession;
 import javax.websocket.Session;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStrategy {
@@ -38,9 +42,11 @@ public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStr
         try {
             Session session = executionContext.getGraphQLContext().get(Session.class);
             JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) session.getUserProperties().get(Constants.SESSION_USER));
+            restoreScopes(session);
 
             return super.execute(executionContext, parameters);
         } finally {
+            resetScopes();
             JcrSessionFilter.endRequest();
         }
     }
@@ -51,6 +57,7 @@ public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStr
         if (JCRSessionFactory.getInstance().getCurrentUser() == null) {
             Session session = executionContext.getGraphQLContext().get(Session.class);
             JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) session.getUserProperties().get(Constants.SESSION_USER));
+            restoreScopes(session);
             resetUser = true;
         }
 
@@ -58,8 +65,37 @@ public class JahiaSubscriptionExecutionStrategy extends SubscriptionExecutionStr
             return super.completeField(executionContext, parameters, fetchedValue);
         } finally {
             if (resetUser) {
+                resetScopes();
                 JcrSessionFilter.endRequest();
             }
+        }
+    }
+
+    /**
+     * Restore the authorization scopes captured for this connection at handshake time (see
+     * {@link OsgiGraphQLWsEndpoint#SESSION_SCOPES}) onto the subscription execution thread, so
+     * subscription data fetchers apply the same permission checks as HTTP requests. This mirrors the
+     * scope propagation the HTTP query/mutation executor already performs. An anonymous connection
+     * carries no privileged scope; an authenticated one keeps exactly its own scopes.
+     */
+    @SuppressWarnings("unchecked")
+    private void restoreScopes(Session session) {
+        PermissionService permissionService = BundleUtils.getOsgiService(PermissionService.class, null);
+        if (permissionService == null) {
+            return;
+        }
+        Collection<ScopeDefinition> scopes = (Collection<ScopeDefinition>) session.getUserProperties().get(OsgiGraphQLWsEndpoint.SESSION_SCOPES);
+        if (scopes != null) {
+            permissionService.setCurrentScopes(scopes);
+        } else {
+            permissionService.resetScopes();
+        }
+    }
+
+    private void resetScopes() {
+        PermissionService permissionService = BundleUtils.getOsgiService(PermissionService.class, null);
+        if (permissionService != null) {
+            permissionService.resetScopes();
         }
     }
 }
