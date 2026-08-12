@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 
 /**
  * Unit tests for the per-request node allowance, the bound that stops a document nesting connections from expanding
@@ -68,13 +68,10 @@ public class PaginationHelperTest {
 
         Stream<String> charged = PaginationHelper.chargeToRequestBudget(NODES.stream(), environment);
 
-        try {
-            charged.collect(Collectors.toList());
-            fail("expected the request to be refused once it had walked more nodes than its allowance");
-        } catch (GqlLimitExceededException e) {
-            // Refused on the node that would have taken it past the allowance, not at the end of the walk.
-            assertEquals(-1, allowanceOf(environment).get());
-        }
+        assertThrows(GqlLimitExceededException.class, () -> charged.collect(Collectors.toList()));
+
+        // Refused on the node that would have taken it past the allowance, not at the end of the walk.
+        assertEquals(-1, allowanceOf(environment).get());
     }
 
     @Test
@@ -112,12 +109,12 @@ public class PaginationHelperTest {
         PaginationHelper.chargeToRequestBudget(NODES.stream(), environment).collect(Collectors.toList());
         assertEquals(2, allowanceOf(environment).get());
 
-        try {
-            PaginationHelper.chargeToRequestBudget(NODES.stream(), environment).collect(Collectors.toList());
-            fail("expected the second connection to be refused, having only the rest of the request's allowance");
-        } catch (GqlLimitExceededException e) {
-            assertEquals(-1, allowanceOf(environment).get());
-        }
+        // The second connection has only what the first left, not a fresh per-connection limit.
+        Stream<String> secondConnection = PaginationHelper.chargeToRequestBudget(NODES.stream(), environment);
+
+        assertThrows(GqlLimitExceededException.class, () -> secondConnection.collect(Collectors.toList()));
+
+        assertEquals(-1, allowanceOf(environment).get());
     }
 
     @Test
@@ -128,13 +125,11 @@ public class PaginationHelperTest {
         // thing an amplification attack is after. One refusal is what a caller needs.
         DataFetchingEnvironment environment = environmentWithAllowance(2);
 
-        try {
-            PaginationHelper.chargeToRequestBudget(NODES.stream(), environment).collect(Collectors.toList());
-            fail("expected the connection that spends the allowance to report it");
-        } catch (GqlLimitExceededException expected) {
-            // The request has been told once; from here on the remaining connections stay silent.
-        }
+        Stream<String> spendingConnection = PaginationHelper.chargeToRequestBudget(NODES.stream(), environment);
 
+        assertThrows(GqlLimitExceededException.class, () -> spendingConnection.collect(Collectors.toList()));
+
+        // The request has been told once; from here on the remaining connections stay silent.
         List<String> read = PaginationHelper.chargeToRequestBudget(NODES.stream(), environment)
                 .collect(Collectors.toList());
 
