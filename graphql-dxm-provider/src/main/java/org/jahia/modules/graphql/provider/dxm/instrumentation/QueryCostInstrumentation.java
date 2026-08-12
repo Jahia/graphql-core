@@ -20,6 +20,7 @@ import graphql.execution.AbortExecutionException;
 import graphql.execution.ExecutionContext;
 import graphql.language.OperationDefinition;
 import org.jahia.modules.graphql.provider.dxm.config.GraphQLLimits;
+import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import graphql.execution.instrumentation.InstrumentationContext;
 import graphql.execution.instrumentation.InstrumentationState;
 import graphql.execution.instrumentation.SimpleInstrumentationContext;
@@ -40,6 +41,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * traverser re-expands a fragment definition at each spread of it, so a guard that traverses repeatedly multiplies
  * exactly the cost it exists to bound.
  *
+ * <p>It also opens the request's node allowance, the one bound here that is not a verdict on the document: the guards
+ * above reject a selection for its shape, whereas the allowance limits how far that shape may expand once it is walking
+ * actual content, and so can only be spent as the fields run.
+ *
  * <p>A limit of 0 or less disables that individual check. The messages keep graphql-java's wording, whose enforcement
  * this class took over from {@link graphql.analysis.MaxQueryComplexityInstrumentation} and
  * {@link graphql.analysis.MaxQueryDepthInstrumentation}, so existing clients and log filters are unaffected.
@@ -51,17 +56,20 @@ public class QueryCostInstrumentation extends SimplePerformantInstrumentation {
     private final int maxComplexity;
     private final int maxDepth;
     private final int maxBatchSize;
+    private final int maxNodesPerRequest;
 
     /**
-     * @param maxComplexity maximum number of selected fields, 0 to disable that check
-     * @param maxDepth      maximum nesting depth, 0 to disable that check
-     * @param maxBatchSize  maximum number of items a mutation may be handed in list arguments across the whole
-     *                      document, 0 to disable that check
+     * @param maxComplexity      maximum number of selected fields, 0 to disable that check
+     * @param maxDepth           maximum nesting depth, 0 to disable that check
+     * @param maxBatchSize       maximum number of items a mutation may be handed in list arguments across the whole
+     *                           document, 0 to disable that check
+     * @param maxNodesPerRequest maximum number of nodes the request's fields may walk in total, 0 to disable that bound
      */
-    public QueryCostInstrumentation(int maxComplexity, int maxDepth, int maxBatchSize) {
+    public QueryCostInstrumentation(int maxComplexity, int maxDepth, int maxBatchSize, int maxNodesPerRequest) {
         this.maxComplexity = maxComplexity;
         this.maxDepth = maxDepth;
         this.maxBatchSize = maxBatchSize;
+        this.maxNodesPerRequest = maxNodesPerRequest;
     }
 
     @Override
@@ -94,6 +102,15 @@ public class QueryCostInstrumentation extends SimplePerformantInstrumentation {
             // query-driven mutation draws from what this request has left instead of from the full limit each time.
             executionContext.getGraphQLContext().put(GraphQLLimits.REMAINING_BATCH_ALLOWANCE,
                     new AtomicInteger(maxBatchSize - cost.getBatchSize()));
+        }
+        // Opens the request's node allowance, which the connections draw down as they walk the repository. Unlike the
+        // three bounds above this one cannot be settled here: how many nodes a field reaches is a property of the
+        // content, not of the document, and only becomes known as the fields run. What the document analysis above
+        // can bound is the shape of a selection; what this bounds is how far that shape expands once pointed at a
+        // repository - the dimension along which a small, shallow, legal document still multiplies out.
+        if (maxNodesPerRequest > 0) {
+            executionContext.getGraphQLContext().put(PaginationHelper.REMAINING_NODE_ALLOWANCE,
+                    new AtomicInteger(maxNodesPerRequest));
         }
         return SimpleInstrumentationContext.noOp();
     }
