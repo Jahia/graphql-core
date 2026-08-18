@@ -2591,9 +2591,9 @@ type JCRProperty {
     "The GraphQL representation of the JCR node the property belongs to."
     node: JCRNode!
     "The value of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is single-valued, null otherwise"
-    notZonedDateValue: String
+    notZonedDateValue: String @deprecated(reason: "Use value instead, which keeps the ISO-8601 time zone offset. This field renders the date in the server default time zone and drops the offset, so the instant it denotes is ambiguous.")
     "The values of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is multiple-valued, null otherwise"
-    notZonedDateValues: [String]
+    notZonedDateValues: [String] @deprecated(reason: "Use values instead, which keep the ISO-8601 time zone offset. This field renders the dates in the server default time zone and drops the offset, so the instants they denote are ambiguous.")
     "The path of the JCR property"
     path: String!
     "GraphQL representation of the node this property references in case the property is single-valued, null otherwise"
@@ -4453,7 +4453,7 @@ enum GroupingType {
 enum JCRPropertyOption {
     "ENCRYPTED"
     ENCRYPTED
-    "NOT_ZONED_DATE"
+    "Deprecated: set the property with an ISO-8601 value carrying its time zone offset and no option instead. This option reads the value in the server default time zone, so the instant it stores depends on the server."
     NOT_ZONED_DATE
 }
 

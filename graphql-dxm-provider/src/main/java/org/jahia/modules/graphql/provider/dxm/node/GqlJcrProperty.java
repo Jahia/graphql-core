@@ -15,6 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.node;
 
+import graphql.annotations.annotationTypes.GraphQLDeprecate;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
@@ -178,10 +179,13 @@ public class GqlJcrProperty {
     /**
      * @return The value of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS]
      * in case the property is single-valued, null otherwise
+     * @deprecated use {@link #getValue()} instead
      */
+    @Deprecated
     @GraphQLField
     @GraphQLName("notZonedDateValue")
     @GraphQLDescription("The value of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is single-valued, null otherwise")
+    @GraphQLDeprecate("Use value instead, which keeps the ISO-8601 time zone offset. This field renders the date in the server default time zone and drops the offset, so the instant it denotes is ambiguous.")
     public String getNotZonedDateValue() {
         try {
             if (property.isMultiple() || property.getType() != PropertyType.DATE) {
@@ -239,10 +243,13 @@ public class GqlJcrProperty {
     /**
      * @return The values of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS]
      * in case the property is multiple-valued, null otherwise
+     * @deprecated use {@link #getValues()} instead
      */
+    @Deprecated
     @GraphQLField
     @GraphQLName("notZonedDateValues")
     @GraphQLDescription("The values of the JCR property casted as date and returned in this string format: [yyyy-MM-dd'T'HH:mm:ss.SSS] in case the property is multiple-valued, null otherwise")
+    @GraphQLDeprecate("Use values instead, which keep the ISO-8601 time zone offset. This field renders the dates in the server default time zone and drops the offset, so the instants they denote are ambiguous.")
     public List<String> getNotZonedDateValues() {
         try {
             if (!property.isMultiple() || property.getType() != PropertyType.DATE) {
