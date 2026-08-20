@@ -61,11 +61,14 @@ public class DXRelay extends Relay {
             .field(newFieldDefinition()
                     .name("nodesCount")
                     .type(GraphQLInt)
-                    .description("When paginating forwards, the cursor to continue."))
+                    .description("The number of nodes returned in this page."))
             .field(newFieldDefinition()
                     .name("totalCount")
                     .type(GraphQLInt)
-                    .description("When paginating forwards, the cursor to continue."))
+                    .description("The total number of items the connection matches, ignoring pagination. Computing it"
+                            + " reads every item the connection matches, however small the requested page, and those"
+                            + " reads count against the per-request node limit - omit this field when the total is not"
+                            + " needed."))
             .build();
 
 

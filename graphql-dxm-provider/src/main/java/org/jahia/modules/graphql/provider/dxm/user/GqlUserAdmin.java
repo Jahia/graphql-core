@@ -58,8 +58,10 @@ public class GqlUserAdmin {
                                              @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
                                              @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields according to specified criteria") FieldGroupingInput fieldGrouping,
                                              DataFetchingEnvironment environment) {
-        Stream<GqlUser> userStream = userManagerService.searchUsers(null)
-                .stream()
+        // The search is unbounded - every user of every provider - so each result is charged to the request's node
+        // allowance before the field filter can drop it, like any other connection's items.
+        Stream<GqlUser> userStream = PaginationHelper.chargeToRequestBudget(
+                        userManagerService.searchUsers(null).stream(), environment)
                 .map(user -> new GqlUser(user.getJahiaUser()))
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));
 

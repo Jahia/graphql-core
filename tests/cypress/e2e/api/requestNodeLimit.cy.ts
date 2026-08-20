@@ -15,6 +15,10 @@ import gql from 'graphql-tag';
  * served and the second refused - so a pass and a failure here differ only in nesting, which is precisely the dimension
  * the per-connection limit cannot see: every connection in either query is far below graphql.fields.node.limit.
  *
+ * Selecting pageInfo.totalCount reads every node the connection matches regardless of the page size, and those reads
+ * are charged like any other. The totalCount tests pin that down with the allowance at 100: a one-item page over the
+ * 155-node subtree passes without totalCount and is refused with it.
+ *
  * Only honoured from the default provider configuration, so the limit is driven through a groovy provisioning fixture
  * that edits the "default" factory instance (see setRequestNodeLimit.groovy). Config propagation (ConfigAdmin update
  * -> ManagedServiceFactory.updated) is asynchronous, so we poll until the new value takes effect rather than waiting a
@@ -33,6 +37,35 @@ describe('GraphQL per-request node allowance', () => {
             jcr {
                 nodeByPath(path: "${TEST_ROOT}") {
                     descendants {
+                        nodes { name }
+                    }
+                }
+            }
+        }
+    `;
+
+    // A one-item page over the same subtree, but selecting totalCount: computing the total reads every node the
+    // connection matches, however small the page, and those reads are charged like any other. With the allowance
+    // below the subtree size this is refused - the page alone would cost 2 nodes.
+    const totalCountQuery = gql`
+        query {
+            jcr {
+                nodeByPath(path: "${TEST_ROOT}") {
+                    descendants(first: 1) {
+                        pageInfo { totalCount }
+                        nodes { name }
+                    }
+                }
+            }
+        }
+    `;
+
+    // The same one-item page without totalCount, which only the page itself is charged for.
+    const firstPageOnlyQuery = gql`
+        query {
+            jcr {
+                nodeByPath(path: "${TEST_ROOT}") {
+                    descendants(first: 1) {
                         nodes { name }
                     }
                 }
@@ -121,6 +154,22 @@ describe('GraphQL per-request node allowance', () => {
         waitUntilRejected(nestedQuery);
         cy.apollo({query: nestedQuery, errorPolicy: 'all'}).should((response: any) => {
             expect(response.errors[0].message).to.match(/asked for more than 200 nodes/);
+        });
+    });
+
+    it('charges totalCount for every node the connection matches, not just the page', () => {
+        // 155 matches against an allowance of 100: the one-node page is fine, the count is not.
+        setRequestNodeLimit(100);
+        waitUntilRejected(totalCountQuery);
+    });
+
+    it('serves the same page once totalCount is omitted', () => {
+        setRequestNodeLimit(100);
+        // Rejection of the totalCount variant doubles as proof that the new limit has propagated.
+        waitUntilRejected(totalCountQuery);
+        cy.apollo({query: firstPageOnlyQuery, errorPolicy: 'all'}).should((response: any) => {
+            expect(hasAllowanceError(response?.errors)).to.equal(false);
+            expect(response?.data?.jcr?.nodeByPath?.descendants?.nodes).to.have.length(1);
         });
     });
 

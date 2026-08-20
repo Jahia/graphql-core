@@ -95,7 +95,8 @@ public class GqlGroup implements GqlPrincipal {
                                                     @GraphQLName("fieldSorter") @GraphQLDescription("Sort by graphQL fields values") FieldSorterInput fieldSorter,
                                                     @GraphQLName("fieldGrouping") @GraphQLDescription("Group fields according to specified criteria") FieldGroupingInput fieldGrouping,
                                                     DataFetchingEnvironment environment) {
-        Stream<GqlPrincipal> stream = groupManagerService.lookupGroupByPath(group.getLocalPath()).getMembers().stream()
+        Stream<GqlPrincipal> stream = PaginationHelper.chargeToRequestBudget(
+                        groupManagerService.lookupGroupByPath(group.getLocalPath()).getMembers().stream(), environment)
                 .map(this::convertMember)
                 .filter(Objects::nonNull)
                 .filter(FilterHelper.getFieldPredicate(fieldFilter, FieldEvaluator.forConnection(environment)));

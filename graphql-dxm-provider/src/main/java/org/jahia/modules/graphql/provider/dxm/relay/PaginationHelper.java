@@ -250,8 +250,9 @@ public class PaginationHelper {
         return stream.peek(node -> {
             if (remaining.decrementAndGet() < 0) {
                 throw new GqlLimitExceededException("This request asked for more than " + getRequestNodeLimit()
-                        + " nodes across all its fields, which is the maximum allowed. Request fewer nodes, either by"
-                        + " paginating with first/limit or by nesting fewer levels of child or descendant fields.");
+                        + " nodes across all its fields, which is the maximum allowed. Request fewer nodes by"
+                        + " paginating with first/limit, by nesting fewer levels of child or descendant fields, or by"
+                        + " omitting totalCount, which reads everything a connection matches in order to count it.");
             }
         });
     }

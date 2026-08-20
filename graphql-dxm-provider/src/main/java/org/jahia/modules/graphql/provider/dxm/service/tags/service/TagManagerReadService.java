@@ -34,18 +34,23 @@ import org.jahia.services.query.ScrollableQuery;
 import org.jahia.services.query.ScrollableQueryCallback;
 import org.jahia.services.tags.TaggingService;
 import org.osgi.service.component.annotations.Component;
+import pl.touk.throwing.ThrowingFunction;
 
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 
 
@@ -112,7 +117,12 @@ public class TagManagerReadService {
             if (fieldSorter != null) {
                 allTags.sort(SorterHelper.getFieldComparator(fieldSorter, FieldEvaluator.forConnection(environment)));
             }
-            return PaginationHelper.paginate(allTags, tag -> PaginationHelper.encodeCursor(tag.getName()), PaginationHelper.parseArguments(environment));
+            // The returned tags are charged to the request's node allowance like any connection's items. The site
+            // scan behind them deliberately is not: it is batched, aggregates to one small DTO per distinct tag, and
+            // offers nothing node-valued to nest on, so it cannot amplify - whereas charging it would refuse the tag
+            // manager outright on any site holding more tagged nodes than the allowance.
+            return PaginationHelper.paginate(PaginationHelper.chargeToRequestBudget(allTags.stream(), environment),
+                    tag -> PaginationHelper.encodeCursor(tag.getName()), PaginationHelper.parseArguments(environment));
         } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
@@ -127,7 +137,8 @@ public class TagManagerReadService {
      * {@link JCRContentUtils#sqlEncode(String)}. Matching nodes are sorted by their JCR path
      * for deterministic ordering, then converted to {@link GqlJcrNode} representations via
      * {@link SpecializedTypesHandler} before pagination is applied. Only the {@code default}
-     * (edit) workspace is queried.
+     * (edit) workspace is queried. Every match is charged against the per-request node allowance
+     * as it is read, and the connection is subject to the per-connection node limit.
      *
      * @param siteKey     the Jahia site identifier; must not be {@code null}; the current user
      *                    must hold the {@code tagManager} permission on
@@ -154,11 +165,17 @@ public class TagManagerReadService {
             jcrQuery.bindValue("tag", session.getValueFactory().createValue(tag));
             NodeIterator nodeIterator = jcrQuery.execute().getNodes();
 
-            List<GqlJcrNode> nodes = new ArrayList<>();
-            while (nodeIterator.hasNext()) {
-                nodes.add(SpecializedTypesHandler.getNode((JCRNodeWrapper) nodeIterator.nextNode()));
-            }
-            nodes.sort(Comparator.comparing(gqlNode -> gqlNode.getNode().getPath()));
+            // Charge every match to the request's node allowance as it is read: the query is unbounded, the sort
+            // below reads it in full whatever page was asked for, and the results are full GqlJcrNode instances whose
+            // own connections can nest - the amplification shape the allowance exists to bound. Streaming (rather
+            // than collecting a list) also puts this connection under the per-connection node limit that every other
+            // connection observes.
+            @SuppressWarnings("unchecked")
+            Stream<JCRNodeWrapper> matches = StreamSupport.stream(
+                    Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) nodeIterator, Spliterator.ORDERED), false);
+            Stream<GqlJcrNode> nodes = PaginationHelper.chargeToRequestBudget(matches, environment)
+                    .map(ThrowingFunction.unchecked(SpecializedTypesHandler::getNode))
+                    .sorted(Comparator.comparing(gqlNode -> gqlNode.getNode().getPath()));
 
             return PaginationHelper.paginate(nodes, gqlNode -> PaginationHelper.encodeCursor(gqlNode.getUuid()), PaginationHelper.parseArguments(environment));
         } catch (RepositoryException e) {
