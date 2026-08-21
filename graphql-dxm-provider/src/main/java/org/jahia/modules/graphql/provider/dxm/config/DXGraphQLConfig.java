@@ -45,6 +45,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private static final String CORS_ORIGINS = "http.cors.allow-origin";
     private static final String NODE_LIMIT = "graphql.fields.node.limit";
+    private static final String REQUEST_NODE_LIMIT = "graphql.fields.node.requestLimit";
     private static final String MAX_QUERY_COMPLEXITY = "graphql.query.maxComplexity";
     private static final String MAX_QUERY_DEPTH = "graphql.query.maxDepth";
     private static final String MUTATION_BATCH_LIMIT = "graphql.mutation.batch.limit";
@@ -68,11 +69,13 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     // that source stops providing a value (property removed, or config deleted) the effective value reverts to the
     // code default instead of sticking at the last value that was ever set.
     private final Map<String, Integer> nodeLimitByPid = new ConcurrentHashMap<>();
+    private final Map<String, Integer> requestNodeLimitByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> maxQueryComplexityByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> maxQueryDepthByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> mutationBatchLimitByPid = new ConcurrentHashMap<>();
 
     private volatile int nodeLimit = DEFAULT_NODE_LIMIT;
+    private volatile int requestNodeLimit = PaginationHelper.DEFAULT_REQUEST_NODE_LIMIT;
     private volatile int maxQueryComplexity = 0;
     private volatile int maxQueryDepth = 0;
     private volatile int mutationBatchLimit = GraphQLLimits.DEFAULT_MUTATION_BATCH_LIMIT;
@@ -101,6 +104,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         Map<String, String> newPermissions = new HashMap<>();
         Set<String> newCorsOrigins = null;
         Integer newNodeLimit = null;
+        Integer newRequestNodeLimit = null;
         Integer newMaxQueryComplexity = null;
         Integer newMaxQueryDepth = null;
         Integer newMutationBatchLimit = null;
@@ -131,6 +135,12 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
             } else if (key.equals(NODE_LIMIT)) {
                 if (isDefaultConfig) {
                     newNodeLimit = parseNonNegativeLimit(key, value, "Node limit");
+                } else {
+                    warnGatedPropertyIgnored(key, pid);
+                }
+            } else if (key.equals(REQUEST_NODE_LIMIT)) {
+                if (isDefaultConfig) {
+                    newRequestNodeLimit = parseNonNegativeLimit(key, value, "Request node limit");
                 } else {
                     warnGatedPropertyIgnored(key, pid);
                 }
@@ -173,6 +183,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         if (newNodeLimit != null) {
             nodeLimitByPid.put(pid, newNodeLimit);
         }
+        if (newRequestNodeLimit != null) {
+            requestNodeLimitByPid.put(pid, newRequestNodeLimit);
+        }
         if (newMaxQueryComplexity != null) {
             maxQueryComplexityByPid.put(pid, newMaxQueryComplexity);
         }
@@ -210,6 +223,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         corsOriginByPid.remove(pid);
         introspectionCheckByPid.remove(pid);
         nodeLimitByPid.remove(pid);
+        requestNodeLimitByPid.remove(pid);
         maxQueryComplexityByPid.remove(pid);
         maxQueryDepthByPid.remove(pid);
         mutationBatchLimitByPid.remove(pid);
@@ -231,6 +245,12 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         if (newNodeLimit != nodeLimit) {
             nodeLimit = newNodeLimit;
             PaginationHelper.updateLimit(nodeLimit);
+        }
+
+        int newRequestNodeLimit = firstValueOrDefault(requestNodeLimitByPid, PaginationHelper.DEFAULT_REQUEST_NODE_LIMIT);
+        if (newRequestNodeLimit != requestNodeLimit) {
+            requestNodeLimit = newRequestNodeLimit;
+            PaginationHelper.updateRequestLimit(requestNodeLimit);
         }
         maxQueryComplexity = firstValueOrDefault(maxQueryComplexityByPid, 0);
         maxQueryDepth = firstValueOrDefault(maxQueryDepthByPid, 0);
@@ -336,6 +356,13 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     public int getNodeLimit() {
         return nodeLimit;
+    }
+
+    /**
+     * @return the number of nodes one request may walk across all of its fields together; {@code 0} means unbounded
+     */
+    public int getRequestNodeLimit() {
+        return requestNodeLimit;
     }
 
     /**

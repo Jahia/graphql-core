@@ -121,7 +121,11 @@ public class VanityUrlJCRSiteExtensions {
                     "ISDESCENDANTNODE('/sites/" + JCRContentUtils.sqlEncode(siteNode.getSiteKey()) + "')";
             Query query = jcrSession.getWorkspace().getQueryManager().createQuery(vanityQuery, Query.JCR_SQL2);
             NodeIterator it = query.execute().getNodes();
-            Stream<GqlJcrVanityUrl> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
+            // Charged although the extension is currently disabled, so that re-enabling it cannot reopen an
+            // uncharged, unbounded site-wide read.
+            Stream<GqlJcrVanityUrl> stream = PaginationHelper.chargeToRequestBudget(
+                            StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>) it, Spliterator.ORDERED), false),
+                            environment)
                     .map(GqlJcrVanityUrl::new);
 
             return PaginationHelper.paginate(stream, v -> PaginationHelper.encodeCursor(v.getUuid()), arguments);

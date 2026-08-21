@@ -21,6 +21,7 @@ import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.commons.lang.mutable.MutableObject;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.GqlLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.modules.graphql.provider.dxm.util.StreamUtils;
 import org.slf4j.Logger;
@@ -36,6 +37,25 @@ public class PaginationHelper {
 
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(PaginationHelper.class);
     private static AtomicInteger nodeLimit = new AtomicInteger(5000);
+
+    /**
+     * Default number of nodes one request may walk across every connection it selects, together.
+     * <p>
+     * Four times {@link #nodeLimit}, so a request can legitimately page through several connections in full, while a
+     * document that nests connections stays bounded: the per-connection limit caps each connection on its own, never
+     * their product, and it is the product that a nested selection multiplies out. Like the mutation batch limit this
+     * is a starting point rather than a measured figure - it is wide enough that observed traffic does not approach it,
+     * and is expected to be tightened once there is data on real request sizes.
+     */
+    public static final int DEFAULT_REQUEST_NODE_LIMIT = 20000;
+
+    private static AtomicInteger requestNodeLimit = new AtomicInteger(DEFAULT_REQUEST_NODE_LIMIT);
+
+    /**
+     * Key under which a request's remaining node allowance is held in the GraphQL context, seeded once per operation by
+     * {@code QueryCostInstrumentation} and drawn down by every connection the operation resolves.
+     */
+    public static final String REMAINING_NODE_ALLOWANCE = "jahiaRemainingNodeAllowance";
 
     private PaginationHelper() {
     }
@@ -177,6 +197,75 @@ public class PaginationHelper {
 
     public static int getNodeLimit() {
         return nodeLimit.get();
+    }
+
+    /**
+     * Updates the number of nodes one request may walk in total. Called by {@code DXGraphQLConfig} when the
+     * configuration changes; {@code 0} disables the bound.
+     */
+    public static void updateRequestLimit(int limit) {
+        logger.info("Request node limit has been updated to {}", limit);
+        requestNodeLimit.set(limit);
+    }
+
+    /**
+     * @return the configured number of nodes one request may walk across all of its connections; {@code 0} means
+     *         unbounded
+     */
+    public static int getRequestNodeLimit() {
+        return requestNodeLimit.get();
+    }
+
+    /**
+     * Charges every node the given stream yields to the request's node allowance, failing the request once it is spent.
+     * <p>
+     * Applied to a lazy stream of JCR nodes <em>before</em> anything that consumes it, so that one charge covers each of
+     * the ways a connection walks its source: the page {@link #collectItems} collects, the tail
+     * {@link StreamBasedDXPaginatedData#getTotalCount()} drains to count, and any full materialization a sorter or a
+     * grouping imposes ahead of pagination. Each of those pulls through this stage exactly once per node, so nodes are
+     * charged once however the connection ends up reading them.
+     * <p>
+     * The connection that exhausts the allowance fails, so that the response says plainly that it is incomplete rather
+     * than quietly returning a differently-shaped answer - which is what truncating it would do, since the allowance
+     * runs out part-way through whichever connection happens to be resolving at the time. Every connection after that
+     * one reads nothing and reports nothing. Repeating the failure would be its own amplification: the offending
+     * document is one that nests connections, so it has a connection per node the level above it returned, and an error
+     * object apiece turns a bound meant to shrink an over-large response into a way to demand a much larger one. One
+     * error is what a caller needs to know the request was refused; thousands of copies of it are what an attacker
+     * wants.
+     *
+     * @param stream      the nodes a connection is about to read
+     * @param environment the environment carrying the request's remaining allowance
+     * @return the stream, charging as it is consumed; the argument unchanged when no bound is in force
+     */
+    public static <T> Stream<T> chargeToRequestBudget(Stream<T> stream, DataFetchingEnvironment environment) {
+        AtomicInteger remaining = remainingNodeAllowance(environment);
+        if (remaining == null) {
+            return stream;
+        }
+        if (remaining.get() < 0) {
+            // Already spent, and the connection that spent it has already said so.
+            return Stream.empty();
+        }
+        return stream.peek(node -> {
+            if (remaining.decrementAndGet() < 0) {
+                throw new GqlLimitExceededException("This request asked for more than " + getRequestNodeLimit()
+                        + " nodes across all its fields, which is the maximum allowed. Request fewer nodes by"
+                        + " paginating with first/limit, by nesting fewer levels of child or descendant fields, or by"
+                        + " omitting totalCount, which reads everything a connection matches in order to count it.");
+            }
+        });
+    }
+
+    /**
+     * @return the request's remaining node allowance, or {@code null} when the bound is disabled or there is no request
+     *         context to hold it (a directly-invoked data fetcher, as in a unit test)
+     */
+    private static AtomicInteger remainingNodeAllowance(DataFetchingEnvironment environment) {
+        if (environment == null || environment.getGraphQlContext() == null) {
+            return null;
+        }
+        return environment.getGraphQlContext().get(REMAINING_NODE_ALLOWANCE);
     }
 
     public static Arguments parseArguments(DataFetchingEnvironment environment) {

@@ -44,6 +44,7 @@ public class DXGraphQLConfigTest {
     private static final String DEFAULT_CONFIG_PID = "org.jahia.modules.graphql.provider~default";
 
     private static final int DEFAULT_NODE_LIMIT = 5000;
+    private static final int DEFAULT_REQUEST_NODE_LIMIT = 20000;
 
     private DXGraphQLConfig config;
 
@@ -122,6 +123,46 @@ public class DXGraphQLConfigTest {
         assertEquals(2000, config.getMaxQueryComplexity());
         assertEquals(30, config.getMaxQueryDepth());
         assertEquals(100, config.getNodeLimit());
+    }
+
+    // --- the per-request node allowance, which unlike the guards above is on by default ---
+
+    @Test
+    public void shouldBoundNodesPerRequestByDefault() {
+        // The allowance is what bounds nested fan-out, so it has to hold with no configuration present at all: unlike
+        // the complexity and depth guards, whose code default is 0, an absent property must not leave it unbounded.
+        assertEquals(DEFAULT_REQUEST_NODE_LIMIT, config.getRequestNodeLimit());
+    }
+
+    @Test
+    public void shouldApplyRequestNodeLimitFromDefaultConfig() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.fields.node.requestLimit", "250"));
+
+        assertEquals(250, config.getRequestNodeLimit());
+    }
+
+    @Test
+    public void shouldIgnoreRequestNodeLimitFromNonDefaultConfig() throws ConfigurationException {
+        config.updated("pid1", props(OTHER_CONFIG_FILE, "graphql.fields.node.requestLimit", "1000000"));
+
+        assertEquals(DEFAULT_REQUEST_NODE_LIMIT, config.getRequestNodeLimit());
+    }
+
+    @Test
+    public void shouldRevertRequestNodeLimitWhenPropertyRemoved() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.fields.node.requestLimit", "250"));
+        assertEquals(250, config.getRequestNodeLimit());
+
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE));
+
+        assertEquals(DEFAULT_REQUEST_NODE_LIMIT, config.getRequestNodeLimit());
+    }
+
+    @Test
+    public void shouldTreatZeroRequestNodeLimitAsUnbounded() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.fields.node.requestLimit", "0"));
+
+        assertEquals(0, config.getRequestNodeLimit());
     }
 
     @Test
