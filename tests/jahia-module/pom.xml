@@ -60,7 +60,7 @@
     <description>This is the custom module (text-field-initializer) for content-editor cypress tests.</description>
 
     <properties>
-        <graphql-dxm-provider.version>3.7.0-SNAPSHOT</graphql-dxm-provider.version>
+        <graphql-dxm-provider.version>3.9.0-SNAPSHOT</graphql-dxm-provider.version>
     </properties>
 
     <repositories>
