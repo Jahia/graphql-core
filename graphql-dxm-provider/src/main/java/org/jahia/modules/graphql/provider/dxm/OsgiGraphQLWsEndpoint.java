@@ -23,6 +23,7 @@ import org.jahia.api.Constants;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.securityfilter.PermissionService;
+import org.jahia.services.securityfilter.ScopeDefinition;
 import org.jahia.services.usermanager.JahiaUser;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -35,9 +36,12 @@ import javax.websocket.*;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component(immediate = true, service = Endpoint.class)
 @ServerEndpoint(value="/graphqlws", subprotocols = {"graphql-ws", "graphql-transport-ws"}, configurator = OsgiGraphQLWsEndpoint.Configurator.class)
@@ -109,10 +113,21 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
 
             // Capture the authorization scopes resolved for this handshake (HTTP) request so the
             // subscription execution thread can restore them (see JahiaSubscriptionExecutionStrategy).
-            // The handshake runs through the servlet filter chain, so the scopes are resolved here.
+            // POC fix: confirmed via PermissionServiceImpl trace logging that the WS upgrade request
+            // (/modules/graphqlws) auto-applies a narrower scope set than a plain /modules/graphql
+            // request - it never includes "graphql", so every subscription field check is denied
+            // regardless of the connecting user's identity. Explicitly fold the "graphql" scope into
+            // whatever this handshake naturally resolved, since a WS connection carrying a GraphQL
+            // subscription is definitionally a graphql API caller.
             PermissionService permissionService = BundleUtils.getOsgiService(PermissionService.class, null);
             if (permissionService != null) {
-                sec.getUserProperties().put(SESSION_SCOPES, permissionService.getCurrentScopes());
+                Collection<ScopeDefinition> currentScopes = permissionService.getCurrentScopes();
+                Set<ScopeDefinition> scopesToCapture = currentScopes != null ? new HashSet<>(currentScopes) : new HashSet<>();
+                permissionService.getAvailableScopes().stream()
+                        .filter(s -> "graphql".equals(s.getScopeName()))
+                        .findFirst()
+                        .ifPresent(scopesToCapture::add);
+                sec.getUserProperties().put(SESSION_SCOPES, scopesToCapture);
             }
         }
     }
