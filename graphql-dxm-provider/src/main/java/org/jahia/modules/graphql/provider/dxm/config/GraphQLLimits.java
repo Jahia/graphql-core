@@ -50,23 +50,6 @@ public final class GraphQLLimits {
     }
 
     /**
-     * Resolves the maximum number of nodes a mutation may operate on when the caller can express a limit itself, i.e.
-     * for a query-driven mutation. An explicit limit is honoured but may never raise the result set above the
-     * configured bound — a request argument must not be able to widen a global limit.
-     *
-     * @param requestedLimit the limit requested by the caller, may be {@code null}
-     * @return the limit to apply, or {@code null} when no bound applies
-     */
-    public static Long resolveMutationLimit(Long requestedLimit) {
-        long configuredLimit = mutationBatchLimit.get();
-        Long requested = (requestedLimit != null && requestedLimit.longValue() > 0) ? requestedLimit : null;
-        if (configuredLimit <= 0) {
-            return requested;
-        }
-        return (requested == null) ? Long.valueOf(configuredLimit) : Long.valueOf(Math.min(requested.longValue(), configuredLimit));
-    }
-
-    /**
      * Verifies that a caller-supplied batch is within the configured bound.
      * <p>
      * A query-driven mutation never enumerated its targets, so returning fewer of them is a reasonable bound. Here the
@@ -99,22 +82,25 @@ public final class GraphQLLimits {
     }
 
     /**
-     * Resolves how many nodes a query-driven mutation may operate on. The pre-execution guard cannot measure it - how
-     * many nodes a JCR statement matches is only known once it runs - so the field checks the result against this and
-     * fails if more matched. It draws from what the request has left rather than from the whole allowance, so several
-     * aliased calls share one budget.
+     * Resolves how many nodes a query-driven mutation may operate on. It draws from what the request has left rather
+     * than from the whole allowance, so several aliased calls share one budget.
+     * <p>
+     * The caller's own {@code limit} argument is deliberately not folded in here, because the two are compared rather
+     * than merged. That argument says how many nodes the caller wants to operate on: within this bound it is a page,
+     * and paging to it is exactly what was asked for; wider than this bound it is a request the instance does not
+     * permit, and it is refused before the query runs, so the outcome cannot depend on how many nodes happen to
+     * match. With no {@code limit} there is nothing to compare yet - how many nodes a JCR statement matches is only
+     * known once it runs - so that case is bounded by the query and the result is checked as it is read.
      *
-     * @param requestedLimit the limit requested by the caller, may be {@code null}
-     * @param remaining      the request's remaining allowance, or {@code null} when the guard is not in play
-     * @return the limit to apply to the query, or {@code null} when no bound applies
+     * @param remaining the request's remaining allowance, or {@code null} when the guard is not in play
+     * @return the number of nodes the mutation may operate on, or {@code null} when unbounded
      */
-    public static Long resolveMutationLimit(Long requestedLimit, AtomicInteger remaining) {
-        if (remaining == null) {
-            return resolveMutationLimit(requestedLimit);
+    public static Long resolveMutationBatchBound(AtomicInteger remaining) {
+        if (remaining != null) {
+            return Long.valueOf(Math.max(0, remaining.get()));
         }
-        long left = Math.max(0, remaining.get());
-        Long asked = (requestedLimit != null && requestedLimit.longValue() > 0) ? requestedLimit : null;
-        return (asked == null) ? Long.valueOf(left) : Long.valueOf(Math.min(asked.longValue(), left));
+        int configuredLimit = mutationBatchLimit.get();
+        return (configuredLimit > 0) ? Long.valueOf(configuredLimit) : null;
     }
 
     /**

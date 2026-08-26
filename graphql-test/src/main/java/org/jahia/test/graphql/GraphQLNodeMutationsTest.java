@@ -574,12 +574,26 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     private static final String SUB_LIST_2 = "/testList/testSubList2";
     private static final String SUB_LIST_3 = "/testList/testSubList3";
     private static final String TITLE = "jcr:title";
+    // The titles the paging and refusal tests write, so that what they assert is which nodes carry one rather than
+    // what it says.
+    private static final String PAGED = "paged";
+    private static final String REFUSED = "refused";
     // The aggregate guard runs before execution, so an oversized batch is refused with graphql-java's wording rather
     // than by the per-field backstop inside the resolver.
     private static final String BATCH_TOO_LARGE = "maximum mutation batch size exceeded %d > %d";
     private static final String QUERY_MATCHED_TOO_MANY =
-            "This mutation matched more nodes than the maximum of %d it may operate on;"
-                    + " narrow the query, or use the limit/offset arguments.";
+            "This mutation matched more nodes than the maximum of %d it may operate on; operate on %d or fewer at a"
+                    + " time, using the limit/offset arguments.";
+    // A limit argument states the size, so asking for more than the bound is refused before the query runs and the
+    // message names what was asked rather than what matched.
+    private static final String ASKED_TOO_MANY =
+            "This mutation asked to operate on %d nodes, more than the maximum of %d it may operate on; operate on %d"
+                    + " or fewer at a time, using the limit/offset arguments.";
+    // A request that has already spent its whole allowance is told so, because no page this field asks for can fit.
+    private static final String ALLOWANCE_ALREADY_USED =
+            "This mutation asked to operate on %d nodes, more than what this request has left of its mutation batch"
+                    + " allowance of %d, which earlier fields already used in full; move this mutation to another"
+                    + " request.";
 
     /**
      * Runs the given assertions with the mutation batch limit temporarily set, restoring it afterwards. The limit is
@@ -646,7 +660,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         // mutation would return a handle for every one of them.
         withMutationBatchLimit(2, () -> {
             JSONObject result = mutateSubListTitlesByQuery("", "bounded");
-            validateError(result, String.format(QUERY_MATCHED_TOO_MANY, 2));
+            validateError(result, String.format(QUERY_MATCHED_TOO_MANY, 2, 2));
             // Nothing persisted: the session is only saved when the request completes without errors.
             assertTitledSubLists("bounded");
             return null;
@@ -654,12 +668,38 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void mutateNodesByQueryShouldCapExplicitLimitToConfiguredMutationBatchLimit() throws Exception {
-        // An explicit limit argument is honoured, but may not raise the result set above the configured bound.
+    public void mutateNodesByQueryShouldRefuseAnExplicitLimitWiderThanTheBound() throws Exception {
+        // A limit argument selects a slice of the matches, but it may not ask for a wider one than the instance
+        // permits: over the bound the mutation is refused rather than quietly cut back down to it.
         withMutationBatchLimit(1, () -> {
-            JSONObject result = mutateSubListTitlesByQuery(",limit:3", "capped");
-            validateError(result, String.format(QUERY_MATCHED_TOO_MANY, 1));
-            assertTitledSubLists("capped");
+            JSONObject result = mutateSubListTitlesByQuery(",limit:3", REFUSED);
+            validateError(result, String.format(ASKED_TOO_MANY, 3, 1, 1));
+            assertTitledSubLists(REFUSED);
+            return null;
+        });
+    }
+
+    @Test
+    public void mutateNodesByQueryShouldRefuseAnExplicitLimitWiderThanTheBoundWhateverMatches() throws Exception {
+        // The refusal follows from the limit alone. An offset past every match means the query returns nothing at all,
+        // so a check on the result set would let this through - asking for more than the instance permits is a bad
+        // request whether or not the data would have made it one.
+        withMutationBatchLimit(1, () -> {
+            JSONObject result = mutateSubListTitlesByQuery(",limit:3,offset:5", REFUSED);
+            validateError(result, String.format(ASKED_TOO_MANY, 3, 1, 1));
+            assertTitledSubLists(REFUSED);
+            return null;
+        });
+    }
+
+    @Test
+    public void mutateNodesByQueryShouldTreatALimitOfZeroAsNoPageAtAll() throws Exception {
+        // limit:0 asks for no page rather than for no nodes, so there is nothing to compare against the bound and the
+        // request is refused on what it matched, exactly as it is with no limit argument.
+        withMutationBatchLimit(2, () -> {
+            JSONObject result = mutateSubListTitlesByQuery(",limit:0", REFUSED);
+            validateError(result, String.format(QUERY_MATCHED_TOO_MANY, 2, 2));
+            assertTitledSubLists(REFUSED);
             return null;
         });
     }
@@ -686,21 +726,56 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     }
 
     @Test
-    public void aliasingAQueryDrivenMutationShouldNotMultiplyTheConfiguredMutationBatchLimit() throws Exception {
-        // A query-driven mutation cannot be measured before it runs, so it truncates instead of being refused, and
-        // each alias draws from what the request has left rather than from the whole bound.
+    public void mutateNodesByQueryShouldPageWithAnExplicitLimitWithinTheBound() throws Exception {
+        // limit says which slice of the matches to operate on, so a query matching more than it asks for is a page,
+        // not an overrun. Three sub-lists match; a limit of 1 mutates the first of them and leaves the rest alone.
         withMutationBatchLimit(2, () -> {
-            executeQuery("mutation {\n" +
+            validateNoErrors(mutateSubListTitlesByQuery(",limit:1", PAGED));
+            assertTitledSubLists(PAGED, SUB_LIST_1);
+            return null;
+        });
+    }
+
+    @Test
+    public void mutateNodesByQueryShouldPageWithALimitEqualToTheBound() throws Exception {
+        // The boundary between paging and refusal: a page exactly as wide as the bound is still a page, because
+        // operating on that many nodes is precisely what the bound allows. Three sub-lists match, so a bound of 2 with
+        // limit:2 mutates the first two and leaves the third alone rather than refusing the request.
+        withMutationBatchLimit(2, () -> {
+            validateNoErrors(mutateSubListTitlesByQuery(",limit:2", PAGED));
+            assertTitledSubLists(PAGED, SUB_LIST_1, SUB_LIST_2);
+            return null;
+        });
+    }
+
+    @Test
+    public void mutateNodesByQueryShouldPageWithLimitAndOffsetWithinTheBound() throws Exception {
+        // offset picks which page, so the same limit of 1 mutates the second sub-list rather than the first.
+        withMutationBatchLimit(2, () -> {
+            validateNoErrors(mutateSubListTitlesByQuery(",limit:1,offset:1", PAGED));
+            assertTitledSubLists(PAGED, SUB_LIST_2);
+            return null;
+        });
+    }
+
+    @Test
+    public void aliasingAQueryDrivenMutationShouldNotMultiplyTheConfiguredMutationBatchLimit() throws Exception {
+        // How many nodes a query matches is not knowable before it runs, so each alias draws from what the request has
+        // left rather than from the whole bound. Both aliases page within the bound on their own; together they are
+        // over it, so the second one is refused and the whole request fails.
+        withMutationBatchLimit(2, () -> {
+            JSONObject result = executeQuery("mutation {\n" +
                     "  jcr {\n" +
-                    "    a: mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList') order by localname()\",queryLanguage:SQL2) {\n" +
+                    "    a: mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList') order by localname()\",queryLanguage:SQL2,limit:2) {\n" +
                     "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"first\") }\n" +
                     "    }\n" +
-                    "    b: mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList') order by localname()\",queryLanguage:SQL2) {\n" +
+                    "    b: mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList') order by localname()\",queryLanguage:SQL2,limit:2) {\n" +
                     "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"second\") }\n" +
                     "    }\n" +
                     "  }\n" +
                     "}\n");
-            // The first alias uses the allowance of 2, so the second is over it and the whole request fails.
+            validateError(result, String.format(ALLOWANCE_ALREADY_USED, 2, 2));
+            // Nothing persisted: the session is only saved when the request completes without errors.
             assertTitledSubLists("first");
             return null;
         });
