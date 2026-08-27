@@ -354,6 +354,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         return corsOrigins;
     }
 
+    /**
+     * @return the number of nodes one connection may collect; {@code 0} means unbounded
+     */
     public int getNodeLimit() {
         return nodeLimit;
     }

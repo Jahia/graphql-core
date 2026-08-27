@@ -166,6 +166,13 @@ public class DXGraphQLConfigTest {
     }
 
     @Test
+    public void shouldTreatZeroNodeLimitAsUnbounded() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.fields.node.limit", "0"));
+
+        assertEquals(0, config.getNodeLimit());
+    }
+
+    @Test
     public void shouldIgnoreLimitsFromNonDefaultConfigFile() throws ConfigurationException {
         config.updated("pid1", props(OTHER_CONFIG_FILE,
                 "graphql.query.maxComplexity", "10",

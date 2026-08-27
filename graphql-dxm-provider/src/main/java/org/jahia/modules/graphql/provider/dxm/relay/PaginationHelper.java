@@ -182,7 +182,7 @@ public class PaginationHelper {
             //Adding a limit of 1000 to avoid OOM
             if(count.intValue() == 500) {
                 logger.warn("The current paginated query is returning more than 500 items. This may cause a memory leak.");
-            } else if(count.intValue() == nodeLimit && logger.isWarnEnabled()) {
+            } else if(nodeLimit > 0 && count.intValue() == nodeLimit && logger.isWarnEnabled()) {
                 logger.warn("The current paginated query is returning more than {} items. Stopping the query.", nodeLimit, new DataFetchingException("The current paginated query is returning more than " + nodeLimit + " items. Stopping the query here."));
                 break;
             }
@@ -190,11 +190,17 @@ public class PaginationHelper {
         return new ArrayList<>(items);
     }
 
+    /**
+     * Updates the number of nodes one connection may collect; {@code 0} disables the cap.
+     */
     public static void updateLimit(int limit) {
         logger.info("Node limit has been updated to {}", limit);
         nodeLimit.set(limit);
     }
 
+    /**
+     * @return the configured number of nodes one connection may collect; {@code 0} means unbounded
+     */
     public static int getNodeLimit() {
         return nodeLimit.get();
     }
@@ -249,6 +255,8 @@ public class PaginationHelper {
         }
         return stream.peek(node -> {
             if (remaining.decrementAndGet() < 0) {
+                logger.warn("Refusing a GraphQL request that read more than the {} nodes allowed by graphql.fields.node.requestLimit, exhausted at {}",
+                        getRequestNodeLimit(), environment.getExecutionStepInfo() != null ? environment.getExecutionStepInfo().getPath() : "an unknown field");
                 throw new GqlLimitExceededException("This request asked for more than " + getRequestNodeLimit()
                         + " nodes across all its fields, which is the maximum allowed. Request fewer nodes by"
                         + " paginating with first/limit, by nesting fewer levels of child or descendant fields, or by"
