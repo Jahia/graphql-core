@@ -16,6 +16,9 @@
 package org.jahia.modules.graphql.provider.dxm.relay;
 
 import graphql.GraphQLContext;
+import graphql.Scalars;
+import graphql.execution.ExecutionStepInfo;
+import graphql.execution.ResultPath;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.DataFetchingEnvironmentImpl;
 import org.jahia.modules.graphql.provider.dxm.GqlLimitExceededException;
@@ -44,7 +47,13 @@ public class PaginationHelperTest {
         if (allowance != null) {
             context.put(PaginationHelper.REMAINING_NODE_ALLOWANCE, new AtomicInteger(allowance));
         }
-        return DataFetchingEnvironmentImpl.newDataFetchingEnvironment().graphQLContext(context).build();
+        return DataFetchingEnvironmentImpl.newDataFetchingEnvironment()
+                .graphQLContext(context)
+                .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
+                        .type(Scalars.GraphQLString)
+                        .path(ResultPath.parse("/test/connection"))
+                        .build())
+                .build();
     }
 
     private static AtomicInteger allowanceOf(DataFetchingEnvironment environment) {
