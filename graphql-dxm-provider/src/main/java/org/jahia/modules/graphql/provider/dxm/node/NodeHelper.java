@@ -246,7 +246,13 @@ public class NodeHelper {
     public static DXPaginatedData<GqlJcrNode> getPaginatedNodesList(NodeIterator it, Collection<String> names, GqlJcrNode.NodeTypesInput typesFilter, GqlJcrNode.NodePropertiesInput propertiesFilter, FieldFiltersInput fieldFilter,
             DataFetchingEnvironment environment, FieldSorterInput fieldSorterInput, FieldGroupingInput fieldGroupingInput) {
 
-        @SuppressWarnings("unchecked") Stream<GqlJcrNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false)
+        @SuppressWarnings("unchecked") Stream<JCRNodeWrapper> nodes = StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRNodeWrapper>)it, Spliterator.ORDERED), false);
+
+        // Charge every node this connection pulls out of the repository against the request's allowance, before any
+        // filter has had the chance to drop one: a node that is read and then filtered out still cost a read, so
+        // charging only the survivors would let a never-matching typesFilter walk a whole subtree for free at every
+        // level of a nested selection - which is the shape the allowance exists to bound.
+        Stream<GqlJcrNode> stream = PaginationHelper.chargeToRequestBudget(nodes, environment)
             .filter(node-> PermissionHelper.hasPermission(node, environment))
             .filter(getNodesPredicate(names, typesFilter, propertiesFilter, null, environment))
             .filter(ThrowingPredicate.unchecked(NodeHelper::checkNodeValidity))

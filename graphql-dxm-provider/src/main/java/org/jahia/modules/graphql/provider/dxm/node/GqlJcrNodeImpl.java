@@ -466,8 +466,16 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     private void collectReferences(PropertyIterator references, Collection<GqlJcrProperty> gqlReferences, DataFetchingEnvironment environment) throws RepositoryException {
-        while (references.hasNext()) {
-            JCRPropertyWrapper reference = (JCRPropertyWrapper) references.nextProperty();
+        // Every reference property is read out of the repository whether or not the caller may see the node holding
+        // it, so each is charged to the request's node allowance as it is pulled, before the permission filter below.
+        // The collected items lead straight back to GqlJcrNode (node/refNode/refNodes fields), where a selection can
+        // nest and fan out again.
+        @SuppressWarnings("unchecked")
+        Iterator<JCRPropertyWrapper> charged = PaginationHelper.chargeToRequestBudget(
+                StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRPropertyWrapper>) references, Spliterator.ORDERED), false),
+                environment).iterator();
+        while (charged.hasNext()) {
+            JCRPropertyWrapper reference = charged.next();
             JCRNodeWrapper referencingNode = reference.getParent();
             if (PermissionHelper.hasPermission(referencingNode, environment)) {
                 String name = reference.getName();
@@ -718,8 +726,15 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     private void collectUsages(PropertyIterator references, Collection<GqlUsage> gqlReferences, DataFetchingEnvironment environment) throws RepositoryException {
-        while (references.hasNext()) {
-            JCRPropertyWrapper reference = (JCRPropertyWrapper) references.nextProperty();
+        // Charged like collectReferences above: every referencing property costs a read before the permission filter
+        // can drop it, and each GqlUsage exposes its node as a field, so a selection can nest through usages back
+        // into GqlJcrNode connections.
+        @SuppressWarnings("unchecked")
+        Iterator<JCRPropertyWrapper> charged = PaginationHelper.chargeToRequestBudget(
+                StreamSupport.stream(Spliterators.spliteratorUnknownSize((Iterator<JCRPropertyWrapper>) references, Spliterator.ORDERED), false),
+                environment).iterator();
+        while (charged.hasNext()) {
+            JCRPropertyWrapper reference = charged.next();
             JCRNodeWrapper referencingNode = reference.getParent();
             if (PermissionHelper.hasPermission(referencingNode, environment)) {
                 String name = reference.getName();

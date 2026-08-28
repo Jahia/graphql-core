@@ -43,7 +43,9 @@ public class SDLPaginatedDataConnectionFetcher<T> implements ConnectionFetcher<T
 
     @Override
     public Connection<T> get(DataFetchingEnvironment environment) throws Exception {
-        Stream<T> l = (Stream<T>) fetcher.getStream(environment);
+        // SDL finders run JCR queries and return full GqlJcrNode instances, whose connections a selection can nest
+        // into, so their reads draw on the same per-request node allowance as the built-in connections.
+        Stream<T> l = PaginationHelper.chargeToRequestBudget((Stream<T>) fetcher.getStream(environment), environment);
         PaginationHelper.Arguments arguments = PaginationHelper.parseArguments(environment);
         DXPaginatedData<T> paginatedData = PaginationHelper.paginate(l, n -> PaginationHelper.encodeCursor(((GqlJcrNode)n).getUuid()), arguments);
 

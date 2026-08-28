@@ -46,7 +46,10 @@ public interface GqlPrincipal {
                                                         DataFetchingEnvironment environment, JahiaGroupManagerService groupManagerService) {
 
         List<String> paths = groupManagerService.getMembershipByPath(localPath);
-        Stream<GqlGroup> stream = paths.stream()
+        // Charged before the lookups and filters below, since each path costs a group read whether or not a filter
+        // later drops it - and the groups returned carry members and groupMembership connections to nest on, which
+        // must draw on the request's shared allowance.
+        Stream<GqlGroup> stream = PaginationHelper.chargeToRequestBudget(paths.stream(), environment)
                 .map(groupManagerService::lookupGroupByPath)
                 .filter(Objects::nonNull)
                 .map(JCRGroupNode::getJahiaGroup)
