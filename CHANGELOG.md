@@ -1,6 +1,6 @@
 # graphql-core Changelog
 
-## 3.9.0
+## 3.9.1
 
 ### New Features
 
