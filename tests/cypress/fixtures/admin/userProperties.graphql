@@ -1,0 +1,11 @@
+query($username: String!) {
+    admin {
+        userAdmin {
+            user(username: $username) {
+                username
+                published: property(name: "j:organization")
+                withheld: property(name: "j:password")
+            }
+        }
+    }
+}

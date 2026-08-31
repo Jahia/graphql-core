@@ -107,7 +107,7 @@ public class GqlCurrentUser {
     @GraphQLField
     @GraphQLDescription("User property")
     public String getProperty(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property") String name) {
-        return user.getProperty(name);
+        return PrincipalProperties.read(user::getProperty, name);
     }
 
     @GraphQLField

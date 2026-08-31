@@ -78,7 +78,7 @@ public class GqlGroup implements GqlPrincipal {
     @GraphQLField
     @GraphQLDescription("Group property")
     public String getProperty(@GraphQLName("name") @GraphQLNonNull @GraphQLDescription("The name of the property") String name) {
-        return group.getProperty(name);
+        return PrincipalProperties.read(group::getProperty, name);
     }
 
     @GraphQLField
