@@ -12,9 +12,12 @@
  *
  * Requests go through cy.request rather than cy.apollo: an array body is not a shape an Apollo client will send, and it
  * is the raw response - its HTTP status, and how many entries it carries - that the assertions are about. The bound is
- * applied to the request rather than to the schema, so this suite is what shows it reaching the endpoint; the wording
- * of the refusal is asserted where it is deterministic, in RequestOperationLimitPreProcessorTest (a refusal travels
- * back as a container error page, whose rendering of the message is not the endpoint's to promise).
+ * applied to the request rather than to the schema, so this suite is what shows it reaching the endpoint.
+ *
+ * What the assertions deliberately do NOT read is the content of an accepted request's entries. The claim this bound
+ * makes is that a request within it is executed and answered once per operation; what each operation then resolves to
+ * belongs to the permission layer, and the root fields of this schema are gated - so an entry carries `errors` rather
+ * than `data` depending on who is asking, without saying anything about the bound either way.
  *
  * Only honoured from the default provider configuration, so the limit is driven through a groovy provisioning fixture
  * that edits the "default" factory instance (see setRequestOperationLimit.groovy). Config propagation (ConfigAdmin
@@ -69,6 +72,17 @@ describe('GraphQL per-request operation limit', () => {
         waitUntilRefused(4);
     });
 
+    it('names the counts it refused on', () => {
+        setOperationLimit(3);
+        waitUntilRefused(4);
+        postOperations(4).should((response: any) => {
+            // The refusal reaches the caller as the error page for the status, which quotes the cause. Reading it
+            // here is what distinguishes this bound's 400 from any other refusal of the same request.
+            expect(String(response.body)).to.contain('4 operations');
+            expect(String(response.body)).to.contain('maximum of 3');
+        });
+    });
+
     it('answers every operation of a request at the limit', () => {
         setOperationLimit(3);
         // Rejection of one operation more doubles as proof that the new limit has propagated.
@@ -76,8 +90,9 @@ describe('GraphQL per-request operation limit', () => {
         postOperations(3).should((response: any) => {
             expect(response.status).to.equal(200);
             expect(response.body).to.have.length(3);
+            // One result per operation is the whole claim: nothing was dropped on the way through.
             response.body.forEach((entry: any) => {
-                expect(entry.data.__typename).to.equal('Query');
+                expect(entry).to.have.any.keys('data', 'errors');
             });
         });
     });
