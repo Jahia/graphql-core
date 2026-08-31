@@ -578,6 +578,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     // what it says.
     private static final String PAGED = "paged";
     private static final String REFUSED = "refused";
+    private static final String SHARED = "shared";
     // The aggregate guard runs before execution, so an oversized batch is refused with graphql-java's wording rather
     // than by the per-field backstop inside the resolver.
     private static final String BATCH_TOO_LARGE = "maximum mutation batch size exceeded %d > %d";
@@ -614,6 +615,25 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     }
 
     /** Sets jcr:title on every contentList under /testList that the query matches, optionally with extra arguments. */
+    /**
+     * Sets jcr:title on the sub-lists the query matches and, in the same document, on one named explicitly. That shape
+     * is what makes an enumerated field claim part of the request's allowance before the query-driven one runs.
+     */
+    private static JSONObject mutateSubListTitlesBesideANamedNode(String extraArguments, String value)
+            throws JSONException {
+        return executeQuery("mutation {\n" +
+                "  jcr {\n" +
+                "    q: mutateNodesByQuery(query:\"select * from [jnt:contentList] where"
+                + " isdescendantnode('/testList') order by localname()\",queryLanguage:SQL2" + extraArguments + ") {\n" +
+                "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"" + value + "\") }\n" +
+                "    }\n" +
+                "    n: mutateNodes(pathsOrIds: [\"" + SUB_LIST_1 + "\"]) {\n" +
+                "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"" + value + "\") }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n");
+    }
+
     private static JSONObject mutateSubListTitlesByQuery(String extraArguments, String value) throws JSONException {
         return executeQuery("mutation {\n" +
                 "  jcr {\n" +
@@ -783,20 +803,9 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         // sharing the document lowers it before any field runs. A page the instance permits stays permitted: what the
         // caller asked for is measured against the configured limit, not against the room the rest of the request left.
         withMutationBatchLimit(3, () -> {
-            JSONObject result = executeQuery("mutation {\n" +
-                    "  jcr {\n" +
-                    "    q: mutateNodesByQuery(query:\"select * from [jnt:contentList] where"
-                    + " isdescendantnode('/testList') order by localname()\",queryLanguage:SQL2,limit:3,offset:2) {\n" +
-                    "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"shared\") }\n" +
-                    "    }\n" +
-                    "    n: mutateNodes(pathsOrIds: [\"" + SUB_LIST_1 + "\"]) {\n" +
-                    "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"shared\") }\n" +
-                    "    }\n" +
-                    "  }\n" +
-                    "}\n");
-            validateNoErrors(result);
+            validateNoErrors(mutateSubListTitlesBesideANamedNode(",limit:3,offset:2", SHARED));
             // The query pages past the first sub-list, the enumerated field names it, and the middle one is untouched.
-            assertTitledSubLists("shared", SUB_LIST_1, SUB_LIST_3);
+            assertTitledSubLists(SHARED, SUB_LIST_1, SUB_LIST_3);
             return null;
         });
     }
@@ -806,19 +815,9 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         // The same document without a limit: the query matches all three sub-lists and only two of the allowance are
         // left, so the refusal reports the room left rather than the configured limit, and nothing is persisted.
         withMutationBatchLimit(3, () -> {
-            JSONObject result = executeQuery("mutation {\n" +
-                    "  jcr {\n" +
-                    "    q: mutateNodesByQuery(query:\"select * from [jnt:contentList] where"
-                    + " isdescendantnode('/testList') order by localname()\",queryLanguage:SQL2) {\n" +
-                    "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"shared\") }\n" +
-                    "    }\n" +
-                    "    n: mutateNodes(pathsOrIds: [\"" + SUB_LIST_1 + "\"]) {\n" +
-                    "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"shared\") }\n" +
-                    "    }\n" +
-                    "  }\n" +
-                    "}\n");
+            JSONObject result = mutateSubListTitlesBesideANamedNode("", SHARED);
             validateError(result, String.format(ALLOWANCE_PARTLY_CLAIMED, 2, 3, 2));
-            assertTitledSubLists("shared");
+            assertTitledSubLists(SHARED);
             return null;
         });
     }
