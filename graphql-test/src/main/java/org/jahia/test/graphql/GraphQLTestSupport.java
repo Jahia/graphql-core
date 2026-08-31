@@ -45,6 +45,9 @@ public class GraphQLTestSupport extends JahiaTestCase {
 
     private static final Logger logger = LoggerFactory.getLogger(GraphQLTestSupport.class);
 
+    /** The member a GraphQL response carries its errors in; absent altogether when the request succeeded. */
+    private static final String ERRORS = "errors";
+
     private static OsgiGraphQLHttpServlet servlet;
 
     protected static void init() {
@@ -137,12 +140,22 @@ public class GraphQLTestSupport extends JahiaTestCase {
         Assert.assertEquals(expectedParentNodePath, node.getJSONObject("parent").getString("path"));
     }
 
+    /**
+     * Asserts the request carried no error, so that a test which goes on to assert repository state reports the error
+     * that explains the failure rather than the missing content that follows from it.
+     */
+    protected static void validateNoErrors(JSONObject result) throws JSONException {
+        if (result.has(ERRORS)) {
+            Assert.fail("Expected no error, got: " + result.getJSONArray(ERRORS));
+        }
+    }
+
     protected static void validateError(JSONObject result, String errorMessage) throws JSONException {
         validateErrors(result, new String[]{errorMessage});
     }
 
     protected static void validateErrors(JSONObject result, String[] errorMessages) throws JSONException {
-        JSONArray errors = result.getJSONArray("errors");
+        JSONArray errors = result.getJSONArray(ERRORS);
         Assert.assertEquals(errorMessages.length, errors.length());
         for (int i = 0; i < errorMessages.length; i++) {
             Assert.assertTrue(errors.getJSONObject(i).getString("message").contains(errorMessages[i]));

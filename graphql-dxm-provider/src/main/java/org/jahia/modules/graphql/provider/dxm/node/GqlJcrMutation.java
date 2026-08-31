@@ -158,17 +158,21 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
      *
      * @param query         the query to retrieve the nodes to be modified
      * @param queryLanguage the query language
-     * @param limit         the maximum size of the result set; the request fails if more nodes match
+     * @param limit         how many of the matching nodes to operate on; a value above the configured mutation
+     *                      batch limit is refused, and a page can still be refused when the rest of the request
+     *                      claims the room for it
      * @param offset        the start offset of the result set
      * @return a collection of mutation objects
-     * @throws BaseGqlClientException in case of node retrieval errors
+     * @throws BaseGqlClientException in case of node retrieval errors, if the caller asks for more nodes than the
+     *                                configured mutation batch limit permits, or if the mutation would operate on more
+     *                                than that limit leaves this request
      */
     @GraphQLField
     @GraphQLDescription("Mutates a set of existing nodes, based on query execution")
     public Collection<GqlJcrNodeMutation> mutateNodesByQuery(
             @GraphQLName("query") @GraphQLNonNull @GraphQLDescription("The query string") String query,
             @GraphQLName("queryLanguage") @GraphQLDefaultValue(GqlJcrQuery.QueryLanguageDefaultValue.class) @GraphQLDescription("The query language") GqlJcrQuery.QueryLanguage queryLanguage,
-            @GraphQLName("limit") @GraphQLDescription("The maximum size of the result set") Long limit,
+            @GraphQLName("limit") @GraphQLDescription("How many of the matching nodes to operate on. A value above the configured mutation batch limit is refused, and a page can still be refused when the rest of the request claims the room for it.") Long limit,
             @GraphQLName("offset") @GraphQLDescription("The start offset of the result set") Long offset,
             DataFetchingEnvironment environment
     ) throws BaseGqlClientException {
@@ -178,13 +182,31 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
         // not knowable before it runs, so the pre-execution guard could not account for it and several aliased calls
         // would otherwise each be entitled to the full limit.
         AtomicInteger remaining = remainingBatchAllowance(environment);
-        Long effectiveLimit = GraphQLLimits.resolveMutationLimit(limit, remaining);
+        Long bound = GraphQLLimits.resolveMutationBatchBound(remaining);
+        int configured = GraphQLLimits.getMutationBatchLimit();
+        Long page = (limit != null && limit.longValue() > 0) ? limit : null;
+        // A limit argument states how many nodes the caller wants to operate on, so asking for more than the instance
+        // permits is refused here, before the query runs: whether the argument itself is acceptable must not depend on
+        // how many nodes happen to match, nor on which other fields share the document. It is compared against the
+        // configured limit and not against what the request has left, because the allowance is spent by every batch
+        // field in the document - including ones that have not run - so comparing against it would refuse a page the
+        // instance does in fact permit.
+        if (configured > 0 && page != null && page.longValue() > configured) {
+            throw new GqlLimitExceededException(batchBoundExceeded("This mutation asked to operate on " + page
+                    + " nodes, more than ", configured, configured));
+        }
+        // What this field may then actually take is bounded by the allowance, which is a property of the whole request:
+        // a page the instance permits still cannot be taken once the rest of the request has claimed the room for it.
+        // Whether that happens depends on how many nodes match, so it is settled as the result is read.
+        boolean guarded = bound != null && (page == null || page.longValue() > bound.longValue());
         try {
             QueryManagerWrapper queryManager = getSession().getWorkspace().getQueryManager();
             QueryWrapper q = queryManager.createQuery(query, queryLanguage.getJcrQueryLanguage());
-            if (effectiveLimit != null) {
+            if (guarded) {
                 // One more than the bound, so that reaching it can be told apart from matching it exactly.
-                q.setLimit(effectiveLimit.longValue() + 1);
+                q.setLimit(bound.longValue() + 1);
+            } else if (page != null) {
+                q.setLimit(page.longValue());
             }
             if (offset != null && offset.longValue() > 0) {
                 q.setOffset(offset.longValue());
@@ -194,11 +216,11 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
             throw new DataFetchingException(e);
         }
         while (nodes.hasNext()) {
-            if (effectiveLimit != null && result.size() == effectiveLimit.longValue()) {
+            if (guarded && result.size() == bound.longValue()) {
                 // Over the bound: fail rather than mutate a subset. Nothing is persisted, because the session is only
                 // saved once the whole request completes without errors.
-                throw new GqlLimitExceededException("This mutation matched more nodes than the maximum of "
-                        + effectiveLimit + " it may operate on; narrow the query, or use the limit/offset arguments.");
+                throw new GqlLimitExceededException(batchBoundExceeded("This mutation matched more nodes than ",
+                        bound.longValue(), configured));
             }
             JCRNodeWrapper node = (JCRNodeWrapper) nodes.next();
             result.add(new GqlJcrNodeMutation(node));
@@ -207,6 +229,36 @@ public class GqlJcrMutation extends GqlJcrMutationSupport implements DXGraphQLFi
             remaining.addAndGet(-result.size());
         }
         return result;
+    }
+
+    /**
+     * The bound a query-driven mutation is refused on is what the request has <em>left</em> of its allowance, so the
+     * same number needs different advice. With the whole allowance still available it is what the instance permits, and
+     * a smaller page is the answer. Once the rest of the request has claimed part of it a smaller page still works, but
+     * only up to what is left; once the whole allowance is claimed nothing this field does will fit, and only another
+     * request will. {@code configured} is what tells those apart, and is passed in so that one refusal reads a single
+     * snapshot of it - a limit reconfigured mid-request can then misname the cause, but never the refusal itself.
+     * <p>
+     * The messages say "other fields" rather than "earlier fields" deliberately: the allowance is opened at
+     * {@code maxBatchSize} minus the batch size of the <em>whole document</em>, measured before execution starts, so
+     * the room a field is missing may have been claimed by one that has not run yet.
+     *
+     * @param lead       the sentence up to the bound, e.g. {@code "This mutation matched more nodes than "}
+     * @param bound      how many nodes this field was allowed to operate on
+     * @param configured the limit in force for the instance, which tells a partly spent allowance from a full one
+     * @return the refusal message
+     */
+    private static String batchBoundExceeded(String lead, long bound, int configured) {
+        if (configured <= 0 || bound >= configured) {
+            return lead + "the maximum of " + bound + " it may operate on; operate on " + bound
+                    + " or fewer at a time, using the limit/offset arguments.";
+        }
+        if (bound <= 0) {
+            return lead + "what this request has left of its mutation batch allowance of " + configured
+                    + ", which other fields in it already claim in full; move this mutation to another request.";
+        }
+        return lead + "the " + bound + " that other fields in this request leave of its mutation batch allowance of "
+                + configured + "; operate on " + bound + " or fewer here, and move the rest to another request.";
     }
 
     /**
