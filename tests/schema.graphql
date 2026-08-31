@@ -148,7 +148,12 @@ interface JCRNode {
     "Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned."
     displayableNode: JCRNode
     "Returns the next available name for a node, appending if needed numbers."
-    findAvailableNodeName(language: String, nodeType: String): String
+    findAvailableNodeName(
+        "Language used to resolve the node type label"
+        language: String,
+        "Node type used to generate the base name"
+        nodeType: String
+    ): String
     "Check if the current user has a specific permission"
     hasPermission(
         "The name of the permission"
@@ -848,7 +853,12 @@ type GenericJCRNode implements JCRNode {
     "Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned."
     displayableNode: JCRNode
     "Returns the next available name for a node, appending if needed numbers."
-    findAvailableNodeName(language: String, nodeType: String): String
+    findAvailableNodeName(
+        "Language used to resolve the node type label"
+        language: String,
+        "Node type used to generate the base name"
+        nodeType: String
+    ): String
     "Check if the current user has a specific permission"
     hasPermission(
         "The name of the permission"
@@ -1364,7 +1374,7 @@ type GqlEditorFormMutations {
         removedConditions: [String],
         "Existing visibility conditions to update"
         updatedConditions: [InputVisibilityConditionInput],
-        "UUID of the parent nodes ofr teh visibility condition"
+        "UUID of the parent nodes for the visibility condition"
         uuid: String!
     ): Boolean
     "Unlock the given node for edition, if the node is locked."
@@ -2128,7 +2138,7 @@ type JCRMutation {
     ): [JCRNodeMutation]
     "Mutates a set of existing nodes, based on query execution"
     mutateNodesByQuery(
-        "The maximum size of the result set"
+        "How many of the matching nodes to operate on. A value above the configured mutation batch limit is refused, and a page can still be refused when the rest of the request claims the room for it."
         limit: Long,
         "The start offset of the result set"
         offset: Long,
@@ -2963,7 +2973,12 @@ type JCRSite implements JCRNode {
     "Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned."
     displayableNode: JCRNode
     "Returns the next available name for a node, appending if needed numbers."
-    findAvailableNodeName(language: String, nodeType: String): String
+    findAvailableNodeName(
+        "Language used to resolve the node type label"
+        language: String,
+        "Node type used to generate the base name"
+        nodeType: String
+    ): String
     "Check if the current user has a specific permission"
     hasPermission(
         "The name of the permission"
@@ -3240,6 +3255,11 @@ type JahiaAdminMutation {
         "In seconds, maximum time to wait for server to be ready to shutdown"
         timeout: Int
     ): Boolean
+    "Manage tags for a site"
+    tagManager(
+        "The site key"
+        siteKey: String!
+    ): JahiaTagManagerMutation
 }
 
 "Jahia admin queries root"
@@ -3268,6 +3288,11 @@ type JahiaAdminQuery {
     scheduler: GqlScheduler
     "Details about the system hosting Jahia"
     system: JahiaSystem
+    "Manage tags for a site"
+    tagManager(
+        "The site key"
+        siteKey: String!
+    ): JahiaTagManager
     "Lists tasks running on the Jahia server. A server should not be stopped/restarted when any of these tasks are present. These tasks are specific to the server being queried and are not shared accorss a cluster"
     tasks: [task]
     "Version of the running Jahia instance"
@@ -3316,6 +3341,76 @@ type JahiaSystemOs {
     name: String
     "Operating System Version"
     version: String
+}
+
+"Tag manager queries for a site"
+type JahiaTagManager {
+    "List content items using a specific tag"
+    taggedContent(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int,
+        "The tag to inspect"
+        tag: String!
+    ): JCRNodeConnection
+    "List tags used under the site"
+    tags(
+        "fetching only nodes after this node (exclusive)"
+        after: String,
+        "fetching only nodes before this node (exclusive)"
+        before: String,
+        "Sort by graphQL fields values"
+        fieldSorter: InputFieldSorterInput,
+        "fetching only the first certain number of nodes"
+        first: Int,
+        "fetching only the last certain number of nodes"
+        last: Int,
+        "fetching only the first certain number of nodes"
+        limit: Int,
+        "fetching only nodes after this node (inclusive)"
+        offset: Int
+    ): ManagedTagConnection
+}
+
+"Tag manager mutations for a site"
+type JahiaTagManagerMutation {
+    "Delete a tag from all tagged content under the site"
+    deleteTag(
+        "The tag to delete"
+        tag: String!
+    ): TagMutationResult
+    "Delete a tag from a specific content item"
+    deleteTagOnNode(
+        "The node identifier"
+        nodeId: String!,
+        "The tag to delete"
+        tag: String!
+    ): TagMutationResult
+    "Rename a tag on all tagged content under the site"
+    renameTag(
+        "The new tag name"
+        newName: String!,
+        "The tag to rename"
+        tag: String!
+    ): TagMutationResult
+    "Rename a tag on a specific content item"
+    renameTagOnNode(
+        "The new tag name"
+        newName: String!,
+        "The node identifier"
+        nodeId: String!,
+        "The tag to rename"
+        tag: String!
+    ): TagMutationResult
 }
 
 "Version of the running Jahia instance"
@@ -3388,6 +3483,34 @@ type LockInfo {
     ): [GqlLockDetail]
     "Is node lockable"
     lockable: Boolean
+}
+
+"A managed tag"
+type ManagedTag {
+    "The normalized tag name"
+    name: String!
+    "How many content nodes use this tag"
+    occurrences: Long!
+}
+
+"A connection to a list of items."
+type ManagedTagConnection {
+    "a list of edges"
+    edges: [ManagedTagEdge]
+    "a list of nodes"
+    nodes: [ManagedTag]
+    "details about this specific page"
+    pageInfo: PageInfo!
+}
+
+"An edge in a connection"
+type ManagedTagEdge {
+    "cursor marks a unique position or index into the connection"
+    cursor: String!
+    "index in the connection"
+    index: Int
+    "The item at the end of the edge"
+    node: ManagedTag
 }
 
 "Metadata properties for all content"
@@ -3475,11 +3598,11 @@ type PageInfo {
     hasNextPage: Boolean!
     "When paginating backwards, are there more items?"
     hasPreviousPage: Boolean!
-    "When paginating forwards, the cursor to continue."
+    "The number of nodes returned in this page."
     nodesCount: Int
     "When paginating backwards, the cursor to continue."
     startCursor: String
-    "When paginating forwards, the cursor to continue."
+    "The total number of items the connection matches, ignoring pagination. Computing it reads every item the connection matches, however small the requested page, and those reads count against the per-request node limit - omit this field when the total is not needed."
     totalCount: Int
 }
 
@@ -3787,6 +3910,28 @@ type Subscription {
     workflowEvent: GqlWorkflowEvent
 }
 
+"The result of a tag mutation"
+type TagMutationResult {
+    "The impacted node identifier when the mutation targets a specific node"
+    nodeId: String
+    "The processed tag"
+    tag: String!
+    "Per-workspace mutation results"
+    workspaceResults: [TagWorkspaceMutationResult]!
+}
+
+"The result of a tag mutation for one workspace"
+type TagWorkspaceMutationResult {
+    "Total number of nodes that failed to update in this workspace (may exceed the size of failedPaths)"
+    failedCount: Int!
+    "JCR paths of nodes that failed to update, capped at 10. Use a follow-up taggedContent query with these paths for full node details."
+    failedPaths: [String]!
+    "Number of nodes successfully updated in this workspace"
+    processedCount: Int!
+    "The workspace that was updated"
+    workspace: String!
+}
+
 "Workflow task"
 type Task {
     "Task assignee"
@@ -3895,8 +4040,8 @@ type User implements Principal {
         "Site where the group is defined"
         site: String
     ): Boolean
-    "User name"
-    name: String! @deprecated(reason: "Deprecated")
+    "Username (same as .username)"
+    name: String!
     "Get the corresponding JCR node"
     node: JCRNode
     "User organization"
@@ -3910,7 +4055,7 @@ type User implements Principal {
     ): String
     "Site where the user is defined"
     site: JCRSite
-    "Username of the user"
+    "Username (same as .name)"
     username: String!
 }
 
@@ -4100,7 +4245,12 @@ type VanityUrl implements JCRNode {
     "Returns the first parent of the current node that can be displayed in full page. If no matching node is found, null is returned."
     displayableNode: JCRNode
     "Returns the next available name for a node, appending if needed numbers."
-    findAvailableNodeName(language: String, nodeType: String): String
+    findAvailableNodeName(
+        "Language used to resolve the node type label"
+        language: String,
+        "Node type used to generate the base name"
+        nodeType: String
+    ): String
     "Check if the current user has a specific permission"
     hasPermission(
         "The name of the permission"
@@ -4443,6 +4593,7 @@ enum GqlProbeSeverity {
     MEDIUM
 }
 
+"How grouped items are positioned relative to the ungrouped ones"
 enum GroupingType {
     "Put grouped items at the end in the order groups appear in the 'groups' list"
     END
@@ -4457,6 +4608,7 @@ enum JCRPropertyOption {
     NOT_ZONED_DATE
 }
 
+"Type of a JCR property (as defined by javax.jcr.PropertyType)"
 enum JCRPropertyType {
     "BINARY"
     BINARY
@@ -4496,6 +4648,7 @@ enum LoadInterval {
     ONE
 }
 
+"A way to evaluate a criteria consisting of multiple sub-criteria"
 enum MulticriteriaEvaluation {
     "The result criteria evaluates positive if all sub-criteria evaluate positive"
     ALL
@@ -4554,6 +4707,7 @@ enum PropertyEvaluation {
     PRESENT
 }
 
+"Possible publication statuses of a JCR node"
 enum PublicationStatus {
     "CONFLICT"
     CONFLICT
@@ -4608,6 +4762,7 @@ enum ReorderedChildrenPosition {
     LAST
 }
 
+"Sort order direction"
 enum SortType {
     "Ascendant order"
     ASC
@@ -4658,6 +4813,7 @@ enum TokenState {
     DISABLED
 }
 
+"Work in progress status of a JCR node"
 enum WipStatus {
     "Work in progress for all languages"
     ALL_CONTENT
@@ -4934,6 +5090,8 @@ input InputVanityUrl {
 
 "Input type representing a visibility condition to be saved on a node"
 input InputVisibilityConditionInput {
+    "The names of properties to remove from an existing visibility condition node"
+    deletedProperties: [String]
     "The properties to set on the visibility condition node"
     properties: [InputJCRProperty]
     "The primary node type of the visibility condition"

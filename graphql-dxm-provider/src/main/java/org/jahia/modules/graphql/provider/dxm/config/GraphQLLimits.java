@@ -20,7 +20,7 @@ import org.jahia.modules.graphql.provider.dxm.GqlLimitExceededException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Holds the effective bound on how many nodes a single mutation field may operate on, and the rules for applying it.
+ * Holds the effective bound on how many nodes one request may operate on, and the rules for applying it.
  * <p>
  * This is deliberately separate from the pagination node limit ({@code graphql.fields.node.limit}, held by
  * {@code PaginationHelper}). The two bound comparable-looking numbers but very different work: the pagination limit
@@ -52,9 +52,11 @@ public final class GraphQLLimits {
     /**
      * Verifies that a caller-supplied batch is within the configured bound.
      * <p>
-     * A query-driven mutation never enumerated its targets, so returning fewer of them is a reasonable bound. Here the
-     * caller listed the nodes explicitly, so silently operating on a prefix of that list would quietly not do what was
-     * asked — a correctness problem dressed up as a limit. Failing tells the caller to split the batch instead.
+     * A query-driven mutation given a {@code limit} states its own page size, and paging to it is what was asked;
+     * given none, how many nodes it matches is known only as it runs, so it too fails rather than operate on a subset.
+     * Here the caller listed the nodes explicitly, so silently operating on a prefix of that list would quietly not do
+     * what was asked — a correctness problem dressed up as a limit. Failing tells the caller to split the batch
+     * instead.
      *
      * @param batchSize the number of entries the caller supplied
      * @throws GqlLimitExceededException if the batch exceeds the configured bound
@@ -75,22 +77,19 @@ public final class GraphQLLimits {
     public static final String REMAINING_BATCH_ALLOWANCE = "jahiaRemainingMutationBatchAllowance";
 
     /**
-     * @return the configured maximum number of nodes a single mutation field may operate on; {@code 0} means unbounded
+     * @return the configured maximum number of nodes one request may operate on; {@code 0} means unbounded
      */
     public static int getMutationBatchLimit() {
         return mutationBatchLimit.get();
     }
 
     /**
-     * Resolves how many nodes a query-driven mutation may operate on. It draws from what the request has left rather
-     * than from the whole allowance, so several aliased calls share one budget.
+     * Resolves the bound on how many nodes a query-driven mutation may operate on. It draws from what the request has
+     * left rather than from the whole allowance, so several aliased calls share one budget.
      * <p>
-     * The caller's own {@code limit} argument is deliberately not folded in here, because the two are compared rather
-     * than merged. That argument says how many nodes the caller wants to operate on: within this bound it is a page,
-     * and paging to it is exactly what was asked for; wider than this bound it is a request the instance does not
-     * permit, and it is refused before the query runs, so the outcome cannot depend on how many nodes happen to
-     * match. With no {@code limit} there is nothing to compare yet - how many nodes a JCR statement matches is only
-     * known once it runs - so that case is bounded by the query and the result is checked as it is read.
+     * The caller's own {@code limit} is deliberately not a parameter: it is compared against the configured limit
+     * rather than folded into this bound. That reasoning belongs with the comparison, in
+     * {@code GqlJcrMutation.mutateNodesByQuery}.
      *
      * @param remaining the request's remaining allowance, or {@code null} when the guard is not in play
      * @return the number of nodes the mutation may operate on, or {@code null} when unbounded
