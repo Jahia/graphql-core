@@ -1,5 +1,5 @@
 ---
-graphql-core: patch
+graphql-core: minor
 ---
 
 Restricted the GraphQL user and group administration queries (`admin.userAdmin`, `admin.userGroup`) to callers holding the GraphQL administration permission, and limited the `property(name:)` field of a user or group to the profile and membership values those types publish.
