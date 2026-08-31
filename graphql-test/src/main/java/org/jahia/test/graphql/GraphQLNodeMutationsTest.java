@@ -507,27 +507,27 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
     @Test
     public void mutateNodesByQuery() throws Exception {
-        validateNoErrors(mutateSubListTitlesByQuery("", "test1"));
+        validateNoErrors(mutateSubListTitlesByQuery("", TITLE_1));
         inJcr(session -> {
-            assertEquals("test1", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
-            assertEquals("test1", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
-            assertEquals("test1", session.getNode("/testList/testSubList3").getProperty("jcr:title").getString());
+            assertEquals(TITLE_1, session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
+            assertEquals(TITLE_1, session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
+            assertEquals(TITLE_1, session.getNode("/testList/testSubList3").getProperty("jcr:title").getString());
             return null;
         });
 
-        validateNoErrors(mutateSubListTitlesByQuery(",limit:1", "test2"));
+        validateNoErrors(mutateSubListTitlesByQuery(LIMIT_1, TITLE_2));
         inJcr(session -> {
-            assertEquals("test2", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
-            assertEquals("test1", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
-            assertEquals("test1", session.getNode("/testList/testSubList3").getProperty("jcr:title").getString());
+            assertEquals(TITLE_2, session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
+            assertEquals(TITLE_1, session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
+            assertEquals(TITLE_1, session.getNode("/testList/testSubList3").getProperty("jcr:title").getString());
             return null;
         });
 
-        validateNoErrors(mutateSubListTitlesByQuery(",limit:1,offset:1", "test3"));
+        validateNoErrors(mutateSubListTitlesByQuery(LIMIT_1 + ",offset:1", TITLE_3));
         inJcr(session -> {
-            assertEquals("test2", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
-            assertEquals("test3", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
-            assertEquals("test1", session.getNode("/testList/testSubList3").getProperty("jcr:title").getString());
+            assertEquals(TITLE_2, session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
+            assertEquals(TITLE_3, session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
+            assertEquals(TITLE_1, session.getNode("/testList/testSubList3").getProperty("jcr:title").getString());
             return null;
         });
 
@@ -555,6 +555,11 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     private static final String PAGED = "paged";
     private static final String REFUSED = "refused";
     private static final String SHARED = "shared";
+    // The successive titles mutateNodesByQuery writes, and the page it writes the second and third with.
+    private static final String TITLE_1 = "test1";
+    private static final String TITLE_2 = "test2";
+    private static final String TITLE_3 = "test3";
+    private static final String LIMIT_1 = ",limit:1";
     // The aggregate guard runs before execution, so an oversized batch is refused with graphql-java's wording rather
     // than by the per-field backstop inside the resolver.
     private static final String BATCH_TOO_LARGE = "maximum mutation batch size exceeded %d > %d";
@@ -738,7 +743,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         // which of the matches to operate on whether or not the instance bounds mutations at all. Folding the two
         // together made a limit smaller than the match count fail here too, with no bound in force to justify it.
         withMutationBatchLimit(0, () -> {
-            validateNoErrors(mutateSubListTitlesByQuery(",limit:1", PAGED));
+            validateNoErrors(mutateSubListTitlesByQuery(LIMIT_1, PAGED));
             assertTitledSubLists(PAGED, SUB_LIST_1);
             return null;
         });
@@ -761,7 +766,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         // limit says which slice of the matches to operate on, so a query matching more than it asks for is a page,
         // not an overrun. Three sub-lists match; a limit of 1 mutates the first of them and leaves the rest alone.
         withMutationBatchLimit(2, () -> {
-            validateNoErrors(mutateSubListTitlesByQuery(",limit:1", PAGED));
+            validateNoErrors(mutateSubListTitlesByQuery(LIMIT_1, PAGED));
             assertTitledSubLists(PAGED, SUB_LIST_1);
             return null;
         });
@@ -783,7 +788,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     public void mutateNodesByQueryShouldPageWithLimitAndOffsetWithinTheBound() throws Exception {
         // offset picks which page, so the same limit of 1 mutates the second sub-list rather than the first.
         withMutationBatchLimit(2, () -> {
-            validateNoErrors(mutateSubListTitlesByQuery(",limit:1,offset:1", PAGED));
+            validateNoErrors(mutateSubListTitlesByQuery(LIMIT_1 + ",offset:1", PAGED));
             assertTitledSubLists(PAGED, SUB_LIST_2);
             return null;
         });
