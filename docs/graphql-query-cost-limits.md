@@ -23,5 +23,10 @@ Be careful with low values: a connection's `totalCount` is computed by reading e
 **`graphql.mutation.batch.limit`** (default: `5000`)
 Maximum number of nodes one request may ask a mutation to operate on (`mutateNodes`, `mutateNodesByQuery`, `addNodesBatch`). A request over the limit fails as a whole; it is never applied to a subset of the requested nodes.
 
+**`graphql.request.operationLimit`** (default: `20`)
+Maximum number of operations one request may submit. The endpoint accepts a JSON array as a request body, each element of which is an independent operation executed as part of the same request; this is the number of those elements. It is the one limit here that is not a measure of a single operation, and so is the factor the others are multiplied by: a request may ask for as much work as this many operations at the full complexity, depth, node and mutation-batch ceilings.
+
+A request that submits more fails as a whole, with `400`, and the response reports how many operations were submitted and what the maximum is; it is never trimmed down to the bound. Clients that batch typically default to ten operations per request, and Jahia's own interfaces send one, so the default leaves room for both.
+
 **`graphql.fields.node.limit`** (default: `5000`)
 The pre-existing cap on how many nodes a single connection (paginated field) may collect. As of 3.9.0 it can also be set to `0` to disable the cap.

@@ -45,6 +45,7 @@ public class DXGraphQLConfigTest {
 
     private static final int DEFAULT_NODE_LIMIT = 5000;
     private static final int DEFAULT_REQUEST_NODE_LIMIT = 20000;
+    private static final int DEFAULT_OPERATION_LIMIT = 20;
 
     private DXGraphQLConfig config;
 
@@ -326,6 +327,38 @@ public class DXGraphQLConfigTest {
         config.deleted("some-other-pid"); // force a recompute
         assertEquals(0, config.getMaxQueryDepth());
         assertEquals(0, config.getMaxQueryComplexity());
+    }
+
+    // --- the bound on how many operations one request may submit, on by default like the allowance above ---
+
+    @Test
+    public void shouldBoundOperationsPerRequestByDefault() {
+        // This bound is the factor the per-operation limits are multiplied by, so an absent property must not leave it
+        // unbounded either.
+        assertEquals(DEFAULT_OPERATION_LIMIT, config.getRequestOperationLimit());
+    }
+
+    @Test
+    public void shouldApplyRequestOperationLimitFromDefaultConfig() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.request.operationLimit", "3"));
+
+        assertEquals(3, config.getRequestOperationLimit());
+    }
+
+    @Test
+    public void shouldIgnoreRequestOperationLimitFromOtherConfig() throws ConfigurationException {
+        config.updated("pid1", props(OTHER_CONFIG_FILE, "graphql.request.operationLimit", "100000"));
+
+        assertEquals(DEFAULT_OPERATION_LIMIT, config.getRequestOperationLimit());
+    }
+
+    @Test
+    public void shouldRevertRequestOperationLimitWhenDefaultConfigDeleted() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.request.operationLimit", "3"));
+        assertEquals(3, config.getRequestOperationLimit());
+
+        config.deleted("pid1");
+        assertEquals(DEFAULT_OPERATION_LIMIT, config.getRequestOperationLimit());
     }
 
     // --- introspection check flag: secure by default (true) ---
