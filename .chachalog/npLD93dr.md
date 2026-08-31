@@ -1,5 +1,5 @@
 ---
-graphql-core: patch
+graphql-core: minor
 ---
 
 The number of operations a single GraphQL request may submit is now bounded by a new configuration property, `graphql.request.operationLimit` (default `20`, `0` disables), read only from the default configuration file so a non-default configuration cannot loosen it.
