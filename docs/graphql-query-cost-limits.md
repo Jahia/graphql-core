@@ -7,7 +7,7 @@ content:
   '$subpath': document-area/content
 ---
 
-Starting with graphql-core 3.9.0, the GraphQL endpoint can reject requests whose execution cost would be excessive, protecting a Jahia instance against accidental or malicious query amplification. All of the settings below are read exclusively from the default provider configuration file (`org.jahia.modules.graphql.provider-default.cfg`), so a third-party module configuration cannot loosen them. Setting a value to `0` disables that specific guard.
+Starting with graphql-core 3.9.1, the GraphQL endpoint can reject requests whose execution cost would be excessive, protecting a Jahia instance against accidental or malicious query amplification. All of the settings below are read exclusively from the default provider configuration file (`org.jahia.modules.graphql.provider-default.cfg`), so a third-party module configuration cannot loosen them. Setting a value to `0` disables that specific guard.
 
 **`graphql.query.maxComplexity`** (default: `2000`)
 Maximum complexity of a query document, where every field, alias and meta field counts as 1 plus the complexity of its sub-selection. Documents over the limit are rejected before execution starts.
@@ -24,4 +24,4 @@ Be careful with low values: a connection's `totalCount` is computed by reading e
 Maximum number of nodes one request may ask a mutation to operate on (`mutateNodes`, `mutateNodesByQuery`, `addNodesBatch`). A request over the limit fails as a whole; it is never applied to a subset of the requested nodes.
 
 **`graphql.fields.node.limit`** (default: `5000`)
-The pre-existing cap on how many nodes a single connection (paginated field) may collect. As of 3.9.0 it can also be set to `0` to disable the cap.
+The pre-existing cap on how many nodes a single connection (paginated field) may collect. As of 3.9.1 it can also be set to `0` to disable the cap.
