@@ -195,7 +195,7 @@
             pl.touk.throwing.exception
         </import-package>
         <jahia-module-type>system</jahia-module-type>
-        <jahia-module-signature>MCwCFGsHmt3FnVHS06Zz98rLJa/DFhH8AhQ2Lm31kLPQNjct2EIpyh7uCLZocg==</jahia-module-signature>
+        <jahia-module-signature>MCwCFBBQdaKQeTOAQtBjE57CXq5kSryQAhQmA3WZKcTx7TSq4Dy5QizEExcqvA==</jahia-module-signature>
         <mockito.version>2.21.0</mockito.version>
         <powermock.version>2.0.9</powermock.version>
         <yarn.arguments>build:production</yarn.arguments>
