@@ -507,15 +507,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
     @Test
     public void mutateNodesByQuery() throws Exception {
-        validateNoErrors(executeQuery("mutation {\n" +
-                "  jcr {\n" +
-                "    mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList')\",queryLanguage:SQL2) {\n" +
-                "      mutateProperty(name: \"jcr:title\") {\n" +
-                "        setValue(language: \"en\", value: \"test1\")\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n"));
+        validateNoErrors(mutateSubListTitlesByQuery("", "test1"));
         inJcr(session -> {
             assertEquals("test1", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
             assertEquals("test1", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
@@ -523,15 +515,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             return null;
         });
 
-        validateNoErrors(executeQuery("mutation {\n" +
-                "  jcr {\n" +
-                "    mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList') order by localname()\",limit:1) {\n" +
-                "      mutateProperty(name: \"jcr:title\") {\n" +
-                "        setValue(language: \"en\", value: \"test2\")\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n"));
+        validateNoErrors(mutateSubListTitlesByQuery(",limit:1", "test2"));
         inJcr(session -> {
             assertEquals("test2", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
             assertEquals("test1", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
@@ -539,15 +523,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             return null;
         });
 
-        validateNoErrors(executeQuery("mutation {\n" +
-                "  jcr {\n" +
-                "    mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList') order by localname()\",limit:1, offset:1) {\n" +
-                "      mutateProperty(name: \"jcr:title\") {\n" +
-                "        setValue(language: \"en\", value: \"test3\")\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n"));
+        validateNoErrors(mutateSubListTitlesByQuery(",limit:1,offset:1", "test3"));
         inJcr(session -> {
             assertEquals("test2", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
             assertEquals("test3", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
@@ -614,37 +590,53 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         }
     }
 
-    /** Sets jcr:title on every contentList under /testList that the query matches, optionally with extra arguments. */
+    /** The statement the query-driven mutation tests page over: the contentLists under /testList, in name order. */
+    private static final String SUB_LISTS_QUERY =
+            "select * from [jnt:contentList] where isdescendantnode('/testList') order by localname()";
+
+    /** Wraps mutation fields in the JCR mutation document they need. */
+    private static JSONObject executeJcrMutation(String fields) throws JSONException {
+        return executeQuery("mutation {\n  jcr {\n" + fields + "  }\n}\n");
+    }
+
+    /** The selection that sets jcr:title, shared by every field below. */
+    private static String titlingSelection(String value) {
+        return "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"" + value + "\") }\n";
+    }
+
+    /** A mutateNodesByQuery field, aliased when an alias is given, titling whatever it matches. */
+    private static String titlingQueryField(String alias, String extraArguments, String value) {
+        return "    " + (alias == null ? "" : alias + ": ")
+                + "mutateNodesByQuery(query:\"" + SUB_LISTS_QUERY + "\",queryLanguage:SQL2" + extraArguments + ") {\n"
+                + titlingSelection(value) + "    }\n";
+    }
+
+    /** A mutateNodes field naming its target, titling it. */
+    private static String titlingNamedField(String alias, String path, String value) {
+        return "    " + alias + ": mutateNodes(pathsOrIds: [\"" + path + "\"]) {\n"
+                + titlingSelection(value) + "    }\n";
+    }
+
     /**
      * Sets jcr:title on the sub-lists the query matches and, in the same document, on one named explicitly. That shape
      * is what makes an enumerated field claim part of the request's allowance before the query-driven one runs.
      */
     private static JSONObject mutateSubListTitlesBesideANamedNode(String extraArguments, String value)
             throws JSONException {
-        return executeQuery("mutation {\n" +
-                "  jcr {\n" +
-                "    q: mutateNodesByQuery(query:\"select * from [jnt:contentList] where"
-                + " isdescendantnode('/testList') order by localname()\",queryLanguage:SQL2" + extraArguments + ") {\n" +
-                "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"" + value + "\") }\n" +
-                "    }\n" +
-                "    n: mutateNodes(pathsOrIds: [\"" + SUB_LIST_1 + "\"]) {\n" +
-                "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"" + value + "\") }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n");
+        return executeJcrMutation(titlingQueryField("q", extraArguments, value)
+                + titlingNamedField("n", SUB_LIST_1, value));
     }
 
+    /** Two aliased query-driven mutations in one document, so that they share the request's allowance. */
+    private static JSONObject mutateSubListTitlesByTwoAliases(String extraArguments, String first, String second)
+            throws JSONException {
+        return executeJcrMutation(titlingQueryField("a", extraArguments, first)
+                + titlingQueryField("b", extraArguments, second));
+    }
+
+    /** Sets jcr:title on every contentList under /testList that the query matches, optionally with extra arguments. */
     private static JSONObject mutateSubListTitlesByQuery(String extraArguments, String value) throws JSONException {
-        return executeQuery("mutation {\n" +
-                "  jcr {\n" +
-                "    mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList')"
-                + " order by localname()\",queryLanguage:SQL2" + extraArguments + ") {\n" +
-                "      mutateProperty(name: \"jcr:title\") {\n" +
-                "        setValue(language: \"en\", value: \"" + value + "\")\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n");
+        return executeJcrMutation(titlingQueryField(null, extraArguments, value));
     }
 
     /** Sets jcr:title on the nodes named explicitly, i.e. through mutateNodes rather than a query. */
@@ -828,16 +820,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         // left rather than from the whole bound. Both aliases page within the bound on their own; together they are
         // over it, so the second one is refused and the whole request fails.
         withMutationBatchLimit(2, () -> {
-            JSONObject result = executeQuery("mutation {\n" +
-                    "  jcr {\n" +
-                    "    a: mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList') order by localname()\",queryLanguage:SQL2,limit:2) {\n" +
-                    "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"first\") }\n" +
-                    "    }\n" +
-                    "    b: mutateNodesByQuery(query:\"select * from [jnt:contentList] where isdescendantnode('/testList') order by localname()\",queryLanguage:SQL2,limit:2) {\n" +
-                    "      mutateProperty(name: \"jcr:title\") { setValue(language: \"en\", value: \"second\") }\n" +
-                    "    }\n" +
-                    "  }\n" +
-                    "}\n");
+            JSONObject result = mutateSubListTitlesByTwoAliases(",limit:2", "first", "second");
             validateError(result, String.format(ALLOWANCE_ALREADY_USED, 2));
             // Nothing persisted: the session is only saved when the request completes without errors.
             assertTitledSubLists("first");
