@@ -39,6 +39,10 @@ public class RequestOperationLimitPreProcessor implements BatchInputPreProcessor
      * <p>Chosen to leave room for the clients that batch legitimately - the widely used ones default to ten
      * operations per request - while keeping the factor by which a request can multiply the per-operation ceilings
      * small enough to reason about.
+     *
+     * <p>The same number appears in the shipped {@code org.jahia.modules.graphql.provider-default.cfg} and in the
+     * {@code 04-setRequestOperationLimit.started.groovy} patch that writes the property into the configuration of an
+     * already-installed instance. Changing it here means changing it in all three.
      */
     static final int DEFAULT_OPERATION_LIMIT = 20;
 
