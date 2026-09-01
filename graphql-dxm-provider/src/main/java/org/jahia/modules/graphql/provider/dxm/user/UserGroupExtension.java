@@ -19,6 +19,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.jahia.modules.graphql.provider.dxm.admin.GqlAdminQuery;
+import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 
 @GraphQLTypeExtension(GqlAdminQuery.class)
 @GraphQLDescription("A query extension that gives access to the groups")
@@ -28,6 +29,7 @@ public class UserGroupExtension {
 
     @GraphQLField
     @GraphQLDescription("Get user group endpoint")
+    @GraphQLRequiresPermission(value = "graphqlAdminQuery")
     public static GqlUserGroup getUserGroup() {
         return new GqlUserGroup();
     }
