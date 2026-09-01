@@ -157,7 +157,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             assertEquals("/testList/testNew2", node.getPath());
             assertTrue(node.isNodeType("jnt:contentList"));
             assertTrue(node.isNodeType("jmix:keywords"));
-            assertTrue(node.isNodeType("jmix:cache"));
+            assertTrue(node.isNodeType(CACHE));
             return null;
         });
 
@@ -192,7 +192,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
             // mixins
             assertTrue(node.isNodeType("jmix:keywords"));
-            assertTrue(node.isNodeType("jmix:cache"));
+            assertTrue(node.isNodeType(CACHE));
 
             // children
             assertTrue(node.hasNode("text1"));
@@ -201,8 +201,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             boolean isEnglish = session.getLocale().equals(Locale.ENGLISH);
 
             // properties
-            assertTrue(node.hasProperty("j:expiration"));
-            assertEquals(60000, node.getProperty("j:expiration").getLong());
+            assertTrue(node.hasProperty(EXPIRATION));
+            assertEquals(60000, node.getProperty(EXPIRATION).getLong());
             assertTrue(node.hasProperty("j:keywords"));
             assertEquals(2, node.getProperty("j:keywords").getValues().length);
             assertEquals("keyword1 keyword2", node.getPropertyAsString("j:keywords"));
@@ -270,7 +270,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             JCRNodeWrapper node1 = session.getNodeByIdentifier(uuid1);
             assertEquals("/testList/testBatch1", node1.getPath());
             assertTrue(node1.isNodeType("jnt:contentList"));
-            assertTrue(node1.isNodeType("jmix:renderable"));
+            assertTrue(node1.isNodeType(RENDERABLE));
             assertEquals("test", node1.getProperty(TITLE).getString());
             assertTrue(node1.hasNode("text1"));
             assertTrue(node1.getNode("text1").isNodeType("jnt:text"));
@@ -313,7 +313,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         inJcr(session -> {
             assertEquals("test title", session.getNode(SUB_LIST_1).getProperty(TITLE).getString());
             assertEquals("my-view", session.getNode(SUB_LIST_1).getProperty("j:view").getString());
-            assertEquals(60000, session.getNode(SUB_LIST_1).getProperty("j:expiration").getLong());
+            assertEquals(60000, session.getNode(SUB_LIST_1).getProperty(EXPIRATION).getLong());
             assertEquals(true, session.getNode(SUB_LIST_1).getProperty("j:perUser").getBoolean());
             return null;
         });
@@ -341,7 +341,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         inJcr(session -> {
             assertEquals("test title 2", session.getNode(SUB_LIST_1).getProperty(TITLE).getString());
             assertEquals("my-view", session.getNode(SUB_LIST_1).getProperty("j:view").getString());
-            assertEquals(30000, session.getNode(SUB_LIST_1).getProperty("j:expiration").getLong());
+            assertEquals(30000, session.getNode(SUB_LIST_1).getProperty(EXPIRATION).getLong());
             assertFalse(session.getNode(SUB_LIST_1).hasProperty("j:perUser"));
             return null;
         });
@@ -550,6 +550,9 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     private static final String SUB_LIST_2 = "/testList/testSubList2";
     private static final String SUB_LIST_3 = "/testList/testSubList3";
     private static final String TITLE = "jcr:title";
+    private static final String RENDERABLE = "jmix:renderable";
+    private static final String CACHE = "jmix:cache";
+    private static final String EXPIRATION = "j:expiration";
     // The titles the paging and refusal tests write, so that what they assert is which nodes carry one rather than
     // what it says.
     private static final String PAGED = "paged";
@@ -952,8 +955,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertTrue(session.getNode(SUB_LIST_1).isNodeType("jmix:renderable"));
-            assertTrue(session.getNode(SUB_LIST_1).isNodeType("jmix:cache"));
+            assertTrue(session.getNode(SUB_LIST_1).isNodeType(RENDERABLE));
+            assertTrue(session.getNode(SUB_LIST_1).isNodeType(CACHE));
             return null;
         });
 
@@ -966,8 +969,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertFalse(session.getNode(SUB_LIST_1).isNodeType("jmix:renderable"));
-            assertTrue(session.getNode(SUB_LIST_1).isNodeType("jmix:cache"));
+            assertFalse(session.getNode(SUB_LIST_1).isNodeType(RENDERABLE));
+            assertTrue(session.getNode(SUB_LIST_1).isNodeType(CACHE));
             return null;
         });
 
@@ -980,8 +983,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertFalse(session.getNode(SUB_LIST_1).isNodeType("jmix:renderable"));
-            assertFalse(session.getNode(SUB_LIST_1).isNodeType("jmix:cache"));
+            assertFalse(session.getNode(SUB_LIST_1).isNodeType(RENDERABLE));
+            assertFalse(session.getNode(SUB_LIST_1).isNodeType(CACHE));
             return null;
         });
     }
@@ -1090,7 +1093,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             assertEquals("/testList/testNew2", node.getPath());
             assertTrue(node.isNodeType("jnt:contentList"));
             assertTrue(node.isNodeType("jmix:keywords"));
-            assertTrue(node.isNodeType("jmix:cache"));
+            assertTrue(node.isNodeType(CACHE));
             return null;
         });
 
@@ -1127,7 +1130,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
             // mixins
             assertTrue(node.isNodeType("jmix:keywords"));
-            assertTrue(node.isNodeType("jmix:cache"));
+            assertTrue(node.isNodeType(CACHE));
 
             // children
             assertTrue(node.hasNode("text1"));
@@ -1136,8 +1139,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             boolean isEnglish = session.getLocale().equals(Locale.ENGLISH);
 
             // properties
-            assertTrue(node.hasProperty("j:expiration"));
-            assertEquals(60000, node.getProperty("j:expiration").getLong());
+            assertTrue(node.hasProperty(EXPIRATION));
+            assertEquals(60000, node.getProperty(EXPIRATION).getLong());
             assertTrue(node.hasProperty("j:keywords"));
             assertEquals(2, node.getProperty("j:keywords").getValues().length);
             assertEquals("keyword1 keyword2", node.getPropertyAsString("j:keywords"));
@@ -1205,7 +1208,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             JCRNodeWrapper node1 = session.getNodeByIdentifier(uuid1);
             assertEquals("/testList/testBatch1", node1.getPath());
             assertTrue(node1.isNodeType("jnt:contentList"));
-            assertTrue(node1.isNodeType("jmix:renderable"));
+            assertTrue(node1.isNodeType(RENDERABLE));
             assertEquals("test", node1.getProperty(TITLE).getString());
             assertTrue(node1.hasNode("text1"));
             assertTrue(node1.getNode("text1").isNodeType("jnt:text"));
