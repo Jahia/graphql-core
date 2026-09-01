@@ -185,8 +185,12 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         String uuidWithEverything = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getString("uuid");
+        assertNodeWithEverything(uuidWithEverything);
+    }
+
+    private void assertNodeWithEverything(String uuid) throws Exception {
         JCRCallback<Object> callback = session -> {
-            JCRNodeWrapper node = session.getNodeByIdentifier(uuidWithEverything);
+            JCRNodeWrapper node = session.getNodeByIdentifier(uuid);
             assertEquals("/testList/testNew3", node.getPath());
             assertTrue(node.isNodeType("jnt:contentList"));
 
@@ -263,9 +267,10 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         JSONArray res = result.getJSONObject("data").getJSONObject("jcr").getJSONArray("addNodesBatch");
-        String uuid1 = res.getJSONObject(0).getString("uuid");
-        String uuid2 = res.getJSONObject(1).getString("uuid");
+        assertBatchCreatedNodes(res.getJSONObject(0).getString("uuid"), res.getJSONObject(1).getString("uuid"));
+    }
 
+    private void assertBatchCreatedNodes(String uuid1, String uuid2) throws Exception {
         inJcr(session -> {
             JCRNodeWrapper node1 = session.getNodeByIdentifier(uuid1);
             assertEquals("/testList/testBatch1", node1.getPath());
@@ -1123,43 +1128,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         String uuidWithEverything = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONObject("addChild").getString("uuid");
-        JCRCallback<Object> callback = session -> {
-            JCRNodeWrapper node = session.getNodeByIdentifier(uuidWithEverything);
-            assertEquals("/testList/testNew3", node.getPath());
-            assertTrue(node.isNodeType("jnt:contentList"));
-
-            // mixins
-            assertTrue(node.isNodeType("jmix:keywords"));
-            assertTrue(node.isNodeType(CACHE));
-
-            // children
-            assertTrue(node.hasNode("text1"));
-            assertTrue(node.hasNode("text2"));
-
-            boolean isEnglish = session.getLocale().equals(Locale.ENGLISH);
-
-            // properties
-            assertTrue(node.hasProperty(EXPIRATION));
-            assertEquals(60000, node.getProperty(EXPIRATION).getLong());
-            assertTrue(node.hasProperty("j:keywords"));
-            assertEquals(2, node.getProperty("j:keywords").getValues().length);
-            assertEquals("keyword1 keyword2", node.getPropertyAsString("j:keywords"));
-            assertEquals(isEnglish ? "List title English" : "Listentitel Deutsch",
-                    node.getProperty(TITLE).getString());
-
-            // i18n properties on child nodes
-            assertTrue(node.getNode("text1").hasProperty("text"));
-            assertEquals(isEnglish ? "English text 111" : "Deutsch Text 111",
-                    node.getNode("text1").getProperty("text").getString());
-            assertTrue(node.getNode("text2").hasProperty("text"));
-            assertEquals(isEnglish ? "English text 222" : "Deutsch Text 222",
-                    node.getNode("text2").getProperty("text").getString());
-            return null;
-        };
-        // test in English
-        inJcr(callback, Locale.ENGLISH);
-        // test in German
-        inJcr(callback, Locale.GERMAN);
+        assertNodeWithEverything(uuidWithEverything);
     }
 
     @Test
@@ -1201,28 +1170,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         JSONArray res = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONArray("addChildrenBatch");
-        String uuid1 = res.getJSONObject(0).getString("uuid");
-        String uuid2 = res.getJSONObject(1).getString("uuid");
-
-        inJcr(session -> {
-            JCRNodeWrapper node1 = session.getNodeByIdentifier(uuid1);
-            assertEquals("/testList/testBatch1", node1.getPath());
-            assertTrue(node1.isNodeType("jnt:contentList"));
-            assertTrue(node1.isNodeType(RENDERABLE));
-            assertEquals("test", node1.getProperty(TITLE).getString());
-            assertTrue(node1.hasNode("text1"));
-            assertTrue(node1.getNode("text1").isNodeType("jnt:text"));
-
-            JCRNodeWrapper node2 = session.getNodeByIdentifier(uuid2);
-            assertEquals("/testList/testBatch2", node2.getPath());
-            assertTrue(node2.isNodeType("jnt:contentList"));
-            return null;
-        });
-        inJcr(session -> {
-            JCRNodeWrapper node1 = session.getNodeByIdentifier(uuid1);
-            assertEquals("test Deutsch", node1.getProperty(TITLE).getString());
-            return null;
-        }, Locale.GERMAN);
+        assertBatchCreatedNodes(res.getJSONObject(0).getString("uuid"), res.getJSONObject(1).getString("uuid"));
     }
 
     @Test
