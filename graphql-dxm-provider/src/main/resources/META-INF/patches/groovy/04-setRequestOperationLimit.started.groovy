@@ -19,7 +19,9 @@ import org.osgi.service.cm.ConfigurationAdmin
  * can tune it there, rather than having to know the key and add it by hand.
  *
  * The value below therefore has to stay equal to that code default and to the shipped cfg; changing the
- * default means changing all three.
+ * default means changing all three. It also pins the value: once this patch has run, the instance carries an
+ * explicit graphql.request.operationLimit=20 that nothing revises, so a later change of the shipped default
+ * reaches a fresh install and leaves every instance this patch already ran on at 20 until an operator edits it.
  *
  * Idempotent and non-intrusive: if graphql.request.operationLimit is already set to an explicit value (an
  * administrator's choice, including a deliberate 0 to lift the bound), it is left untouched; the property is
