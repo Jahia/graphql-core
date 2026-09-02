@@ -14,8 +14,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Bounds how many operations one HTTP request may submit, and refuses a request that submits more.
  *
  * <p>The endpoint accepts a JSON array as a request body, each element of which is an independent operation with its
- * own document and variables. Every element is executed, concurrently, as part of the one request. So this bound is a
- * different measure from the ones the document analysis applies: those describe a single operation, whereas this
+ * own document and variables. Every element is executed as part of the one request. So this bound is a different
+ * measure from the ones the document analysis applies: those describe a single operation, whereas this
  * counts how many of them a request carries, and the two multiply. Every per-request budget - the node allowance,
  * the mutation batch allowance - is opened once per operation, and the complexity and depth ceilings are applied to
  * each operation on its own, which is what makes the count of operations the outer bound over all of them and worth
@@ -49,18 +49,11 @@ public class RequestOperationLimitPreProcessor implements BatchInputPreProcessor
     private static final AtomicInteger operationLimit = new AtomicInteger(DEFAULT_OPERATION_LIMIT);
 
     /**
-     * @return the configured maximum number of operations one request may submit; {@code 0} means unbounded
-     */
-    public static int getOperationLimit() {
-        return operationLimit.get();
-    }
-
-    /**
      * Updates the effective operation limit. Called by {@link DXGraphQLConfig} when configuration changes.
      *
      * @param limit the new limit; {@code 0} disables the bound
      */
-    public static void updateOperationLimit(int limit) {
+    static void updateOperationLimit(int limit) {
         operationLimit.set(limit);
     }
 
@@ -70,7 +63,7 @@ public class RequestOperationLimitPreProcessor implements BatchInputPreProcessor
         int configuredLimit = operationLimit.get();
         int submitted = batchedInvocationInput.getInvocationInputs().size();
         if (configuredLimit > 0 && submitted > configuredLimit) {
-            logger.warn("Refusing a request submitting {} operations, more than the maximum of {}.",
+            logger.debug("Refusing a request submitting {} operations, more than the maximum of {}.",
                     submitted, configuredLimit);
             return new BatchInputPreProcessResult(HttpServletResponse.SC_BAD_REQUEST,
                     "This request submitted " + submitted + " operations, which is more than the maximum of "
