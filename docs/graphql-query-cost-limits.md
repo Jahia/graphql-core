@@ -15,7 +15,7 @@ Maximum complexity of a query document, where every field, alias and meta field 
 **`graphql.query.maxDepth`** (default: `30`)
 Maximum nesting depth of a query document, also checked before execution.
 
-**`graphql.fields.node.requestLimit`** (default: `0`, disabled)
+**`graphql.fields.node.requestLimit`** (default: `20000`)
 Maximum number of JCR nodes a single request may read across all of its fields together. Unlike the two guards above, this one is enforced during execution and counts the nodes actually read, which is what bounds the fan-out of nested list fields (for example `descendants` inside `descendants`) that no static check can predict.
 
 Be careful with low values: a connection's `totalCount` is computed by reading every node the connection matches, and those reads count against this limit. Content-heavy websites and editing UIs such as jContent select `totalCount` routinely, so a limit lower than the largest listing on the site will cause those requests to fail. When enabling this limit, choose a value comfortably above the number of nodes the heaviest page or view reads, and validate on a staging instance with production-scale content.
