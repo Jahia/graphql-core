@@ -7,8 +7,8 @@
  * describe one operation each, and each operation opens its own node and mutation batch allowance, so this is the
  * factor all of them are multiplied by.
  *
- * The count is settled before any element is parsed, so these tests use the cheapest operation there is -
- * `{__typename}` - and a pass or a failure turns on the number of them alone.
+ * The count is settled before any operation is parsed or executed, so these tests use the cheapest operation there
+ * is - `{__typename}` - and a pass or a failure turns on the number of them alone.
  *
  * Requests go through cy.request rather than cy.apollo: an array body is not a shape an Apollo client will send, and it
  * is the raw response - its HTTP status, and how many entries it carries - that the assertions are about. The bound is
@@ -94,6 +94,18 @@ describe('GraphQL per-request operation limit', () => {
             response.body.forEach((entry: any) => {
                 expect(entry).to.have.any.keys('data', 'errors');
             });
+        });
+    });
+
+    it('refuses a request over the limit from a caller who is not logged in', () => {
+        setOperationLimit(3);
+        // The refusal of the logged-in request is what shows the new limit has propagated; the same request is then
+        // sent with no credentials at all, since nothing about the bound depends on who is asking.
+        waitUntilRefused(4);
+        cy.clearCookies();
+        postOperations(4).should((response: any) => {
+            expect(response.status).to.equal(400);
+            expect(String(response.body)).to.contain('maximum of 3');
         });
     });
 
