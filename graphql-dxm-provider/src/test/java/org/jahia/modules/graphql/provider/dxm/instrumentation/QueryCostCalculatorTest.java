@@ -37,8 +37,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Unit tests for {@link QueryCostCalculator}, the static analysis behind the query-cost guards.
@@ -285,14 +285,11 @@ public class QueryCostCalculatorTest {
 
     @Test
     public void shouldRefuseAnOperationExpandingPastTheCeiling() {
-        try {
-            expandedFields(twiceSpreadFragments(8), 100);
-            fail("expected the count to be refused past the ceiling");
-        } catch (AbortExecutionException e) {
-            // Refused as soon as the count passes the ceiling, so the message names the ceiling plus one rather than
-            // what the operation would have expanded to: the measure costs at most the ceiling.
-            assertEquals("Maximum field count exceeded. 101 > 100", e.getMessage());
-        }
+        String query = twiceSpreadFragments(8);
+        AbortExecutionException refusal = assertThrows(AbortExecutionException.class, () -> expandedFields(query, 100));
+        // Refused as soon as the count passes the ceiling, so the message names the ceiling plus one rather than what
+        // the operation would have expanded to: the measure costs at most the ceiling.
+        assertEquals("Maximum field count exceeded. 101 > 100", refusal.getMessage());
     }
 
     // --- batch size ---
