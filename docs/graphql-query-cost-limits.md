@@ -15,6 +15,9 @@ Maximum complexity of a query document, where every field, alias and meta field 
 **`graphql.query.maxDepth`** (default: `30`)
 Maximum nesting depth of a query document, also checked before execution.
 
+**`graphql.query.maxExpandedFields`** (default: `2000`)
+Maximum number of fields a query executes once every fragment is expanded at each place it is spread. The complexity above counts the fields the document writes, in which a fragment is one definition however many times it is spread; this counts the fields that run, so a document that spreads a fragment several times over nested fields is measured by what it expands to. It is checked before execution starts, and the count stops at the limit, so measuring costs at most the limit. A query over it is refused with `Maximum field count exceeded`.
+
 **`graphql.fields.node.requestLimit`** (default: `20000`)
 Maximum number of JCR nodes a single request may read across all of its fields together. Unlike the two guards above, this one is enforced during execution and counts the nodes actually read, which is what bounds the fan-out of nested list fields (for example `descendants` inside `descendants`) that no static check can predict.
 
