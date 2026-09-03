@@ -46,6 +46,7 @@ public class DXGraphQLConfigTest {
     private static final int DEFAULT_NODE_LIMIT = 5000;
     private static final int DEFAULT_REQUEST_NODE_LIMIT = 20000;
     private static final int DEFAULT_OPERATION_LIMIT = 20;
+    private static final int DEFAULT_MAX_EXPANDED_FIELDS = 2000;
 
     private DXGraphQLConfig config;
 
@@ -359,6 +360,45 @@ public class DXGraphQLConfigTest {
 
         config.deleted("pid1");
         assertEquals(DEFAULT_OPERATION_LIMIT, config.getRequestOperationLimit());
+    }
+
+    // --- the bound on how many fields one operation executes once its fragments are expanded, on by default ---
+
+    @Test
+    public void shouldBoundExpandedFieldsByDefault() {
+        // Unlike the complexity and depth guards, whose code default is 0, this one is in force with no configuration
+        // present, so an installation whose configuration names no such property is bounded all the same.
+        assertEquals(DEFAULT_MAX_EXPANDED_FIELDS, config.getMaxExpandedFields());
+    }
+
+    @Test
+    public void shouldApplyMaxExpandedFieldsFromDefaultConfig() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.query.maxExpandedFields", "300"));
+
+        assertEquals(300, config.getMaxExpandedFields());
+    }
+
+    @Test
+    public void shouldLiftExpandedFieldBoundWhenSetToZero() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.query.maxExpandedFields", "0"));
+
+        assertEquals(0, config.getMaxExpandedFields());
+    }
+
+    @Test
+    public void shouldIgnoreMaxExpandedFieldsFromOtherConfig() throws ConfigurationException {
+        config.updated("pid1", props(OTHER_CONFIG_FILE, "graphql.query.maxExpandedFields", "100000"));
+
+        assertEquals(DEFAULT_MAX_EXPANDED_FIELDS, config.getMaxExpandedFields());
+    }
+
+    @Test
+    public void shouldRevertMaxExpandedFieldsWhenDefaultConfigDeleted() throws ConfigurationException {
+        config.updated("pid1", props(DEFAULT_CONFIG_FILE, "graphql.query.maxExpandedFields", "300"));
+        assertEquals(300, config.getMaxExpandedFields());
+
+        config.deleted("pid1");
+        assertEquals(DEFAULT_MAX_EXPANDED_FIELDS, config.getMaxExpandedFields());
     }
 
     // --- introspection check flag: secure by default (true) ---

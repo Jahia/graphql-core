@@ -16,6 +16,7 @@
 package org.jahia.modules.graphql.provider.dxm.config;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.graphql.provider.dxm.instrumentation.QueryCostInstrumentation;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
@@ -48,6 +49,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private static final String REQUEST_NODE_LIMIT = "graphql.fields.node.requestLimit";
     private static final String MAX_QUERY_COMPLEXITY = "graphql.query.maxComplexity";
     private static final String MAX_QUERY_DEPTH = "graphql.query.maxDepth";
+    private static final String MAX_EXPANDED_FIELDS = "graphql.query.maxExpandedFields";
     private static final String MUTATION_BATCH_LIMIT = "graphql.mutation.batch.limit";
     private static final String REQUEST_OPERATION_LIMIT = "graphql.request.operationLimit";
     public static final String INTROSPECTION_CHECK_ENABLED = "introspectionCheckEnabled";
@@ -73,6 +75,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private final Map<String, Integer> requestNodeLimitByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> maxQueryComplexityByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> maxQueryDepthByPid = new ConcurrentHashMap<>();
+    private final Map<String, Integer> maxExpandedFieldsByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> mutationBatchLimitByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> requestOperationLimitByPid = new ConcurrentHashMap<>();
 
@@ -80,6 +83,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private volatile int requestNodeLimit = PaginationHelper.DEFAULT_REQUEST_NODE_LIMIT;
     private volatile int maxQueryComplexity = 0;
     private volatile int maxQueryDepth = 0;
+    private volatile int maxExpandedFields = QueryCostInstrumentation.DEFAULT_MAX_EXPANDED_FIELDS;
     private volatile int mutationBatchLimit = GraphQLLimits.DEFAULT_MUTATION_BATCH_LIMIT;
     private volatile int requestOperationLimit = RequestOperationLimitPreProcessor.DEFAULT_OPERATION_LIMIT;
     // Secure by default: the introspection permission check is on unless a configuration explicitly disables it.
@@ -110,6 +114,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         Integer newRequestNodeLimit = null;
         Integer newMaxQueryComplexity = null;
         Integer newMaxQueryDepth = null;
+        Integer newMaxExpandedFields = null;
         Integer newMutationBatchLimit = null;
         Integer newRequestOperationLimit = null;
         Boolean newIntrospectionCheck = null;
@@ -160,6 +165,12 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 } else {
                     warnGatedPropertyIgnored(key, pid);
                 }
+            } else if (key.equals(MAX_EXPANDED_FIELDS)) {
+                if (isDefaultConfig) {
+                    newMaxExpandedFields = parseNonNegativeLimit(key, value, "Max expanded fields");
+                } else {
+                    warnGatedPropertyIgnored(key, pid);
+                }
             } else if (key.equals(MUTATION_BATCH_LIMIT)) {
                 if (isDefaultConfig) {
                     newMutationBatchLimit = parseNonNegativeLimit(key, value, "Mutation batch limit");
@@ -202,6 +213,9 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         if (newMaxQueryDepth != null) {
             maxQueryDepthByPid.put(pid, newMaxQueryDepth);
         }
+        if (newMaxExpandedFields != null) {
+            maxExpandedFieldsByPid.put(pid, newMaxExpandedFields);
+        }
         if (newMutationBatchLimit != null) {
             mutationBatchLimitByPid.put(pid, newMutationBatchLimit);
         }
@@ -239,6 +253,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         requestNodeLimitByPid.remove(pid);
         maxQueryComplexityByPid.remove(pid);
         maxQueryDepthByPid.remove(pid);
+        maxExpandedFieldsByPid.remove(pid);
         mutationBatchLimitByPid.remove(pid);
         requestOperationLimitByPid.remove(pid);
     }
@@ -268,6 +283,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         }
         maxQueryComplexity = firstValueOrDefault(maxQueryComplexityByPid, 0);
         maxQueryDepth = firstValueOrDefault(maxQueryDepthByPid, 0);
+        maxExpandedFields = firstValueOrDefault(maxExpandedFieldsByPid,
+                QueryCostInstrumentation.DEFAULT_MAX_EXPANDED_FIELDS);
 
         int newMutationBatchLimit = firstValueOrDefault(mutationBatchLimitByPid, GraphQLLimits.DEFAULT_MUTATION_BATCH_LIMIT);
         if (newMutationBatchLimit != mutationBatchLimit) {
@@ -401,6 +418,14 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
      */
     public int getMaxQueryDepth() {
         return maxQueryDepth;
+    }
+
+    /**
+     * @return the number of fields one operation may execute once every fragment is expanded at each place it is
+     *         spread, or 0 when the guard is disabled
+     */
+    public int getMaxExpandedFields() {
+        return maxExpandedFields;
     }
 
     /**

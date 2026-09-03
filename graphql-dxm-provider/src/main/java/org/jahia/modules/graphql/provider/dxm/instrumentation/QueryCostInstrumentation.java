@@ -32,14 +32,16 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Aborts execution when a document is too expensive, along either of the dimensions {@link QueryCostCalculator}
- * measures: how many fields it selects, and how deeply it nests them.
+ * Aborts execution when a document is too expensive, along any of the dimensions {@link QueryCostCalculator}
+ * measures: how many fields it selects, how deeply it nests them, and how many fields it executes once every fragment
+ * is expanded at each place it is spread.
  *
- * <p>The document is measured once and both limits are checked against that one measurement, so enabling the second
- * guard does not walk the document again. That matters because the measurement happens on every request, before the
- * operation is authorized, and because expanding a document is itself work an attacker controls: graphql-java's
- * traverser re-expands a fragment definition at each spread of it, so a guard that traverses repeatedly multiplies
- * exactly the cost it exists to bound.
+ * <p>The document is measured once and the first two limits are checked against that one measurement, so enabling the
+ * second guard does not walk the document again. That matters because the measurement happens on every request, before
+ * the operation is authorized, so it has to stay linear in the size of the document. The third limit is measured on its
+ * own, and only once the document has passed the first two: it is the count of fields execution runs, which a walk of
+ * the document does not yield, and the build that yields it is stopped at the limit, so measuring costs at most the
+ * limit whatever the document would have expanded to.
  *
  * <p>It also opens the request's node allowance, the one bound here that is not a verdict on the document: the guards
  * above reject a selection for its shape, whereas the allowance limits how far that shape may expand once it is walking
@@ -47,27 +49,47 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <p>A limit of 0 or less disables that individual check. The messages keep graphql-java's wording, whose enforcement
  * this class took over from {@link graphql.analysis.MaxQueryComplexityInstrumentation} and
- * {@link graphql.analysis.MaxQueryDepthInstrumentation}, so existing clients and log filters are unaffected.
+ * {@link graphql.analysis.MaxQueryDepthInstrumentation} - and whose {@code Maximum field count exceeded} the expanded
+ * field count is refused with - so existing clients and log filters are unaffected.
  */
 public class QueryCostInstrumentation extends SimplePerformantInstrumentation {
 
     private static final Logger logger = LoggerFactory.getLogger(QueryCostInstrumentation.class);
 
+    /**
+     * Default maximum number of fields an operation may execute once every fragment is expanded at each place it is
+     * spread.
+     *
+     * <p>Matches the shipped complexity ceiling, so that the two read together: an operation may execute at most as
+     * many fields as it may select. The heaviest documents Jahia's own interfaces send expand to a few hundred fields,
+     * so the value leaves them wide headroom.
+     *
+     * <p>The same number appears in the shipped {@code org.jahia.modules.graphql.provider-default.cfg} and in the
+     * {@code 05-setQueryExpandedFieldLimit.started.groovy} patch that writes the property into the configuration of an
+     * already-installed instance. Changing it here means changing it in all three.
+     */
+    public static final int DEFAULT_MAX_EXPANDED_FIELDS = 2000;
+
     private final int maxComplexity;
     private final int maxDepth;
+    private final int maxExpandedFields;
     private final int maxBatchSize;
     private final int maxNodesPerRequest;
 
     /**
      * @param maxComplexity      maximum number of selected fields, 0 to disable that check
      * @param maxDepth           maximum nesting depth, 0 to disable that check
+     * @param maxExpandedFields  maximum number of fields the operation executes once every fragment is expanded at
+     *                           each place it is spread, 0 to disable that check
      * @param maxBatchSize       maximum number of items a mutation may be handed in list arguments across the whole
      *                           document, 0 to disable that check
      * @param maxNodesPerRequest maximum number of nodes the request's fields may walk in total, 0 to disable that bound
      */
-    public QueryCostInstrumentation(int maxComplexity, int maxDepth, int maxBatchSize, int maxNodesPerRequest) {
+    public QueryCostInstrumentation(int maxComplexity, int maxDepth, int maxExpandedFields, int maxBatchSize,
+                                    int maxNodesPerRequest) {
         this.maxComplexity = maxComplexity;
         this.maxDepth = maxDepth;
+        this.maxExpandedFields = maxExpandedFields;
         this.maxBatchSize = maxBatchSize;
         this.maxNodesPerRequest = maxNodesPerRequest;
     }
@@ -91,6 +113,16 @@ public class QueryCostInstrumentation extends SimplePerformantInstrumentation {
             throw new AbortExecutionException(
                     "maximum query depth exceeded " + cost.getDepth() + " > " + maxDepth);
         }
+        // Measured after the two verdicts above so that a document they already refuse is not expanded at all. The
+        // count is refused by the build itself, one field past the limit, with graphql-java's own message.
+        if (maxExpandedFields > 0) {
+            int expandedFields = QueryCostCalculator.expandedFieldCount(executionContext.getGraphQLSchema(),
+                    executionContext.getDocument(), executionContext.getExecutionInput().getOperationName(),
+                    executionContext.getCoercedVariables(), maxExpandedFields);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Query expands to {} fields", expandedFields);
+            }
+        }
         // Mutations only: the items are things to write, committed together in one JCR session. A query handed a list of
         // paths to read is bounded per connection at execution time instead.
         if (batchCeiling > 0) {
@@ -104,10 +136,10 @@ public class QueryCostInstrumentation extends SimplePerformantInstrumentation {
                     new AtomicInteger(maxBatchSize - cost.getBatchSize()));
         }
         // Opens the request's node allowance, which the connections draw down as they walk the repository. Unlike the
-        // three bounds above this one cannot be settled here: how many nodes a field reaches is a property of the
-        // content, not of the document, and only becomes known as the fields run. What the document analysis above
-        // can bound is the shape of a selection; what this bounds is how far that shape expands once pointed at a
-        // repository - the dimension along which a small, shallow, legal document still multiplies out.
+        // bounds above this one cannot be settled here: how many nodes a field reaches is a property of the content,
+        // not of the document, and only becomes known as the fields run. What the document analysis above can bound
+        // is the shape of a selection; what this bounds is how far that shape expands once pointed at a repository -
+        // the dimension along which a small, shallow, legal document still multiplies out.
         if (maxNodesPerRequest > 0) {
             executionContext.getGraphQLContext().put(PaginationHelper.REMAINING_NODE_ALLOWANCE,
                     new AtomicInteger(maxNodesPerRequest));

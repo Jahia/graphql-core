@@ -18,6 +18,7 @@ package org.jahia.modules.graphql.provider.dxm.instrumentation;
 import graphql.analysis.QueryComplexityCalculator;
 import graphql.analysis.QueryTraverser;
 import graphql.analysis.QueryVisitorFieldEnvironment;
+import graphql.execution.AbortExecutionException;
 import graphql.execution.CoercedVariables;
 import graphql.language.Document;
 import graphql.parser.Parser;
@@ -37,6 +38,7 @@ import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Unit tests for {@link QueryCostCalculator}, the static analysis behind the query-cost guards.
@@ -101,6 +103,24 @@ public class QueryCostCalculatorTest {
 
     private static int batchSize(String query, CoercedVariables variables) {
         return QueryCostCalculator.calculate(traverser(query, variables), NO_CEILING).getBatchSize();
+    }
+
+    private static int expandedFields(String query, int ceiling) {
+        return QueryCostCalculator.expandedFieldCount(schema, Parser.parse(query), null,
+                CoercedVariables.emptyVariables(), ceiling);
+    }
+
+    /**
+     * Builds an operation over {@code levels} fragments, each spreading the one below it twice under distinct aliases:
+     * the document grows by one fragment per level while what it executes doubles, to 3 * 2^levels fields.
+     */
+    private static String twiceSpreadFragments(int levels) {
+        StringBuilder query = new StringBuilder("fragment f0 on JCRNode { name } ");
+        for (int i = 1; i <= levels; i++) {
+            query.append("fragment f").append(i).append(" on JCRNode { x: parent { ...f").append(i - 1)
+                    .append(" } y: parent { ...f").append(i - 1).append(" } } ");
+        }
+        return query.append("{ jcr { nodeByPath(path: \"/\") { ...f").append(levels).append(" } } }").toString();
     }
 
     /** Builds a mutation selecting {@code mutateNodes} under {@code aliasCount} aliases, each given {@code items} paths. */
@@ -226,6 +246,57 @@ public class QueryCostCalculatorTest {
         }
         return length;
     }
+
+    // --- expanded fields ---
+
+    @Test
+    public void shouldCountAFragmentAtEveryPlaceItIsSpread() {
+        String query = twiceSpreadFragments(8);
+        // jcr and nodeByPath, then two parents per node over eight levels, and a name under each leaf: 3 * 2^8.
+        assertEquals(768, expandedFields(query, NO_CEILING));
+        // The document as written is small - jcr, nodeByPath, two spreads per level, the leaf's name - because a
+        // traversal reads each fragment definition once. That is the gap between the two measures.
+        assertEquals(19, complexity(query));
+        assertEquals(11, depth(query));
+    }
+
+    @Test
+    public void shouldCountMergedSpreadsOnce() {
+        // Two spreads of one fragment under one response key execute as one field, so they count once.
+        assertEquals(2, expandedFields("{ currentUser { ...f ...f } } fragment f on User { name }", NO_CEILING));
+        // Under distinct aliases they are distinct response keys, and execute separately.
+        assertEquals(3, expandedFields("{ currentUser { a: name b: name } }", NO_CEILING));
+    }
+
+    @Test
+    public void shouldCountAliasedTypenameFieldsAsExpandedFields() {
+        assertEquals(500, expandedFields(aliasedTypenameQuery(500), NO_CEILING));
+    }
+
+    @Test
+    public void shouldNotCountFieldsExcludedBySkipAsExpandedFields() {
+        assertEquals(1, expandedFields("{ currentUser { name @skip(if: true) } }", NO_CEILING));
+    }
+
+    @Test
+    public void shouldAcceptAnOperationAtTheCeiling() {
+        assertEquals(768, expandedFields(twiceSpreadFragments(8), 768));
+    }
+
+    @Test
+    public void shouldRefuseAnOperationExpandingPastTheCeiling() {
+        try {
+            expandedFields(twiceSpreadFragments(8), 100);
+            fail("expected the count to be refused past the ceiling");
+        } catch (AbortExecutionException e) {
+            // Refused as soon as the count passes the ceiling, so the message names the ceiling plus one rather than
+            // what the operation would have expanded to: the measure costs at most the ceiling.
+            assertEquals("Maximum field count exceeded. 101 > 100", e.getMessage());
+        }
+    }
+
+    // --- batch size ---
+
     @Test
     public void shouldCountTheItemsAnEnumeratedArgumentCarries() {
         assertEquals(3, batchSize("mutation { jcr { mutateNodes(pathsOrIds: [\"/a\", \"/b\", \"/c\"]) { uuid } } }"));

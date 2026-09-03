@@ -81,6 +81,7 @@
             graphql.kickstart.servlet.input,
             graphql.kickstart.servlet.osgi,
             graphql.language,
+            graphql.normalized,
             graphql.relay,
             graphql.schema,
             graphql.schema.idl,
