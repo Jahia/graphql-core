@@ -157,7 +157,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             assertEquals("/testList/testNew2", node.getPath());
             assertTrue(node.isNodeType("jnt:contentList"));
             assertTrue(node.isNodeType("jmix:keywords"));
-            assertTrue(node.isNodeType("jmix:cache"));
+            assertTrue(node.isNodeType(CACHE));
             return null;
         });
 
@@ -185,14 +185,18 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         String uuidWithEverything = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("addNode").getString("uuid");
+        assertNodeWithEverything(uuidWithEverything);
+    }
+
+    private void assertNodeWithEverything(String uuid) throws Exception {
         JCRCallback<Object> callback = session -> {
-            JCRNodeWrapper node = session.getNodeByIdentifier(uuidWithEverything);
+            JCRNodeWrapper node = session.getNodeByIdentifier(uuid);
             assertEquals("/testList/testNew3", node.getPath());
             assertTrue(node.isNodeType("jnt:contentList"));
 
             // mixins
             assertTrue(node.isNodeType("jmix:keywords"));
-            assertTrue(node.isNodeType("jmix:cache"));
+            assertTrue(node.isNodeType(CACHE));
 
             // children
             assertTrue(node.hasNode("text1"));
@@ -201,13 +205,13 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             boolean isEnglish = session.getLocale().equals(Locale.ENGLISH);
 
             // properties
-            assertTrue(node.hasProperty("j:expiration"));
-            assertEquals(60000, node.getProperty("j:expiration").getLong());
+            assertTrue(node.hasProperty(EXPIRATION));
+            assertEquals(60000, node.getProperty(EXPIRATION).getLong());
             assertTrue(node.hasProperty("j:keywords"));
             assertEquals(2, node.getProperty("j:keywords").getValues().length);
             assertEquals("keyword1 keyword2", node.getPropertyAsString("j:keywords"));
             assertEquals(isEnglish ? "List title English" : "Listentitel Deutsch",
-                    node.getProperty("jcr:title").getString());
+                    node.getProperty(TITLE).getString());
 
             // i18n properties on child nodes
             assertTrue(node.getNode("text1").hasProperty("text"));
@@ -263,15 +267,16 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         JSONArray res = result.getJSONObject("data").getJSONObject("jcr").getJSONArray("addNodesBatch");
-        String uuid1 = res.getJSONObject(0).getString("uuid");
-        String uuid2 = res.getJSONObject(1).getString("uuid");
+        assertBatchCreatedNodes(res.getJSONObject(0).getString("uuid"), res.getJSONObject(1).getString("uuid"));
+    }
 
+    private void assertBatchCreatedNodes(String uuid1, String uuid2) throws Exception {
         inJcr(session -> {
             JCRNodeWrapper node1 = session.getNodeByIdentifier(uuid1);
             assertEquals("/testList/testBatch1", node1.getPath());
             assertTrue(node1.isNodeType("jnt:contentList"));
-            assertTrue(node1.isNodeType("jmix:renderable"));
-            assertEquals("test", node1.getProperty("jcr:title").getString());
+            assertTrue(node1.isNodeType(RENDERABLE));
+            assertEquals("test", node1.getProperty(TITLE).getString());
             assertTrue(node1.hasNode("text1"));
             assertTrue(node1.getNode("text1").isNodeType("jnt:text"));
 
@@ -282,7 +287,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         });
         inJcr(session -> {
             JCRNodeWrapper node1 = session.getNodeByIdentifier(uuid1);
-            assertEquals("test Deutsch", node1.getProperty("jcr:title").getString());
+            assertEquals("test Deutsch", node1.getProperty(TITLE).getString());
             return null;
         }, Locale.GERMAN);
     }
@@ -311,14 +316,14 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertEquals("test title", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
-            assertEquals("my-view", session.getNode("/testList/testSubList1").getProperty("j:view").getString());
-            assertEquals(60000, session.getNode("/testList/testSubList1").getProperty("j:expiration").getLong());
-            assertEquals(true, session.getNode("/testList/testSubList1").getProperty("j:perUser").getBoolean());
+            assertEquals("test title", session.getNode(SUB_LIST_1).getProperty(TITLE).getString());
+            assertEquals("my-view", session.getNode(SUB_LIST_1).getProperty("j:view").getString());
+            assertEquals(60000, session.getNode(SUB_LIST_1).getProperty(EXPIRATION).getLong());
+            assertEquals(true, session.getNode(SUB_LIST_1).getProperty("j:perUser").getBoolean());
             return null;
         });
         inJcr(session -> {
-            assertEquals("Test Titel", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
+            assertEquals("Test Titel", session.getNode(SUB_LIST_1).getProperty(TITLE).getString());
             return null;
         }, Locale.GERMAN);
 
@@ -339,10 +344,10 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertEquals("test title 2", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
-            assertEquals("my-view", session.getNode("/testList/testSubList1").getProperty("j:view").getString());
-            assertEquals(30000, session.getNode("/testList/testSubList1").getProperty("j:expiration").getLong());
-            assertFalse(session.getNode("/testList/testSubList1").hasProperty("j:perUser"));
+            assertEquals("test title 2", session.getNode(SUB_LIST_1).getProperty(TITLE).getString());
+            assertEquals("my-view", session.getNode(SUB_LIST_1).getProperty("j:view").getString());
+            assertEquals(30000, session.getNode(SUB_LIST_1).getProperty(EXPIRATION).getLong());
+            assertFalse(session.getNode(SUB_LIST_1).hasProperty("j:perUser"));
             return null;
         });
     }
@@ -499,8 +504,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         inJcr(session -> {
-            assertEquals("test", session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
-            assertEquals("test", session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
+            assertEquals("test", session.getNode(SUB_LIST_1).getProperty(TITLE).getString());
+            assertEquals("test", session.getNode(SUB_LIST_2).getProperty(TITLE).getString());
             return null;
         });
     }
@@ -509,25 +514,25 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     public void mutateNodesByQuery() throws Exception {
         validateNoErrors(mutateSubListTitlesByQuery("", TITLE_1));
         inJcr(session -> {
-            assertEquals(TITLE_1, session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
-            assertEquals(TITLE_1, session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
-            assertEquals(TITLE_1, session.getNode("/testList/testSubList3").getProperty("jcr:title").getString());
+            assertEquals(TITLE_1, session.getNode(SUB_LIST_1).getProperty(TITLE).getString());
+            assertEquals(TITLE_1, session.getNode(SUB_LIST_2).getProperty(TITLE).getString());
+            assertEquals(TITLE_1, session.getNode(SUB_LIST_3).getProperty(TITLE).getString());
             return null;
         });
 
         validateNoErrors(mutateSubListTitlesByQuery(LIMIT_1, TITLE_2));
         inJcr(session -> {
-            assertEquals(TITLE_2, session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
-            assertEquals(TITLE_1, session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
-            assertEquals(TITLE_1, session.getNode("/testList/testSubList3").getProperty("jcr:title").getString());
+            assertEquals(TITLE_2, session.getNode(SUB_LIST_1).getProperty(TITLE).getString());
+            assertEquals(TITLE_1, session.getNode(SUB_LIST_2).getProperty(TITLE).getString());
+            assertEquals(TITLE_1, session.getNode(SUB_LIST_3).getProperty(TITLE).getString());
             return null;
         });
 
         validateNoErrors(mutateSubListTitlesByQuery(LIMIT_1 + ",offset:1", TITLE_3));
         inJcr(session -> {
-            assertEquals(TITLE_2, session.getNode("/testList/testSubList1").getProperty("jcr:title").getString());
-            assertEquals(TITLE_3, session.getNode("/testList/testSubList2").getProperty("jcr:title").getString());
-            assertEquals(TITLE_1, session.getNode("/testList/testSubList3").getProperty("jcr:title").getString());
+            assertEquals(TITLE_2, session.getNode(SUB_LIST_1).getProperty(TITLE).getString());
+            assertEquals(TITLE_3, session.getNode(SUB_LIST_2).getProperty(TITLE).getString());
+            assertEquals(TITLE_1, session.getNode(SUB_LIST_3).getProperty(TITLE).getString());
             return null;
         });
 
@@ -539,9 +544,9 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n"));
         inJcr(session -> {
-            assertFalse(session.nodeExists("/testList/testSubList1"));
-            assertFalse(session.nodeExists("/testList/testSubList2"));
-            assertFalse(session.nodeExists("/testList/testSubList3"));
+            assertFalse(session.nodeExists(SUB_LIST_1));
+            assertFalse(session.nodeExists(SUB_LIST_2));
+            assertFalse(session.nodeExists(SUB_LIST_3));
             return null;
         });
     }
@@ -550,6 +555,9 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
     private static final String SUB_LIST_2 = "/testList/testSubList2";
     private static final String SUB_LIST_3 = "/testList/testSubList3";
     private static final String TITLE = "jcr:title";
+    private static final String RENDERABLE = "jmix:renderable";
+    private static final String CACHE = "jmix:cache";
+    private static final String EXPIRATION = "j:expiration";
     // The titles the paging and refusal tests write, so that what they assert is which nodes carry one rather than
     // what it says.
     private static final String PAGED = "paged";
@@ -893,8 +901,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         inJcr(session -> {
-            assertFalse(session.itemExists("/testList/testSubList1"));
-            assertFalse(session.itemExists("/testList/testSubList2"));
+            assertFalse(session.itemExists(SUB_LIST_1));
+            assertFalse(session.itemExists(SUB_LIST_2));
             return null;
         });
     }
@@ -911,13 +919,13 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertTrue(session.itemExists("/testList/testSubList1"));
-            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
+            assertTrue(session.itemExists(SUB_LIST_1));
+            JCRNodeWrapper node = session.getNode(SUB_LIST_1);
             assertTrue(node.isMarkedForDeletion());
             assertEquals("test delete", node.getProperty(Constants.MARKED_FOR_DELETION_MESSAGE).getString());
 
-            assertTrue(session.itemExists("/testList/testSubList2"));
-            JCRNodeWrapper node2 = session.getNode("/testList/testSubList2");
+            assertTrue(session.itemExists(SUB_LIST_2));
+            JCRNodeWrapper node2 = session.getNode(SUB_LIST_2);
             assertTrue(node2.isMarkedForDeletion());
             assertEquals("test delete 2", node2.getProperty(Constants.MARKED_FOR_DELETION_MESSAGE).getString());
             return null;
@@ -933,10 +941,10 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertTrue(session.itemExists("/testList/testSubList1"));
-            assertFalse(session.getNode("/testList/testSubList1").isMarkedForDeletion());
-            assertTrue(session.itemExists("/testList/testSubList2"));
-            assertFalse(session.getNode("/testList/testSubList2").isMarkedForDeletion());
+            assertTrue(session.itemExists(SUB_LIST_1));
+            assertFalse(session.getNode(SUB_LIST_1).isMarkedForDeletion());
+            assertTrue(session.itemExists(SUB_LIST_2));
+            assertFalse(session.getNode(SUB_LIST_2).isMarkedForDeletion());
             return null;
         });
     }
@@ -952,8 +960,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertTrue(session.getNode("/testList/testSubList1").isNodeType("jmix:renderable"));
-            assertTrue(session.getNode("/testList/testSubList1").isNodeType("jmix:cache"));
+            assertTrue(session.getNode(SUB_LIST_1).isNodeType(RENDERABLE));
+            assertTrue(session.getNode(SUB_LIST_1).isNodeType(CACHE));
             return null;
         });
 
@@ -966,8 +974,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertFalse(session.getNode("/testList/testSubList1").isNodeType("jmix:renderable"));
-            assertTrue(session.getNode("/testList/testSubList1").isNodeType("jmix:cache"));
+            assertFalse(session.getNode(SUB_LIST_1).isNodeType(RENDERABLE));
+            assertTrue(session.getNode(SUB_LIST_1).isNodeType(CACHE));
             return null;
         });
 
@@ -980,8 +988,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertFalse(session.getNode("/testList/testSubList1").isNodeType("jmix:renderable"));
-            assertFalse(session.getNode("/testList/testSubList1").isNodeType("jmix:cache"));
+            assertFalse(session.getNode(SUB_LIST_1).isNodeType(RENDERABLE));
+            assertFalse(session.getNode(SUB_LIST_1).isNodeType(CACHE));
             return null;
         });
     }
@@ -1002,7 +1010,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
+            JCRNodeWrapper node = session.getNode(SUB_LIST_1);
             assertTrue(node.hasProperty("test"));
             assertTrue(node.getProperty("test").isMultiple());
             assertEquals(Arrays.asList("val1", "val2", "val3", "val4", "val5"), getPropertyStringValues(node, "test"));
@@ -1021,7 +1029,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
+            JCRNodeWrapper node = session.getNode(SUB_LIST_1);
             assertTrue(node.hasProperty("test"));
             assertTrue(node.getProperty("test").isMultiple());
             assertEquals(Arrays.asList("val2","val5"), getPropertyStringValues(node, "test"));
@@ -1039,7 +1047,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertFalse(session.getNode("/testList/testSubList1").hasProperty("test"));
+            assertFalse(session.getNode(SUB_LIST_1).hasProperty("test"));
             return null;
         });
     }
@@ -1090,7 +1098,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             assertEquals("/testList/testNew2", node.getPath());
             assertTrue(node.isNodeType("jnt:contentList"));
             assertTrue(node.isNodeType("jmix:keywords"));
-            assertTrue(node.isNodeType("jmix:cache"));
+            assertTrue(node.isNodeType(CACHE));
             return null;
         });
 
@@ -1120,43 +1128,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         String uuidWithEverything = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONObject("addChild").getString("uuid");
-        JCRCallback<Object> callback = session -> {
-            JCRNodeWrapper node = session.getNodeByIdentifier(uuidWithEverything);
-            assertEquals("/testList/testNew3", node.getPath());
-            assertTrue(node.isNodeType("jnt:contentList"));
-
-            // mixins
-            assertTrue(node.isNodeType("jmix:keywords"));
-            assertTrue(node.isNodeType("jmix:cache"));
-
-            // children
-            assertTrue(node.hasNode("text1"));
-            assertTrue(node.hasNode("text2"));
-
-            boolean isEnglish = session.getLocale().equals(Locale.ENGLISH);
-
-            // properties
-            assertTrue(node.hasProperty("j:expiration"));
-            assertEquals(60000, node.getProperty("j:expiration").getLong());
-            assertTrue(node.hasProperty("j:keywords"));
-            assertEquals(2, node.getProperty("j:keywords").getValues().length);
-            assertEquals("keyword1 keyword2", node.getPropertyAsString("j:keywords"));
-            assertEquals(isEnglish ? "List title English" : "Listentitel Deutsch",
-                    node.getProperty("jcr:title").getString());
-
-            // i18n properties on child nodes
-            assertTrue(node.getNode("text1").hasProperty("text"));
-            assertEquals(isEnglish ? "English text 111" : "Deutsch Text 111",
-                    node.getNode("text1").getProperty("text").getString());
-            assertTrue(node.getNode("text2").hasProperty("text"));
-            assertEquals(isEnglish ? "English text 222" : "Deutsch Text 222",
-                    node.getNode("text2").getProperty("text").getString());
-            return null;
-        };
-        // test in English
-        inJcr(callback, Locale.ENGLISH);
-        // test in German
-        inJcr(callback, Locale.GERMAN);
+        assertNodeWithEverything(uuidWithEverything);
     }
 
     @Test
@@ -1198,28 +1170,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "  }\n" +
                 "}\n");
         JSONArray res = result.getJSONObject("data").getJSONObject("jcr").getJSONObject("mutateNode").getJSONArray("addChildrenBatch");
-        String uuid1 = res.getJSONObject(0).getString("uuid");
-        String uuid2 = res.getJSONObject(1).getString("uuid");
-
-        inJcr(session -> {
-            JCRNodeWrapper node1 = session.getNodeByIdentifier(uuid1);
-            assertEquals("/testList/testBatch1", node1.getPath());
-            assertTrue(node1.isNodeType("jnt:contentList"));
-            assertTrue(node1.isNodeType("jmix:renderable"));
-            assertEquals("test", node1.getProperty("jcr:title").getString());
-            assertTrue(node1.hasNode("text1"));
-            assertTrue(node1.getNode("text1").isNodeType("jnt:text"));
-
-            JCRNodeWrapper node2 = session.getNodeByIdentifier(uuid2);
-            assertEquals("/testList/testBatch2", node2.getPath());
-            assertTrue(node2.isNodeType("jnt:contentList"));
-            return null;
-        });
-        inJcr(session -> {
-            JCRNodeWrapper node1 = session.getNodeByIdentifier(uuid1);
-            assertEquals("test Deutsch", node1.getProperty("jcr:title").getString());
-            return null;
-        }, Locale.GERMAN);
+        assertBatchCreatedNodes(res.getJSONObject(0).getString("uuid"), res.getJSONObject(1).getString("uuid"));
     }
 
     @Test
@@ -1242,7 +1193,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}");
 
         inJcr(session -> {
-            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
+            JCRNodeWrapper node = session.getNode(SUB_LIST_1);
             assertEquals(false, node.getProperty("testPropString").isMultiple());
             assertEquals(PropertyType.STRING, node.getProperty("testPropString").getValue().getType());
             assertEquals("string", node.getProperty("testPropString").getValue().getString());
@@ -1254,18 +1205,18 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
             assertEquals(true, node.getProperty("testPropMultiple").isMultiple());
             assertEquals(Arrays.asList("val1", "val2"), getPropertyStringValues(node, "testPropMultiple"));
 
-            assertEquals(false, node.getProperty("jcr:title").isMultiple());
-            assertEquals(PropertyType.STRING, node.getProperty("jcr:title").getValue().getType());
-            assertEquals("en", node.getProperty("jcr:title").getValue().getString());
+            assertEquals(false, node.getProperty(TITLE).isMultiple());
+            assertEquals(PropertyType.STRING, node.getProperty(TITLE).getValue().getType());
+            assertEquals("en", node.getProperty(TITLE).getValue().getString());
 
             return null;
         });
 
         inJcr(session -> {
-            JCRNodeWrapper node = session.getNode("/testList/testSubList1");
-            assertEquals(false, node.getProperty("jcr:title").isMultiple());
-            assertEquals(PropertyType.STRING, node.getProperty("jcr:title").getValue().getType());
-            assertEquals("fr", node.getProperty("jcr:title").getValue().getString());
+            JCRNodeWrapper node = session.getNode(SUB_LIST_1);
+            assertEquals(false, node.getProperty(TITLE).isMultiple());
+            assertEquals(PropertyType.STRING, node.getProperty(TITLE).getValue().getType());
+            assertEquals("fr", node.getProperty(TITLE).getValue().getString());
             return null;
         }, Locale.FRENCH);
     }
@@ -1281,7 +1232,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertFalse(session.itemExists("/testList/testSubList1"));
+            assertFalse(session.itemExists(SUB_LIST_1));
             assertTrue(session.itemExists("/testList/testRenamed"));
             return null;
         });
@@ -1697,7 +1648,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
 
     private void setupTextNodes() throws Exception {
         inJcr(session -> {
-            JCRNodeWrapper subList = session.getNode("/testList/testSubList1");
+            JCRNodeWrapper subList = session.getNode(SUB_LIST_1);
             addText(subList, "text1", "value1", "jnt:text");
             addText(subList, "text2", "value1", "jnt:text");
             addText(subList, "bigText1", "value1", "jnt:bigText");
@@ -1804,7 +1755,7 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
                 "}\n");
 
         inJcr(session -> {
-            assertTrue(session.itemExists("/testList/testSubList1"));
+            assertTrue(session.itemExists(SUB_LIST_1));
             assertFalse(session.itemExists("/testList/testRenamed"));
             return null;
         });
@@ -1937,8 +1888,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         );
 
         inJcr(session -> {
-            assertFalse(session.itemExists("/testList/testSubList2"));
-            assertFalse(session.itemExists("/testList/testSubList3"));
+            assertFalse(session.itemExists(SUB_LIST_2));
+            assertFalse(session.itemExists(SUB_LIST_3));
             assertTrue(session.itemExists("/testList/testSubList1/testSubList2"));
             assertTrue(session.itemExists("/testList/testSubList1/testSubList3A"));
             return null;
@@ -1962,8 +1913,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         );
 
         inJcr(session -> {
-            assertFalse(session.itemExists("/testList/testSubList2"));
-            assertFalse(session.itemExists("/testList/testSubList3"));
+            assertFalse(session.itemExists(SUB_LIST_2));
+            assertFalse(session.itemExists(SUB_LIST_3));
             assertTrue(session.itemExists("/testList/testSubList1/testSubList2"));
             assertTrue(session.itemExists("/testList/testSubList1/testSubList3A"));
             return null;
@@ -2132,8 +2083,8 @@ public class GraphQLNodeMutationsTest extends GraphQLTestSupport {
         );
 
         inJcr(session -> {
-            assertFalse(session.itemExists("/testList/testSubList2"));
-            assertFalse(session.itemExists("/testList/testSubList3"));
+            assertFalse(session.itemExists(SUB_LIST_2));
+            assertFalse(session.itemExists(SUB_LIST_3));
             assertTrue(session.itemExists("/testList/testSubList1/testDuplicate"));
             assertTrue(session.itemExists("/testList/testSubList1/testDuplicate-1"));
             return null;
