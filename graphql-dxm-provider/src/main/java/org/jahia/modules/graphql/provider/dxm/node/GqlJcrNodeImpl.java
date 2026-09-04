@@ -80,6 +80,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     private JCRNodeWrapper node;
     private String type;
+    private Boolean canViewEncryptedValue;
 
     @Inject
     @GraphQLOsgiService
@@ -124,6 +125,14 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     @Override
     public JCRNodeWrapper getNode() {
         return node;
+    }
+
+    @Override
+    public boolean canViewEncryptedValue() {
+        if (canViewEncryptedValue == null) {
+            canViewEncryptedValue = GqlJcrNode.super.canViewEncryptedValue();
+        }
+        return canViewEncryptedValue;
     }
 
     @Override
