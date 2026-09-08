@@ -76,8 +76,7 @@ describe('GraphQL query-cost guards', () => {
     const hasCostError = (errors: any[], messageFragment: string) =>
         Boolean(errors?.some((e: any) => e.message.includes(messageFragment)));
 
-    const hasAnyCostError = (errors: any[]) =>
-        hasCostError(errors, 'maximum query') || hasCostError(errors, 'Maximum field count');
+    const hasAnyCostError = (errors: any[]) => hasCostError(errors, 'maximum query');
 
     // Poll until the given query is rejected with the expected abort message (guard has propagated).
     const waitUntilRejected = (query: any, messageFragment: string) => {
@@ -126,7 +125,7 @@ describe('GraphQL query-cost guards', () => {
         setLimits(SHIPPED_MAX_COMPLEXITY, SHIPPED_MAX_DEPTH);
         setExpandedFieldLimit(SHIPPED_MAX_EXPANDED_FIELDS);
         waitUntilAccepted(overComplexQuery, data => data.currentUser);
-        waitUntilRejected(twiceSpreadFragments(10), 'Maximum field count exceeded');
+        waitUntilRejected(twiceSpreadFragments(10), 'maximum query expanded field count exceeded');
     });
 
     it('rejects a query exceeding graphql.query.maxComplexity', () => {
@@ -212,7 +211,7 @@ describe('GraphQL query-cost guards', () => {
         it('bounds what an operation expands to, not what it writes', () => {
             setLimits(SHIPPED_MAX_COMPLEXITY, SHIPPED_MAX_DEPTH);
             setExpandedFieldLimit(100);
-            waitUntilRejected(eightLevels, 'Maximum field count exceeded');
+            waitUntilRejected(eightLevels, 'maximum query expanded field count exceeded');
             // A document writing more fields than eightLevels, but expanding to no more than it writes, is served.
             cy.apollo({query: flatQuery}).should((response: any) => {
                 expect(response.data.currentUser).to.not.be.null;
@@ -222,12 +221,12 @@ describe('GraphQL query-cost guards', () => {
         it('rejects an operation over the shipped limit with a single error', () => {
             setLimits(SHIPPED_MAX_COMPLEXITY, SHIPPED_MAX_DEPTH);
             setExpandedFieldLimit(SHIPPED_MAX_EXPANDED_FIELDS);
-            waitUntilRejected(tenLevels, 'Maximum field count exceeded');
+            waitUntilRejected(tenLevels, 'maximum query expanded field count exceeded');
             cy.apollo({query: tenLevels, errorPolicy: 'all'}).should((response: any) => {
                 expect(response.errors).to.have.length(1);
-                // The count stops one past the limit, so that is the value the message reports.
+                // The count stops at the limit, so the message names the bound rather than a measurement.
                 expect(response.errors[0].message).to.equal(
-                    `Maximum field count exceeded. ${SHIPPED_MAX_EXPANDED_FIELDS + 1} > ${SHIPPED_MAX_EXPANDED_FIELDS}`
+                    `maximum query expanded field count exceeded, more than ${SHIPPED_MAX_EXPANDED_FIELDS}`
                 );
                 expect(response.data).to.be.null;
             });
@@ -235,7 +234,7 @@ describe('GraphQL query-cost guards', () => {
 
         it('lifts the bound when the property is set to 0', () => {
             setExpandedFieldLimit(100);
-            waitUntilRejected(eightLevels, 'Maximum field count exceeded');
+            waitUntilRejected(eightLevels, 'maximum query expanded field count exceeded');
             setExpandedFieldLimit(0);
             waitUntilAccepted(eightLevels, data => data.jcr);
         });

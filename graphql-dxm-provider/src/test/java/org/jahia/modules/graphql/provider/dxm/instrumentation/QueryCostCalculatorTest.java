@@ -18,9 +18,10 @@ package org.jahia.modules.graphql.provider.dxm.instrumentation;
 import graphql.analysis.QueryComplexityCalculator;
 import graphql.analysis.QueryTraverser;
 import graphql.analysis.QueryVisitorFieldEnvironment;
-import graphql.execution.AbortExecutionException;
 import graphql.execution.CoercedVariables;
 import graphql.language.Document;
+import graphql.language.FragmentDefinition;
+import graphql.language.OperationDefinition;
 import graphql.parser.Parser;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
@@ -33,11 +34,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Collections;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -105,8 +106,13 @@ public class QueryCostCalculatorTest {
         return QueryCostCalculator.calculate(traverser(query, variables), NO_CEILING).getBatchSize();
     }
 
+    /** Hands the calculator the operation and fragments as execution resolves them out of the document. */
     private static int expandedFields(String query, int ceiling) {
-        return QueryCostCalculator.expandedFieldCount(schema, Parser.parse(query), null,
+        Document document = Parser.parse(query);
+        Map<String, FragmentDefinition> fragments = document.getDefinitionsOfType(FragmentDefinition.class).stream()
+                .collect(Collectors.toMap(FragmentDefinition::getName, Function.identity()));
+        return QueryCostCalculator.expandedFieldCount(schema,
+                document.getDefinitionsOfType(OperationDefinition.class).get(0), fragments,
                 CoercedVariables.emptyVariables(), ceiling);
     }
 
@@ -284,12 +290,11 @@ public class QueryCostCalculatorTest {
     }
 
     @Test
-    public void shouldRefuseAnOperationExpandingPastTheCeiling() {
-        String query = twiceSpreadFragments(8);
-        AbortExecutionException refusal = assertThrows(AbortExecutionException.class, () -> expandedFields(query, 100));
-        // Refused as soon as the count passes the ceiling, so the message names the ceiling plus one rather than what
-        // the operation would have expanded to: the measure costs at most the ceiling.
-        assertEquals("Maximum field count exceeded. 101 > 100", refusal.getMessage());
+    public void shouldStopCountingOnePastTheCeiling() {
+        // The build stops as soon as the count passes the ceiling, so the measure costs at most the ceiling and says of
+        // an operation over it only that it is over: one past, whether it would have expanded to 768 fields or 3072.
+        assertEquals(101, expandedFields(twiceSpreadFragments(8), 100));
+        assertEquals(101, expandedFields(twiceSpreadFragments(10), 100));
     }
 
     // --- batch size ---

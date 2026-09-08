@@ -18,9 +18,11 @@ package org.jahia.modules.graphql.provider.dxm.instrumentation;
 import graphql.analysis.QueryTraverser;
 import graphql.analysis.QueryVisitorFieldEnvironment;
 import graphql.analysis.QueryVisitorStub;
+import graphql.execution.AbortExecutionException;
 import graphql.execution.CoercedVariables;
 import graphql.execution.ExecutionContext;
-import graphql.language.Document;
+import graphql.language.FragmentDefinition;
+import graphql.language.OperationDefinition;
 import graphql.normalized.ExecutableNormalizedOperationFactory;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
@@ -111,28 +113,33 @@ final class QueryCostCalculator {
      * fragment definition once, however many spreads point at it, which is what keeps the metrics above linear in the
      * size of the document. Execution expands the fragment at every spread, so the fields that run are a separate count
      * from the fields the document writes. The count that execution runs is what graphql-java's normalized operation
-     * holds, so that is what is built here, from the same schema, document and variables the traverser is given; two
-     * selections of one field under one response key merge into one executed field, as they do at execution.
+     * holds, so that is what is built here, from the operation and fragments execution has already resolved out of the
+     * document rather than from the document again; two selections of one field under one response key merge into one
+     * executed field, as they do at execution.
      *
      * <p>The ceiling is handed to the factory rather than compared with its result: the factory stops as soon as one
      * field more than the ceiling has been created, so measuring costs at most the ceiling, whatever the operation
-     * would have expanded to. Its own {@link graphql.execution.AbortExecutionException} carries the verdict, worded
-     * {@code Maximum field count exceeded. N > M}, and is left to propagate: the other guards keep graphql-java's
-     * wording too.
+     * would have expanded to. The stop is the factory's own {@link AbortExecutionException}, turned back into a count
+     * here so that the caller compares this metric with its limit as it does the others, and words the verdict itself.
      *
-     * @param schema        the schema the operation runs against
-     * @param document      the parsed document
-     * @param operationName the operation to measure, null for the document's only one
-     * @param variables     the operation's coerced variables
-     * @param ceiling       the number of fields past which the count stops
-     * @return the number of fields the operation executes, at most {@code ceiling}
-     * @throws graphql.execution.AbortExecutionException when the operation executes more than {@code ceiling} fields
+     * @param schema    the schema the operation runs against
+     * @param operation the operation to measure
+     * @param fragments the document's fragment definitions, by name
+     * @param variables the operation's coerced variables
+     * @param ceiling   the number of fields past which the count stops
+     * @return the number of fields the operation executes, or {@code ceiling + 1} when it executes more than that
      */
-    static int expandedFieldCount(GraphQLSchema schema, Document document, String operationName,
-                                  CoercedVariables variables, int ceiling) {
-        return ExecutableNormalizedOperationFactory.createExecutableNormalizedOperation(schema, document, operationName,
-                variables, ExecutableNormalizedOperationFactory.Options.defaultOptions().maxFieldsCount(ceiling))
-                .getOperationFieldCount();
+    static int expandedFieldCount(GraphQLSchema schema, OperationDefinition operation,
+                                  Map<String, FragmentDefinition> fragments, CoercedVariables variables, int ceiling) {
+        try {
+            return ExecutableNormalizedOperationFactory.createExecutableNormalizedOperation(schema, operation,
+                    fragments, variables,
+                    ExecutableNormalizedOperationFactory.Options.defaultOptions().maxFieldsCount(ceiling))
+                    .getOperationFieldCount();
+        } catch (AbortExecutionException pastTheCeiling) {
+            // The one abort these options let the factory raise, thrown as the count reaches ceiling + 1.
+            return ceiling + 1;
+        }
     }
 
     /**
