@@ -104,7 +104,7 @@
                 <configuration>
                     <instructions>
                         <Import-Package>${jahia.plugin.projectPackageImport},javax.jcr,*</Import-Package>
-                        <jahia-module-signature>MCwCFHKP03p6OfPAwUSruH22K5e8AuAzAhRjAn0dSpWpdTx2jcgGZCeAg2Vlow==</jahia-module-signature>
+                        <jahia-module-signature>MCwCFCoM8dsJIRayhxRKwLOULAD/LJTRAhRYHUZpccfxJgYER9wCweG+qkf9ew==</jahia-module-signature>
                         <Require-Capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</Require-Capability>
                     </instructions>
                 </configuration>
