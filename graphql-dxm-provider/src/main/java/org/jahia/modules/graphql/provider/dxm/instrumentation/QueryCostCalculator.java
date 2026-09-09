@@ -114,8 +114,10 @@ final class QueryCostCalculator {
      * size of the document. Execution expands the fragment at every spread, so the fields that run are a separate count
      * from the fields the document writes. The count that execution runs is what graphql-java's normalized operation
      * holds, so that is what is built here, from the operation and fragments execution has already resolved out of the
-     * document rather than from the document again; two selections of one field under one response key merge into one
-     * executed field, as they do at execution.
+     * document rather than from the document again. Selections sharing a response key and a type condition count
+     * once, as they execute once. A key reached under differing type conditions counts once per object type it can
+     * resolve to: the factory merges those into one field only after counting them, and execution runs the one
+     * matching the object it is handed, so a polymorphic query measures slightly above what it runs.
      *
      * <p>The ceiling is handed to the factory rather than compared with its result: the factory stops as soon as one
      * field more than the ceiling has been created, so measuring costs at most the ceiling, whatever the operation

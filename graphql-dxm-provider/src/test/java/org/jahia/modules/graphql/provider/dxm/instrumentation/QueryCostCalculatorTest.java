@@ -51,7 +51,11 @@ public class QueryCostCalculatorTest {
 
     private static final String SDL = "type Query { jcr: JCRQuery currentUser: User } " +
             "type User { name: String displayName: String } " +
-            "type JCRQuery { nodeByPath(path: String): JCRNode } " +
+            "type JCRQuery { nodeByPath(path: String): JCRNode item: Item } " +
+            "interface Item { uuid: String } " +
+            "type Page implements Item { uuid: String } " +
+            "type Folder implements Item { uuid: String } " +
+            "type File implements Item { uuid: String } " +
             "type JCRNode { name: String uuid: String parent: JCRNode descendants: JCRNodeConnection } " +
             "type JCRNodeConnection { nodes: [JCRNode] } " +
             "type Mutation { jcr: JCRMutation } " +
@@ -73,8 +77,9 @@ public class QueryCostCalculatorTest {
 
     @BeforeClass
     public static void setUpSchema() {
-        schema = new SchemaGenerator().makeExecutableSchema(
-                new SchemaParser().parse(SDL), RuntimeWiring.newRuntimeWiring().build());
+        // The interface needs a type resolver for the schema to build; nothing here executes, so it is never called.
+        schema = new SchemaGenerator().makeExecutableSchema(new SchemaParser().parse(SDL),
+                RuntimeWiring.newRuntimeWiring().type("Item", wiring -> wiring.typeResolver(env -> null)).build());
     }
 
     private static QueryTraverser traverser(String query, CoercedVariables variables) {
@@ -272,6 +277,17 @@ public class QueryCostCalculatorTest {
         assertEquals(2, expandedFields("{ currentUser { ...f ...f } } fragment f on User { name }", NO_CEILING));
         // Under distinct aliases they are distinct response keys, and execute separately.
         assertEquals(3, expandedFields("{ currentUser { a: name b: name } }", NO_CEILING));
+    }
+
+    @Test
+    public void shouldCountAKeyReachedUnderDifferingTypeConditionsOncePerObjectType() {
+        // jcr, item, and uuid once for Page and once for Folder: the normalized operation merges the two into one
+        // field, but only after counting them, so a polymorphic query measures slightly above what it runs.
+        assertEquals(4, expandedFields("{ jcr { item { ...p ...f } } } "
+                + "fragment p on Page { uuid } fragment f on Folder { uuid }", NO_CEILING));
+        // Per object type rather than per condition: reached under Item and under Page, uuid counts once for each of
+        // the three types implementing Item.
+        assertEquals(5, expandedFields("{ jcr { item { uuid ...p } } } fragment p on Page { uuid }", NO_CEILING));
     }
 
     @Test
