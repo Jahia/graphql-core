@@ -1,5 +1,21 @@
 # graphql-core Changelog
 
+## 3.10.0
+
+* Limited how many fields a GraphQL query may execute once its fragments are expanded, through the new `graphql.query.maxExpandedFields` property (default `2000`, `0` disables), read only from the default configuration file so a non-default configuration cannot loosen it.
+
+  **Are you affected?** Only if a query spreads the same fragment repeatedly inside nested fields so that it executes more than 2000 fields; such a query is now refused before execution with `maximum query expanded field count exceeded`. Jahia's own interfaces stay far below the limit. Raise the property in `org.jahia.modules.graphql.provider-default.cfg`, or set it to `0` to lift the bound.
+
+* The number of operations a single GraphQL request may submit is now bounded by a new configuration property, `graphql.request.operationLimit` (default `20`, `0` disables), read only from the default configuration file so a non-default configuration cannot loosen it.
+
+  **Are you affected?** Only if a client sends more than 20 operations in one request, by posting them as a JSON array. Such a request now fails as a whole rather than being answered in part; send the operations in separate requests, or in smaller groups. One operation per request — what Jahia's own interfaces send, and what the common GraphQL clients do by default — is unaffected. You can also raise the property in `org.jahia.modules.graphql.provider-default.cfg`.
+
+* **Behaviour change** — the GraphQL user and group administration queries (`admin.userAdmin`, `admin.userGroup`) require the GraphQL administration permission, and the `property(name:)` field of a user or group answers for profile and membership values.
+
+  **Are you affected?** Two independent checks. For the administration queries: only if the account making the call is not a server administrator, in which case those queries answer with a permission error. Grant that account a role carrying "Perform GraphQL queries under the admin node" (`graphqlAdminQuery`) to restore access.
+
+  For `property(name:)` on a `User`, `CurrentUser` or `Group`: only if the name it asks for is the account's stored password digest (`j:password`), which the field answers `null` for. Every other property name, custom ones included, is unaffected, and no configuration changes this. A caller that verifies a password should authenticate instead.
+
 ## 3.9.1
 
 ### New Features
