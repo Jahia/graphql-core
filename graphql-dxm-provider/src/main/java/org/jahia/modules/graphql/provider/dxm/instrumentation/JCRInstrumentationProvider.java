@@ -57,18 +57,22 @@ public class JCRInstrumentationProvider implements InstrumentationProvider {
         List<Instrumentation> instns = new ArrayList<>();
 
         // Query-cost guards: reject expensive documents before execution (i.e. before any field is fetched,
-        // permission-checked or serialized). A value <= 0 disables the corresponding guard; with both disabled the
-        // document is not analysed at all. One instrumentation covers the two of them because they share a single
-        // traversal of the document - see QueryCostInstrumentation.
+        // permission-checked or serialized). A value <= 0 disables the corresponding guard; with all of them disabled
+        // the document is not analysed at all. One instrumentation covers the three of them because the first two
+        // share a single traversal of the document and the third is only measured once they pass - see
+        // QueryCostInstrumentation.
         int maxQueryComplexity = dxGraphQLConfig.getMaxQueryComplexity();
         int maxQueryDepth = dxGraphQLConfig.getMaxQueryDepth();
+        int maxExpandedFields = dxGraphQLConfig.getMaxExpandedFields();
         // Read the batch bound from GraphQLLimits rather than the config directly, so that this guard and the per-field
         // check in the mutation resolvers can never disagree about the value in force. The node allowance is read from
         // PaginationHelper for the same reason: it is spent there, as the connections walk.
         int maxMutationBatchSize = GraphQLLimits.getMutationBatchLimit();
         int maxNodesPerRequest = PaginationHelper.getRequestNodeLimit();
-        if (maxQueryComplexity > 0 || maxQueryDepth > 0 || maxMutationBatchSize > 0 || maxNodesPerRequest > 0) {
-            instns.add(new QueryCostInstrumentation(maxQueryComplexity, maxQueryDepth, maxMutationBatchSize, maxNodesPerRequest));
+        if (maxQueryComplexity > 0 || maxQueryDepth > 0 || maxExpandedFields > 0 || maxMutationBatchSize > 0
+                || maxNodesPerRequest > 0) {
+            instns.add(new QueryCostInstrumentation(maxQueryComplexity, maxQueryDepth, maxExpandedFields,
+                    maxMutationBatchSize, maxNodesPerRequest));
         }
 
         instns.add(new JCRInstrumentation(dxGraphQLConfig));

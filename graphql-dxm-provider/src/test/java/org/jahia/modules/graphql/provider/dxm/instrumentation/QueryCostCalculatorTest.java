@@ -20,6 +20,8 @@ import graphql.analysis.QueryTraverser;
 import graphql.analysis.QueryVisitorFieldEnvironment;
 import graphql.execution.CoercedVariables;
 import graphql.language.Document;
+import graphql.language.FragmentDefinition;
+import graphql.language.OperationDefinition;
 import graphql.parser.Parser;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
@@ -32,6 +34,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Collections;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -48,7 +51,11 @@ public class QueryCostCalculatorTest {
 
     private static final String SDL = "type Query { jcr: JCRQuery currentUser: User } " +
             "type User { name: String displayName: String } " +
-            "type JCRQuery { nodeByPath(path: String): JCRNode } " +
+            "type JCRQuery { nodeByPath(path: String): JCRNode item: Item } " +
+            "interface Item { uuid: String } " +
+            "type Page implements Item { uuid: String } " +
+            "type Folder implements Item { uuid: String } " +
+            "type File implements Item { uuid: String } " +
             "type JCRNode { name: String uuid: String parent: JCRNode descendants: JCRNodeConnection } " +
             "type JCRNodeConnection { nodes: [JCRNode] } " +
             "type Mutation { jcr: JCRMutation } " +
@@ -70,8 +77,9 @@ public class QueryCostCalculatorTest {
 
     @BeforeClass
     public static void setUpSchema() {
-        schema = new SchemaGenerator().makeExecutableSchema(
-                new SchemaParser().parse(SDL), RuntimeWiring.newRuntimeWiring().build());
+        // The interface needs a type resolver for the schema to build; nothing here executes, so it is never called.
+        schema = new SchemaGenerator().makeExecutableSchema(new SchemaParser().parse(SDL),
+                RuntimeWiring.newRuntimeWiring().type("Item", wiring -> wiring.typeResolver(env -> null)).build());
     }
 
     private static QueryTraverser traverser(String query, CoercedVariables variables) {
@@ -101,6 +109,29 @@ public class QueryCostCalculatorTest {
 
     private static int batchSize(String query, CoercedVariables variables) {
         return QueryCostCalculator.calculate(traverser(query, variables), NO_CEILING).getBatchSize();
+    }
+
+    /** Hands the calculator the operation and fragments as execution resolves them out of the document. */
+    private static int expandedFields(String query, int ceiling) {
+        Document document = Parser.parse(query);
+        Map<String, FragmentDefinition> fragments = document.getDefinitionsOfType(FragmentDefinition.class).stream()
+                .collect(Collectors.toMap(FragmentDefinition::getName, Function.identity()));
+        return QueryCostCalculator.expandedFieldCount(schema,
+                document.getDefinitionsOfType(OperationDefinition.class).get(0), fragments,
+                CoercedVariables.emptyVariables(), ceiling);
+    }
+
+    /**
+     * Builds an operation over {@code levels} fragments, each spreading the one below it twice under distinct aliases:
+     * the document grows by one fragment per level while what it executes doubles, to 3 * 2^levels fields.
+     */
+    private static String twiceSpreadFragments(int levels) {
+        StringBuilder query = new StringBuilder("fragment f0 on JCRNode { name } ");
+        for (int i = 1; i <= levels; i++) {
+            query.append("fragment f").append(i).append(" on JCRNode { x: parent { ...f").append(i - 1)
+                    .append(" } y: parent { ...f").append(i - 1).append(" } } ");
+        }
+        return query.append("{ jcr { nodeByPath(path: \"/\") { ...f").append(levels).append(" } } }").toString();
     }
 
     /** Builds a mutation selecting {@code mutateNodes} under {@code aliasCount} aliases, each given {@code items} paths. */
@@ -226,6 +257,64 @@ public class QueryCostCalculatorTest {
         }
         return length;
     }
+
+    // --- expanded fields ---
+
+    @Test
+    public void shouldCountAFragmentAtEveryPlaceItIsSpread() {
+        String query = twiceSpreadFragments(8);
+        // jcr and nodeByPath, then two parents per node over eight levels, and a name under each leaf: 3 * 2^8.
+        assertEquals(768, expandedFields(query, NO_CEILING));
+        // The document as written is small - jcr, nodeByPath, two spreads per level, the leaf's name - because a
+        // traversal reads each fragment definition once. That is the gap between the two measures.
+        assertEquals(19, complexity(query));
+        assertEquals(11, depth(query));
+    }
+
+    @Test
+    public void shouldCountMergedSpreadsOnce() {
+        // Two spreads of one fragment under one response key execute as one field, so they count once.
+        assertEquals(2, expandedFields("{ currentUser { ...f ...f } } fragment f on User { name }", NO_CEILING));
+        // Under distinct aliases they are distinct response keys, and execute separately.
+        assertEquals(3, expandedFields("{ currentUser { a: name b: name } }", NO_CEILING));
+    }
+
+    @Test
+    public void shouldCountAKeyReachedUnderDifferingTypeConditionsOncePerObjectType() {
+        // jcr, item, and uuid once for Page and once for Folder: the normalized operation merges the two into one
+        // field, but only after counting them, so a polymorphic query measures slightly above what it runs.
+        assertEquals(4, expandedFields("{ jcr { item { ...p ...f } } } "
+                + "fragment p on Page { uuid } fragment f on Folder { uuid }", NO_CEILING));
+        // Per object type rather than per condition: reached under Item and under Page, uuid counts once for each of
+        // the three types implementing Item.
+        assertEquals(5, expandedFields("{ jcr { item { uuid ...p } } } fragment p on Page { uuid }", NO_CEILING));
+    }
+
+    @Test
+    public void shouldCountAliasedTypenameFieldsAsExpandedFields() {
+        assertEquals(500, expandedFields(aliasedTypenameQuery(500), NO_CEILING));
+    }
+
+    @Test
+    public void shouldNotCountFieldsExcludedBySkipAsExpandedFields() {
+        assertEquals(1, expandedFields("{ currentUser { name @skip(if: true) } }", NO_CEILING));
+    }
+
+    @Test
+    public void shouldAcceptAnOperationAtTheCeiling() {
+        assertEquals(768, expandedFields(twiceSpreadFragments(8), 768));
+    }
+
+    @Test
+    public void shouldStopCountingOnePastTheCeiling() {
+        // The build stops as soon as the count passes the ceiling, so the measure costs at most the ceiling and says of
+        // an operation over it only that it is over: one past, whether it would have expanded to 768 fields or 3072.
+        assertEquals(101, expandedFields(twiceSpreadFragments(8), 100));
+        assertEquals(101, expandedFields(twiceSpreadFragments(10), 100));
+    }
+
+    // --- batch size ---
+
     @Test
     public void shouldCountTheItemsAnEnumeratedArgumentCarries() {
         assertEquals(3, batchSize("mutation { jcr { mutateNodes(pathsOrIds: [\"/a\", \"/b\", \"/c\"]) { uuid } } }"));
