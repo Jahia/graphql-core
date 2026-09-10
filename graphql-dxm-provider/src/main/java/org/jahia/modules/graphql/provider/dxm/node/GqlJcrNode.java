@@ -25,6 +25,7 @@ import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.MulticriteriaEvaluation;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 
@@ -43,6 +44,16 @@ public interface GqlJcrNode {
      * @return The actual JCR node this object represents
      */
     JCRNodeWrapper getNode();
+
+    /**
+     * Answers once per node, so that a query reading a field of every property of this node evaluates the
+     * permission a single time.
+     *
+     * @return whether the current session may read a decrypted value of a property of this node
+     */
+    default boolean canViewEncryptedValue() {
+        return PermissionHelper.canViewEncryptedValue(getNode());
+    }
 
     /**
      * @return The type of the JCR node this object represents

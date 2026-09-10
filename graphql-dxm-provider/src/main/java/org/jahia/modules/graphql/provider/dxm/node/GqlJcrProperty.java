@@ -42,6 +42,8 @@ import org.jahia.settings.SettingsBean;
 import org.jahia.utils.EncryptionUtils;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
@@ -60,6 +62,8 @@ import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport.
 @GraphQLName("JCRProperty")
 @GraphQLDescription("GraphQL representation of a JCR property.")
 public class GqlJcrProperty {
+    private static final Logger logger = LoggerFactory.getLogger(GqlJcrProperty.class);
+
     private JCRPropertyWrapper property;
     private GqlJcrNode node;
 
@@ -208,12 +212,13 @@ public class GqlJcrProperty {
     @GraphQLDescription("The decrypted value of the JCR encrypted property as a String in case the property is single-valued, null otherwise")
     public String getDecryptedValue() throws RepositoryException {
         try {
-            if (property.isMultiple()) {
+            if (property.isMultiple() || !node.canViewEncryptedValue()) {
                 return null;
             }
 
             return EncryptionUtils.passwordBaseDecrypt(property.getValue().getString());
         } catch (EncryptionOperationNotPossibleException e) {
+            logger.debug("The value of the property at {} was not decrypted", pathForLogging(), e);
             return null;
         }
     }
@@ -277,7 +282,7 @@ public class GqlJcrProperty {
     @GraphQLDescription("The decrypted values of the JCR encrypted property as a Strings in case the property is multiple-valued, null otherwise")
     public List<String> getDecryptedValues() throws RepositoryException {
         try {
-            if (!property.isMultiple()) {
+            if (!property.isMultiple() || !node.canViewEncryptedValue()) {
                 return Collections.emptyList();
             }
 
@@ -287,7 +292,20 @@ public class GqlJcrProperty {
             }
             return result;
         } catch (EncryptionOperationNotPossibleException e) {
+            logger.debug("A value of the property at {} was not decrypted", pathForLogging(), e);
             return Collections.emptyList();
+        }
+    }
+
+    /**
+     * The path of the property, for a log line. A repository failure while reading the path must not replace
+     * the failure the caller is already reporting, so this answers with a placeholder instead.
+     */
+    private String pathForLogging() {
+        try {
+            return property.getPath();
+        } catch (RepositoryException e) {
+            return "an unknown path";
         }
     }
 
