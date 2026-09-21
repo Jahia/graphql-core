@@ -15,6 +15,7 @@
  */
 package org.jahia.modules.graphql.provider.dxm.instrumentation;
 
+import graphql.ExecutionResult;
 import graphql.execution.ExecutionContext;
 import graphql.execution.instrumentation.SimpleInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
@@ -25,11 +26,13 @@ import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.osgi.OSGIServiceInjectorDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionChecker;
 import org.jahia.modules.graphql.provider.dxm.security.GqlJcrPermissionDataFetcher;
+import org.jahia.modules.graphql.provider.dxm.user.UserResolutionCache;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * JCR instrumentation implementation
@@ -82,5 +85,11 @@ public class JCRInstrumentation extends SimpleInstrumentation {
             GqlJcrPermissionChecker.configureIntrospectionFromPermissions(executionContext.getGraphQLContext());
         }
         return executionContext;
+    }
+
+    @Override
+    public CompletableFuture<ExecutionResult> instrumentExecutionResult(ExecutionResult executionResult, InstrumentationExecutionParameters parameters) {
+        UserResolutionCache.clear();
+        return super.instrumentExecutionResult(executionResult, parameters);
     }
 }
