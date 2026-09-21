@@ -4903,7 +4903,7 @@ input InputGqlJcrNodeConstraintInput {
     all: [InputGqlJcrNodeConstraintInput]
     "A list of child constraint input for any composition"
     any: [InputGqlJcrNodeConstraintInput]
-    "A search expression to match the node property value(s) against, either specific property only or all node properties, dependent on the 'property' parameter value passed"
+    "A full text expression matched against the search index rather than the stored value, so case and accents are ignored and words match by their stem. The wildcard is '*'. Searches the whole node unless 'property' names one."
     contains: String
     "A value to compare the node property value to, using the 'equals to' operator"
     equals: String
@@ -4917,7 +4917,7 @@ input InputGqlJcrNodeConstraintInput {
     gte: String
     "A value to pick the last days for node property date value, using the 'lastDays' operator"
     lastDays: Int
-    "A value to compare the node property value to, using the 'like' operator"
+    "A pattern matched against the stored property value, so case and accents must match exactly. The wildcards are '%' for any characters and '_' for one. Requires 'property' unless 'function' is NODE_LOCAL_NAME."
     like: String
     "A value to compare the node property value to, using the 'less than' operator"
     lt: String

@@ -89,8 +89,8 @@ public class GqlJcrNodeConstraintInput {
      *
      * Exactly one parameter that defines the way node property values are compared/matched (such as 'like', 'contains', etc) must be non-null.
      *
-     * @param like A value to compare the node property value to, using the 'like' operator
-     * @param contains A search expression to match the node property value(s) against: dependent on whether the property parameter is null, either that specific property only or all node properties will be matched
+     * @param like A pattern matched against the stored property value, so case and accents must match exactly. The wildcards are '%' for any characters and '_' for one. Requires 'property' unless 'function' is NODE_LOCAL_NAME.
+     * @param contains A full text expression matched against the search index rather than the stored value, so case and accents are ignored and words match by their stem. The wildcard is '*'. Searches the whole node unless 'property' names one.
      * @param property The name of the node property to compare/match; should be null when not applicable, may be null when optional, dependent on other parameter values
      * @param function The query function name for the node for comparison
      * @param equals A value to compare the node property value to, using the 'equals to' operator
@@ -100,14 +100,14 @@ public class GqlJcrNodeConstraintInput {
      * @param lte A value to compare the node property value to, using the 'less than or equals to' operator
      * @param gte A value to compare the node property value to, using the 'greater than or equals to' operator
      * @param exists A value to compare the node property value to, using the 'exists' operator
-     * @param lastDays A value to compare the node property value to, using the 'exists' operator
+     * @param lastDays A value to pick the last days for node property date value, using the 'lastDays' operator
      * @param all A list of child constraint input for all composition
      * @param any A list of child constraint input for any composition
      * @param none A list of child constraint input for none composition
      */
     public GqlJcrNodeConstraintInput(
-        @GraphQLName("like") @GraphQLDescription("A value to compare the node property value to, using the 'like' operator") String like,
-        @GraphQLName("contains") @GraphQLDescription("A search expression to match the node property value(s) against, either specific property only or all node properties, dependent on the 'property' parameter value passed") String contains,
+        @GraphQLName("like") @GraphQLDescription("A pattern matched against the stored property value, so case and accents must match exactly. The wildcards are '%' for any characters and '_' for one. Requires 'property' unless 'function' is NODE_LOCAL_NAME.") String like,
+        @GraphQLName("contains") @GraphQLDescription("A full text expression matched against the search index rather than the stored value, so case and accents are ignored and words match by their stem. The wildcard is '*'. Searches the whole node unless 'property' names one.") String contains,
         @GraphQLName("property") @GraphQLDescription("The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values") String property,
         @GraphQLName("function") @GraphQLDescription("The query function name for the node for comparison") QueryFunction function,
         @GraphQLName("equals") @GraphQLDescription("A value to compare the node property value to, using the 'equals to' operator") String equals,
@@ -117,7 +117,7 @@ public class GqlJcrNodeConstraintInput {
         @GraphQLName("lte") @GraphQLDescription("A value to compare the node property value to, using the 'less than or equals to' operator") String lte,
         @GraphQLName("gte") @GraphQLDescription("A value to compare the node property value to, using the 'greater than or equals to' operator") String gte,
         @GraphQLName("exists") @GraphQLDescription("A value to compare the node property value to, using the 'exists' operator") Boolean exists,
-        @GraphQLName("lastDays") @GraphQLDescription("A value to compare the node property value to, using the 'exists' operator") Integer lastDays,
+        @GraphQLName("lastDays") @GraphQLDescription("A value to pick the last days for node property date value, using the 'lastDays' operator") Integer lastDays,
         @GraphQLName("all") @GraphQLDescription("A list of child constraint input for all composition") List<GqlJcrNodeConstraintInput> all,
         @GraphQLName("any") @GraphQLDescription("A list of child constraint input for any composition") List<GqlJcrNodeConstraintInput> any,
         @GraphQLName("none") @GraphQLDescription("A list of child constraint input for none composition") List<GqlJcrNodeConstraintInput> none
@@ -140,21 +140,21 @@ public class GqlJcrNodeConstraintInput {
     }
 
     /**
-     * @return A value to compare the node property value to, using the 'like' operator
+     * @return A pattern matched against the stored property value, so case and accents must match exactly. The wildcards are '%' for any characters and '_' for one. Requires 'property' unless 'function' is NODE_LOCAL_NAME.
      */
     @GraphQLField
     @GraphQLName("like")
-    @GraphQLDescription("A value to compare the node property value to, using the 'like' operator")
+    @GraphQLDescription("A pattern matched against the stored property value, so case and accents must match exactly. The wildcards are '%' for any characters and '_' for one. Requires 'property' unless 'function' is NODE_LOCAL_NAME.")
     public String getLike() {
         return like;
     }
 
     /**
-     * @return A search expression to match the node property value(s) against: dependent on whether the property parameter is null, either that specific property only or all node properties will be matched
+     * @return A full text expression matched against the search index rather than the stored value, so case and accents are ignored and words match by their stem. The wildcard is '*'. Searches the whole node unless 'property' names one.
      */
     @GraphQLField
     @GraphQLName("contains")
-    @GraphQLDescription("A search expression to match the node property value(s) against, either specific property only or all node properties, dependent on the 'property' parameter value passed")
+    @GraphQLDescription("A full text expression matched against the search index rather than the stored value, so case and accents are ignored and words match by their stem. The wildcard is '*'. Searches the whole node unless 'property' names one.")
     public String getContains() {
         return contains;
     }
