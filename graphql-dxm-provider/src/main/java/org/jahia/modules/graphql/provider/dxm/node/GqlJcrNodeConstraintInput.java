@@ -89,8 +89,8 @@ public class GqlJcrNodeConstraintInput {
      *
      * Exactly one parameter that defines the way node property values are compared/matched (such as 'like', 'contains', etc) must be non-null.
      *
-     * @param like A pattern matched against the stored property value, so case and accents must match exactly. The wildcards are '%' for any characters and '_' for one. Requires 'property' unless 'function' is NODE_LOCAL_NAME.
-     * @param contains A full text expression matched against the search index rather than the stored value, so case and accents are ignored and words match by their stem. The wildcard is '*'. Searches the whole node unless 'property' names one.
+     * @param like A pattern matched against the stored property value, so case and accents must match exactly: '%chateaux%' does not find 'Châteaux'. For a substring, wrap the pattern in '%': '%teau%' finds 'Châteaux'. '_' matches one character. Function LOWER_CASE lowercases the property only, so write the pattern lowercase. Requires 'property' unless 'function' is NODE_LOCAL_NAME.
+     * @param contains A full text expression matched against the search index rather than the stored value. It matches whole words, ignoring case and accents: 'chateaux' finds 'Châteaux'. For a substring, wrap the term in '*': '*hateau*' finds 'Châteaux'. A term with '*' is not analyzed, so write it lowercase and without accents ('*hâteau*' finds nothing), and it matches the indexed stem ('*chateaux*' finds nothing). Searches the whole node unless 'property' names one.
      * @param property The name of the node property to compare/match; should be null when not applicable, may be null when optional, dependent on other parameter values
      * @param function The query function name for the node for comparison
      * @param equals A value to compare the node property value to, using the 'equals to' operator
@@ -106,8 +106,8 @@ public class GqlJcrNodeConstraintInput {
      * @param none A list of child constraint input for none composition
      */
     public GqlJcrNodeConstraintInput(
-        @GraphQLName("like") @GraphQLDescription("A pattern matched against the stored property value, so case and accents must match exactly. The wildcards are '%' for any characters and '_' for one. Requires 'property' unless 'function' is NODE_LOCAL_NAME.") String like,
-        @GraphQLName("contains") @GraphQLDescription("A full text expression matched against the search index rather than the stored value, so case and accents are ignored and words match by their stem. The wildcard is '*'. Searches the whole node unless 'property' names one.") String contains,
+        @GraphQLName("like") @GraphQLDescription("A pattern matched against the stored property value, so case and accents must match exactly: '%chateaux%' does not find 'Châteaux'. For a substring, wrap the pattern in '%': '%teau%' finds 'Châteaux'. '_' matches one character. Function LOWER_CASE lowercases the property only, so write the pattern lowercase. Requires 'property' unless 'function' is NODE_LOCAL_NAME.") String like,
+        @GraphQLName("contains") @GraphQLDescription("A full text expression matched against the search index rather than the stored value. It matches whole words, ignoring case and accents: 'chateaux' finds 'Châteaux'. For a substring, wrap the term in '*': '*hateau*' finds 'Châteaux'. A term with '*' is not analyzed, so write it lowercase and without accents ('*hâteau*' finds nothing), and it matches the indexed stem ('*chateaux*' finds nothing). Searches the whole node unless 'property' names one.") String contains,
         @GraphQLName("property") @GraphQLDescription("The name of the node property to compare/match; may be null when optional or not applicable, dependent on other parameter values") String property,
         @GraphQLName("function") @GraphQLDescription("The query function name for the node for comparison") QueryFunction function,
         @GraphQLName("equals") @GraphQLDescription("A value to compare the node property value to, using the 'equals to' operator") String equals,
@@ -140,21 +140,21 @@ public class GqlJcrNodeConstraintInput {
     }
 
     /**
-     * @return A pattern matched against the stored property value, so case and accents must match exactly. The wildcards are '%' for any characters and '_' for one. Requires 'property' unless 'function' is NODE_LOCAL_NAME.
+     * @return A pattern matched against the stored property value, so case and accents must match exactly: '%chateaux%' does not find 'Châteaux'. For a substring, wrap the pattern in '%': '%teau%' finds 'Châteaux'. '_' matches one character. Function LOWER_CASE lowercases the property only, so write the pattern lowercase. Requires 'property' unless 'function' is NODE_LOCAL_NAME.
      */
     @GraphQLField
     @GraphQLName("like")
-    @GraphQLDescription("A pattern matched against the stored property value, so case and accents must match exactly. The wildcards are '%' for any characters and '_' for one. Requires 'property' unless 'function' is NODE_LOCAL_NAME.")
+    @GraphQLDescription("A pattern matched against the stored property value, so case and accents must match exactly: '%chateaux%' does not find 'Châteaux'. For a substring, wrap the pattern in '%': '%teau%' finds 'Châteaux'. '_' matches one character. Function LOWER_CASE lowercases the property only, so write the pattern lowercase. Requires 'property' unless 'function' is NODE_LOCAL_NAME.")
     public String getLike() {
         return like;
     }
 
     /**
-     * @return A full text expression matched against the search index rather than the stored value, so case and accents are ignored and words match by their stem. The wildcard is '*'. Searches the whole node unless 'property' names one.
+     * @return A full text expression matched against the search index rather than the stored value. It matches whole words, ignoring case and accents: 'chateaux' finds 'Châteaux'. For a substring, wrap the term in '*': '*hateau*' finds 'Châteaux'. A term with '*' is not analyzed, so write it lowercase and without accents ('*hâteau*' finds nothing), and it matches the indexed stem ('*chateaux*' finds nothing). Searches the whole node unless 'property' names one.
      */
     @GraphQLField
     @GraphQLName("contains")
-    @GraphQLDescription("A full text expression matched against the search index rather than the stored value, so case and accents are ignored and words match by their stem. The wildcard is '*'. Searches the whole node unless 'property' names one.")
+    @GraphQLDescription("A full text expression matched against the search index rather than the stored value. It matches whole words, ignoring case and accents: 'chateaux' finds 'Châteaux'. For a substring, wrap the term in '*': '*hateau*' finds 'Châteaux'. A term with '*' is not analyzed, so write it lowercase and without accents ('*hâteau*' finds nothing), and it matches the indexed stem ('*chateaux*' finds nothing). Searches the whole node unless 'property' names one.")
     public String getContains() {
         return contains;
     }

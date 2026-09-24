@@ -4903,7 +4903,7 @@ input InputGqlJcrNodeConstraintInput {
     all: [InputGqlJcrNodeConstraintInput]
     "A list of child constraint input for any composition"
     any: [InputGqlJcrNodeConstraintInput]
-    "A full text expression matched against the search index rather than the stored value, so case and accents are ignored and words match by their stem. The wildcard is '*'. Searches the whole node unless 'property' names one."
+    "A full text expression matched against the search index rather than the stored value. It matches whole words, ignoring case and accents: 'chateaux' finds 'Châteaux'. For a substring, wrap the term in '*': '*hateau*' finds 'Châteaux'. A term with '*' is not analyzed, so write it lowercase and without accents ('*hâteau*' finds nothing), and it matches the indexed stem ('*chateaux*' finds nothing). Searches the whole node unless 'property' names one."
     contains: String
     "A value to compare the node property value to, using the 'equals to' operator"
     equals: String
@@ -4917,7 +4917,7 @@ input InputGqlJcrNodeConstraintInput {
     gte: String
     "A value to pick the last days for node property date value, using the 'lastDays' operator"
     lastDays: Int
-    "A pattern matched against the stored property value, so case and accents must match exactly. The wildcards are '%' for any characters and '_' for one. Requires 'property' unless 'function' is NODE_LOCAL_NAME."
+    "A pattern matched against the stored property value, so case and accents must match exactly: '%chateaux%' does not find 'Châteaux'. For a substring, wrap the pattern in '%': '%teau%' finds 'Châteaux'. '_' matches one character. Function LOWER_CASE lowercases the property only, so write the pattern lowercase. Requires 'property' unless 'function' is NODE_LOCAL_NAME."
     like: String
     "A value to compare the node property value to, using the 'less than' operator"
     lt: String
