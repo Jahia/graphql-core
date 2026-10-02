@@ -331,9 +331,25 @@ public interface GqlJcrNode {
     @GraphQLDescription("true if node is under a mounted node")
     boolean isExternal();
 
-    @GraphQLField
-    @GraphQLDescription("Get node URL")
+    /**
+     * Returns the URL of the node. The GraphQL field {@code url} is {@link #getUrl(List)}.
+     *
+     * @return the URL of the node
+     */
     String getUrl();
+
+    /**
+     * Returns the URL of the node, built with the given parameters.
+     *
+     * @param params name:value tokens, for example {@code w:640}, or null
+     * @return the URL of the node
+     */
+    @GraphQLField
+    @GraphQLName("url")
+    @GraphQLDescription("Get node URL")
+    default String getUrl(@GraphQLName("params") @GraphQLDescription("Optional URL parameters as name:value tokens, for example w:640, passed to the node") List<String> params) {
+        return getUrl();
+    }
 
 
     @GraphQLField

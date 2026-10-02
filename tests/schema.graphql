@@ -290,7 +290,10 @@ interface JCRNode {
         isActiveOnly: Boolean
     ): [String]
     "Get node URL"
-    url: String
+    url(
+        "Optional URL parameters as name:value tokens, for example w:640, passed to the node"
+        params: [String]
+    ): String
     "GraphQL representations of the reference properties that target the current JCR Node"
     usages(
         "fetching only nodes after this node (exclusive)"
@@ -995,7 +998,10 @@ type GenericJCRNode implements JCRNode {
         isActiveOnly: Boolean
     ): [String]
     "Get node URL"
-    url: String
+    url(
+        "Optional URL parameters as name:value tokens, for example w:640, passed to the node"
+        params: [String]
+    ): String
     "GraphQL representations of the reference properties that target the current JCR Node"
     usages(
         "fetching only nodes after this node (exclusive)"
@@ -3127,7 +3133,10 @@ type JCRSite implements JCRNode {
         isActiveOnly: Boolean
     ): [String]
     "Get node URL"
-    url: String
+    url(
+        "Optional URL parameters as name:value tokens, for example w:640, passed to the node"
+        params: [String]
+    ): String
     "GraphQL representations of the reference properties that target the current JCR Node"
     usages(
         "fetching only nodes after this node (exclusive)"
@@ -4391,7 +4400,10 @@ type VanityUrl implements JCRNode {
         isActiveOnly: Boolean
     ): [String]
     "The vanity URL"
-    url: String
+    url(
+        "Ignored: a vanity URL takes no parameters"
+        params: [String]
+    ): String
     "GraphQL representations of the reference properties that target the current JCR Node"
     usages(
         "fetching only nodes after this node (exclusive)"

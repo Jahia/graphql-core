@@ -646,9 +646,14 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
-    @GraphQLDescription("Get node URL")
     public String getUrl() {
         return node.getUrl();
+    }
+
+    @Override
+    @GraphQLDescription("Get node URL")
+    public String getUrl(@GraphQLName("params") @GraphQLDescription("Optional URL parameters as name:value tokens, for example w:640, passed to the node") List<String> params) {
+        return params == null || params.isEmpty() ? getUrl() : node.getUrl(params);
     }
 
     @Override
