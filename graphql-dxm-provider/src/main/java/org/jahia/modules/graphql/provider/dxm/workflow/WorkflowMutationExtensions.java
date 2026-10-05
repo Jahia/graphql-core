@@ -20,6 +20,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.workflow.Workflow;
 import org.jahia.services.workflow.WorkflowService;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 public class WorkflowMutationExtensions {
 
     @GraphQLField
+    @GraphQLRequiresPermission(value = "graphqlAdminMutation")
     public static Collection<GqlWorkflowMutation> mutateWorkflows(@GraphQLName("definition") String workflowDefinitionId) {
         WorkflowService service = BundleUtils.getOsgiService(WorkflowService.class, null);
         List<Workflow> wfs = service.getWorkflowsForDefinition(StringUtils.substringAfter(workflowDefinitionId,":"), null);
