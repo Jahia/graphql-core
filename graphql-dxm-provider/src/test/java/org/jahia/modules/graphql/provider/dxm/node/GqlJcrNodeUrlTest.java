@@ -4,6 +4,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.processor.retrievers.GraphQLObjectInfoRetriever;
 import graphql.annotations.processor.searchAlgorithms.BreadthFirstSearch;
 import graphql.annotations.processor.searchAlgorithms.SearchAlgorithm;
+import org.jahia.modules.graphql.provider.dxm.GqlLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.service.vanity.GqlJcrVanityUrl;
 import org.jahia.modules.graphql.provider.dxm.site.GqlJcrSite;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -17,6 +18,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -68,6 +70,25 @@ public class GqlJcrNodeUrlTest {
         JCRNodeWrapper node = node();
 
         assertEquals(URL, new GqlJcrNodeImpl(node).getUrl(Arrays.asList(null, null)));
+        verify(node, never()).getUrl(anyList());
+    }
+
+    @Test
+    public void urlAcceptsTheMaximumNumberOfParams() {
+        JCRNodeWrapper node = node();
+        List<String> params = Collections.nCopies(GqlJcrNodeImpl.MAX_URL_PARAMS, "w:640");
+
+        assertEquals(SIZED_URL, new GqlJcrNodeImpl(node).getUrl(params));
+        verify(node).getUrl(params);
+    }
+
+    @Test
+    public void urlRefusesMoreParamsThanTheMaximum() {
+        JCRNodeWrapper node = node();
+        List<String> params = Collections.nCopies(GqlJcrNodeImpl.MAX_URL_PARAMS + 1, "w:640");
+        GqlJcrNodeImpl gqlNode = new GqlJcrNodeImpl(node);
+
+        assertThrows(GqlLimitExceededException.class, () -> gqlNode.getUrl(params));
         verify(node, never()).getUrl(anyList());
     }
 

@@ -291,7 +291,7 @@ interface JCRNode {
     ): [String]
     "Get node URL"
     url(
-        "Optional URL parameters as name:value tokens, for example w:640, passed to the node"
+        "Optional URL parameters as name:value tokens, for example w:640, passed to the node. The field accepts 32 tokens at most. A module that reads the tokens, such as a DAM connector, can call a remote service for each url field."
         params: [String]
     ): String
     "GraphQL representations of the reference properties that target the current JCR Node"
@@ -999,7 +999,7 @@ type GenericJCRNode implements JCRNode {
     ): [String]
     "Get node URL"
     url(
-        "Optional URL parameters as name:value tokens, for example w:640, passed to the node"
+        "Optional URL parameters as name:value tokens, for example w:640, passed to the node. The field accepts 32 tokens at most. A module that reads the tokens, such as a DAM connector, can call a remote service for each url field."
         params: [String]
     ): String
     "GraphQL representations of the reference properties that target the current JCR Node"
@@ -3134,7 +3134,7 @@ type JCRSite implements JCRNode {
     ): [String]
     "Get node URL"
     url(
-        "Optional URL parameters as name:value tokens, for example w:640, passed to the node"
+        "Optional URL parameters as name:value tokens, for example w:640, passed to the node. The field accepts 32 tokens at most. A module that reads the tokens, such as a DAM connector, can call a remote service for each url field."
         params: [String]
     ): String
     "GraphQL representations of the reference properties that target the current JCR Node"

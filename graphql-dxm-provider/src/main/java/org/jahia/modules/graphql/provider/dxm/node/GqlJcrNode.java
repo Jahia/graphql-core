@@ -347,7 +347,7 @@ public interface GqlJcrNode {
     @GraphQLField
     @GraphQLName("url")
     @GraphQLDescription("Get node URL")
-    default String getUrl(@GraphQLName("params") @GraphQLDescription("Optional URL parameters as name:value tokens, for example w:640, passed to the node") List<String> params) {
+    default String getUrl(@GraphQLName("params") @GraphQLDescription("Optional URL parameters as name:value tokens, for example w:640, passed to the node. The field accepts 32 tokens at most. A module that reads the tokens, such as a DAM connector, can call a remote service for each url field.") List<String> params) {
         return getUrl();
     }
 
