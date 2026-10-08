@@ -56,6 +56,22 @@ public class GqlJcrNodeUrlTest {
     }
 
     @Test
+    public void nullParamsAreDroppedBeforeTheNode() {
+        JCRNodeWrapper node = node();
+
+        assertEquals(SIZED_URL, new GqlJcrNodeImpl(node).getUrl(Arrays.asList(null, "w:640")));
+        verify(node).getUrl(Collections.singletonList("w:640"));
+    }
+
+    @Test
+    public void urlWithOnlyNullParamsIsUnchanged() {
+        JCRNodeWrapper node = node();
+
+        assertEquals(URL, new GqlJcrNodeImpl(node).getUrl(Arrays.asList(null, null)));
+        verify(node, never()).getUrl(anyList());
+    }
+
+    @Test
     public void vanityUrlIgnoresParams() {
         JCRNodeWrapper node = node();
         when(node.getPropertyAsString(VanityUrlManager.PROPERTY_URL)).thenReturn("/promo");

@@ -650,10 +650,21 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         return node.getUrl();
     }
 
+    /**
+     * Returns the URL of the node, built with the given parameters. The null items of the list are dropped, and a list
+     * with no item left gives the URL of {@link #getUrl()}.
+     *
+     * @param params name:value tokens, for example {@code w:640}, or null
+     * @return the URL of the node
+     */
     @Override
     @GraphQLDescription("Get node URL")
     public String getUrl(@GraphQLName("params") @GraphQLDescription("Optional URL parameters as name:value tokens, for example w:640, passed to the node") List<String> params) {
-        return params == null || params.isEmpty() ? getUrl() : node.getUrl(params);
+        if (params == null) {
+            return getUrl();
+        }
+        List<String> tokens = params.stream().filter(Objects::nonNull).collect(Collectors.toList());
+        return tokens.isEmpty() ? getUrl() : node.getUrl(tokens);
     }
 
     @Override
