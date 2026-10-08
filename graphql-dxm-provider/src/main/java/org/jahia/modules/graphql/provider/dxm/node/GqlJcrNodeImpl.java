@@ -26,6 +26,7 @@ import org.apache.jackrabbit.util.ISO8601;
 import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.GqlLimitExceededException;
 import org.jahia.modules.graphql.provider.dxm.acl.GqlAcl;
 import org.jahia.modules.graphql.provider.dxm.osgi.annotations.GraphQLOsgiService;
 import org.jahia.modules.graphql.provider.dxm.predicate.*;
@@ -77,6 +78,7 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     public static final List<String> DEFAULT_EXCLUDED_CHILDREN = Arrays.asList("jnt:translation", "jmix:hiddenNode");
     public static final Predicate<JCRNodeWrapper> DEFAULT_CHILDREN_PREDICATE = getTypesPredicate(new NodeTypesInput(MulticriteriaEvaluation.NONE, DEFAULT_EXCLUDED_CHILDREN));
     private static final Logger log = LoggerFactory.getLogger(GqlJcrNodeImpl.class);
+    static final int MAX_URL_PARAMS = 32;
 
     private JCRNodeWrapper node;
     private String type;
@@ -646,9 +648,29 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     @Override
-    @GraphQLDescription("Get node URL")
     public String getUrl() {
         return node.getUrl();
+    }
+
+    /**
+     * Returns the URL of the node, built with the given parameters. The null items of the list are dropped, and a list
+     * with no item left gives the URL of {@link #getUrl()}.
+     *
+     * @param params name:value tokens, for example {@code w:640}, or null
+     * @return the URL of the node
+     * @throws GqlLimitExceededException if the list holds more than {@value #MAX_URL_PARAMS} items
+     */
+    @Override
+    @GraphQLDescription("Get node URL")
+    public String getUrl(@GraphQLName("params") @GraphQLDescription("Optional URL parameters as name:value tokens, for example w:640, passed to the node. The field accepts 32 tokens at most. A module that reads the tokens, such as a DAM connector, can call a remote service for each url field.") List<String> params) {
+        if (params == null) {
+            return getUrl();
+        }
+        if (params.size() > MAX_URL_PARAMS) {
+            throw new GqlLimitExceededException("The url field was given " + params.size() + " params, more than the maximum of " + MAX_URL_PARAMS + ".");
+        }
+        List<String> tokens = params.stream().filter(Objects::nonNull).collect(Collectors.toList());
+        return tokens.isEmpty() ? getUrl() : node.getUrl(tokens);
     }
 
     @Override
