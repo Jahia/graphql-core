@@ -25,7 +25,6 @@ import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
 import org.jahia.modules.graphql.provider.dxm.osgiconfig.GqlConfigurationQuery;
 import org.jahia.modules.graphql.provider.dxm.scheduler.GqlScheduler;
-import org.jahia.modules.graphql.provider.dxm.service.tags.graphql.GqlTagManagerQuery;
 import org.jahia.utils.DatabaseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,11 +144,5 @@ public class GqlJahiaAdminQuery {
     @GraphQLDescription("Get jobs scheduler")
     public GqlScheduler getScheduler() {
         return new GqlScheduler();
-    }
-
-    @GraphQLField
-    @GraphQLDescription("Manage tags for a site")
-    public GqlTagManagerQuery tagManager(@GraphQLName("siteKey") @GraphQLDescription("The site key") @GraphQLNonNull String siteKey) {
-        return new GqlTagManagerQuery(siteKey);
     }
 }
