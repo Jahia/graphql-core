@@ -42,7 +42,8 @@ describe('Test ACL/ACE query endpoint', () => {
             const aclEntry = getRole(acl.aclEntries, 'guest', 'reader');
             expect(aclEntry, `Guest user has reader role for ${path}`).to.be.not.undefined;
             expect(aclEntry.inherited).to.be.true;
-            expect(aclEntry.inheritedFrom.path, 'ACL entry should be inherited from /sites').equals('/sites');
+            // Older Jahia builds grant guest reader on /sites, newer ones on each site node
+            expect(aclEntry.inheritedFrom.path, 'ACL entry should be inherited from /sites or from the site').to.be.oneOf(['/sites', '/sites/digitall']);
         });
     });
 
