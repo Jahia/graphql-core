@@ -1,0 +1,10 @@
+name: On Pull Request
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  pull-request:
+    uses: Jahia/jahia-modules-action/.github/workflows/reusable-module-on-pull-request.yml@reusable-module-workflows
+    secrets: inherit
