@@ -75,9 +75,17 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     }
 
     /**
-     * User-property key under which the handshake records whether its Origin is allowed.
+     * Key, in the user properties of the endpoint configuration ({@link EndpointConfig#getUserProperties()}) that the
+     * handshake hands to {@link #onOpen}, of whether the Origin of the handshake is allowed.
      */
     static final String ORIGIN_ALLOWED = "org.jahia.modules.graphql.originAllowed";
+
+    /**
+     * Key, in the user properties of a WebSocket session ({@link Session#getUserProperties()}), that marks a session
+     * closed by {@link #onOpen} because its Origin is not allowed, so that {@link #onClose} and {@link #onError} leave
+     * it alone.
+     */
+    static final String ORIGIN_REFUSED = "org.jahia.modules.graphql.originRefused";
 
     private static final String ORIGIN_HEADER = "Origin";
 
@@ -85,7 +93,7 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     public void onOpen(Session session, EndpointConfig endpointConfig) {
         Map<String, Object> userProperties = endpointConfig.getUserProperties();
         if (!Boolean.TRUE.equals(userProperties.get(ORIGIN_ALLOWED))) {
-            session.getUserProperties().put(ORIGIN_ALLOWED, Boolean.FALSE);
+            session.getUserProperties().put(ORIGIN_REFUSED, Boolean.TRUE);
             logger.debug("Closing WebSocket session {}: its origin is not allowed", session.getId());
             try {
                 session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Origin not allowed"));
@@ -119,7 +127,7 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     }
 
     private static boolean isOpenedByDelegate(Session session) {
-        return !Boolean.FALSE.equals(session.getUserProperties().get(ORIGIN_ALLOWED));
+        return !Boolean.TRUE.equals(session.getUserProperties().get(ORIGIN_REFUSED));
     }
 
     /**
