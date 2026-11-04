@@ -16,6 +16,7 @@
  * @type {Cypress.PluginConfig}
  */
 const sshCommand = require('./ssh');
+const wsHandshake = require('./wsHandshake');
 module.exports = (on, config) => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     require('@jahia/cypress/dist/plugins/registerPlugins').registerPlugins(on, config);
@@ -28,6 +29,9 @@ module.exports = (on, config) => {
                 username: process.env.JAHIA_USERNAME_TOOLS,
                 password: process.env.JAHIA_PASSWORD_TOOLS
             });
+        },
+        wsHandshake(options) {
+            return wsHandshake(options);
         }
     });
     return config;
