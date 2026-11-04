@@ -43,7 +43,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 
 @Component(immediate = true, service = Endpoint.class)
 @ServerEndpoint(value="/graphqlws", subprotocols = {"graphql-ws", "graphql-transport-ws"}, configurator = OsgiGraphQLWsEndpoint.Configurator.class)
@@ -132,22 +134,29 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
 
     /**
      * Tells whether a handshake carrying {@code origin} is accepted on a request addressed to {@code requestUri}: the
-     * origin must be the one the request is addressed to, or one of {@code allowedOrigins}.
+     * origin must be the one the request is addressed to, or one of the configured origins. The configured origins are
+     * read only when the origin is not the one the request is addressed to.
      *
-     * @param origin         the value of the Origin header, {@code null} when the header is absent
-     * @param requestUri     the absolute URI of the handshake request, in the ws or wss scheme
-     * @param allowedOrigins the origins configured in {@code http.cors.allow-origin}
+     * @param origin            the value of the Origin header, {@code null} when the header is absent
+     * @param requestUri        the absolute URI of the handshake request, in the ws or wss scheme
+     * @param configuredOrigins the origins configured in {@code http.cors.allow-origin}
      * @return {@code true} if the origin is accepted
      */
-    static boolean isAllowedOrigin(String origin, URI requestUri, Set<String> allowedOrigins) {
-        URI originUri = parseOrigin(origin);
-        if (originUri == null) {
-            return false;
-        }
-        if (allowedOrigins.contains(origin)) {
+    static boolean isAllowedOrigin(String origin, URI requestUri, Supplier<Set<String>> configuredOrigins) {
+        Origin parsed = parseOrigin(origin);
+        if (parsed != null && requestUri != null && parsed.equals(Origin.of(toHttpScheme(requestUri.getScheme()), requestUri.getRawAuthority()))) {
             return true;
         }
-        return requestUri != null && isSameOrigin(originUri, requestUri);
+        return isConfigured(origin, configuredOrigins);
+    }
+
+    /**
+     * Tells whether {@code origin} is one of the configured origins, compared as exactly the text it holds. The opaque
+     * origin {@code null} and the wildcard {@code *} never match.
+     */
+    static boolean isConfigured(String origin, Supplier<Set<String>> configuredOrigins) {
+        return origin != null && !origin.isEmpty() && !"null".equals(origin) && !"*".equals(origin)
+                && configuredOrigins.get().contains(origin);
     }
 
     /**
@@ -155,26 +164,19 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
      *
      * @return the parsed origin, or {@code null} for any other value, the opaque origin {@code null} included
      */
-    static URI parseOrigin(String origin) {
+    static Origin parseOrigin(String origin) {
         if (origin == null) {
             return null;
         }
         try {
             URI uri = new URI(origin);
-            boolean serialized = ("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
-                    && uri.getHost() != null && uri.getRawUserInfo() == null
+            String scheme = uri.getScheme();
+            boolean serialized = ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))
                     && (uri.getRawPath() == null || uri.getRawPath().isEmpty()) && uri.getRawQuery() == null && uri.getRawFragment() == null;
-            return serialized ? uri : null;
+            return serialized ? Origin.of(scheme.toLowerCase(Locale.ENGLISH), uri.getRawAuthority()) : null;
         } catch (URISyntaxException e) {
             return null;
         }
-    }
-
-    private static boolean isSameOrigin(URI origin, URI requestUri) {
-        String scheme = toHttpScheme(requestUri.getScheme());
-        return scheme != null && scheme.equals(toHttpScheme(origin.getScheme()))
-                && requestUri.getHost() != null && requestUri.getHost().equalsIgnoreCase(origin.getHost())
-                && portOf(requestUri, scheme) == portOf(origin, scheme);
     }
 
     /**
@@ -196,36 +198,115 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         }
     }
 
-    private static int portOf(URI uri, String httpScheme) {
-        if (uri.getPort() != -1) {
-            return uri.getPort();
-        }
-        return "https".equals(httpScheme) ? 443 : 80;
-    }
-
     private static Set<String> configuredOrigins() {
         DXGraphQLConfig config = BundleUtils.getOsgiService(DXGraphQLConfig.class, null);
         return config != null ? config.getCorsOrigins() : Collections.emptySet();
     }
 
-    public static class Configurator extends ServerEndpointConfig.Configurator {
+    /**
+     * Replaces line breaks, so that a value read from a request stays on one log line.
+     */
+    private static String forLog(Object value) {
+        return String.valueOf(value).replaceAll("[\r\n]", "_");
+    }
+
+    /**
+     * An http or https origin, its host lower-cased and its port explicit. The host is read from the authority as
+     * written, so a host name {@link URI#getHost()} leaves {@code null}, such as one holding an underscore, is kept.
+     */
+    static final class Origin {
+        private final String scheme;
+        private final String host;
+        private final int port;
+
+        private Origin(String scheme, String host, int port) {
+            this.scheme = scheme;
+            this.host = host;
+            this.port = port;
+        }
 
         /**
-         * Accepts only a handshake that carries a serialized http or https origin. Whether that origin is allowed
-         * depends on the address of the request, so {@link #modifyHandshake} decides it.
+         * @param scheme    {@code http} or {@code https}
+         * @param authority {@code host[:port]}, an IPv6 host in brackets
+         * @return the origin, or {@code null} when the scheme or the authority is of another form
+         */
+        static Origin of(String scheme, String authority) {
+            if (scheme == null || authority == null || authority.isEmpty() || authority.indexOf('@') >= 0) {
+                return null;
+            }
+            String host;
+            String port = null;
+            int hostEnd = authority.startsWith("[") ? authority.indexOf(']') + 1 : authority.lastIndexOf(':');
+            if (authority.startsWith("[")) {
+                if (hostEnd == 0) {
+                    return null;
+                }
+                host = authority.substring(0, hostEnd);
+                if (hostEnd < authority.length()) {
+                    if (authority.charAt(hostEnd) != ':') {
+                        return null;
+                    }
+                    port = authority.substring(hostEnd + 1);
+                }
+            } else if (hostEnd >= 0) {
+                host = authority.substring(0, hostEnd);
+                port = authority.substring(hostEnd + 1);
+            } else {
+                host = authority;
+            }
+            if (host.isEmpty() || (!host.startsWith("[") && host.indexOf(':') >= 0)) {
+                return null;
+            }
+            int defaultPort = "https".equals(scheme) ? 443 : 80;
+            if (port == null || port.isEmpty()) {
+                return new Origin(scheme, host.toLowerCase(Locale.ENGLISH), defaultPort);
+            }
+            if (!port.matches("\\d{1,5}") || Integer.parseInt(port) > 65535) {
+                return null;
+            }
+            return new Origin(scheme, host.toLowerCase(Locale.ENGLISH), Integer.parseInt(port));
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof Origin)) {
+                return false;
+            }
+            Origin other = (Origin) o;
+            return scheme.equals(other.scheme) && host.equals(other.host) && port == other.port;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(scheme, host, port);
+        }
+    }
+
+    public static class Configurator extends ServerEndpointConfig.Configurator {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(Configurator.class);
+
+        /**
+         * Accepts only a handshake that carries a serialized http or https origin, or one of the configured origins.
+         * Whether an http or https origin is allowed depends on the address of the request, so
+         * {@link #modifyHandshake} decides it.
          */
         @Override
         public boolean checkOrigin(String originHeaderValue) {
-            return parseOrigin(originHeaderValue) != null;
+            return parseOrigin(originHeaderValue) != null || isConfigured(originHeaderValue, OsgiGraphQLWsEndpoint::configuredOrigins);
         }
 
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response) {
             List<String> origins = request.getHeaders().get(ORIGIN_HEADER);
             boolean originAllowed = origins != null && origins.size() == 1
-                    && isAllowedOrigin(origins.get(0), request.getRequestURI(), configuredOrigins());
+                    && isAllowedOrigin(origins.get(0), request.getRequestURI(), OsgiGraphQLWsEndpoint::configuredOrigins);
             sec.getUserProperties().put(ORIGIN_ALLOWED, originAllowed);
             if (!originAllowed) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Origin {} is not allowed for a WebSocket connection addressed to {}",
+                            forLog(origins), forLog(request.getRequestURI()));
+                }
                 return;
             }
 

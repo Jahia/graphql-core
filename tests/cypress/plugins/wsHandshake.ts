@@ -1,4 +1,5 @@
-import {request} from 'http';
+import {request as httpRequest} from 'http';
+import {request as httpsRequest} from 'https';
 import {randomBytes} from 'crypto';
 import {Socket} from 'net';
 
@@ -16,15 +17,20 @@ interface HandshakeResult {
     closeCode: number | null
 }
 
-const textFrame = (text: string): Buffer => {
-    const payload = Buffer.from(text);
+const NORMAL_CLOSURE = 1000;
+
+const maskedFrame = (opcode: number, payload: Buffer): Buffer => {
     const mask = randomBytes(4);
     const header = payload.length < 126 ?
-        Buffer.from([0x81, 0x80 | payload.length]) :
-        Buffer.from([0x81, 0x80 | 126, payload.length >> 8, payload.length & 0xff]);
+        Buffer.from([0x80 | opcode, 0x80 | payload.length]) :
+        Buffer.from([0x80 | opcode, 0x80 | 126, payload.length >> 8, payload.length & 0xff]);
     const masked = Buffer.from(payload.map((b, i) => b ^ mask[i % 4]));
     return Buffer.concat([header, mask, masked]);
 };
+
+const textFrame = (text: string): Buffer => maskedFrame(0x1, Buffer.from(text));
+
+const closeFrame = (code: number): Buffer => maskedFrame(0x8, Buffer.from([code >> 8, code & 0xff]));
 
 // Reads the unmasked server frames held in buffer, returns the bytes left over.
 const readFrames = (buffer: Buffer, onFrame: (opcode: number, data: Buffer) => void): Buffer => {
@@ -59,11 +65,21 @@ const readFrames = (buffer: Buffer, onFrame: (opcode: number, data: Buffer) => v
     return rest;
 };
 
-// Opens a WebSocket to url with the given Origin and Cookie headers, which page scripts cannot set, sends
-// connection_init, and reports the handshake status, the messages received and the close code.
+const messageType = (data: Buffer): string => {
+    try {
+        return JSON.parse(data.toString()).type;
+    } catch (e) {
+        return `unparsed: ${data.toString()}`;
+    }
+};
+
+// Opens a WebSocket to url with the given Origin and Cookie headers, which page scripts cannot set, and sends
+// connection_init. Resolves with the handshake status and the messages received, once connection_ack arrives (the
+// connection is then closed normally), once the server closes the connection (with its close code), or at the timeout.
 const wsHandshake = (options: HandshakeOptions): Promise<HandshakeResult> => {
     return new Promise((resolve, reject) => {
         const target = new URL(options.url);
+        const secure = target.protocol === 'wss:' || target.protocol === 'https:';
         const headers: Record<string, string> = {
             Connection: 'Upgrade',
             Upgrade: 'websocket',
@@ -80,7 +96,13 @@ const wsHandshake = (options: HandshakeOptions): Promise<HandshakeResult> => {
         }
 
         const result: HandshakeResult = {status: 0, messages: [], closeCode: null};
-        const req = request({hostname: target.hostname, port: target.port, path: target.pathname, headers});
+        const request = secure ? httpsRequest : httpRequest;
+        const req = request({
+            hostname: target.hostname,
+            port: target.port || (secure ? 443 : 80),
+            path: target.pathname,
+            headers
+        });
         req.on('response', res => {
             result.status = res.statusCode;
             res.resume();
@@ -88,29 +110,49 @@ const wsHandshake = (options: HandshakeOptions): Promise<HandshakeResult> => {
         });
         req.on('upgrade', (res, socket: Socket, head: Buffer) => {
             result.status = res.statusCode;
-            let pending = head;
-            const finish = () => {
-                socket.destroy();
-                resolve(result);
+            let settled = false;
+            let pending = Buffer.alloc(0);
+            const settle = () => {
+                if (!settled) {
+                    settled = true;
+                    clearTimeout(timer);
+                    socket.destroy();
+                    resolve(result);
+                }
             };
 
-            const timer = setTimeout(finish, options.timeout || 5000);
-            socket.on('data', (chunk: Buffer) => {
-                pending = readFrames(Buffer.concat([pending, chunk]), (opcode, data) => {
-                    if (opcode === 0x8) {
-                        result.closeCode = data.length >= 2 ? data.readUInt16BE(0) : 1005;
+            const onFrame = (opcode: number, data: Buffer) => {
+                if (settled) {
+                    return;
+                }
+
+                if (opcode === 0x8) {
+                    result.closeCode = data.length >= 2 ? data.readUInt16BE(0) : 1005;
+                    settle();
+                } else if (opcode === 0x1) {
+                    const type = messageType(data);
+                    result.messages.push(type);
+                    if (type === 'connection_ack') {
+                        settled = true;
                         clearTimeout(timer);
-                        finish();
-                    } else if (opcode === 0x1) {
-                        result.messages.push(JSON.parse(data.toString()).type);
+                        socket.end(closeFrame(NORMAL_CLOSURE));
+                        resolve(result);
                     }
-                });
-            });
-            socket.on('close', () => {
-                clearTimeout(timer);
-                resolve(result);
-            });
-            socket.write(textFrame(JSON.stringify({type: 'connection_init', payload: {}})));
+                }
+            };
+
+            const consume = (chunk: Buffer) => {
+                pending = readFrames(Buffer.concat([pending, chunk]), onFrame);
+            };
+
+            const timer = setTimeout(settle, options.timeout || 5000);
+            socket.on('data', consume);
+            socket.on('close', settle);
+            socket.on('error', settle);
+            consume(head);
+            if (!settled) {
+                socket.write(textFrame(JSON.stringify({type: 'connection_init', payload: {}})));
+            }
         });
         req.on('error', reject);
         req.end();
