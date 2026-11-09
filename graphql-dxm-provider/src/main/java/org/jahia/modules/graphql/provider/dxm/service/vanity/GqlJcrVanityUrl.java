@@ -24,6 +24,7 @@ import org.jahia.modules.graphql.provider.dxm.node.SpecializedType;
 import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.RepositoryException;
+import java.util.List;
 
 import static org.jahia.api.Constants.JCR_LANGUAGE;
 import static org.jahia.services.seo.jcr.VanityUrlManager.*;
@@ -50,11 +51,23 @@ public class GqlJcrVanityUrl extends GqlJcrNodeImpl implements GqlJcrNode {
      *
      * @return the vanity URL
      */
+    @Override
+    public String getUrl() {
+        return getNode().getPropertyAsString(PROPERTY_URL);
+    }
+
+    /**
+     * Returns the vanity URL. A vanity URL takes no parameters, so they are ignored.
+     *
+     * @param params ignored
+     * @return the vanity URL
+     */
+    @Override
     @GraphQLField
     @GraphQLName("url")
     @GraphQLDescription("The vanity URL")
-    public String getUrl() {
-        return getNode().getPropertyAsString(PROPERTY_URL);
+    public String getUrl(@GraphQLName("params") @GraphQLDescription("Ignored: a vanity URL takes no parameters") List<String> params) {
+        return getUrl();
     }
 
     /**
