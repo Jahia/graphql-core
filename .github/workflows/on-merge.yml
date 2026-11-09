@@ -1,86 +1,11 @@
-# This workflow is triggered every time a change is pushed to any branches
-# Github actions command reference: https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions
-name: On merge to main
+name: On Merge
 
-# The workflow could also be triggered on PRs
 on:
   push:
-    branches:
-      - 'main'
     tags-ignore:
       - '**'
 
 jobs:
-  update-signature:
-    name: Update module signature
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: jahia/jahia-modules-action/update-signature@v2
-        with:
-          nexus_username: ${{ secrets.NEXUS_USERNAME }}
-          nexus_password: ${{ secrets.NEXUS_PASSWORD }}
-
-  build:
-    name: Build Module
-    needs: update-signature
-    runs-on: self-hosted
-    env:
-      NEXUS_INTERNAL_URL: ${{ secrets.NEXUS_INTERNAL_URL }}
-    container:
-      image: ghcr.io/jahia/jahia-docker-mvn-cache:11-jdk-noble-mvn-loaded
-      credentials:
-        username: ${{ secrets.GH_PACKAGES_USERNAME }}
-        password: ${{ secrets.GH_PACKAGES_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: jahia/jahia-modules-action/build@v2
-        with:
-          mvn_settings_filepath: '.github/maven.settings.xml'
-          nexus_username: ${{ secrets.NEXUS_USERNAME }}
-          nexus_password: ${{ secrets.NEXUS_PASSWORD }} 
-
-  sbom:
-    name: SBOM processing
-    needs: build
-    runs-on: ubuntu-latest
-    container:
-      image: cyclonedx/cyclonedx-cli:0.24.2   
-    steps:
-      - uses: jahia/jahia-modules-action/sbom-processing@v2
-        with:
-          dependencytrack_hostname: ${{ vars.DEPENDENCYTRACK_HOSTNAME }}
-          dependencytrack_apikey: ${{ secrets.DEPENDENCYTRACK_APIKEY }}
-          sbom_artifacts: 'build-artifacts'
-
-  integration-tests-standalone:
-    uses:  Jahia/jahia-modules-action/.github/workflows/reusable-integration-tests.yml@v2
-    needs: build   
+  merge:
+    uses: Jahia/jahia-modules-action/.github/workflows/reusable-module-on-merge.yml@reusable-module-workflows
     secrets: inherit
-    with:
-      jahia_image: ghcr.io/jahia/jahia-ee-dev:8-SNAPSHOT
-      module_id: graphql-dxm-provider
-      module_branch: ${{ github.ref }}
-      testrail_project: GraphQL Core module
-      pagerduty_skip_notification: true
-      provisioning_manifest: provisioning-manifest-build.yml
-      pagerduty_incident_service: graphql-dxm-provider-JahiaSN
-      artifact_prefix: gql
-
-  publish:
-    name: Publish module
-    needs: [build]
-    if: github.ref == 'refs/heads/main'
-    runs-on: self-hosted
-    container:
-      image: ghcr.io/jahia/jahia-docker-mvn-cache:11-jdk-noble-mvn-loaded
-      credentials:
-        username: ${{ secrets.GH_PACKAGES_USERNAME }}
-        password: ${{ secrets.GH_PACKAGES_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: jahia/jahia-modules-action/publish@v2
-        with:
-          nexus_username: ${{ secrets.NEXUS_USERNAME }}
-          nexus_password: ${{ secrets.NEXUS_PASSWORD }}
-          mvn_settings_filepath: '.github/maven.settings.xml'
