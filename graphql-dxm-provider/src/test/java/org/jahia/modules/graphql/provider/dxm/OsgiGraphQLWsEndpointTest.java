@@ -24,7 +24,9 @@ import static org.jahia.modules.graphql.provider.dxm.OsgiGraphQLWsEndpoint.isAll
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -159,13 +161,15 @@ public class OsgiGraphQLWsEndpointTest {
     }
 
     @Test
-    public void onCloseAndOnErrorLeaveARefusedSessionAlone() {
+    public void onCloseAndOnErrorLeaveARefusedSessionAlone() throws Exception {
         // The delegate is not set in a unit test, so reaching it would throw.
         Session session = session();
         session.getUserProperties().put(ORIGIN_REFUSED, Boolean.TRUE);
         OsgiGraphQLWsEndpoint endpoint = new OsgiGraphQLWsEndpoint();
         endpoint.onClose(session, new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Origin not allowed"));
         endpoint.onError(session, new IllegalStateException());
+        verify(session, never()).close(any(CloseReason.class));
+        verify(session, never()).getBasicRemote();
     }
 
     private static Session session() {

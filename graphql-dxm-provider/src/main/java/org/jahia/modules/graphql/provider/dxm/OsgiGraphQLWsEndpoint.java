@@ -38,12 +38,11 @@ import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.MalformedURLException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -90,6 +89,8 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     static final String ORIGIN_REFUSED = "org.jahia.modules.graphql.originRefused";
 
     private static final String ORIGIN_HEADER = "Origin";
+    private static final String HTTP = "http";
+    private static final String HTTPS = "https";
 
     @Override
     public void onOpen(Session session, EndpointConfig endpointConfig) {
@@ -143,8 +144,8 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
      * @return {@code true} if the origin is accepted
      */
     static boolean isAllowedOrigin(String origin, URI requestUri, Supplier<Set<String>> configuredOrigins) {
-        Origin parsed = parseOrigin(origin);
-        if (parsed != null && requestUri != null && parsed.equals(Origin.of(toHttpScheme(requestUri.getScheme()), requestUri.getRawAuthority()))) {
+        URL parsed = parseOrigin(origin);
+        if (parsed != null && requestUri != null && isSameOrigin(parsed, requestOrigin(requestUri))) {
             return true;
         }
         return isConfigured(origin, configuredOrigins);
@@ -160,42 +161,55 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     }
 
     /**
-     * Parses a serialized origin, {@code scheme://host[:port]} with an http or https scheme.
+     * Parses a serialized origin, {@code scheme://host[:port]} with an http or https scheme. It is parsed as a
+     * {@link URL} rather than a {@link URI}, because {@link URI#getHost()} is {@code null} for a host name that holds
+     * an underscore.
      *
      * @return the parsed origin, or {@code null} for any other value, the opaque origin {@code null} included
      */
-    static Origin parseOrigin(String origin) {
+    static URL parseOrigin(String origin) {
         if (origin == null) {
             return null;
         }
         try {
-            URI uri = new URI(origin);
-            String scheme = uri.getScheme();
-            boolean serialized = ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))
-                    && (uri.getRawPath() == null || uri.getRawPath().isEmpty()) && uri.getRawQuery() == null && uri.getRawFragment() == null;
-            return serialized ? Origin.of(scheme.toLowerCase(Locale.ENGLISH), uri.getRawAuthority()) : null;
-        } catch (URISyntaxException e) {
+            URL url = new URL(origin);
+            boolean serialized = (HTTP.equals(url.getProtocol()) || HTTPS.equals(url.getProtocol()))
+                    && !url.getHost().isEmpty() && url.getUserInfo() == null && url.getFile().isEmpty() && url.getRef() == null;
+            return serialized ? url : null;
+        } catch (MalformedURLException e) {
             return null;
         }
     }
 
     /**
-     * Maps a WebSocket or HTTP scheme to the HTTP scheme an origin carries: ws to http, wss to https.
+     * Returns the origin a handshake request is addressed to: the host and port of its URI, with ws read as http and
+     * wss as https, or {@code null} when the URI holds no host.
      */
-    private static String toHttpScheme(String scheme) {
-        if (scheme == null) {
+    private static URL requestOrigin(URI requestUri) {
+        if (requestUri.getRawAuthority() == null) {
             return null;
         }
-        switch (scheme.toLowerCase(Locale.ENGLISH)) {
-            case "http":
-            case "ws":
-                return "http";
-            case "https":
-            case "wss":
-                return "https";
-            default:
-                return null;
+        String scheme = requestUri.getScheme();
+        if ("ws".equalsIgnoreCase(scheme)) {
+            scheme = HTTP;
+        } else if ("wss".equalsIgnoreCase(scheme)) {
+            scheme = HTTPS;
         }
+        return parseOrigin(scheme + "://" + requestUri.getRawAuthority());
+    }
+
+    /**
+     * Compares the scheme, the host and the port of two origins, a missing port read as the default one of the scheme.
+     * {@link URL#equals} is not used, because it resolves both host names.
+     */
+    private static boolean isSameOrigin(URL origin, URL other) {
+        return other != null && origin.getProtocol().equals(other.getProtocol())
+                && origin.getHost().equalsIgnoreCase(other.getHost())
+                && portOf(origin) == portOf(other);
+    }
+
+    private static int portOf(URL url) {
+        return url.getPort() != -1 ? url.getPort() : url.getDefaultPort();
     }
 
     private static Set<String> configuredOrigins() {
@@ -203,88 +217,16 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         return config != null ? config.getCorsOrigins() : Collections.emptySet();
     }
 
-    /**
-     * Replaces line breaks, so that a value read from a request stays on one log line.
-     */
-    private static String forLog(Object value) {
-        return String.valueOf(value).replaceAll("[\r\n]", "_");
-    }
-
-    /**
-     * An http or https origin, its host lower-cased and its port explicit. The host is read from the authority as
-     * written, so a host name {@link URI#getHost()} leaves {@code null}, such as one holding an underscore, is kept.
-     */
-    static final class Origin {
-        private final String scheme;
-        private final String host;
-        private final int port;
-
-        private Origin(String scheme, String host, int port) {
-            this.scheme = scheme;
-            this.host = host;
-            this.port = port;
-        }
-
-        /**
-         * @param scheme    {@code http} or {@code https}
-         * @param authority {@code host[:port]}, an IPv6 host in brackets
-         * @return the origin, or {@code null} when the scheme or the authority is of another form
-         */
-        static Origin of(String scheme, String authority) {
-            if (scheme == null || authority == null || authority.isEmpty() || authority.indexOf('@') >= 0) {
-                return null;
-            }
-            String host;
-            String port = null;
-            int hostEnd = authority.startsWith("[") ? authority.indexOf(']') + 1 : authority.lastIndexOf(':');
-            if (authority.startsWith("[")) {
-                if (hostEnd == 0) {
-                    return null;
-                }
-                host = authority.substring(0, hostEnd);
-                if (hostEnd < authority.length()) {
-                    if (authority.charAt(hostEnd) != ':') {
-                        return null;
-                    }
-                    port = authority.substring(hostEnd + 1);
-                }
-            } else if (hostEnd >= 0) {
-                host = authority.substring(0, hostEnd);
-                port = authority.substring(hostEnd + 1);
-            } else {
-                host = authority;
-            }
-            if (host.isEmpty() || (!host.startsWith("[") && host.indexOf(':') >= 0)) {
-                return null;
-            }
-            int defaultPort = "https".equals(scheme) ? 443 : 80;
-            if (port == null || port.isEmpty()) {
-                return new Origin(scheme, host.toLowerCase(Locale.ENGLISH), defaultPort);
-            }
-            if (!port.matches("\\d{1,5}") || Integer.parseInt(port) > 65535) {
-                return null;
-            }
-            return new Origin(scheme, host.toLowerCase(Locale.ENGLISH), Integer.parseInt(port));
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (!(o instanceof Origin)) {
-                return false;
-            }
-            Origin other = (Origin) o;
-            return scheme.equals(other.scheme) && host.equals(other.host) && port == other.port;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(scheme, host, port);
-        }
-    }
-
     public static class Configurator extends ServerEndpointConfig.Configurator {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(Configurator.class);
+
+        /**
+         * Replaces line breaks, so that a value read from a request stays on one log line.
+         */
+        private static String forLog(Object value) {
+            return String.valueOf(value).replaceAll("[\r\n]", "_");
+        }
 
         /**
          * Accepts only a handshake that carries a serialized http or https origin, or one of the configured origins.
