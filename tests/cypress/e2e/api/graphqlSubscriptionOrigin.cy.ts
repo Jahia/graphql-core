@@ -19,7 +19,7 @@ describe('GraphQL subscription connection origin', () => {
         connect(jahiaUrl.origin).then((res: any) => {
             expect(res.status).to.equal(101);
             expect(res.messages).to.include('connection_ack');
-            expect(res.closeCode).to.be.null;
+            expect(res.closeCode, res.error).to.be.null;
         });
     });
 
@@ -27,7 +27,7 @@ describe('GraphQL subscription connection origin', () => {
         for (const origin of ['https://www.example.com', otherPort]) {
             connect(origin).then((res: any) => {
                 expect(res.status, origin).to.equal(101);
-                expect(res.closeCode, origin).to.equal(1008);
+                expect(res.closeCode, `${origin} ${res.error || ''}`).to.equal(1008);
                 expect(res.messages, origin).to.not.include('connection_ack');
             });
         }

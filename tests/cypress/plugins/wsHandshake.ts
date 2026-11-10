@@ -15,6 +15,7 @@ interface HandshakeResult {
     status: number
     messages: string[]
     closeCode: number | null
+    error?: string
 }
 
 const NORMAL_CLOSURE = 1000;
@@ -96,6 +97,7 @@ const wsHandshake = (options: HandshakeOptions): Promise<HandshakeResult> => {
         }
 
         const result: HandshakeResult = {status: 0, messages: [], closeCode: null};
+        const timeout = options.timeout || 5000;
         const request = secure ? httpsRequest : httpRequest;
         const req = request({
             hostname: target.hostname,
@@ -108,7 +110,9 @@ const wsHandshake = (options: HandshakeOptions): Promise<HandshakeResult> => {
             res.resume();
             resolve(result);
         });
+        req.setTimeout(timeout, () => req.destroy(new Error(`no handshake response from ${options.url} within ${timeout} ms`)));
         req.on('upgrade', (res, socket: Socket, head: Buffer) => {
+            req.setTimeout(0);
             result.status = res.statusCode;
             let settled = false;
             let pending = Buffer.alloc(0);
@@ -145,10 +149,16 @@ const wsHandshake = (options: HandshakeOptions): Promise<HandshakeResult> => {
                 pending = readFrames(Buffer.concat([pending, chunk]), onFrame);
             };
 
-            const timer = setTimeout(settle, options.timeout || 5000);
+            const timer = setTimeout(settle, timeout);
             socket.on('data', consume);
             socket.on('close', settle);
-            socket.on('error', settle);
+            socket.on('error', (error: Error) => {
+                if (!settled) {
+                    result.error = error.message;
+                }
+
+                settle();
+            });
             consume(head);
             if (!settled) {
                 socket.write(textFrame(JSON.stringify({type: 'connection_init', payload: {}})));

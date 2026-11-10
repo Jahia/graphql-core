@@ -19,6 +19,7 @@ import graphql.kickstart.execution.subscriptions.SubscriptionProtocolFactory;
 import graphql.kickstart.servlet.GraphQLConfiguration;
 import graphql.kickstart.servlet.GraphQLWebsocketServlet;
 import graphql.kickstart.servlet.OsgiGraphQLHttpServlet;
+import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.osgi.BundleUtils;
@@ -45,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 @Component(immediate = true, service = Endpoint.class)
 @ServerEndpoint(value="/graphqlws", subprotocols = {"graphql-ws", "graphql-transport-ws"}, configurator = OsgiGraphQLWsEndpoint.Configurator.class)
@@ -85,6 +85,7 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     public void deactivate() {
         delegate.beginShutDown();
         delegate = null;
+        CONFIG.set(null);
     }
 
     /**
@@ -147,15 +148,14 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
 
     /**
      * Tells whether a handshake carrying {@code origin} is accepted on a request addressed to {@code requestUri}: the
-     * origin must be the one the request is addressed to, or one of the configured origins. The configured origins are
-     * read only when the origin is not the one the request is addressed to.
+     * origin must be the one the request is addressed to, or one of the configured origins.
      *
      * @param origin            the value of the Origin header, {@code null} when the header is absent
      * @param requestUri        the absolute URI of the handshake request, in the ws or wss scheme
      * @param configuredOrigins the origins configured in {@code http.cors.allow-origin}
      * @return {@code true} if the origin is accepted
      */
-    static boolean isAllowedOrigin(String origin, URI requestUri, Supplier<Set<String>> configuredOrigins) {
+    static boolean isAllowedOrigin(String origin, URI requestUri, Set<String> configuredOrigins) {
         URL parsed = parseOrigin(origin);
         if (parsed != null && requestUri != null && isSameOrigin(parsed, requestOrigin(requestUri))) {
             return true;
@@ -167,9 +167,9 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
      * Tells whether {@code origin} is one of the configured origins, compared as exactly the text it holds. The opaque
      * origin {@code null} and the wildcard {@code *} never match.
      */
-    static boolean isConfigured(String origin, Supplier<Set<String>> configuredOrigins) {
+    static boolean isConfigured(String origin, Set<String> configuredOrigins) {
         return origin != null && !origin.isEmpty() && !"null".equals(origin) && !"*".equals(origin)
-                && configuredOrigins.get().contains(origin);
+                && configuredOrigins.contains(origin);
     }
 
     /**
@@ -181,13 +181,12 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
      * @return the parsed origin, or {@code null} for any other value, the opaque origin {@code null} included
      */
     static URL parseOrigin(String origin) {
-        if (origin == null || !(origin.regionMatches(true, 0, "http://", 0, 7) || origin.regionMatches(true, 0, "https://", 0, 8))) {
+        if (!StringUtils.startsWithIgnoreCase(origin, "http://") && !StringUtils.startsWithIgnoreCase(origin, "https://")) {
             return null;
         }
         try {
             URL url = new URL(origin);
-            boolean serialized = (HTTP.equals(url.getProtocol()) || HTTPS.equals(url.getProtocol()))
-                    && !url.getHost().isEmpty() && url.getUserInfo() == null && url.getFile().isEmpty() && url.getRef() == null;
+            boolean serialized = !url.getHost().isEmpty() && url.getUserInfo() == null && url.getFile().isEmpty() && url.getRef() == null;
             return serialized ? url : null;
         } catch (MalformedURLException e) {
             return null;
@@ -248,19 +247,20 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
          */
         @Override
         public boolean checkOrigin(String originHeaderValue) {
-            return parseOrigin(originHeaderValue) != null || isConfigured(originHeaderValue, OsgiGraphQLWsEndpoint::configuredOrigins);
+            return parseOrigin(originHeaderValue) != null || isConfigured(originHeaderValue, configuredOrigins());
         }
 
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response) {
             List<String> origins = request.getHeaders().get(ORIGIN_HEADER);
             boolean originAllowed = origins != null && origins.size() == 1
-                    && isAllowedOrigin(origins.get(0), request.getRequestURI(), OsgiGraphQLWsEndpoint::configuredOrigins);
+                    && isAllowedOrigin(origins.get(0), request.getRequestURI(), configuredOrigins());
             sec.getUserProperties().put(ORIGIN_ALLOWED, originAllowed);
             if (!originAllowed) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Origin {} is not allowed for a WebSocket connection addressed to {}",
-                            forLog(origins), forLog(request.getRequestURI()));
+                    URI requestUri = request.getRequestURI();
+                    LOGGER.debug("Origin {} is not allowed for a WebSocket connection addressed to {}://{}",
+                            forLog(origins), forLog(requestUri.getScheme()), forLog(requestUri.getRawAuthority()));
                 }
                 return;
             }

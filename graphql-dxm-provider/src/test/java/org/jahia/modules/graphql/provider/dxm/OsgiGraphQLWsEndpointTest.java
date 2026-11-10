@@ -19,7 +19,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import static java.util.Arrays.asList;
 import static org.jahia.modules.graphql.provider.dxm.OsgiGraphQLWsEndpoint.ORIGIN_ALLOWED;
@@ -38,11 +37,10 @@ public class OsgiGraphQLWsEndpointTest {
 
     private static final URI LOCAL = URI.create("ws://localhost:8080/modules/graphqlws");
     private static final URI PUBLIC = URI.create("wss://www.example.com/modules/graphqlws");
-    private static final Supplier<Set<String>> NONE = Collections::emptySet;
+    private static final Set<String> NONE = Collections.emptySet();
 
-    private static Supplier<Set<String>> configured(String... origins) {
-        Set<String> set = new HashSet<>(asList(origins));
-        return () -> set;
+    private static Set<String> configured(String... origins) {
+        return new HashSet<>(asList(origins));
     }
 
     @Test
@@ -85,14 +83,15 @@ public class OsgiGraphQLWsEndpointTest {
     public void refusesAValueThatIsNotASerializedOrigin() {
         for (String origin : asList(null, "", "null", "file://", "localhost:8080", "ws://localhost:8080",
                 "http://localhost:8080/", "http://user@localhost:8080", "http://localhost:8080?a=b", "http://local host:8080",
-                "http://localhost:80800", "http://localhost:port", "http://[::1", "http://::1:8080")) {
+                "http://localhost:8080#x", "http://:8080", "http://localhost:80800", "http://localhost:port", "http://[::1",
+                "http://::1:8080")) {
             assertFalse(String.valueOf(origin), isAllowedOrigin(origin, LOCAL, NONE));
         }
     }
 
     @Test
     public void acceptsAConfiguredOrigin() {
-        Supplier<Set<String>> configured = configured("https://front.example.com", "http://localhost:3000", "capacitor://localhost");
+        Set<String> configured = configured("https://front.example.com", "http://localhost:3000", "capacitor://localhost");
         assertTrue(isAllowedOrigin("https://front.example.com", PUBLIC, configured));
         assertTrue(isAllowedOrigin("http://localhost:3000", LOCAL, configured));
         assertTrue(isAllowedOrigin("capacitor://localhost", LOCAL, configured));
@@ -116,19 +115,13 @@ public class OsgiGraphQLWsEndpointTest {
     }
 
     @Test
-    public void readsTheConfiguredOriginsOnlyForAnotherOrigin() {
-        Supplier<Set<String>> unreachable = () -> {
-            throw new AssertionError("configured origins read for the origin the request is addressed to");
-        };
-        assertTrue(isAllowedOrigin("http://localhost:8080", LOCAL, unreachable));
-    }
-
-    @Test
     public void checkOriginRefusesAMissingOrOpaqueOrigin() {
         OsgiGraphQLWsEndpoint.Configurator configurator = new OsgiGraphQLWsEndpoint.Configurator();
         assertTrue(configurator.checkOrigin("http://localhost:8080"));
         assertFalse(configurator.checkOrigin(null));
         assertFalse(configurator.checkOrigin("null"));
+        assertFalse(configurator.checkOrigin("http://:8080"));
+        assertFalse(configurator.checkOrigin("http://localhost:8080#x"));
     }
 
     @Test
