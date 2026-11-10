@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 @Component(immediate = true, service = Endpoint.class)
@@ -67,6 +68,17 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         } catch (Exception e) {
             logger.error("Cannot get schema from GQL servlet", e);
         }
+    }
+
+    /**
+     * The configuration whose {@code http.cors.allow-origin} lists the configured origins. The {@link Configurator} is
+     * instantiated by the container and not by DS, so it reads the configuration through this holder.
+     */
+    private static final AtomicReference<DXGraphQLConfig> CONFIG = new AtomicReference<>();
+
+    @Reference
+    public void setConfig(DXGraphQLConfig config) {
+        CONFIG.set(config);
     }
 
     @Deactivate
@@ -163,12 +175,13 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     /**
      * Parses a serialized origin, {@code scheme://host[:port]} with an http or https scheme. It is parsed as a
      * {@link URL} rather than a {@link URI}, because {@link URI#getHost()} is {@code null} for a host name that holds
-     * an underscore.
+     * an underscore. The scheme is checked before the value reaches {@link URL}, which looks up a protocol handler for
+     * any scheme it is given.
      *
      * @return the parsed origin, or {@code null} for any other value, the opaque origin {@code null} included
      */
     static URL parseOrigin(String origin) {
-        if (origin == null) {
+        if (origin == null || !(origin.regionMatches(true, 0, "http://", 0, 7) || origin.regionMatches(true, 0, "https://", 0, 8))) {
             return null;
         }
         try {
@@ -213,7 +226,7 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     }
 
     private static Set<String> configuredOrigins() {
-        DXGraphQLConfig config = BundleUtils.getOsgiService(DXGraphQLConfig.class, null);
+        DXGraphQLConfig config = CONFIG.get();
         return config != null ? config.getCorsOrigins() : Collections.emptySet();
     }
 

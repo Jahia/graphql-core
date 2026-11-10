@@ -1,7 +1,11 @@
 package org.jahia.modules.graphql.provider.dxm;
 
+import graphql.kickstart.servlet.GraphQLWebsocketServlet;
+import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
+import org.junit.After;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.powermock.reflect.Whitebox;
 
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
@@ -161,15 +165,55 @@ public class OsgiGraphQLWsEndpointTest {
     }
 
     @Test
-    public void onCloseAndOnErrorLeaveARefusedSessionAlone() throws Exception {
-        // The delegate is not set in a unit test, so reaching it would throw.
+    public void onCloseAndOnErrorLeaveARefusedSessionAlone() {
+        GraphQLWebsocketServlet delegate = mockDelegate();
         Session session = session();
         session.getUserProperties().put(ORIGIN_REFUSED, Boolean.TRUE);
         OsgiGraphQLWsEndpoint endpoint = new OsgiGraphQLWsEndpoint();
+
         endpoint.onClose(session, new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Origin not allowed"));
         endpoint.onError(session, new IllegalStateException());
-        verify(session, never()).close(any(CloseReason.class));
-        verify(session, never()).getBasicRemote();
+
+        verify(delegate, never()).onClose(any(Session.class), any(CloseReason.class));
+        verify(delegate, never()).onError(any(Session.class), any(Throwable.class));
+    }
+
+    @Test
+    public void onCloseAndOnErrorHandAnAcceptedSessionToTheDelegate() {
+        GraphQLWebsocketServlet delegate = mockDelegate();
+        Session session = session();
+        CloseReason reason = new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, null);
+        Throwable error = new IllegalStateException();
+        OsgiGraphQLWsEndpoint endpoint = new OsgiGraphQLWsEndpoint();
+
+        endpoint.onClose(session, reason);
+        endpoint.onError(session, error);
+
+        verify(delegate).onClose(session, reason);
+        verify(delegate).onError(session, error);
+    }
+
+    @Test
+    public void checkOriginAcceptsAConfiguredOriginOfAnotherScheme() {
+        DXGraphQLConfig config = mock(DXGraphQLConfig.class);
+        when(config.getCorsOrigins()).thenReturn(Collections.singleton("capacitor://localhost"));
+        new OsgiGraphQLWsEndpoint().setConfig(config);
+        OsgiGraphQLWsEndpoint.Configurator configurator = new OsgiGraphQLWsEndpoint.Configurator();
+
+        assertTrue(configurator.checkOrigin("capacitor://localhost"));
+        assertFalse(configurator.checkOrigin("capacitor://other"));
+    }
+
+    private static GraphQLWebsocketServlet mockDelegate() {
+        GraphQLWebsocketServlet delegate = mock(GraphQLWebsocketServlet.class);
+        Whitebox.setInternalState(OsgiGraphQLWsEndpoint.class, "delegate", delegate);
+        return delegate;
+    }
+
+    @After
+    public void resetStaticState() {
+        Whitebox.setInternalState(OsgiGraphQLWsEndpoint.class, "delegate", (Object) null);
+        new OsgiGraphQLWsEndpoint().setConfig(null);
     }
 
     private static Session session() {
