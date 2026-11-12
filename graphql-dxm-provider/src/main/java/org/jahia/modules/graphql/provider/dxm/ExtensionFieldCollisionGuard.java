@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -58,24 +59,22 @@ class ExtensionFieldCollisionGuard {
         Set<Class<?>> registeredExtensions = new HashSet<>();
         List<DXGraphQLExtensionsProvider> accepted = new ArrayList<>();
         for (DXGraphQLExtensionsProvider provider : providers) {
+            String providerName = describe(provider);
             Map<Class<?>, Map<String, String>> owners = copyOf(fieldOwners);
-            Set<Class<?>> extensions;
-            String collision;
             try {
-                extensions = newTypeExtensions(provider, registeredExtensions);
-                collision = claimFields(describe(provider), extensions, owners);
+                Set<Class<?>> extensions = newTypeExtensions(provider, registeredExtensions);
+                String collision = claimFields(providerName, extensions, owners);
+                if (collision == null) {
+                    fieldOwners = owners;
+                    registeredExtensions.addAll(extensions);
+                    accepted.add(provider);
+                } else {
+                    logger.error("The GraphQL extensions of {} are not registered: {}", providerName, collision);
+                }
             } catch (RuntimeException | LinkageError e) {
-                logger.warn("Unable to check the GraphQL extensions of {} for a duplicate field", describe(provider), e);
+                logger.warn("Unable to check the GraphQL extensions of {} for a duplicate field", providerName, e);
                 accepted.add(provider);
-                continue;
             }
-            if (collision != null) {
-                logger.error("The GraphQL extensions of {} are not registered: {}", describe(provider), collision);
-                continue;
-            }
-            fieldOwners = owners;
-            registeredExtensions.addAll(extensions);
-            accepted.add(provider);
         }
         return accepted;
     }
@@ -109,28 +108,30 @@ class ExtensionFieldCollisionGuard {
         return null;
     }
 
+    // An object type also gets the extension fields of each interface it implements directly
     private String ownerOf(Class<?> type, String field, Map<Class<?>, Map<String, String>> owners) {
         String owner = ownerOnType(type, field, owners);
-        if (owner != null) {
-            return owner;
+        if (owner == null) {
+            owner = isInterfaceType(type) ? ownerOnImplementingTypes(type, field, owners) : ownerOnInterfaces(type, field, owners);
         }
-        if (isInterfaceType(type)) {
-            // An object type also gets the extension fields of each interface it implements directly
-            for (Class<?> objectType : owners.keySet()) {
-                owner = interfaceTypes(objectType).contains(type) ? ownerOnType(objectType, field, owners) : null;
-                if (owner != null) {
-                    return owner;
-                }
-            }
-        } else {
-            for (Class<?> interfaceType : interfaceTypes(type)) {
-                owner = owners.getOrDefault(interfaceType, Collections.emptyMap()).get(field);
-                if (owner != null) {
-                    return owner;
-                }
-            }
-        }
-        return null;
+        return owner;
+    }
+
+    private String ownerOnImplementingTypes(Class<?> interfaceType, String field, Map<Class<?>, Map<String, String>> owners) {
+        return owners.keySet().stream()
+                .filter(objectType -> interfaceTypes(objectType).contains(interfaceType))
+                .map(objectType -> ownerOnType(objectType, field, owners))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static String ownerOnInterfaces(Class<?> objectType, String field, Map<Class<?>, Map<String, String>> owners) {
+        return interfaceTypes(objectType).stream()
+                .map(interfaceType -> owners.getOrDefault(interfaceType, Collections.emptyMap()).get(field))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     private String ownerOnType(Class<?> type, String field, Map<Class<?>, Map<String, String>> owners) {

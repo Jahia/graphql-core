@@ -231,6 +231,9 @@ public class DXGraphQLProvider implements
         }
 
         extensionsProviders.add(this);
+        // Keeps the accepted providers only: the static reference activates a new instance when the bound providers change
+        extensionsProviders = new ExtensionFieldCollisionGuard(graphQLObjectInfoRetriever, methodSearchAlgorithm,
+                fieldSearchAlgorithm).acceptedProviders(prioritizedExtensionsProviders());
 
         registerSchema();
     }
@@ -247,10 +250,8 @@ public class DXGraphQLProvider implements
     }
 
     private void registerSchema(GraphQLExtensionsHandler extensionsHandler) {
-        List<DXGraphQLExtensionsProvider> providers = new ExtensionFieldCollisionGuard(graphQLObjectInfoRetriever,
-                methodSearchAlgorithm, fieldSearchAlgorithm).acceptedProviders(prioritizedExtensionsProviders());
         sdlSchemaService.clearExtensions();
-        for (DXGraphQLExtensionsProvider extensionsProvider : providers) {
+        for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             try {
                 sdlSchemaService.addExtensions(extensionsProvider);
                 for (Class<?> aClass : extensionsProvider.getExtensions()) {
@@ -282,7 +283,7 @@ public class DXGraphQLProvider implements
         mutationType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Mutation.class, container);
         subscriptionType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Subscription.class, container);
         transformCodeRegistryWithSDLDefaultFetcherFactory();
-        for (DXGraphQLExtensionsProvider extensionsProvider : providers) {
+        for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
                 if (aClass.isAnnotationPresent(GraphQLTypeExtension.class)) {
                     extensionsHandler.registerTypeExtension(aClass, container);
