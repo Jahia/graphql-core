@@ -234,10 +234,10 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         private static final Logger LOGGER = LoggerFactory.getLogger(Configurator.class);
 
         /**
-         * Replaces line breaks, so that a value read from a request stays on one log line.
+         * Replaces line breaks, so that a value read from a request stays on one log line, and names an absent value.
          */
-        private static String forLog(Object value) {
-            return String.valueOf(value).replaceAll("[\r\n]", "_");
+        private static String forLog(String value) {
+            return value == null ? "(none)" : value.replaceAll("[\r\n]", "_");
         }
 
         /**
@@ -247,7 +247,11 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
          */
         @Override
         public boolean checkOrigin(String originHeaderValue) {
-            return parseOrigin(originHeaderValue) != null || isConfigured(originHeaderValue, configuredOrigins());
+            boolean acceptable = parseOrigin(originHeaderValue) != null || isConfigured(originHeaderValue, configuredOrigins());
+            if (!acceptable) {
+                LOGGER.warn("Rejected non-same-origin GraphQL subscription connection (origin='{}')", forLog(originHeaderValue));
+            }
+            return acceptable;
         }
 
         @Override
@@ -257,11 +261,9 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
                     && isAllowedOrigin(origins.get(0), request.getRequestURI(), configuredOrigins());
             sec.getUserProperties().put(ORIGIN_ALLOWED, originAllowed);
             if (!originAllowed) {
-                if (LOGGER.isDebugEnabled()) {
-                    URI requestUri = request.getRequestURI();
-                    LOGGER.debug("Origin {} is not allowed for a WebSocket connection addressed to {}://{}",
-                            forLog(origins), forLog(requestUri.getScheme()), forLog(requestUri.getRawAuthority()));
-                }
+                URI requestUri = request.getRequestURI();
+                LOGGER.warn("Rejected non-same-origin GraphQL subscription connection (origin='{}', address='{}://{}')",
+                        forLog(origins == null ? null : String.join(", ", origins)), forLog(requestUri.getScheme()), forLog(requestUri.getRawAuthority()));
                 return;
             }
 
