@@ -16,6 +16,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Arrays.asList;
 import static org.jahia.modules.graphql.provider.dxm.OsgiGraphQLWsEndpoint.ORIGIN_ALLOWED;
@@ -28,6 +31,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -155,6 +159,21 @@ public class OsgiGraphQLWsEndpointTest {
     }
 
     @Test
+    public void onOpenClosesARefusedSessionOnceItHasReturned() throws Exception {
+        GraphQLWebsocketServlet delegate = mockDelegate();
+        closings().set(Executors.newSingleThreadScheduledExecutor());
+        Session session = session();
+        EndpointConfig config = mock(EndpointConfig.class);
+        when(config.getUserProperties()).thenReturn(Collections.singletonMap(ORIGIN_ALLOWED, Boolean.FALSE));
+
+        new OsgiGraphQLWsEndpoint().onOpen(session, config);
+
+        verify(session, never()).close(any(CloseReason.class));
+        verify(session, timeout(2000)).close(any(CloseReason.class));
+        verify(delegate, never()).onOpen(any(Session.class), any(EndpointConfig.class));
+    }
+
+    @Test
     public void onOpenClosesASessionWithNoOriginDecision() throws Exception {
         GraphQLWebsocketServlet delegate = mockDelegate();
         Session session = session();
@@ -220,9 +239,17 @@ public class OsgiGraphQLWsEndpointTest {
         return delegate;
     }
 
+    private static AtomicReference<ScheduledExecutorService> closings() {
+        return Whitebox.getInternalState(OsgiGraphQLWsEndpoint.class, "CLOSINGS");
+    }
+
     @After
     public void resetStaticState() {
         Whitebox.setInternalState(OsgiGraphQLWsEndpoint.class, "delegate", (Object) null);
+        ScheduledExecutorService executor = closings().getAndSet(null);
+        if (executor != null) {
+            executor.shutdownNow();
+        }
     }
 
     private static Session session() {

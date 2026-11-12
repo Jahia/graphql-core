@@ -43,12 +43,24 @@ import java.net.MalformedURLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Component(immediate = true, service = Endpoint.class)
 @ServerEndpoint(value="/graphqlws", subprotocols = {"graphql-ws", "graphql-transport-ws"}, configurator = OsgiGraphQLWsEndpoint.Configurator.class)
 public class OsgiGraphQLWsEndpoint extends Endpoint {
     private Logger logger = LoggerFactory.getLogger(OsgiGraphQLWsEndpoint.class);
     private static GraphQLWebsocketServlet delegate;
+
+    /**
+     * The thread that closes the sessions {@link #onOpen} refuses, once onOpen has returned. The {@link Configurator}
+     * and the endpoint instances are created by the container, so the executor is held statically, as the delegate is.
+     */
+    private static final AtomicReference<ScheduledExecutorService> CLOSINGS = new AtomicReference<>();
+    private static final long REFUSAL_CLOSE_DELAY_MILLIS = 100;
 
     /**
      * User-property key under which the authorization scopes resolved for the handshake (HTTP)
@@ -65,12 +77,25 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         } catch (Exception e) {
             logger.error("Cannot get schema from GQL servlet", e);
         }
+        if (CLOSINGS.get() == null) {
+            ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1, runnable -> {
+                Thread thread = new Thread(runnable, "graphql-websocket-closing");
+                thread.setDaemon(true);
+                return thread;
+            });
+            executor.setRemoveOnCancelPolicy(true);
+            CLOSINGS.set(executor);
+        }
     }
 
     @Deactivate
     public void deactivate() {
         delegate.beginShutDown();
         delegate = null;
+        ScheduledExecutorService closings = CLOSINGS.getAndSet(null);
+        if (closings != null) {
+            closings.shutdownNow();
+        }
     }
 
     /**
@@ -96,11 +121,13 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         if (!Boolean.TRUE.equals(userProperties.get(ORIGIN_ALLOWED))) {
             session.getUserProperties().put(ORIGIN_REFUSED, Boolean.TRUE);
             logger.debug("Closing WebSocket session {}: its origin is not allowed", session.getId());
-            try {
-                session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Origin not allowed"));
-            } catch (IOException e) {
-                logger.debug("Cannot close WebSocket session {}", session.getId(), e);
-            }
+            closeAfterOpen(() -> {
+                try {
+                    session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Origin not allowed"));
+                } catch (IOException e) {
+                    logger.debug("Cannot close WebSocket session {}", session.getId(), e);
+                }
+            });
             return;
         }
 
@@ -125,6 +152,24 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         if (isOpenedByDelegate(session)) {
             delegate.onError(session, thr);
         }
+    }
+
+    /**
+     * Closes a session that {@link #onOpen} refuses, shortly after onOpen returns: the websocket bridge of Jahia
+     * registers a session once onOpen returns, and the close then finds the session registered. With no executor, or
+     * one that refuses the task while the endpoint shuts down, the session is closed at once.
+     */
+    private static void closeAfterOpen(Runnable close) {
+        ScheduledExecutorService executor = CLOSINGS.get();
+        if (executor != null) {
+            try {
+                executor.schedule(close, REFUSAL_CLOSE_DELAY_MILLIS, TimeUnit.MILLISECONDS);
+                return;
+            } catch (RejectedExecutionException e) {
+                // The endpoint is shutting down: the session is closed below.
+            }
+        }
+        close.run();
     }
 
     private static boolean isOpenedByDelegate(Session session) {
@@ -217,7 +262,7 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         @Override
         public boolean checkOrigin(String originHeaderValue) {
             boolean acceptable = parseOrigin(originHeaderValue) != null;
-            if (!acceptable) {
+            if (!acceptable && LOGGER.isWarnEnabled()) {
                 LOGGER.warn("Rejected non-same-origin GraphQL subscription connection (origin='{}')", forLog(originHeaderValue));
             }
             return acceptable;
@@ -230,10 +275,12 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
                     && isAllowedOrigin(origins.get(0), request.getRequestURI());
             sec.getUserProperties().put(ORIGIN_ALLOWED, originAllowed);
             if (!originAllowed) {
-                URI requestUri = request.getRequestURI();
-                String address = requestUri == null ? null : requestUri.getScheme() + "://" + requestUri.getRawAuthority();
-                LOGGER.warn("Rejected non-same-origin GraphQL subscription connection (origin='{}', address='{}')",
-                        forLog(origins == null ? null : String.join(", ", origins)), forLog(address));
+                if (LOGGER.isWarnEnabled()) {
+                    URI requestUri = request.getRequestURI();
+                    String address = requestUri == null ? null : requestUri.getScheme() + "://" + requestUri.getRawAuthority();
+                    LOGGER.warn("Rejected non-same-origin GraphQL subscription connection (origin='{}', address='{}')",
+                            forLog(origins == null ? null : String.join(", ", origins)), forLog(address));
+                }
                 return;
             }
 
