@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -95,6 +96,18 @@ public class OsgiGraphQLWsEndpointTest {
         assertFalse(configurator.checkOrigin("http://:8080"));
         assertFalse(configurator.checkOrigin("http://localhost:8080#x"));
         assertFalse(configurator.checkOrigin("capacitor://localhost"));
+        for (String port : asList("80800", "+8080", "-1", "")) {
+            assertFalse(port, configurator.checkOrigin("http://localhost:" + port));
+        }
+    }
+
+    @Test
+    public void refusesAPortThatIsNotWrittenAsADecimalNumber() {
+        URI defaultPort = URI.create("ws://localhost/modules/graphqlws");
+        assertTrue(isAllowedOrigin("http://localhost", defaultPort));
+        assertFalse(isAllowedOrigin("http://localhost:-1", defaultPort));
+        assertFalse(isAllowedOrigin("http://localhost:", defaultPort));
+        assertFalse(isAllowedOrigin("http://localhost:+8080", LOCAL));
     }
 
     @Test
@@ -105,13 +118,24 @@ public class OsgiGraphQLWsEndpointTest {
         assertEquals(Boolean.FALSE, handshake(new HashMap<>()).get(ORIGIN_ALLOWED));
     }
 
+    @Test
+    public void modifyHandshakeRefusesARequestWithNoAddress() {
+        Map<String, List<String>> origin = new HashMap<>();
+        origin.put("Origin", Collections.singletonList("http://localhost:8080"));
+        assertEquals(Boolean.FALSE, handshake(origin, null).get(ORIGIN_ALLOWED));
+    }
+
     private static Map<String, Object> handshake(Map<String, List<String>> headers) {
+        return handshake(headers, LOCAL);
+    }
+
+    private static Map<String, Object> handshake(Map<String, List<String>> headers, URI requestUri) {
         Map<String, Object> userProperties = new HashMap<>();
         ServerEndpointConfig sec = mock(ServerEndpointConfig.class);
         when(sec.getUserProperties()).thenReturn(userProperties);
         HandshakeRequest request = mock(HandshakeRequest.class);
         when(request.getHeaders()).thenReturn(headers);
-        when(request.getRequestURI()).thenReturn(LOCAL);
+        when(request.getRequestURI()).thenReturn(requestUri);
         new OsgiGraphQLWsEndpoint.Configurator().modifyHandshake(sec, request, null);
         return userProperties;
     }
@@ -128,6 +152,37 @@ public class OsgiGraphQLWsEndpointTest {
         verify(session).close(reason.capture());
         assertEquals(CloseReason.CloseCodes.VIOLATED_POLICY, reason.getValue().getCloseCode());
         assertEquals(Boolean.TRUE, session.getUserProperties().get(ORIGIN_REFUSED));
+    }
+
+    @Test
+    public void onOpenClosesASessionWithNoOriginDecision() throws Exception {
+        GraphQLWebsocketServlet delegate = mockDelegate();
+        Session session = session();
+        EndpointConfig config = mock(EndpointConfig.class);
+        when(config.getUserProperties()).thenReturn(new HashMap<>());
+
+        new OsgiGraphQLWsEndpoint().onOpen(session, config);
+
+        verify(session).close(any(CloseReason.class));
+        verify(delegate, never()).onOpen(any(Session.class), any(EndpointConfig.class));
+    }
+
+    @Test
+    public void onOpenMarksASessionBeforeClosingIt() throws Exception {
+        GraphQLWebsocketServlet delegate = mockDelegate();
+        Session session = session();
+        EndpointConfig config = mock(EndpointConfig.class);
+        when(config.getUserProperties()).thenReturn(Collections.singletonMap(ORIGIN_ALLOWED, Boolean.FALSE));
+        OsgiGraphQLWsEndpoint endpoint = new OsgiGraphQLWsEndpoint();
+        // A container may call onClose from within close(), before close() returns.
+        doAnswer(invocation -> {
+            endpoint.onClose(session, invocation.getArgument(0));
+            return null;
+        }).when(session).close(any(CloseReason.class));
+
+        endpoint.onOpen(session, config);
+
+        verify(delegate, never()).onClose(any(Session.class), any(CloseReason.class));
     }
 
     @Test

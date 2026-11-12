@@ -9,6 +9,7 @@ interface HandshakeOptions {
     cookie?: string
     protocol?: string
     timeout?: number
+    headers?: Record<string, string>
 }
 
 interface HandshakeResult {
@@ -95,6 +96,8 @@ const wsHandshake = (options: HandshakeOptions): Promise<HandshakeResult> => {
         if (options.cookie) {
             headers.Cookie = options.cookie;
         }
+
+        Object.assign(headers, options.headers);
 
         const result: HandshakeResult = {status: 0, messages: [], closeCode: null};
         const timeout = options.timeout || 5000;

@@ -13,7 +13,7 @@ describe('GraphQL subscription connection origin', () => {
         });
     });
 
-    const connect = (origin?: string) => cy.task('wsHandshake', {url: wsUrl, origin, cookie});
+    const connect = (origin?: string, headers?: Record<string, string>) => cy.task('wsHandshake', {url: wsUrl, origin, cookie, headers});
 
     it('accepts a connection from the origin Jahia is served on', () => {
         connect(jahiaUrl.origin).then((res: any) => {
@@ -31,6 +31,21 @@ describe('GraphQL subscription connection origin', () => {
                 expect(res.messages, origin).to.not.include('connection_ack');
             });
         }
+    });
+
+    it('accepts the https address a TLS-ending proxy forwards', () => {
+        // The proxy keeps the public host name, ends TLS and states the scheme it received in X-Forwarded-Proto.
+        const httpsOrigin = `https://${jahiaUrl.hostname}`;
+        connect(httpsOrigin, {Host: jahiaUrl.hostname, 'X-Forwarded-Proto': 'https'}).then((res: any) => {
+            expect(res.status).to.equal(101);
+            expect(res.messages).to.include('connection_ack');
+            expect(res.closeCode, res.error).to.be.null;
+        });
+        connect(httpsOrigin, {Host: jahiaUrl.hostname}).then((res: any) => {
+            expect(res.status).to.equal(101);
+            expect(res.closeCode, res.error).to.equal(1008);
+            expect(res.messages).to.not.include('connection_ack');
+        });
     });
 
     it('refuses a connection that declares no origin', () => {

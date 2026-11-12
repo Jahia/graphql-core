@@ -148,7 +148,8 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
      * Parses a serialized origin, {@code scheme://host[:port]} with an http or https scheme. It is parsed as a
      * {@link URL} rather than a {@link URI}, because {@link URI#getHost()} is {@code null} for a host name that holds
      * an underscore. The scheme is checked before the value reaches {@link URL}, which looks up a protocol handler for
-     * any scheme it is given.
+     * any scheme it is given, and the authority must read exactly {@code host} or {@code host:port}, because
+     * {@link URL} also accepts a signed, empty or out-of-range port.
      *
      * @return the parsed origin, or {@code null} for any other value, the opaque origin {@code null} included
      */
@@ -158,7 +159,9 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         }
         try {
             URL url = new URL(origin);
-            boolean serialized = !url.getHost().isEmpty() && url.getUserInfo() == null && url.getFile().isEmpty() && url.getRef() == null;
+            int port = url.getPort();
+            boolean serialized = !url.getHost().isEmpty() && url.getUserInfo() == null && url.getFile().isEmpty() && url.getRef() == null
+                    && port <= 65535 && url.getAuthority().equals(port == -1 ? url.getHost() : url.getHost() + ":" + port);
             return serialized ? url : null;
         } catch (MalformedURLException e) {
             return null;
@@ -228,8 +231,9 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
             sec.getUserProperties().put(ORIGIN_ALLOWED, originAllowed);
             if (!originAllowed) {
                 URI requestUri = request.getRequestURI();
-                LOGGER.warn("Rejected non-same-origin GraphQL subscription connection (origin='{}', address='{}://{}')",
-                        forLog(origins == null ? null : String.join(", ", origins)), forLog(requestUri.getScheme()), forLog(requestUri.getRawAuthority()));
+                String address = requestUri == null ? null : requestUri.getScheme() + "://" + requestUri.getRawAuthority();
+                LOGGER.warn("Rejected non-same-origin GraphQL subscription connection (origin='{}', address='{}')",
+                        forLog(origins == null ? null : String.join(", ", origins)), forLog(address));
                 return;
             }
 
