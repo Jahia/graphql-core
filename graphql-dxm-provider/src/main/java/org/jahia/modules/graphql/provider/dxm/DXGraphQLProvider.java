@@ -41,9 +41,7 @@ import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.services.securityfilter.ScopeDefinition;
 import org.jahia.services.usermanager.JahiaUser;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
 import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -230,10 +228,10 @@ public class DXGraphQLProvider implements
             relay.addConnectionType(entry.getKey(), (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(entry.getValue(), container));
         }
 
-        extensionsProviders.add(this);
         // Keeps the accepted providers only: the static reference activates a new instance when the bound providers change
         extensionsProviders = new ExtensionFieldCollisionGuard(graphQLObjectInfoRetriever, methodSearchAlgorithm,
-                fieldSearchAlgorithm).acceptedProviders(prioritizedExtensionsProviders());
+                fieldSearchAlgorithm, Collections.singletonList(GqlJcrNodeImpl.class)).acceptedProviders(
+                ExtensionFieldCollisionGuard.prioritized(this, extensionsProviders, ExtensionFieldCollisionGuard::bundleSymbolicName));
 
         registerSchema();
     }
@@ -298,23 +296,6 @@ public class DXGraphQLProvider implements
         specializedTypesHandler.initializeTypes();
 
         PropertyDataFetcher.clearReflectionCache();
-    }
-
-    // On a duplicate field, the first provider keeps it: the core extensions, then the bundles in installation order
-    private List<DXGraphQLExtensionsProvider> prioritizedExtensionsProviders() {
-        List<DXGraphQLExtensionsProvider> providers = new ArrayList<>();
-        providers.add(this);
-        extensionsProviders.stream()
-                .filter(provider -> provider != this)
-                .sorted(Comparator.comparingLong(DXGraphQLProvider::bundleId)
-                        .thenComparing(provider -> provider.getClass().getName()))
-                .forEach(providers::add);
-        return providers;
-    }
-
-    private static long bundleId(DXGraphQLExtensionsProvider provider) {
-        Bundle bundle = FrameworkUtil.getBundle(provider.getClass());
-        return bundle != null ? bundle.getBundleId() : Long.MAX_VALUE;
     }
 
     @Deactivate

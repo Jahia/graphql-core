@@ -16,10 +16,12 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -27,11 +29,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Refuses an extensions provider when one of its type extensions adds a field that the extended type, or an earlier
- * provider, already declares: graphql-java-annotations fails the whole schema on such a duplicate field.
+ * Refuses an extensions provider when one of its type extensions adds a field that a type already has.
+ * graphql-java-annotations fails the whole schema on such a duplicate field.
  * The field names and the type relations follow OutputObjectBuilder and InterfaceBuilder of graphql-java-annotations.
  */
 class ExtensionFieldCollisionGuard {
@@ -41,13 +44,43 @@ class ExtensionFieldCollisionGuard {
     private final GraphQLObjectInfoRetriever objectInfoRetriever;
     private final SearchAlgorithm methodSearchAlgorithm;
     private final SearchAlgorithm fieldSearchAlgorithm;
+    private final Collection<Class<?>> coreObjectTypes;
     private final Map<Class<?>, Set<String>> declaredFieldNames = new HashMap<>();
+    private final Map<Class<?>, Map<String, String>> fieldOwners = new HashMap<>();
+    private final Set<Class<?>> objectTypes = new LinkedHashSet<>();
 
+    /**
+     * @param coreObjectTypes the object types that implement an interface type and that no provider declares as a specialized type
+     */
     ExtensionFieldCollisionGuard(GraphQLObjectInfoRetriever objectInfoRetriever, SearchAlgorithm methodSearchAlgorithm,
-                                 SearchAlgorithm fieldSearchAlgorithm) {
+                                 SearchAlgorithm fieldSearchAlgorithm, Collection<Class<?>> coreObjectTypes) {
         this.objectInfoRetriever = objectInfoRetriever;
         this.methodSearchAlgorithm = methodSearchAlgorithm;
         this.fieldSearchAlgorithm = fieldSearchAlgorithm;
+        this.coreObjectTypes = coreObjectTypes;
+    }
+
+    /**
+     * Orders the providers by priority: the core provider first, then by bundle symbolic name, then by class name.
+     * A provider whose bundle is unknown comes last.
+     */
+    static List<DXGraphQLExtensionsProvider> prioritized(DXGraphQLExtensionsProvider core, Collection<DXGraphQLExtensionsProvider> providers,
+                                                         Function<DXGraphQLExtensionsProvider, String> bundleName) {
+        Map<DXGraphQLExtensionsProvider, String> bundleNames = new HashMap<>();
+        providers.forEach(provider -> bundleNames.put(provider, bundleName.apply(provider)));
+        Comparator<DXGraphQLExtensionsProvider> byBundle = Comparator.comparing(bundleNames::get, Comparator.nullsLast(Comparator.<String>naturalOrder()));
+        List<DXGraphQLExtensionsProvider> prioritized = new ArrayList<>();
+        prioritized.add(core);
+        providers.stream()
+                .filter(provider -> provider != core)
+                .sorted(byBundle.thenComparing(provider -> provider.getClass().getName()))
+                .forEach(prioritized::add);
+        return prioritized;
+    }
+
+    static String bundleSymbolicName(DXGraphQLExtensionsProvider provider) {
+        Bundle bundle = FrameworkUtil.getBundle(provider.getClass());
+        return bundle == null ? null : bundle.getSymbolicName();
     }
 
     /**
@@ -55,25 +88,29 @@ class ExtensionFieldCollisionGuard {
      * @return the providers to register, in the same order
      */
     List<DXGraphQLExtensionsProvider> acceptedProviders(List<DXGraphQLExtensionsProvider> providers) {
-        Map<Class<?>, Map<String, String>> fieldOwners = new HashMap<>();
+        fieldOwners.clear();
+        objectTypes.clear();
+        objectTypes.addAll(coreObjectTypes);
         Set<Class<?>> registeredExtensions = new HashSet<>();
         List<DXGraphQLExtensionsProvider> accepted = new ArrayList<>();
         for (DXGraphQLExtensionsProvider provider : providers) {
             String providerName = describe(provider);
-            Map<Class<?>, Map<String, String>> owners = copyOf(fieldOwners);
+            List<Map.Entry<Class<?>, String>> claims = new ArrayList<>();
             try {
                 Set<Class<?>> extensions = newTypeExtensions(provider, registeredExtensions);
-                String collision = claimFields(providerName, extensions, owners);
+                List<Class<?>> specializedTypes = new ArrayList<>(provider.getSpecializedTypes());
+                String collision = check(providerName, extensions, specializedTypes, claims);
                 if (collision == null) {
-                    fieldOwners = owners;
                     registeredExtensions.addAll(extensions);
+                    objectTypes.addAll(specializedTypes);
                     accepted.add(provider);
                 } else {
+                    release(claims);
                     logger.error("The GraphQL extensions of {} are not registered: {}", providerName, collision);
                 }
             } catch (RuntimeException | LinkageError e) {
-                logger.warn("Unable to check the GraphQL extensions of {} for a duplicate field", providerName, e);
-                accepted.add(provider);
+                release(claims);
+                logger.error("The GraphQL extensions of {} are not registered: they cannot be checked for a duplicate field", providerName, e);
             }
         }
         return accepted;
@@ -91,54 +128,100 @@ class ExtensionFieldCollisionGuard {
     }
 
     /**
-     * @return the reason of the first duplicate field, or null when every field of the extensions is new
+     * @return the reason of the first duplicate field, or null when every field of the provider is new
      */
-    private String claimFields(String providerName, Collection<Class<?>> extensions, Map<Class<?>, Map<String, String>> owners) {
+    private String check(String providerName, Collection<Class<?>> extensions, Collection<Class<?>> specializedTypes,
+                         List<Map.Entry<Class<?>, String>> claims) {
+        String collision = claimFields(providerName, extensions, claims);
+        for (Class<?> specializedType : specializedTypes) {
+            if (collision == null && !objectTypes.contains(specializedType)) {
+                collision = duplicateField(specializedType);
+            }
+        }
+        return collision;
+    }
+
+    private String claimFields(String providerName, Collection<Class<?>> extensions, List<Map.Entry<Class<?>, String>> claims) {
         for (Class<?> extension : extensions) {
             Class<?> type = extension.getAnnotation(GraphQLTypeExtension.class).value();
             for (String field : objectFieldNames(extension)) {
-                String owner = ownerOf(type, field, owners);
+                String owner = ownerOf(type, field);
                 if (owner != null) {
                     return String.format("its class %s adds the field %s.%s, which %s already declares",
                             extension.getName(), objectInfoRetriever.getTypeName(type), field, owner);
                 }
-                owners.computeIfAbsent(type, t -> new HashMap<>()).put(field, providerName);
+                fieldOwners.computeIfAbsent(type, t -> new HashMap<>()).put(field, providerName);
+                claims.add(new AbstractMap.SimpleEntry<>(type, field));
             }
         }
         return null;
     }
 
-    // An object type also gets the extension fields of each interface it implements directly
-    private String ownerOf(Class<?> type, String field, Map<Class<?>, Map<String, String>> owners) {
-        String owner = ownerOnType(type, field, owners);
-        if (owner == null) {
-            owner = isInterfaceType(type) ? ownerOnImplementingTypes(type, field, owners) : ownerOnInterfaces(type, field, owners);
+    private void release(List<Map.Entry<Class<?>, String>> claims) {
+        claims.forEach(claim -> fieldOwners.get(claim.getKey()).remove(claim.getValue()));
+    }
+
+    // A specialized type gets its own fields, then the fields added to each interface it implements directly and to itself
+    private String duplicateField(Class<?> specializedType) {
+        Map<String, String> owners = new HashMap<>();
+        String typeName = objectInfoRetriever.getTypeName(specializedType);
+        declaredFieldNames(specializedType).forEach(field -> owners.put(field, "the type " + typeName));
+        List<Class<?>> sources = new ArrayList<>(interfaceTypes(specializedType));
+        sources.add(specializedType);
+        for (Class<?> source : sources) {
+            for (Map.Entry<String, String> claim : fieldOwners.getOrDefault(source, Collections.emptyMap()).entrySet()) {
+                String owner = owners.putIfAbsent(claim.getKey(), claim.getValue());
+                if (owner != null) {
+                    return String.format("its specialized type %s gets the field %s.%s from %s and from %s",
+                            specializedType.getName(), typeName, claim.getKey(), owner, claim.getValue());
+                }
+            }
         }
-        return owner;
+        return null;
     }
 
-    private String ownerOnImplementingTypes(Class<?> interfaceType, String field, Map<Class<?>, Map<String, String>> owners) {
-        return owners.keySet().stream()
+    private String ownerOf(Class<?> type, String field) {
+        if (!isInterfaceType(type)) {
+            return ownerOnObjectType(type, field);
+        }
+        String owner = ownerOnType(type, field);
+        return owner != null ? owner : ownerOnImplementingTypes(type, field);
+    }
+
+    // An object type also gets the fields added to each interface it implements directly
+    private String ownerOnObjectType(Class<?> objectType, String field) {
+        String owner = ownerOnType(objectType, field);
+        return owner != null ? owner : ownerOnInterfaces(objectType, field);
+    }
+
+    private String ownerOnImplementingTypes(Class<?> interfaceType, String field) {
+        return knownObjectTypes().stream()
                 .filter(objectType -> interfaceTypes(objectType).contains(interfaceType))
-                .map(objectType -> ownerOnType(objectType, field, owners))
+                .map(objectType -> ownerOnObjectType(objectType, field))
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
     }
 
-    private static String ownerOnInterfaces(Class<?> objectType, String field, Map<Class<?>, Map<String, String>> owners) {
+    private String ownerOnInterfaces(Class<?> objectType, String field) {
         return interfaceTypes(objectType).stream()
-                .map(interfaceType -> owners.getOrDefault(interfaceType, Collections.emptyMap()).get(field))
+                .map(interfaceType -> fieldOwners.getOrDefault(interfaceType, Collections.emptyMap()).get(field))
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
     }
 
-    private String ownerOnType(Class<?> type, String field, Map<Class<?>, Map<String, String>> owners) {
+    private String ownerOnType(Class<?> type, String field) {
         if (declaredFieldNames(type).contains(field)) {
             return "the type " + objectInfoRetriever.getTypeName(type);
         }
-        return owners.getOrDefault(type, Collections.emptyMap()).get(field);
+        return fieldOwners.getOrDefault(type, Collections.emptyMap()).get(field);
+    }
+
+    private Set<Class<?>> knownObjectTypes() {
+        Set<Class<?>> types = new LinkedHashSet<>(objectTypes);
+        fieldOwners.keySet().stream().filter(type -> !isInterfaceType(type)).forEach(types::add);
+        return types;
     }
 
     private Set<String> declaredFieldNames(Class<?> type) {
@@ -177,12 +260,6 @@ class ExtensionFieldCollisionGuard {
 
     private static List<Class<?>> interfaceTypes(Class<?> type) {
         return Arrays.stream(type.getInterfaces()).filter(ExtensionFieldCollisionGuard::isInterfaceType).collect(Collectors.toList());
-    }
-
-    private static Map<Class<?>, Map<String, String>> copyOf(Map<Class<?>, Map<String, String>> fieldOwners) {
-        Map<Class<?>, Map<String, String>> copy = new HashMap<>();
-        fieldOwners.forEach((type, owners) -> copy.put(type, new HashMap<>(owners)));
-        return copy;
     }
 
     private static String describe(DXGraphQLExtensionsProvider provider) {
