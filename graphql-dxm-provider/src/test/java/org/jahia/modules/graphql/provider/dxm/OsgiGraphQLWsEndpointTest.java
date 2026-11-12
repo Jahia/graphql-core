@@ -1,7 +1,6 @@
 package org.jahia.modules.graphql.provider.dxm;
 
 import graphql.kickstart.servlet.GraphQLWebsocketServlet;
-import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.junit.After;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -15,10 +14,8 @@ import javax.websocket.server.ServerEndpointConfig;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static org.jahia.modules.graphql.provider.dxm.OsgiGraphQLWsEndpoint.ORIGIN_ALLOWED;
@@ -37,46 +34,40 @@ public class OsgiGraphQLWsEndpointTest {
 
     private static final URI LOCAL = URI.create("ws://localhost:8080/modules/graphqlws");
     private static final URI PUBLIC = URI.create("wss://www.example.com/modules/graphqlws");
-    private static final Set<String> NONE = Collections.emptySet();
-
-    private static Set<String> configured(String... origins) {
-        return new HashSet<>(asList(origins));
-    }
-
     @Test
     public void acceptsTheOriginTheRequestIsAddressedTo() {
-        assertTrue(isAllowedOrigin("http://localhost:8080", LOCAL, NONE));
-        assertTrue(isAllowedOrigin("https://www.example.com", PUBLIC, NONE));
+        assertTrue(isAllowedOrigin("http://localhost:8080", LOCAL));
+        assertTrue(isAllowedOrigin("https://www.example.com", PUBLIC));
     }
 
     @Test
     public void comparesHostsIgnoringCaseAndPortsWithTheirDefault() {
-        assertTrue(isAllowedOrigin("http://LocalHost:8080", LOCAL, NONE));
-        assertTrue(isAllowedOrigin("https://www.example.com:443", PUBLIC, NONE));
-        assertTrue(isAllowedOrigin("https://www.example.com", URI.create("wss://www.example.com:443/modules/graphqlws"), NONE));
+        assertTrue(isAllowedOrigin("http://LocalHost:8080", LOCAL));
+        assertTrue(isAllowedOrigin("https://www.example.com:443", PUBLIC));
+        assertTrue(isAllowedOrigin("https://www.example.com", URI.create("wss://www.example.com:443/modules/graphqlws")));
     }
 
     @Test
     public void acceptsAHostNameThatHoldsAnUnderscore() {
-        assertTrue(isAllowedOrigin("http://jahia_dev:8080", URI.create("ws://jahia_dev:8080/modules/graphqlws"), NONE));
-        assertFalse(isAllowedOrigin("http://jahia_dev:8081", URI.create("ws://jahia_dev:8080/modules/graphqlws"), NONE));
+        assertTrue(isAllowedOrigin("http://jahia_dev:8080", URI.create("ws://jahia_dev:8080/modules/graphqlws")));
+        assertFalse(isAllowedOrigin("http://jahia_dev:8081", URI.create("ws://jahia_dev:8080/modules/graphqlws")));
     }
 
     @Test
     public void acceptsAnIpv6Host() {
         URI ipv6 = URI.create("ws://[::1]:8080/modules/graphqlws");
-        assertTrue(isAllowedOrigin("http://[::1]:8080", ipv6, NONE));
-        assertFalse(isAllowedOrigin("http://[::1]:8081", ipv6, NONE));
+        assertTrue(isAllowedOrigin("http://[::1]:8080", ipv6));
+        assertFalse(isAllowedOrigin("http://[::1]:8081", ipv6));
     }
 
     @Test
     public void refusesAnotherPortSchemeOrHost() {
-        assertFalse(isAllowedOrigin("http://localhost:9999", LOCAL, NONE));
-        assertFalse(isAllowedOrigin("http://localhost", LOCAL, NONE));
-        assertFalse(isAllowedOrigin("https://localhost:8080", LOCAL, NONE));
-        assertFalse(isAllowedOrigin("http://www.example.com", PUBLIC, NONE));
-        assertFalse(isAllowedOrigin("https://other.example.com", PUBLIC, NONE));
-        assertFalse(isAllowedOrigin("https://www.example.com.other.net", PUBLIC, NONE));
+        assertFalse(isAllowedOrigin("http://localhost:9999", LOCAL));
+        assertFalse(isAllowedOrigin("http://localhost", LOCAL));
+        assertFalse(isAllowedOrigin("https://localhost:8080", LOCAL));
+        assertFalse(isAllowedOrigin("http://www.example.com", PUBLIC));
+        assertFalse(isAllowedOrigin("https://other.example.com", PUBLIC));
+        assertFalse(isAllowedOrigin("https://www.example.com.other.net", PUBLIC));
     }
 
     @Test
@@ -85,33 +76,14 @@ public class OsgiGraphQLWsEndpointTest {
                 "http://localhost:8080/", "http://user@localhost:8080", "http://localhost:8080?a=b", "http://local host:8080",
                 "http://localhost:8080#x", "http://:8080", "http://localhost:80800", "http://localhost:port", "http://[::1",
                 "http://::1:8080")) {
-            assertFalse(String.valueOf(origin), isAllowedOrigin(origin, LOCAL, NONE));
+            assertFalse(String.valueOf(origin), isAllowedOrigin(origin, LOCAL));
         }
     }
 
     @Test
-    public void acceptsAConfiguredOrigin() {
-        Set<String> configured = configured("https://front.example.com", "http://localhost:3000", "capacitor://localhost");
-        assertTrue(isAllowedOrigin("https://front.example.com", PUBLIC, configured));
-        assertTrue(isAllowedOrigin("http://localhost:3000", LOCAL, configured));
-        assertTrue(isAllowedOrigin("capacitor://localhost", LOCAL, configured));
-        assertFalse(isAllowedOrigin("https://front.example.com:8443", PUBLIC, configured));
-        assertFalse(isAllowedOrigin("https://FRONT.example.com", PUBLIC, configured));
-        assertFalse(isAllowedOrigin("capacitor://other", LOCAL, configured));
-    }
-
-    @Test
-    public void refusesAConfiguredOpaqueOriginOrWildcard() {
-        assertFalse(isAllowedOrigin("null", LOCAL, configured("null")));
-        assertFalse(isAllowedOrigin("*", LOCAL, configured("*")));
-        assertFalse(isAllowedOrigin("", LOCAL, configured("")));
-    }
-
-    @Test
-    public void refusesAnUnconfiguredOriginWhenTheRequestAddressIsUnknown() {
-        assertFalse(isAllowedOrigin("http://localhost:8080", null, NONE));
-        assertFalse(isAllowedOrigin("http://localhost:8080", URI.create("/modules/graphqlws"), NONE));
-        assertTrue(isAllowedOrigin("http://localhost:8080", null, configured("http://localhost:8080")));
+    public void refusesAnOriginWhenTheRequestAddressIsUnknown() {
+        assertFalse(isAllowedOrigin("http://localhost:8080", null));
+        assertFalse(isAllowedOrigin("http://localhost:8080", URI.create("/modules/graphqlws")));
     }
 
     @Test
@@ -122,6 +94,7 @@ public class OsgiGraphQLWsEndpointTest {
         assertFalse(configurator.checkOrigin("null"));
         assertFalse(configurator.checkOrigin("http://:8080"));
         assertFalse(configurator.checkOrigin("http://localhost:8080#x"));
+        assertFalse(configurator.checkOrigin("capacitor://localhost"));
     }
 
     @Test
@@ -186,17 +159,6 @@ public class OsgiGraphQLWsEndpointTest {
         verify(delegate).onError(session, error);
     }
 
-    @Test
-    public void checkOriginAcceptsAConfiguredOriginOfAnotherScheme() {
-        DXGraphQLConfig config = mock(DXGraphQLConfig.class);
-        when(config.getCorsOrigins()).thenReturn(Collections.singleton("capacitor://localhost"));
-        new OsgiGraphQLWsEndpoint().setConfig(config);
-        OsgiGraphQLWsEndpoint.Configurator configurator = new OsgiGraphQLWsEndpoint.Configurator();
-
-        assertTrue(configurator.checkOrigin("capacitor://localhost"));
-        assertFalse(configurator.checkOrigin("capacitor://other"));
-    }
-
     private static GraphQLWebsocketServlet mockDelegate() {
         GraphQLWebsocketServlet delegate = mock(GraphQLWebsocketServlet.class);
         Whitebox.setInternalState(OsgiGraphQLWsEndpoint.class, "delegate", delegate);
@@ -206,7 +168,6 @@ public class OsgiGraphQLWsEndpointTest {
     @After
     public void resetStaticState() {
         Whitebox.setInternalState(OsgiGraphQLWsEndpoint.class, "delegate", (Object) null);
-        new OsgiGraphQLWsEndpoint().setConfig(null);
     }
 
     private static Session session() {

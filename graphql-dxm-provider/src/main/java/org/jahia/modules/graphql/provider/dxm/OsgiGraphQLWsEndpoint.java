@@ -21,7 +21,6 @@ import graphql.kickstart.servlet.GraphQLWebsocketServlet;
 import graphql.kickstart.servlet.OsgiGraphQLHttpServlet;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
-import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.securityfilter.PermissionService;
@@ -44,8 +43,6 @@ import java.net.MalformedURLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Component(immediate = true, service = Endpoint.class)
 @ServerEndpoint(value="/graphqlws", subprotocols = {"graphql-ws", "graphql-transport-ws"}, configurator = OsgiGraphQLWsEndpoint.Configurator.class)
@@ -70,22 +67,10 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         }
     }
 
-    /**
-     * The configuration whose {@code http.cors.allow-origin} lists the configured origins. The {@link Configurator} is
-     * instantiated by the container and not by DS, so it reads the configuration through this holder.
-     */
-    private static final AtomicReference<DXGraphQLConfig> CONFIG = new AtomicReference<>();
-
-    @Reference
-    public void setConfig(DXGraphQLConfig config) {
-        CONFIG.set(config);
-    }
-
     @Deactivate
     public void deactivate() {
         delegate.beginShutDown();
         delegate = null;
-        CONFIG.set(null);
     }
 
     /**
@@ -148,28 +133,15 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
 
     /**
      * Tells whether a handshake carrying {@code origin} is accepted on a request addressed to {@code requestUri}: the
-     * origin must be the one the request is addressed to, or one of the configured origins.
+     * origin must be the one the request is addressed to.
      *
-     * @param origin            the value of the Origin header, {@code null} when the header is absent
-     * @param requestUri        the absolute URI of the handshake request, in the ws or wss scheme
-     * @param configuredOrigins the origins configured in {@code http.cors.allow-origin}
+     * @param origin     the value of the Origin header, {@code null} when the header is absent
+     * @param requestUri the absolute URI of the handshake request, in the ws or wss scheme
      * @return {@code true} if the origin is accepted
      */
-    static boolean isAllowedOrigin(String origin, URI requestUri, Set<String> configuredOrigins) {
+    static boolean isAllowedOrigin(String origin, URI requestUri) {
         URL parsed = parseOrigin(origin);
-        if (parsed != null && requestUri != null && isSameOrigin(parsed, requestOrigin(requestUri))) {
-            return true;
-        }
-        return isConfigured(origin, configuredOrigins);
-    }
-
-    /**
-     * Tells whether {@code origin} is one of the configured origins, compared as exactly the text it holds. The opaque
-     * origin {@code null} and the wildcard {@code *} never match.
-     */
-    static boolean isConfigured(String origin, Set<String> configuredOrigins) {
-        return origin != null && !origin.isEmpty() && !"null".equals(origin) && !"*".equals(origin)
-                && configuredOrigins.contains(origin);
+        return parsed != null && requestUri != null && isSameOrigin(parsed, requestOrigin(requestUri));
     }
 
     /**
@@ -224,11 +196,6 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         return url.getPort() != -1 ? url.getPort() : url.getDefaultPort();
     }
 
-    private static Set<String> configuredOrigins() {
-        DXGraphQLConfig config = CONFIG.get();
-        return config != null ? config.getCorsOrigins() : Collections.emptySet();
-    }
-
     public static class Configurator extends ServerEndpointConfig.Configurator {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(Configurator.class);
@@ -241,13 +208,12 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         }
 
         /**
-         * Accepts only a handshake that carries a serialized http or https origin, or one of the configured origins.
-         * Whether an http or https origin is allowed depends on the address of the request, so
-         * {@link #modifyHandshake} decides it.
+         * Accepts only a handshake that carries a serialized http or https origin. Whether that origin is allowed
+         * depends on the address of the request, so {@link #modifyHandshake} decides it.
          */
         @Override
         public boolean checkOrigin(String originHeaderValue) {
-            boolean acceptable = parseOrigin(originHeaderValue) != null || isConfigured(originHeaderValue, configuredOrigins());
+            boolean acceptable = parseOrigin(originHeaderValue) != null;
             if (!acceptable) {
                 LOGGER.warn("Rejected non-same-origin GraphQL subscription connection (origin='{}')", forLog(originHeaderValue));
             }
@@ -258,7 +224,7 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response) {
             List<String> origins = request.getHeaders().get(ORIGIN_HEADER);
             boolean originAllowed = origins != null && origins.size() == 1
-                    && isAllowedOrigin(origins.get(0), request.getRequestURI(), configuredOrigins());
+                    && isAllowedOrigin(origins.get(0), request.getRequestURI());
             sec.getUserProperties().put(ORIGIN_ALLOWED, originAllowed);
             if (!originAllowed) {
                 URI requestUri = request.getRequestURI();
