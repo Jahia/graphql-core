@@ -121,6 +121,7 @@ describe('Test graphql scheduler', () => {
         cy.task('wsHandshake', {url: wsUrl, origin: url.origin}).then((res: any) => {
             expect(res.status).to.equal(101);
             expect(res.closeCode, res.error).to.equal(1008);
+            expect(res.closeReason).to.equal('Subscriptions not allowed');
             expect(res.messages).to.not.include('connection_ack');
         });
     });

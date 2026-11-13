@@ -28,6 +28,7 @@ describe('GraphQL subscription connection origin', () => {
             connect(origin).then((res: any) => {
                 expect(res.status, origin).to.equal(101);
                 expect(res.closeCode, `${origin} ${res.error || ''}`).to.equal(1008);
+                expect(res.closeReason, origin).to.equal('Origin not allowed');
                 expect(res.messages, origin).to.not.include('connection_ack');
             });
         }
@@ -48,11 +49,14 @@ describe('GraphQL subscription connection origin', () => {
         });
     });
 
-    it('accepts a connection that declares no origin', () => {
+    it('closes a connection that declares no origin and is granted no subscription', () => {
+        // The origin is accepted. Jahia grants the scope of its interfaces to a request from one of its pages, so this
+        // connection is granted no subscription, and it is closed for that reason.
         connect(undefined).then((res: any) => {
             expect(res.status).to.equal(101);
-            expect(res.messages).to.include('connection_ack');
-            expect(res.closeCode, res.error).to.be.null;
+            expect(res.closeCode, res.error).to.equal(1008);
+            expect(res.closeReason).to.equal('Subscriptions not allowed');
+            expect(res.messages).to.not.include('connection_ack');
         });
     });
 
