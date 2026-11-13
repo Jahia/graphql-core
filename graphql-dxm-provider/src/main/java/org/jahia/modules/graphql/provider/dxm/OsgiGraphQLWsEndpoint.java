@@ -96,8 +96,7 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
 
     /**
      * Key, in the user properties of the handshake ({@link EndpointConfig#getUserProperties()}), of whether its Origin
-     * is allowed. The container copies those properties into the session ({@link Session#getUserProperties()}), where
-     * {@link #onClose} and {@link #onError} read the key too.
+     * is allowed.
      */
     static final String ORIGIN_ALLOWED = "org.jahia.modules.graphql.originAllowed";
 
@@ -131,16 +130,12 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
 
     @Override
     public void onClose(Session session, CloseReason closeReason) {
-        if (isOpenedByDelegate(session)) {
-            delegate.onClose(session, closeReason);
-        }
+        delegate.onClose(session, closeReason);
     }
 
     @Override
     public void onError(Session session, Throwable thr) {
-        if (isOpenedByDelegate(session)) {
-            delegate.onError(session, thr);
-        }
+        delegate.onError(session, thr);
     }
 
     /**
@@ -159,10 +154,6 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
             }
         }
         close.run();
-    }
-
-    private static boolean isOpenedByDelegate(Session session) {
-        return Boolean.TRUE.equals(session.getUserProperties().get(ORIGIN_ALLOWED));
     }
 
     /**

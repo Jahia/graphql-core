@@ -123,7 +123,7 @@ public class OsgiGraphQLWsEndpointTest {
 
     @Test
     public void onOpenClosesASessionWhoseOriginIsNotAllowed() throws Exception {
-        Session session = session(false);
+        Session session = session();
 
         new OsgiGraphQLWsEndpoint().onOpen(session, config(Boolean.FALSE));
 
@@ -136,7 +136,7 @@ public class OsgiGraphQLWsEndpointTest {
     public void onOpenClosesARefusedSessionOnceItHasReturned() throws Exception {
         GraphQLWebsocketServlet delegate = mockDelegate();
         closings().set(Executors.newSingleThreadScheduledExecutor());
-        Session session = session(false);
+        Session session = session();
 
         new OsgiGraphQLWsEndpoint().onOpen(session, config(Boolean.FALSE));
 
@@ -148,40 +148,12 @@ public class OsgiGraphQLWsEndpointTest {
     @Test
     public void onOpenClosesASessionWithNoOriginDecision() throws Exception {
         GraphQLWebsocketServlet delegate = mockDelegate();
-        Session session = session(false);
+        Session session = session();
 
         new OsgiGraphQLWsEndpoint().onOpen(session, config(null));
 
         verify(session).close(any(CloseReason.class));
         verify(delegate, never()).onOpen(any(Session.class), any(EndpointConfig.class));
-    }
-
-    @Test
-    public void onCloseAndOnErrorLeaveARefusedSessionAlone() {
-        GraphQLWebsocketServlet delegate = mockDelegate();
-        Session session = session(false);
-        OsgiGraphQLWsEndpoint endpoint = new OsgiGraphQLWsEndpoint();
-
-        endpoint.onClose(session, new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Origin not allowed"));
-        endpoint.onError(session, new IllegalStateException());
-
-        verify(delegate, never()).onClose(any(Session.class), any(CloseReason.class));
-        verify(delegate, never()).onError(any(Session.class), any(Throwable.class));
-    }
-
-    @Test
-    public void onCloseAndOnErrorHandAnAcceptedSessionToTheDelegate() {
-        GraphQLWebsocketServlet delegate = mockDelegate();
-        Session session = session(true);
-        CloseReason reason = new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, null);
-        Throwable error = new IllegalStateException();
-        OsgiGraphQLWsEndpoint endpoint = new OsgiGraphQLWsEndpoint();
-
-        endpoint.onClose(session, reason);
-        endpoint.onError(session, error);
-
-        verify(delegate).onClose(session, reason);
-        verify(delegate).onError(session, error);
     }
 
     private static GraphQLWebsocketServlet mockDelegate() {
@@ -213,12 +185,8 @@ public class OsgiGraphQLWsEndpointTest {
         return config;
     }
 
-    // The container copies the user properties of the handshake into the session.
-    private static Session session(boolean originAllowed) {
+    private static Session session() {
         Session session = mock(Session.class);
-        Map<String, Object> userProperties = new HashMap<>();
-        userProperties.put(ORIGIN_ALLOWED, originAllowed);
-        when(session.getUserProperties()).thenReturn(userProperties);
         when(session.getId()).thenReturn("1");
         return session;
     }
