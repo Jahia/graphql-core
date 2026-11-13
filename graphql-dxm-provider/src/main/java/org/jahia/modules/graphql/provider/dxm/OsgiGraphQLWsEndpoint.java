@@ -38,8 +38,6 @@ import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
-import java.net.MalformedURLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -78,13 +76,11 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
             logger.error("Cannot get schema from GQL servlet", e);
         }
         if (CLOSINGS.get() == null) {
-            ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1, runnable -> {
+            CLOSINGS.set(new ScheduledThreadPoolExecutor(1, runnable -> {
                 Thread thread = new Thread(runnable, "graphql-websocket-closing");
                 thread.setDaemon(true);
                 return thread;
-            });
-            executor.setRemoveOnCancelPolicy(true);
-            CLOSINGS.set(executor);
+            }));
         }
     }
 
@@ -99,17 +95,11 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     }
 
     /**
-     * Key, in the user properties of the endpoint configuration ({@link EndpointConfig#getUserProperties()}) that the
-     * handshake hands to {@link #onOpen}, of whether the Origin of the handshake is allowed.
+     * Key, in the user properties of the handshake ({@link EndpointConfig#getUserProperties()}), of whether its Origin
+     * is allowed. The container copies those properties into the session ({@link Session#getUserProperties()}), where
+     * {@link #onClose} and {@link #onError} read the key too.
      */
     static final String ORIGIN_ALLOWED = "org.jahia.modules.graphql.originAllowed";
-
-    /**
-     * Key, in the user properties of a WebSocket session ({@link Session#getUserProperties()}), that marks a session
-     * closed by {@link #onOpen} because its Origin is not allowed, so that {@link #onClose} and {@link #onError} leave
-     * it alone.
-     */
-    static final String ORIGIN_REFUSED = "org.jahia.modules.graphql.originRefused";
 
     private static final String ORIGIN_HEADER = "Origin";
     private static final String HTTP = "http";
@@ -119,7 +109,6 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     public void onOpen(Session session, EndpointConfig endpointConfig) {
         Map<String, Object> userProperties = endpointConfig.getUserProperties();
         if (!Boolean.TRUE.equals(userProperties.get(ORIGIN_ALLOWED))) {
-            session.getUserProperties().put(ORIGIN_REFUSED, Boolean.TRUE);
             logger.debug("Closing WebSocket session {}: its origin is not allowed", session.getId());
             closeAfterOpen(() -> {
                 try {
@@ -173,53 +162,31 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     }
 
     private static boolean isOpenedByDelegate(Session session) {
-        return !Boolean.TRUE.equals(session.getUserProperties().get(ORIGIN_REFUSED));
+        return Boolean.TRUE.equals(session.getUserProperties().get(ORIGIN_ALLOWED));
     }
 
     /**
-     * Tells whether a handshake carrying {@code origin} is accepted on a request addressed to {@code requestUri}: the
-     * origin must be the one the request is addressed to.
+     * Tells whether a handshake is accepted on a request addressed to {@code requestUri}: a handshake without an Origin
+     * header is, and an Origin header must name the one origin the request is addressed to.
      *
-     * @param origin     the value of the Origin header, {@code null} when the header is absent
+     * @param origins    the values of the Origin header, {@code null} when the header is absent
      * @param requestUri the absolute URI of the handshake request, in the ws or wss scheme
-     * @return {@code true} if the origin is accepted
+     * @return {@code true} if the handshake is accepted
      */
-    static boolean isAllowedOrigin(String origin, URI requestUri) {
-        URL parsed = parseOrigin(origin);
-        return parsed != null && requestUri != null && isSameOrigin(parsed, requestOrigin(requestUri));
+    static boolean isAllowedHandshake(List<String> origins, URI requestUri) {
+        if (origins == null || origins.isEmpty()) {
+            return true;
+        }
+        return origins.size() == 1 && isSameOrigin(origins.get(0), requestUri);
     }
 
     /**
-     * Parses a serialized origin, {@code scheme://host[:port]} with an http or https scheme. It is parsed as a
-     * {@link URL} rather than a {@link URI}, because {@link URI#getHost()} is {@code null} for a host name that holds
-     * an underscore. The scheme is checked before the value reaches {@link URL}, which looks up a protocol handler for
-     * any scheme it is given, and the authority must read exactly {@code host} or {@code host:port}, because
-     * {@link URL} also accepts a signed, empty or out-of-range port.
-     *
-     * @return the parsed origin, or {@code null} for any other value, the opaque origin {@code null} included
+     * Compares an Origin header, as text and ignoring case, with the origin the request is addressed to, a default port
+     * written or not, in the shape of {@code org.jahia.utils.Url#isSameOrigin} of Jahia core.
      */
-    static URL parseOrigin(String origin) {
-        if (!StringUtils.startsWithIgnoreCase(origin, "http://") && !StringUtils.startsWithIgnoreCase(origin, "https://")) {
-            return null;
-        }
-        try {
-            URL url = new URL(origin);
-            int port = url.getPort();
-            boolean serialized = !url.getHost().isEmpty() && url.getUserInfo() == null && url.getFile().isEmpty() && url.getRef() == null
-                    && port <= 65535 && url.getAuthority().equals(port == -1 ? url.getHost() : url.getHost() + ":" + port);
-            return serialized ? url : null;
-        } catch (MalformedURLException e) {
-            return null;
-        }
-    }
-
-    /**
-     * Returns the origin a handshake request is addressed to: the host and port of its URI, with ws read as http and
-     * wss as https, or {@code null} when the URI holds no host.
-     */
-    private static URL requestOrigin(URI requestUri) {
-        if (requestUri.getRawAuthority() == null) {
-            return null;
+    static boolean isSameOrigin(String origin, URI requestUri) {
+        if (origin == null || requestUri == null || requestUri.getRawAuthority() == null) {
+            return false;
         }
         String scheme = requestUri.getScheme();
         if ("ws".equalsIgnoreCase(scheme)) {
@@ -227,60 +194,30 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         } else if ("wss".equalsIgnoreCase(scheme)) {
             scheme = HTTPS;
         }
-        return parseOrigin(scheme + "://" + requestUri.getRawAuthority());
+        return withoutDefaultPort(origin).equalsIgnoreCase(withoutDefaultPort(scheme + "://" + requestUri.getRawAuthority()));
     }
 
-    /**
-     * Compares the scheme, the host and the port of two origins, a missing port read as the default one of the scheme.
-     * {@link URL#equals} is not used, because it resolves both host names.
-     */
-    private static boolean isSameOrigin(URL origin, URL other) {
-        return other != null && origin.getProtocol().equals(other.getProtocol())
-                && origin.getHost().equalsIgnoreCase(other.getHost())
-                && portOf(origin) == portOf(other);
-    }
-
-    private static int portOf(URL url) {
-        return url.getPort() != -1 ? url.getPort() : url.getDefaultPort();
+    private static String withoutDefaultPort(String origin) {
+        if (StringUtils.startsWithIgnoreCase(origin, HTTP + "://") && origin.endsWith(":80")) {
+            return origin.substring(0, origin.length() - ":80".length());
+        }
+        if (StringUtils.startsWithIgnoreCase(origin, HTTPS + "://") && origin.endsWith(":443")) {
+            return origin.substring(0, origin.length() - ":443".length());
+        }
+        return origin;
     }
 
     public static class Configurator extends ServerEndpointConfig.Configurator {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(Configurator.class);
 
-        /**
-         * Replaces line breaks, so that a value read from a request stays on one log line, and names an absent value.
-         */
-        private static String forLog(String value) {
-            return value == null ? "(none)" : value.replaceAll("[\r\n]", "_");
-        }
-
-        /**
-         * Accepts only a handshake that carries a serialized http or https origin. Whether that origin is allowed
-         * depends on the address of the request, so {@link #modifyHandshake} decides it.
-         */
-        @Override
-        public boolean checkOrigin(String originHeaderValue) {
-            boolean acceptable = parseOrigin(originHeaderValue) != null;
-            if (!acceptable && LOGGER.isWarnEnabled()) {
-                LOGGER.warn("Rejected non-same-origin GraphQL subscription connection (origin='{}')", forLog(originHeaderValue));
-            }
-            return acceptable;
-        }
-
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response) {
             List<String> origins = request.getHeaders().get(ORIGIN_HEADER);
-            boolean originAllowed = origins != null && origins.size() == 1
-                    && isAllowedOrigin(origins.get(0), request.getRequestURI());
+            boolean originAllowed = isAllowedHandshake(origins, request.getRequestURI());
             sec.getUserProperties().put(ORIGIN_ALLOWED, originAllowed);
             if (!originAllowed) {
-                if (LOGGER.isWarnEnabled()) {
-                    URI requestUri = request.getRequestURI();
-                    String address = requestUri == null ? null : requestUri.getScheme() + "://" + requestUri.getRawAuthority();
-                    LOGGER.warn("Rejected non-same-origin GraphQL subscription connection (origin='{}', address='{}')",
-                            forLog(origins == null ? null : String.join(", ", origins)), forLog(address));
-                }
+                LOGGER.warn("Rejected non-same-origin GraphQL subscription connection (origin={})", origins);
                 return;
             }
 

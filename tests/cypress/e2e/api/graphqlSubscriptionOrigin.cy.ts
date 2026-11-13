@@ -48,12 +48,19 @@ describe('GraphQL subscription connection origin', () => {
         });
     });
 
-    it('refuses a connection that declares no origin', () => {
-        for (const origin of [undefined, 'null']) {
-            connect(origin).then((res: any) => {
-                expect(res.status, String(origin)).to.equal(403);
-                expect(res.messages, String(origin)).to.have.length(0);
-            });
-        }
+    it('accepts a connection that declares no origin', () => {
+        connect(undefined).then((res: any) => {
+            expect(res.status).to.equal(101);
+            expect(res.messages).to.include('connection_ack');
+            expect(res.closeCode, res.error).to.be.null;
+        });
+    });
+
+    it('closes a connection that declares the opaque origin null', () => {
+        connect('null').then((res: any) => {
+            expect(res.status).to.equal(101);
+            expect(res.closeCode, res.error).to.equal(1008);
+            expect(res.messages).to.not.include('connection_ack');
+        });
     });
 });
