@@ -16,8 +16,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Arrays.asList;
@@ -28,9 +28,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -67,6 +67,8 @@ public class OsgiGraphQLWsEndpointTest {
         assertFalse(isSameOrigin("http://www.example.com", PUBLIC));
         assertFalse(isSameOrigin("https://other.example.com", PUBLIC));
         assertFalse(isSameOrigin("https://www.example.com.other.net", PUBLIC));
+        assertFalse(isSameOrigin("https://www.example.com:80", PUBLIC));
+        assertFalse(isSameOrigin("http://localhost:443", URI.create("ws://localhost/modules/graphqlws")));
     }
 
     @Test
@@ -135,13 +137,19 @@ public class OsgiGraphQLWsEndpointTest {
     @Test
     public void onOpenClosesARefusedSessionOnceItHasReturned() throws Exception {
         GraphQLWebsocketServlet delegate = mockDelegate();
-        closings().set(Executors.newSingleThreadScheduledExecutor());
+        ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+        closings().set(executor);
         Session session = session();
 
         new OsgiGraphQLWsEndpoint().onOpen(session, config(Boolean.FALSE));
 
         verify(session, never()).close(any(CloseReason.class));
-        verify(session, timeout(2000)).close(any(CloseReason.class));
+        ArgumentCaptor<Runnable> close = ArgumentCaptor.forClass(Runnable.class);
+        verify(executor).schedule(close.capture(), eq(100L), eq(TimeUnit.MILLISECONDS));
+        close.getValue().run();
+        ArgumentCaptor<CloseReason> reason = ArgumentCaptor.forClass(CloseReason.class);
+        verify(session).close(reason.capture());
+        assertEquals(CloseReason.CloseCodes.VIOLATED_POLICY, reason.getValue().getCloseCode());
         verify(delegate, never()).onOpen(any(Session.class), any(EndpointConfig.class));
     }
 

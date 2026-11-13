@@ -86,12 +86,12 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
 
     @Deactivate
     public void deactivate() {
-        delegate.beginShutDown();
-        delegate = null;
         ScheduledExecutorService closings = CLOSINGS.getAndSet(null);
         if (closings != null) {
             closings.shutdownNow();
         }
+        delegate.beginShutDown();
+        delegate = null;
     }
 
     /**
