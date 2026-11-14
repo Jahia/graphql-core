@@ -19,6 +19,7 @@ import graphql.kickstart.execution.subscriptions.SubscriptionProtocolFactory;
 import graphql.kickstart.servlet.GraphQLConfiguration;
 import graphql.kickstart.servlet.GraphQLWebsocketServlet;
 import graphql.kickstart.servlet.OsgiGraphQLHttpServlet;
+import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
@@ -35,15 +36,29 @@ import javax.websocket.*;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
+import java.io.IOException;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Component(immediate = true, service = Endpoint.class)
 @ServerEndpoint(value="/graphqlws", subprotocols = {"graphql-ws", "graphql-transport-ws"}, configurator = OsgiGraphQLWsEndpoint.Configurator.class)
 public class OsgiGraphQLWsEndpoint extends Endpoint {
     private Logger logger = LoggerFactory.getLogger(OsgiGraphQLWsEndpoint.class);
     private static GraphQLWebsocketServlet delegate;
+
+    /**
+     * The thread that closes the sessions {@link #onOpen} refuses, once onOpen has returned. The {@link Configurator}
+     * and the endpoint instances are created by the container, so the executor is held statically, as the delegate is.
+     */
+    private static final AtomicReference<ScheduledExecutorService> CLOSINGS = new AtomicReference<>();
+    private static final long REFUSAL_CLOSE_DELAY_MILLIS = 100;
 
     /**
      * User-property key under which the authorization scopes resolved for the handshake (HTTP)
@@ -60,17 +75,50 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         } catch (Exception e) {
             logger.error("Cannot get schema from GQL servlet", e);
         }
+        if (CLOSINGS.get() == null) {
+            CLOSINGS.set(new ScheduledThreadPoolExecutor(1, runnable -> {
+                Thread thread = new Thread(runnable, "graphql-websocket-closing");
+                thread.setDaemon(true);
+                return thread;
+            }));
+        }
     }
 
     @Deactivate
     public void deactivate() {
+        ScheduledExecutorService closings = CLOSINGS.getAndSet(null);
+        if (closings != null) {
+            closings.shutdownNow();
+        }
         delegate.beginShutDown();
         delegate = null;
     }
 
+    /**
+     * Key, in the user properties of the handshake ({@link EndpointConfig#getUserProperties()}), of whether its Origin
+     * is allowed.
+     */
+    static final String ORIGIN_ALLOWED = "org.jahia.modules.graphql.originAllowed";
+
+    private static final String ORIGIN_HEADER = "Origin";
+    private static final String HTTP = "http";
+    private static final String HTTPS = "https";
+
     @Override
     public void onOpen(Session session, EndpointConfig endpointConfig) {
         Map<String, Object> userProperties = endpointConfig.getUserProperties();
+        if (!Boolean.TRUE.equals(userProperties.get(ORIGIN_ALLOWED))) {
+            logger.debug("Closing WebSocket session {}: its origin is not allowed", session.getId());
+            closeAfterOpen(() -> {
+                try {
+                    session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Origin not allowed"));
+                } catch (IOException e) {
+                    logger.debug("Cannot close WebSocket session {}", session.getId(), e);
+                }
+            });
+            return;
+        }
+
         JCRSessionFactory.getInstance().setCurrentUser((JahiaUser) userProperties.get(Constants.SESSION_USER));
 
         try {
@@ -90,9 +138,80 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
         delegate.onError(session, thr);
     }
 
+    /**
+     * Closes a session that {@link #onOpen} refuses, shortly after onOpen returns: the websocket bridge of Jahia
+     * registers a session once onOpen returns, and the close then finds the session registered. With no executor, or
+     * one that refuses the task while the endpoint shuts down, the session is closed at once.
+     */
+    private static void closeAfterOpen(Runnable close) {
+        ScheduledExecutorService executor = CLOSINGS.get();
+        if (executor != null) {
+            try {
+                executor.schedule(close, REFUSAL_CLOSE_DELAY_MILLIS, TimeUnit.MILLISECONDS);
+                return;
+            } catch (RejectedExecutionException e) {
+                // The endpoint is shutting down: the session is closed below.
+            }
+        }
+        close.run();
+    }
+
+    /**
+     * Tells whether a handshake is accepted on a request addressed to {@code requestUri}: a handshake without an Origin
+     * header is, and an Origin header must name the one origin the request is addressed to.
+     *
+     * @param origins    the values of the Origin header, {@code null} when the header is absent
+     * @param requestUri the absolute URI of the handshake request, in the ws or wss scheme
+     * @return {@code true} if the handshake is accepted
+     */
+    static boolean isAllowedHandshake(List<String> origins, URI requestUri) {
+        if (origins == null || origins.isEmpty()) {
+            return true;
+        }
+        return origins.size() == 1 && isSameOrigin(origins.get(0), requestUri);
+    }
+
+    /**
+     * Compares an Origin header, as text and ignoring case, with the origin the request is addressed to, a default port
+     * written or not, in the shape of {@code org.jahia.utils.Url#isSameOrigin} of Jahia core.
+     */
+    static boolean isSameOrigin(String origin, URI requestUri) {
+        if (origin == null || requestUri == null || requestUri.getRawAuthority() == null) {
+            return false;
+        }
+        String scheme = requestUri.getScheme();
+        if ("ws".equalsIgnoreCase(scheme)) {
+            scheme = HTTP;
+        } else if ("wss".equalsIgnoreCase(scheme)) {
+            scheme = HTTPS;
+        }
+        return withoutDefaultPort(origin).equalsIgnoreCase(withoutDefaultPort(scheme + "://" + requestUri.getRawAuthority()));
+    }
+
+    private static String withoutDefaultPort(String origin) {
+        if (StringUtils.startsWithIgnoreCase(origin, HTTP + "://") && origin.endsWith(":80")) {
+            return origin.substring(0, origin.length() - ":80".length());
+        }
+        if (StringUtils.startsWithIgnoreCase(origin, HTTPS + "://") && origin.endsWith(":443")) {
+            return origin.substring(0, origin.length() - ":443".length());
+        }
+        return origin;
+    }
+
     public static class Configurator extends ServerEndpointConfig.Configurator {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(Configurator.class);
+
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response) {
+            List<String> origins = request.getHeaders().get(ORIGIN_HEADER);
+            boolean originAllowed = isAllowedHandshake(origins, request.getRequestURI());
+            sec.getUserProperties().put(ORIGIN_ALLOWED, originAllowed);
+            if (!originAllowed) {
+                LOGGER.warn("Rejected non-same-origin GraphQL subscription connection (origin={})", origins);
+                return;
+            }
+
             // Based on GraphQLWebsocketServlet.modifyHandshake - skip the last part sending response header, already handled by whiteboard
             sec.getUserProperties().put(HandshakeRequest.class.getName(), request);
 
