@@ -282,9 +282,10 @@ public class OsgiGraphQLWsEndpointTest {
         Session first = session(SUBPROTOCOL);
         Session second = session(SUBPROTOCOL);
         doThrow(new IllegalStateException()).when(delegate).onOpen(eq(first), any(EndpointConfig.class));
+        EndpointConfig config = accepted(user("root"));
 
         try {
-            endpoint.onOpen(first, accepted(user("root")));
+            endpoint.onOpen(first, config);
             fail("onOpen hands the failure of the delegate to the container");
         } catch (IllegalStateException e) {
             assertFalse(OsgiGraphQLWsEndpoint.isAccepted(first));
