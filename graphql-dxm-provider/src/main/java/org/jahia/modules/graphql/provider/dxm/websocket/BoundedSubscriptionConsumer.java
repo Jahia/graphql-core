@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.kickstart.execution.subscriptions.apollo.OperationMessage;
 import graphql.kickstart.execution.subscriptions.apollo.OperationMessage.Type;
 import org.jahia.modules.graphql.provider.dxm.config.WebSocketLimits;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.websocket.CloseReason;
 import java.util.EnumSet;
@@ -26,7 +24,6 @@ public class BoundedSubscriptionConsumer implements Consumer<String> {
      */
     public static final String INITIALIZED = "org.jahia.modules.graphql.websocketInitialized";
 
-    private static final Logger logger = LoggerFactory.getLogger(BoundedSubscriptionConsumer.class);
     private static final Set<Type> CLIENT_TYPES =
             EnumSet.of(Type.GQL_CONNECTION_INIT, Type.GQL_START, Type.GQL_STOP, Type.GQL_CONNECTION_TERMINATE);
 
@@ -65,8 +62,7 @@ public class BoundedSubscriptionConsumer implements Consumer<String> {
             if (startedId != null) {
                 session.release(startedId);
             }
-            logger.debug("Cannot process a message of GraphQL subscription connection {}", session.getId(), e);
-            close(ConnectionClosing.PROCESSING_ERROR);
+            ConnectionClosing.close(session.unwrap(), ConnectionClosing.PROCESSING_ERROR, e);
         }
     }
 

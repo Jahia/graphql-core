@@ -12,6 +12,7 @@ import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.websocket.BoundedSubscriptionConsumer;
 import org.jahia.modules.graphql.provider.dxm.websocket.ConnectionClosing;
+import org.jahia.modules.graphql.provider.dxm.websocket.ConnectionLimiter;
 import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.services.usermanager.JahiaUser;
 import org.junit.After;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -49,9 +51,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -270,6 +275,45 @@ public class OsgiGraphQLWsEndpointTest {
     }
 
     @Test
+    public void onOpenReleasesASessionThatTheDelegateRefuses() throws Exception {
+        setLimit("graphql.websocket.maxConnections", "1");
+        GraphQLWebsocketServlet delegate = mockDelegate();
+        OsgiGraphQLWsEndpoint endpoint = new OsgiGraphQLWsEndpoint();
+        Session first = session(SUBPROTOCOL);
+        Session second = session(SUBPROTOCOL);
+        doThrow(new IllegalStateException()).when(delegate).onOpen(eq(first), any(EndpointConfig.class));
+
+        try {
+            endpoint.onOpen(first, accepted(user("root")));
+            fail("onOpen hands the failure of the delegate to the container");
+        } catch (IllegalStateException e) {
+            assertFalse(OsgiGraphQLWsEndpoint.isAccepted(first));
+        }
+        endpoint.onOpen(second, accepted(user("root")));
+
+        verify(delegate).onOpen(eq(second), any(EndpointConfig.class));
+        verify(second, never()).close(any(CloseReason.class));
+    }
+
+    @Test
+    public void onCloseCancelsTheInitDeadlineOfASession() {
+        mockDelegate();
+        ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+        ScheduledFuture<?> deadline = mock(ScheduledFuture.class);
+        doReturn(deadline).when(executor).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+        closings().set(executor);
+        OsgiGraphQLWsEndpoint endpoint = new OsgiGraphQLWsEndpoint();
+        Session session = session(SUBPROTOCOL);
+
+        endpoint.onOpen(session, accepted(user("root")));
+        verify(deadline, never()).cancel(false);
+        endpoint.onClose(session, new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, null));
+
+        verify(executor).schedule(any(Runnable.class), eq(10L), eq(TimeUnit.SECONDS));
+        verify(deadline).cancel(false);
+    }
+
+    @Test
     public void onOpenClosesASessionWithAnotherSubprotocol() throws Exception {
         GraphQLWebsocketServlet delegate = mockDelegate();
         for (String subprotocol : asList("", "graphql-transport-ws", null)) {
@@ -459,6 +503,11 @@ public class OsgiGraphQLWsEndpointTest {
     public void resetStaticState() {
         Whitebox.setInternalState(OsgiGraphQLWsEndpoint.class, "delegate", (Object) null);
         Whitebox.setInternalState(OsgiGraphQLWsEndpoint.class, "invocationInputFactory", (Object) null);
+        // A test that fails before it closes its sessions leaves no connection counted for the next one.
+        Map<Session, Object> accepted = Whitebox.getInternalState(OsgiGraphQLWsEndpoint.class, "accepted");
+        ConnectionLimiter connections = Whitebox.getInternalState(OsgiGraphQLWsEndpoint.class, "connections");
+        accepted.values().forEach(connection -> connections.release(Whitebox.getInternalState(connection, "userKey")));
+        accepted.clear();
         ScheduledExecutorService executor = closings().getAndSet(null);
         if (executor != null) {
             executor.shutdownNow();

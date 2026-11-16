@@ -54,10 +54,20 @@ public final class ConnectionClosing {
      * never answers the close.
      */
     public static void close(Session session, CloseReason reason) {
+        close(session, reason, null);
+    }
+
+    /**
+     * Closes a connection as {@link #close(Session, CloseReason)} does, and reports the failure that caused the close
+     * with it.
+     *
+     * @param cause the failure, or {@code null} when the close has none
+     */
+    public static void close(Session session, CloseReason reason, Throwable cause) {
         int closes = reports.computeIfAbsent(reason.getReasonPhrase(), phrase -> new ThrottledReport(REPORT_INTERVAL_NANOS)).count();
         if (closes > 0) {
             logger.warn("Closed GraphQL subscription connection {} with code {}: {} ({} such closes since the last report)",
-                    session.getId(), reason.getCloseCode().getCode(), reason.getReasonPhrase(), closes);
+                    session.getId(), reason.getCloseCode().getCode(), reason.getReasonPhrase(), closes, cause);
         }
         try {
             session.getUserProperties().put(TOMCAT_SESSION_CLOSE_TIMEOUT, CLOSE_TIMEOUT_MILLIS);

@@ -271,8 +271,9 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
     }
 
     /**
-     * Tells whether the scopes of the current request grant at least one field of the subscription type, with the
-     * check that each field applies when it runs.
+     * Tells whether the scopes of the current request grant at least one field of the subscription type. It asks the
+     * permission that the security filter holds for each field, which the field asks again when it runs. A
+     * permission configured for a field is checked when the field runs.
      */
     static boolean grantsAnySubscription(PermissionService permissionService, GraphQLSchema schema) {
         if (permissionService == null || schema == null || schema.getSubscriptionType() == null) {
