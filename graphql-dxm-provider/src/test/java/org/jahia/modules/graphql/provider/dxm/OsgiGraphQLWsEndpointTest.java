@@ -4,6 +4,7 @@ import graphql.kickstart.servlet.GraphQLWebsocketServlet;
 import org.junit.After;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.powermock.reflect.Whitebox;
 
 import javax.websocket.CloseReason;
@@ -16,19 +17,24 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Arrays.asList;
 import static org.jahia.modules.graphql.provider.dxm.OsgiGraphQLWsEndpoint.ORIGIN_ALLOWED;
+import static org.jahia.modules.graphql.provider.dxm.OsgiGraphQLWsEndpoint.REFUSAL_CLOSE_DELAY_MILLIS;
 import static org.jahia.modules.graphql.provider.dxm.OsgiGraphQLWsEndpoint.isAllowedHandshake;
 import static org.jahia.modules.graphql.provider.dxm.OsgiGraphQLWsEndpoint.isSameOrigin;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -145,12 +151,38 @@ public class OsgiGraphQLWsEndpointTest {
 
         verify(session, never()).close(any(CloseReason.class));
         ArgumentCaptor<Runnable> close = ArgumentCaptor.forClass(Runnable.class);
-        verify(executor).schedule(close.capture(), eq(100L), eq(TimeUnit.MILLISECONDS));
+        verify(executor).schedule(close.capture(), eq(REFUSAL_CLOSE_DELAY_MILLIS), eq(TimeUnit.MILLISECONDS));
         close.getValue().run();
         ArgumentCaptor<CloseReason> reason = ArgumentCaptor.forClass(CloseReason.class);
         verify(session).close(reason.capture());
         assertEquals(CloseReason.CloseCodes.VIOLATED_POLICY, reason.getValue().getCloseCode());
         verify(delegate, never()).onOpen(any(Session.class), any(EndpointConfig.class));
+    }
+
+    @Test
+    public void onOpenClosesARefusedSessionAtOnceWhenTheExecutorRefusesTheTask() throws Exception {
+        ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+        when(executor.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class))).thenThrow(new RejectedExecutionException());
+        closings().set(executor);
+        Session session = session();
+
+        new OsgiGraphQLWsEndpoint().onOpen(session, config(Boolean.FALSE));
+
+        verify(session).close(any(CloseReason.class));
+    }
+
+    @Test
+    public void deactivateShutsTheClosingExecutorDownBeforeTheDelegate() {
+        GraphQLWebsocketServlet delegate = mockDelegate();
+        ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+        closings().set(executor);
+
+        new OsgiGraphQLWsEndpoint().deactivate();
+
+        InOrder order = inOrder(executor, delegate);
+        order.verify(executor).shutdownNow();
+        order.verify(delegate).beginShutDown();
+        assertNull(closings().get());
     }
 
     @Test

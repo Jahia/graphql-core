@@ -58,7 +58,7 @@ public class OsgiGraphQLWsEndpoint extends Endpoint {
      * and the endpoint instances are created by the container, so the executor is held statically, as the delegate is.
      */
     private static final AtomicReference<ScheduledExecutorService> CLOSINGS = new AtomicReference<>();
-    private static final long REFUSAL_CLOSE_DELAY_MILLIS = 100;
+    static final long REFUSAL_CLOSE_DELAY_MILLIS = 100;
 
     /**
      * User-property key under which the authorization scopes resolved for the handshake (HTTP)
