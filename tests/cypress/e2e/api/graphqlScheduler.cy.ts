@@ -30,8 +30,8 @@ describe('Test graphql scheduler', () => {
     `;
 
     // Open a fresh lazy WS subscription. lazy:true → the socket only opens on the first
-    // subscribe(), which we defer into a cy.then so it runs AFTER the login/clearCookies command
-    // that sets (or clears) the session cookie the handshake will carry. Resolves with everything
+    // subscribe(), which we defer into a cy.then so it runs AFTER the login command
+    // that sets the session cookie the handshake will carry. Resolves with everything
     // the connection received: data payloads and/or errors.
     const collect = (jobName: string) => {
         const client = new SubscriptionClient(wsUrl, {lazy: true, reconnect: false});
@@ -115,22 +115,14 @@ describe('Test graphql scheduler', () => {
             });
     });
 
-    it('denies the guarded subscription to an unauthenticated (guest) subscriber', () => {
-        const jobName = 'Test job guest - ' + uuid4();
-        // No login and no job creation: simply opening the guarded subscription as an
-        // unauthenticated (guest) client is rejected. The handshake carries no session cookie, so
-        // the connection is not a privileged user and (in a non-hosted context) not same-origin.
-        cy.clearCookies();
-
-        let sub: Cypress.Promise<any>;
-        cy.then(() => {
-            sub = collect(jobName);
-        });
-
-        cy.then(() => sub).then((res: any) => {
-            expect(res.data, 'guest must receive no background-job data').to.have.length(0);
-            expect(res.errors, 'guest subscription must be rejected').to.have.length.greaterThan(0);
-            expect(JSON.stringify(res.errors)).to.match(/Permission denied|AccessDenied/i);
+    it('closes the subscription connection of an unauthenticated (guest) client', () => {
+        // The handshake carries no session cookie, and a guest is granted no subscription field,
+        // so the connection is closed before it is acknowledged.
+        cy.task('wsHandshake', {url: wsUrl, origin: url.origin}).then((res: any) => {
+            expect(res.status).to.equal(101);
+            expect(res.closeCode, res.error).to.equal(1008);
+            expect(res.closeReason).to.equal('Subscriptions not allowed');
+            expect(res.messages).to.not.include('connection_ack');
         });
     });
 });
