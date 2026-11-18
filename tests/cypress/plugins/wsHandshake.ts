@@ -20,7 +20,7 @@ interface HandshakeResult {
     closeCode: number | null
     closeReason?: string
     error?: string
-    received: {type: string, id?: string}[]
+    received: {type: string, id?: string, payload?: unknown}[]
 }
 
 // Opens a WebSocket to url with the given Origin, Cookie and other headers, which page scripts cannot set, and sends
@@ -65,10 +65,10 @@ const wsHandshake = (options: HandshakeOptions): Promise<HandshakeResult> => new
         }
     });
     ws.on('message', data => {
-        let message: {type: string, id?: string};
+        let message: {type: string, id?: string, payload?: unknown};
         try {
             const parsed = JSON.parse(data.toString());
-            message = {type: parsed.type, id: parsed.id};
+            message = {type: parsed.type, id: parsed.id, payload: parsed.payload};
         } catch (e) {
             message = {type: `unparsed: ${data}`};
         }
