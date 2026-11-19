@@ -14,6 +14,8 @@ This module provides a base framework to deploy GraphQL APIs inside Jahia. It pr
 
 These types can be extended with new fields. The servlet looks for services implementing the interface `DXGraphQLExtensionsProvider` and will register them into the endpoint. A main API for DX is provided by [DXM provider](./graphql-dxm-provider). Custom bundles can extend the API by adding new fields to existing types, that could alos return new types. 
 
+Two providers cannot add a field with the same name to one type. On such a duplicate field, the provider that comes first keeps the field. The extensions of the DXM provider come first, then the other providers in the order of their bundle symbolic name. Jahia registers none of the extensions of the other provider: its type extensions, specialized types, finder mixins and property fetchers. Jahia logs an error that names the field, the type and both providers. The `graphql-extension.sdl` file of the module of the other provider still registers.
+
 ## Open-Source
 
 This is an Open-Source module, you can find more details about Open-Source @ Jahia [in this repository](https://github.com/Jahia/open-source)
