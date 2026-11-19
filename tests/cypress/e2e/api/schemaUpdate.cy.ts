@@ -42,7 +42,7 @@
  *                                the role can access it, user without the role is denied
  *   7. A and B active together – B is refused as a whole: A keeps the shared fields and their
  *                                permissions, B-only fields are absent, core fields still answer
- *   8. A deactivated beside B  – B is registered once A is gone
+ *   8. A deactivated beside B  – B is registered with its own permissions once A is gone
  */
 
 import gql from 'graphql-tag';
@@ -490,8 +490,7 @@ describe('Schema Update – DXGraphQLExtensionsProvider lifecycle and DXGraphQLC
     //
     // A and B add the same three fields, so the schema can register only one of the two providers.
     // Both providers come from one bundle, so the class name decides: Provider A keeps its fields
-    // and Provider B is refused as a whole. B is activated first, to show that the activation
-    // order does not decide.
+    // and Provider B is refused as a whole.
 
     describe('Scenario 7 – Providers A and B active together: Provider B is refused, the API keeps working', () => {
         before('Activate Provider B, then Provider A beside it', () => {
@@ -551,8 +550,14 @@ describe('Schema Update – DXGraphQLExtensionsProvider lifecycle and DXGraphQLC
             expectFieldAbsent('query { schemaUpdateBOnly(msg: "test") }');
         });
 
-        it('schemaUpdatePermTest is absent', () => {
-            expectFieldAbsent('query { schemaUpdatePermTest(msg: "test") }');
+        it('schemaUpdatePermTest is absent from the Query type', () => {
+            cy.apolloClient(ROOT_USER).apollo({
+                queryFile: 'schemaUpdate/introspectQueryFieldDescriptions.graphql'
+            }).should((resp: any) => {
+                const names = extractFieldNames(resp);
+                expect(names).to.include('schemaUpdateAOnly');
+                expect(names).not.to.include('schemaUpdatePermTest');
+            });
         });
     });
 
@@ -563,13 +568,16 @@ describe('Schema Update – DXGraphQLExtensionsProvider lifecycle and DXGraphQLC
             switchToProvider(PROVIDER_B_PID);
             waitForFieldInSchema('Query', 'schemaUpdateBOnly', true);
             activateProvider(PROVIDER_A_PID);
+            // The A-only field shows the instance with both providers, and not a schema that is being rebuilt
+            waitForFieldInSchema('Query', 'schemaUpdateAOnly', true);
             waitForFieldInSchema('Query', 'schemaUpdateBOnly', false);
             deactivateProvider(PROVIDER_A_PID);
+            waitForFieldInSchema('Query', 'schemaUpdateAOnly', false);
             waitForFieldInSchema('Query', 'schemaUpdateBOnly', true);
         });
 
-        after('Deactivate Provider B', () => {
-            deactivateProvider(PROVIDER_B_PID);
+        after('Deactivate both providers', () => {
+            ALL_PROVIDER_PIDS.forEach(pid => deactivateProvider(pid));
             waitForFieldInSchema('Query', 'schemaUpdatePing', false);
         });
 
@@ -580,6 +588,19 @@ describe('Schema Update – DXGraphQLExtensionsProvider lifecycle and DXGraphQLC
             }).should((resp: any) => {
                 expect(resp.data.schemaUpdatePing).to.equal('pong-B: hello');
             });
+        });
+
+        it('schemaUpdateGated is accessible, because Provider B sets no permission on it', () => {
+            cy.apolloClient(ROOT_USER).apollo({
+                queryFile: 'schemaUpdate/schemaUpdateGated.graphql',
+                variables: {msg: 'hello'}
+            }).should((resp: any) => {
+                expect(resp.data.schemaUpdateGated).to.equal('gated-B: hello');
+            });
+        });
+
+        it('schemaUpdateNodeField is denied, because Provider B sets a permission on it', () => {
+            expectAccessDenied(`query { jcr { nodeByPath(path: "${TEST_NODE_PATH}") { schemaUpdateNodeField } } }`);
         });
 
         it('schemaUpdateAOnly is absent', () => {

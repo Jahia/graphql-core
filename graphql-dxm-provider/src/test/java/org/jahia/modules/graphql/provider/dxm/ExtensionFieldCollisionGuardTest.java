@@ -5,6 +5,8 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import graphql.annotations.annotationTypes.GraphQLTypeResolver;
+import graphql.annotations.processor.GraphQLAnnotations;
+import graphql.annotations.processor.exceptions.GraphQLAnnotationsException;
 import graphql.annotations.processor.retrievers.GraphQLObjectInfoRetriever;
 import graphql.annotations.processor.searchAlgorithms.BreadthFirstSearch;
 import graphql.annotations.processor.searchAlgorithms.ParentalSearch;
@@ -13,10 +15,15 @@ import graphql.schema.TypeResolver;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.junit.Test;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -159,6 +166,91 @@ public class ExtensionFieldCollisionGuardTest {
     }
 
     @Test
+    public void providerThatFailsAfterAClaimReleasesTheFieldItClaimed() {
+        GraphQLObjectInfoRetriever failingRetriever = new GraphQLObjectInfoRetriever() {
+            @Override
+            @SuppressWarnings("rawtypes")
+            public List<Method> getOrderedMethods(Class type) {
+                if (type == UnloadableExtension.class) {
+                    throw new NoClassDefFoundError("a class that UnloadableExtension uses");
+                }
+                return super.getOrderedMethods(type);
+            }
+        };
+        ExtensionFieldCollisionGuard failingGuard = new ExtensionFieldCollisionGuard(failingRetriever,
+                new BreadthFirstSearch(failingRetriever), new ParentalSearch(failingRetriever), emptyList());
+        DXGraphQLExtensionsProvider failing = provider(EchoExtension.class, UnloadableExtension.class);
+        DXGraphQLExtensionsProvider next = provider(OtherEchoExtension.class);
+
+        assertEquals(singletonList(next), failingGuard.acceptedProviders(asList(failing, next)));
+    }
+
+    @Test
+    public void refusalNamesTheFieldTheTypeAndBothProviders() {
+        List<String> refusals = new ArrayList<>();
+        ExtensionFieldCollisionGuard recordingGuard = new ExtensionFieldCollisionGuard(objectInfoRetriever,
+                new BreadthFirstSearch(objectInfoRetriever), new ParentalSearch(objectInfoRetriever), emptyList()) {
+            @Override
+            void refused(String providerName, String reason, Throwable cause) {
+                refusals.add(providerName + ": " + reason);
+            }
+        };
+
+        recordingGuard.acceptedProviders(asList(new PingProvider(), new OtherPingProvider()));
+
+        assertEquals(singletonList(OtherPingProvider.class.getName() + ": its class " + OtherPingExtension.class.getName()
+                + " adds the field StubQuery.ping, which " + PingProvider.class.getName() + " already declares"), refusals);
+    }
+
+    @Test
+    public void classWithoutTypeExtensionIsSkipped() {
+        DXGraphQLExtensionsProvider provider = provider(PingExtension.class, NotAnExtension.class);
+
+        assertEquals(singletonList(provider), guard.acceptedProviders(singletonList(provider)));
+    }
+
+    @Test
+    public void staticMethodOfAnInterfaceTypeIsNotAField() {
+        DXGraphQLExtensionsProvider provider = provider(StaticNodeTagExtension.class);
+
+        assertEquals(singletonList(provider), guard.acceptedProviders(singletonList(provider)));
+    }
+
+    @Test
+    public void bridgeMethodOfAnExtensionIsNotASecondField() {
+        DXGraphQLExtensionsProvider provider = provider(LabelExtension.class);
+
+        assertEquals(singletonList(provider), guard.acceptedProviders(singletonList(provider)));
+    }
+
+    @Test
+    public void staticJavaFieldOfAnExtensionIsNotAField() {
+        DXGraphQLExtensionsProvider first = provider(PingExtension.class);
+        DXGraphQLExtensionsProvider second = provider(StaticPingFieldExtension.class);
+
+        assertEquals(asList(first, second), guard.acceptedProviders(asList(first, second)));
+    }
+
+    // The cases that extend GqlJcrNode are not built here, because the JCRNode type needs the whole JCR schema
+    @Test
+    public void guardRefusesExactlyWhenGraphQLJavaAnnotationsFindsADuplicateField() {
+        assertGuardMatchesLibrary(emptyList(), PingExtension.class, EchoExtension.class);
+        assertGuardMatchesLibrary(emptyList(), PingExtension.class, OtherPingExtension.class);
+        assertGuardMatchesLibrary(emptyList(), PingExtension.class, PingFieldExtension.class);
+        assertGuardMatchesLibrary(emptyList(), PingExtension.class, StaticPingFieldExtension.class);
+        assertGuardMatchesLibrary(emptyList(), EchoExtension.class, OtherEchoExtension.class);
+        assertGuardMatchesLibrary(emptyList(), PingExtension.class, PingExtension.class);
+        assertGuardMatchesLibrary(emptyList(), LabelExtension.class);
+        assertGuardMatchesLibrary(emptyList(), NodeImplNameExtension.class);
+        assertGuardMatchesLibrary(emptyList(), NodeNameExtension.class);
+        assertGuardMatchesLibrary(emptyList(), NodeTagExtension.class, NodeImplTagExtension.class);
+        assertGuardMatchesLibrary(emptyList(), SubNodeTagExtension.class, NodeTagExtension.class);
+        assertGuardMatchesLibrary(emptyList(), StaticNodeTagExtension.class);
+        assertGuardMatchesLibrary(singletonList(StubDualNode.class), NodeTagExtension.class, OtherInterfaceTagExtension.class);
+        assertGuardMatchesLibrary(singletonList(StubAgedNode.class), NodeAgeExtension.class);
+    }
+
+    @Test
     public void prioritizedPutsTheCoreFirstThenOrdersByBundleNameThenByClassName() {
         DXGraphQLExtensionsProvider core = provider();
         DXGraphQLExtensionsProvider zebraInBundleB = new ZebraProvider();
@@ -179,6 +271,36 @@ public class ExtensionFieldCollisionGuardTest {
     private ExtensionFieldCollisionGuard guard(Collection<Class<?>> coreObjectTypes) {
         return new ExtensionFieldCollisionGuard(objectInfoRetriever, new BreadthFirstSearch(objectInfoRetriever),
                 new ParentalSearch(objectInfoRetriever), coreObjectTypes);
+    }
+
+    private void assertGuardMatchesLibrary(Collection<Class<?>> coreObjectTypes, Class<?>... extensions) {
+        boolean guardAccepts = !guard(coreObjectTypes).acceptedProviders(singletonList(provider(extensions))).isEmpty();
+
+        assertEquals("graphql-java-annotations and the guard disagree on " + Arrays.toString(extensions),
+                libraryBuilds(coreObjectTypes, extensions), guardAccepts);
+    }
+
+    // Builds each extended type and each core object type as DXGraphQLProvider does, with prettified field names
+    private static boolean libraryBuilds(Collection<Class<?>> coreObjectTypes, Class<?>... extensions) {
+        GraphQLAnnotations annotations = new GraphQLAnnotations();
+        annotations.getObjectHandler().getTypeRetriever().getGraphQLFieldRetriever().setAlwaysPrettify(true);
+        Set<Class<?>> types = new LinkedHashSet<>();
+        for (Class<?> extension : extensions) {
+            annotations.registerTypeExtension(extension);
+            types.add(extension.getAnnotation(GraphQLTypeExtension.class).value());
+        }
+        types.addAll(coreObjectTypes);
+        try {
+            for (Class<?> type : types) {
+                annotations.getObjectHandler().getGraphQLType(type, annotations.getContainer());
+            }
+            return true;
+        } catch (GraphQLAnnotationsException e) {
+            if (e.getMessage().startsWith("Duplicate field found in extension")) {
+                return false;
+            }
+            throw e;
+        }
     }
 
     private static DXGraphQLExtensionsProvider provider(Class<?>... extensions) {
@@ -213,6 +335,33 @@ public class ExtensionFieldCollisionGuardTest {
     }
 
     public static class ZebraProvider implements DXGraphQLExtensionsProvider {
+    }
+
+    public static class PingProvider implements DXGraphQLExtensionsProvider {
+        @Override
+        public Collection<Class<?>> getExtensions() {
+            return singletonList(PingExtension.class);
+        }
+
+        @Override
+        public Collection<Class<? extends GqlJcrNode>> getSpecializedTypes() {
+            return emptyList();
+        }
+    }
+
+    public static class OtherPingProvider implements DXGraphQLExtensionsProvider {
+        @Override
+        public Collection<Class<?>> getExtensions() {
+            return singletonList(OtherPingExtension.class);
+        }
+
+        @Override
+        public Collection<Class<? extends GqlJcrNode>> getSpecializedTypes() {
+            return emptyList();
+        }
+    }
+
+    public static class NotAnExtension {
     }
 
     @GraphQLName("StubQuery")
@@ -258,6 +407,35 @@ public class ExtensionFieldCollisionGuardTest {
         }
     }
 
+    @GraphQLTypeExtension(StubQuery.class)
+    public static class StaticPingFieldExtension {
+        @GraphQLField
+        @GraphQLName("ping")
+        public static final String PING = "static";
+    }
+
+    public interface Labelled<T> {
+        T getLabel();
+    }
+
+    // The compiler adds a bridge method Object getLabel(), which carries the annotations of getLabel()
+    @GraphQLTypeExtension(StubQuery.class)
+    public static class LabelExtension implements Labelled<String> {
+        @Override
+        @GraphQLField
+        public String getLabel() {
+            return "label";
+        }
+    }
+
+    @GraphQLTypeExtension(StubQuery.class)
+    public static class UnloadableExtension {
+        @GraphQLField
+        public static String unloadable() {
+            return "unloadable";
+        }
+    }
+
     public static class StubTypeResolver implements TypeResolver {
         @Override
         public GraphQLObjectType getType(TypeResolutionEnvironment env) {
@@ -277,6 +455,14 @@ public class ExtensionFieldCollisionGuardTest {
 
     @GraphQLTypeResolver(StubTypeResolver.class)
     public interface StubOtherInterface {
+    }
+
+    @GraphQLTypeResolver(StubTypeResolver.class)
+    public interface StubStaticNode {
+        @GraphQLField
+        static String getTag() {
+            return "static";
+        }
     }
 
     public static class StubNodeImpl implements StubNode {
@@ -358,6 +544,14 @@ public class ExtensionFieldCollisionGuardTest {
         @GraphQLField
         public String getTag() {
             return "other";
+        }
+    }
+
+    @GraphQLTypeExtension(StubStaticNode.class)
+    public static class StaticNodeTagExtension {
+        @GraphQLField
+        public String getTag() {
+            return "extension";
         }
     }
 

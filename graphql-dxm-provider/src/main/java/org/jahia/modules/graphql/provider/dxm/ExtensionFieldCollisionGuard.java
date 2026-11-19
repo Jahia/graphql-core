@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
  * Refuses an extensions provider when one of its type extensions adds a field that a type already has.
  * graphql-java-annotations fails the whole schema on such a duplicate field.
  * The field names and the type relations follow OutputObjectBuilder and InterfaceBuilder of graphql-java-annotations.
+ * A guard checks one list of providers: DXGraphQLProvider creates a new guard at each activation.
  */
 class ExtensionFieldCollisionGuard {
 
@@ -44,7 +45,6 @@ class ExtensionFieldCollisionGuard {
     private final GraphQLObjectInfoRetriever objectInfoRetriever;
     private final SearchAlgorithm methodSearchAlgorithm;
     private final SearchAlgorithm fieldSearchAlgorithm;
-    private final Collection<Class<?>> coreObjectTypes;
     private final Map<Class<?>, Set<String>> declaredFieldNames = new HashMap<>();
     private final Map<Class<?>, Map<String, String>> fieldOwners = new HashMap<>();
     private final Set<Class<?>> objectTypes = new LinkedHashSet<>();
@@ -57,7 +57,7 @@ class ExtensionFieldCollisionGuard {
         this.objectInfoRetriever = objectInfoRetriever;
         this.methodSearchAlgorithm = methodSearchAlgorithm;
         this.fieldSearchAlgorithm = fieldSearchAlgorithm;
-        this.coreObjectTypes = coreObjectTypes;
+        objectTypes.addAll(coreObjectTypes);
     }
 
     /**
@@ -88,9 +88,6 @@ class ExtensionFieldCollisionGuard {
      * @return the providers to register, in the same order
      */
     List<DXGraphQLExtensionsProvider> acceptedProviders(List<DXGraphQLExtensionsProvider> providers) {
-        fieldOwners.clear();
-        objectTypes.clear();
-        objectTypes.addAll(coreObjectTypes);
         Set<Class<?>> registeredExtensions = new HashSet<>();
         List<DXGraphQLExtensionsProvider> accepted = new ArrayList<>();
         for (DXGraphQLExtensionsProvider provider : providers) {
@@ -106,14 +103,23 @@ class ExtensionFieldCollisionGuard {
                     accepted.add(provider);
                 } else {
                     release(claims);
-                    logger.error("The GraphQL extensions of {} are not registered: {}", providerName, collision);
+                    refused(providerName, collision, null);
                 }
             } catch (RuntimeException | LinkageError e) {
                 release(claims);
-                logger.error("The GraphQL extensions of {} are not registered: they cannot be checked for a duplicate field", providerName, e);
+                refused(providerName, "they cannot be checked for a duplicate field", e);
             }
         }
         return accepted;
+    }
+
+    /**
+     * Logs why the extensions of a provider are not registered.
+     *
+     * @param cause the error that stopped the check, or null
+     */
+    void refused(String providerName, String reason, Throwable cause) {
+        logger.error("The GraphQL extensions of {} are not registered: {}", providerName, reason, cause);
     }
 
     // Two providers of one bundle can return the same class, which graphql-java-annotations registers once
@@ -133,12 +139,16 @@ class ExtensionFieldCollisionGuard {
     private String check(String providerName, Collection<Class<?>> extensions, Collection<Class<?>> specializedTypes,
                          List<Map.Entry<Class<?>, String>> claims) {
         String collision = claimFields(providerName, extensions, claims);
+        if (collision != null) {
+            return collision;
+        }
         for (Class<?> specializedType : specializedTypes) {
-            if (collision == null && !objectTypes.contains(specializedType)) {
-                collision = duplicateField(specializedType);
+            String duplicate = objectTypes.contains(specializedType) ? null : duplicateField(specializedType);
+            if (duplicate != null) {
+                return duplicate;
             }
         }
-        return collision;
+        return null;
     }
 
     private String claimFields(String providerName, Collection<Class<?>> extensions, List<Map.Entry<Class<?>, String>> claims) {
