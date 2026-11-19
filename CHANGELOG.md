@@ -1,5 +1,37 @@
 # graphql-core Changelog
 
+## 3.11.0
+
+### New Features
+
+* **Behaviour change** — the GraphQL `mutateWorkflows` mutation and its `abortWorkflow` field require the GraphQL administration mutation permission.
+
+  **Are you affected?** Only if a script or integration calls `mutateWorkflows` with an account that is not a server administrator. That call now answers with a permission error. Grant the account a role carrying "Perform GraphQL mutations under the admin node" (`graphqlAdminMutation`) to restore access. Jahia's own interfaces do not use this mutation.
+
+* Limited how many GraphQL subscription connections stay open at once and how many subscriptions each one runs.
+
+  **Are you affected?** Only if a client opens subscriptions without the `graphql-ws` subprotocol, with an account whose permissions allow no subscription, or beyond the limits that the `graphql.websocket.*` properties of `org.jahia.modules.graphql.provider-default.cfg` set. The Jahia interface opens one connection per browser tab, so an account shared by several people can reach the default limit of 20 connections.
+
+  The limits and their defaults are `graphql.websocket.maxConnections` (1000 connections in total), `graphql.websocket.maxConnectionsPerUser` (20 connections per user), `graphql.websocket.maxSubscriptionsPerConnection` (50 subscriptions per connection) and `graphql.websocket.initTimeout` (10 seconds to initialise a connection). A value of `0` disables a limit.
+
+* Restricted GraphQL subscription connections to the address Jahia is served on.
+
+  A subscription connection that declares another origin is refused. Jahia's own interfaces are unaffected, provided that a reverse proxy in front of Jahia keeps the public host name and, when it ends TLS, sends the `X-Forwarded-Proto` header. No cross-origin setting applies to subscription connections: an origin trusted in `org.jahia.bundles.api.security.cfg`, through `cors.allowed.origins` or the `auto_apply` origin of a scope, keeps its HTTP GraphQL access but is refused on subscriptions, and so is an origin listed in `http.cors.allow-origin`. If a page on another website opens subscriptions, serve it from the same address as Jahia, for instance through your reverse proxy.
+
+* Limited how many fields a GraphQL query may execute once its fragments are expanded, through the new `graphql.query.maxExpandedFields` property (default `2000`, `0` disables), read only from the default configuration file so a non-default configuration cannot loosen it.
+
+  **Are you affected?** Only if a query spreads the same fragment repeatedly inside nested fields so that it executes more than 2000 fields; such a query is now refused before execution with `maximum query expanded field count exceeded`. Jahia's own interfaces stay far below the limit. Raise the property in `org.jahia.modules.graphql.provider-default.cfg`, or set it to `0` to lift the bound.
+
+* Two modules that add a field with the same name to one GraphQL type no longer stop the GraphQL API. Before this fix, the GraphQL API failed to start, and the Jahia interfaces that use it stopped working.
+
+  The module whose bundle symbolic name comes first in alphabetical order keeps the field. Jahia registers none of the GraphQL extensions that the other module declares in Java. Jahia logs an error that names the field, the type and both modules. The `graphql-extension.sdl` file of the other module still registers.
+
+  **Are you affected?** Only if two of your modules add the same field to one GraphQL type. To get the GraphQL extensions of both modules, remove the field from one module or rename it.
+
+### Bug Fixes
+
+* Added maven.jahia.com to the Maven repositories graphql-core uses to download its dependencies.
+
 ## 3.10.0
 
 ### New Features
