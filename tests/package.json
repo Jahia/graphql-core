@@ -43,7 +43,8 @@
     "supports-color": "^9.0.2",
     "typescript": "~5.5.4",
     "util": "^0.12.4",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "ws": "7.5.10"
   },
   "scripts": {
     "instrument": "nyc instrument --compact=false cypress instrumented",

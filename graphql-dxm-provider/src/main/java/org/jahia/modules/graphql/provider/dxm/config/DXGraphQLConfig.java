@@ -60,6 +60,20 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
 
     private static final int DEFAULT_NODE_LIMIT = 5000;
 
+    /**
+     * The keys of the subscription endpoint bounds, each with its code default.
+     */
+    private static final Map<String, Integer> WEBSOCKET_LIMITS;
+
+    static {
+        Map<String, Integer> limits = new HashMap<>();
+        limits.put(WebSocketLimits.INIT_TIMEOUT, WebSocketLimits.DEFAULT_INIT_TIMEOUT_SECONDS);
+        limits.put(WebSocketLimits.MAX_CONNECTIONS, WebSocketLimits.DEFAULT_MAX_CONNECTIONS);
+        limits.put(WebSocketLimits.MAX_CONNECTIONS_PER_USER, WebSocketLimits.DEFAULT_MAX_CONNECTIONS_PER_USER);
+        limits.put(WebSocketLimits.MAX_SUBSCRIPTIONS_PER_CONNECTION, WebSocketLimits.DEFAULT_MAX_SUBSCRIPTIONS_PER_CONNECTION);
+        WEBSOCKET_LIMITS = Collections.unmodifiableMap(limits);
+    }
+
     private final Map<String, List<String>> keysByPid = new ConcurrentHashMap<>();
     private final Map<String, String> annotationPermissions = new ConcurrentHashMap<>();
     private final Map<String, String> configPermissions = new ConcurrentHashMap<>();
@@ -78,6 +92,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private final Map<String, Integer> maxExpandedFieldsByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> mutationBatchLimitByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> requestOperationLimitByPid = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, Integer>> webSocketLimitsByPid = new ConcurrentHashMap<>();
 
     private volatile int nodeLimit = DEFAULT_NODE_LIMIT;
     private volatile int requestNodeLimit = PaginationHelper.DEFAULT_REQUEST_NODE_LIMIT;
@@ -117,6 +132,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         Integer newMaxExpandedFields = null;
         Integer newMutationBatchLimit = null;
         Integer newRequestOperationLimit = null;
+        Map<String, Integer> newWebSocketLimits = parseWebSocketLimits(pid, properties, isDefaultConfig);
         Boolean newIntrospectionCheck = null;
 
         Enumeration<String> keys = properties.keys();
@@ -222,6 +238,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         if (newRequestOperationLimit != null) {
             requestOperationLimitByPid.put(pid, newRequestOperationLimit);
         }
+        webSocketLimitsByPid.put(pid, newWebSocketLimits);
         if (newIntrospectionCheck != null) {
             introspectionCheckByPid.put(pid, newIntrospectionCheck);
         }
@@ -256,6 +273,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         maxExpandedFieldsByPid.remove(pid);
         mutationBatchLimitByPid.remove(pid);
         requestOperationLimitByPid.remove(pid);
+        webSocketLimitsByPid.remove(pid);
     }
 
     /**
@@ -299,7 +317,39 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
             RequestOperationLimitPreProcessor.updateOperationLimit(requestOperationLimit);
         }
 
+        WebSocketLimits.update(webSocketLimit(WebSocketLimits.INIT_TIMEOUT), webSocketLimit(WebSocketLimits.MAX_CONNECTIONS),
+                webSocketLimit(WebSocketLimits.MAX_CONNECTIONS_PER_USER),
+                webSocketLimit(WebSocketLimits.MAX_SUBSCRIPTIONS_PER_CONNECTION));
+
         rebuildPermissions();
+    }
+
+    /**
+     * Reads the bounds of the subscription endpoint that a configuration sets. Only the default configuration sets
+     * them, like the other limits.
+     */
+    private static Map<String, Integer> parseWebSocketLimits(String pid, Dictionary<String, ?> properties, boolean isDefaultConfig)
+            throws ConfigurationException {
+        Map<String, Integer> limits = new HashMap<>();
+        for (String key : WEBSOCKET_LIMITS.keySet()) {
+            Object value = properties.get(key);
+            if (value != null && isDefaultConfig) {
+                limits.put(key, parseNonNegativeLimit(key, (String) value, key));
+            } else if (value != null) {
+                warnGatedPropertyIgnored(key, pid);
+            }
+        }
+        return limits;
+    }
+
+    private int webSocketLimit(String key) {
+        Map<String, Integer> valuesByPid = new HashMap<>();
+        webSocketLimitsByPid.forEach((pid, limits) -> {
+            if (limits.containsKey(key)) {
+                valuesByPid.put(pid, limits.get(key));
+            }
+        });
+        return firstValueOrDefault(valuesByPid, WEBSOCKET_LIMITS.get(key));
     }
 
     private static int firstValueOrDefault(Map<String, Integer> valuesByPid, int defaultValue) {
