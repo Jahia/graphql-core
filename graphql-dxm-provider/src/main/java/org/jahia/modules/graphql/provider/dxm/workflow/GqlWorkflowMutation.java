@@ -17,6 +17,7 @@ package org.jahia.modules.graphql.provider.dxm.workflow;
 
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.workflow.Workflow;
 import org.jahia.services.workflow.WorkflowService;
@@ -37,6 +38,7 @@ public class GqlWorkflowMutation {
     }
 
     @GraphQLField
+    @GraphQLRequiresPermission(value = "graphqlAdminMutation")
     public boolean abortWorkflow() {
         WorkflowService service = BundleUtils.getOsgiService(WorkflowService.class, null);
         service.abortProcess(workflowProcess.getId(), workflowProcess.getProvider());

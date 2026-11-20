@@ -18,9 +18,15 @@ package org.jahia.modules.graphql.provider.dxm.instrumentation;
 import graphql.analysis.QueryTraverser;
 import graphql.analysis.QueryVisitorFieldEnvironment;
 import graphql.analysis.QueryVisitorStub;
+import graphql.execution.AbortExecutionException;
+import graphql.execution.CoercedVariables;
 import graphql.execution.ExecutionContext;
+import graphql.language.FragmentDefinition;
+import graphql.language.OperationDefinition;
+import graphql.normalized.ExecutableNormalizedOperationFactory;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLTypeUtil;
 
 import java.util.ArrayDeque;
@@ -36,8 +42,11 @@ import java.util.Set;
  * Static analysis of a GraphQL document, used by the query-cost guards to reject expensive documents before execution.
  *
  * <p>Every metric comes from the operation's own document - its field selections and the arguments they carry - so they
- * are cheap (no field is fetched) and can be evaluated before anything is permission-checked or serialized. They are
- * produced by a single traversal: the document is walked once per request however many guards are enabled.
+ * are cheap (no field is fetched) and can be evaluated before anything is permission-checked or serialized. The three
+ * held in {@link QueryCost} are produced by a single traversal: the document is walked once per request however many
+ * guards are enabled. The fourth, {@link #expandedFieldCount}, is the number of fields the operation executes once
+ * every fragment is counted at each place it is spread, and is measured on its own because a walk of the document
+ * does not yield it.
  *
  * <p>The first two metrics measure the document's shape and cannot see how much data a field will touch, which is why
  * batch size is measured separately. A field handed an explicit list of things to act on states its own size up front,
@@ -97,8 +106,47 @@ final class QueryCostCalculator {
     }
 
     /**
-     * What one document costs, along the two dimensions the guards bound. Kept together because a single traversal
-     * produces both.
+     * Measures how many fields the operation executes, which is the number of its fields once every fragment has been
+     * expanded at each place it is spread.
+     *
+     * <p>This is the one metric here that is not read off the document as written. {@link QueryTraverser} walks a
+     * fragment definition once, however many spreads point at it, which is what keeps the metrics above linear in the
+     * size of the document. Execution expands the fragment at every spread, so the fields that run are a separate count
+     * from the fields the document writes. The count that execution runs is what graphql-java's normalized operation
+     * holds, so that is what is built here, from the operation and fragments execution has already resolved out of the
+     * document rather than from the document again. Selections sharing a response key and a type condition count
+     * once, as they execute once. A key reached under differing type conditions counts once per object type it can
+     * resolve to: the factory merges those into one field only after counting them, and execution runs the one
+     * matching the object it is handed, so a polymorphic query measures slightly above what it runs.
+     *
+     * <p>The ceiling is handed to the factory rather than compared with its result: the factory stops as soon as one
+     * field more than the ceiling has been created, so measuring costs at most the ceiling, whatever the operation
+     * would have expanded to. The stop is the factory's own {@link AbortExecutionException}, turned back into a count
+     * here so that the caller compares this metric with its limit as it does the others, and words the verdict itself.
+     *
+     * @param schema    the schema the operation runs against
+     * @param operation the operation to measure
+     * @param fragments the document's fragment definitions, by name
+     * @param variables the operation's coerced variables
+     * @param ceiling   the number of fields past which the count stops
+     * @return the number of fields the operation executes, or {@code ceiling + 1} when it executes more than that
+     */
+    static int expandedFieldCount(GraphQLSchema schema, OperationDefinition operation,
+                                  Map<String, FragmentDefinition> fragments, CoercedVariables variables, int ceiling) {
+        try {
+            return ExecutableNormalizedOperationFactory.createExecutableNormalizedOperation(schema, operation,
+                    fragments, variables,
+                    ExecutableNormalizedOperationFactory.Options.defaultOptions().maxFieldsCount(ceiling))
+                    .getOperationFieldCount();
+        } catch (AbortExecutionException pastTheCeiling) {
+            // The one abort these options let the factory raise, thrown as the count reaches ceiling + 1.
+            return ceiling + 1;
+        }
+    }
+
+    /**
+     * What one document costs, along the dimensions a traversal of it yields. Kept together because a single traversal
+     * produces all three.
      */
     static final class QueryCost {
 

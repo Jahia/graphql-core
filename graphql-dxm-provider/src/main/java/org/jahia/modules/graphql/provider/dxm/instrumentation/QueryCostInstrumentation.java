@@ -32,42 +32,67 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Aborts execution when a document is too expensive, along either of the dimensions {@link QueryCostCalculator}
- * measures: how many fields it selects, and how deeply it nests them.
+ * Aborts execution when a document is too expensive, along any of the dimensions {@link QueryCostCalculator}
+ * measures: how many fields it selects, how deeply it nests them, and how many fields it executes once every fragment
+ * is expanded at each place it is spread.
  *
- * <p>The document is measured once and both limits are checked against that one measurement, so enabling the second
- * guard does not walk the document again. That matters because the measurement happens on every request, before the
- * operation is authorized, and because expanding a document is itself work an attacker controls: graphql-java's
- * traverser re-expands a fragment definition at each spread of it, so a guard that traverses repeatedly multiplies
- * exactly the cost it exists to bound.
+ * <p>The document is walked once, and only when a limit that walk feeds is in force: the first two limits are checked
+ * against that one measurement, so enabling the second guard does not walk the document again, and lifting both does
+ * not leave the walk running for nothing. That matters because the measurement happens on every request, before the
+ * operation is authorized, so it has to stay linear in the size of the document. The third limit is measured on its
+ * own, and only once the document has passed the verdicts the walk yields: it is the count of fields execution runs,
+ * which a walk of the document does not yield, and the build that yields it is stopped at the limit, so measuring costs
+ * at most the limit whatever the document would have expanded to.
  *
  * <p>It also opens the request's node allowance, the one bound here that is not a verdict on the document: the guards
  * above reject a selection for its shape, whereas the allowance limits how far that shape may expand once it is walking
  * actual content, and so can only be spent as the fields run.
  *
- * <p>A limit of 0 or less disables that individual check. The messages keep graphql-java's wording, whose enforcement
- * this class took over from {@link graphql.analysis.MaxQueryComplexityInstrumentation} and
- * {@link graphql.analysis.MaxQueryDepthInstrumentation}, so existing clients and log filters are unaffected.
+ * <p>A limit of 0 or less disables that individual check. The complexity and depth messages keep graphql-java's
+ * wording, whose enforcement this class took over from {@link graphql.analysis.MaxQueryComplexityInstrumentation} and
+ * {@link graphql.analysis.MaxQueryDepthInstrumentation}, so existing clients and log filters are unaffected; the other
+ * verdicts are worded the same way, each naming its dimension, so that a log states which limit a request met. The
+ * expanded field count is the one that reports no measurement: its build stops at the limit, so all that is known of a
+ * refused operation is that it executes more fields than that.
  */
 public class QueryCostInstrumentation extends SimplePerformantInstrumentation {
 
     private static final Logger logger = LoggerFactory.getLogger(QueryCostInstrumentation.class);
 
+    /**
+     * Default maximum number of fields an operation may execute once every fragment is expanded at each place it is
+     * spread.
+     *
+     * <p>Matches the shipped complexity ceiling, so that the two read together: an operation may execute at most as
+     * many fields as it may select. The heaviest documents Jahia's own interfaces send expand to a few hundred fields,
+     * so the value leaves them wide headroom.
+     *
+     * <p>The same number appears in the shipped {@code org.jahia.modules.graphql.provider-default.cfg} and in the
+     * {@code 05-setQueryExpandedFieldLimit.started.groovy} patch that writes the property into the configuration of an
+     * already-installed instance. Changing it here means changing it in all three.
+     */
+    public static final int DEFAULT_MAX_EXPANDED_FIELDS = 2000;
+
     private final int maxComplexity;
     private final int maxDepth;
+    private final int maxExpandedFields;
     private final int maxBatchSize;
     private final int maxNodesPerRequest;
 
     /**
      * @param maxComplexity      maximum number of selected fields, 0 to disable that check
      * @param maxDepth           maximum nesting depth, 0 to disable that check
+     * @param maxExpandedFields  maximum number of fields the operation executes once every fragment is expanded at
+     *                           each place it is spread, 0 to disable that check
      * @param maxBatchSize       maximum number of items a mutation may be handed in list arguments across the whole
      *                           document, 0 to disable that check
      * @param maxNodesPerRequest maximum number of nodes the request's fields may walk in total, 0 to disable that bound
      */
-    public QueryCostInstrumentation(int maxComplexity, int maxDepth, int maxBatchSize, int maxNodesPerRequest) {
+    public QueryCostInstrumentation(int maxComplexity, int maxDepth, int maxExpandedFields, int maxBatchSize,
+                                    int maxNodesPerRequest) {
         this.maxComplexity = maxComplexity;
         this.maxDepth = maxDepth;
+        this.maxExpandedFields = maxExpandedFields;
         this.maxBatchSize = maxBatchSize;
         this.maxNodesPerRequest = maxNodesPerRequest;
     }
@@ -77,6 +102,28 @@ public class QueryCostInstrumentation extends SimplePerformantInstrumentation {
         ExecutionContext executionContext = parameters.getExecutionContext();
         // Batch size is only enforced on mutations, so only measured there: a query would pay for a count it never uses.
         int batchCeiling = isMutation(executionContext) ? maxBatchSize : 0;
+        // Walked only when a verdict rests on the walk: with these three lifted, the document is not analysed.
+        if (maxComplexity > 0 || maxDepth > 0 || batchCeiling > 0) {
+            checkDocumentShape(executionContext, batchCeiling);
+        }
+        // Measured after the verdicts above so that a document they already refuse is not expanded at all.
+        if (maxExpandedFields > 0) {
+            checkExpandedFields(executionContext);
+        }
+        // Opens the request's node allowance, which the connections draw down as they walk the repository. Unlike the
+        // bounds above this one cannot be settled here: how many nodes a field reaches is a property of the content,
+        // not of the document, and only becomes known as the fields run. What the document analysis above can bound
+        // is the shape of a selection; what this bounds is how far that shape expands once pointed at a repository -
+        // the dimension along which a small, shallow, legal document still multiplies out.
+        if (maxNodesPerRequest > 0) {
+            executionContext.getGraphQLContext().put(PaginationHelper.REMAINING_NODE_ALLOWANCE,
+                    new AtomicInteger(maxNodesPerRequest));
+        }
+        return SimpleInstrumentationContext.noOp();
+    }
+
+    /** Measures the document in one walk and checks the limits that measurement feeds. */
+    private void checkDocumentShape(ExecutionContext executionContext, int batchCeiling) {
         QueryCostCalculator.QueryCost cost =
                 QueryCostCalculator.calculate(QueryCostCalculator.newTraverser(executionContext), batchCeiling);
         if (logger.isDebugEnabled()) {
@@ -103,16 +150,22 @@ public class QueryCostInstrumentation extends SimplePerformantInstrumentation {
             executionContext.getGraphQLContext().put(GraphQLLimits.REMAINING_BATCH_ALLOWANCE,
                     new AtomicInteger(maxBatchSize - cost.getBatchSize()));
         }
-        // Opens the request's node allowance, which the connections draw down as they walk the repository. Unlike the
-        // three bounds above this one cannot be settled here: how many nodes a field reaches is a property of the
-        // content, not of the document, and only becomes known as the fields run. What the document analysis above
-        // can bound is the shape of a selection; what this bounds is how far that shape expands once pointed at a
-        // repository - the dimension along which a small, shallow, legal document still multiplies out.
-        if (maxNodesPerRequest > 0) {
-            executionContext.getGraphQLContext().put(PaginationHelper.REMAINING_NODE_ALLOWANCE,
-                    new AtomicInteger(maxNodesPerRequest));
+    }
+
+    /** Builds the operation as execution runs it, stopped at the limit, and refuses one that expands past it. */
+    private void checkExpandedFields(ExecutionContext executionContext) {
+        int expandedFields = QueryCostCalculator.expandedFieldCount(executionContext.getGraphQLSchema(),
+                executionContext.getOperationDefinition(), executionContext.getFragmentsByName(),
+                executionContext.getCoercedVariables(), maxExpandedFields);
+        // The count stops one past the limit, so a refused operation has no measured value to report: where its
+        // siblings state what the document cost, this message states the bound it passed.
+        if (expandedFields > maxExpandedFields) {
+            throw new AbortExecutionException(
+                    "maximum query expanded field count exceeded, more than " + maxExpandedFields);
         }
-        return SimpleInstrumentationContext.noOp();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Query expands to {} fields", expandedFields);
+        }
     }
 
     private static boolean isMutation(ExecutionContext executionContext) {

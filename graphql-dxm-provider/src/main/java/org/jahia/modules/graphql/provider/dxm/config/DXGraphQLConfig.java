@@ -16,6 +16,7 @@
 package org.jahia.modules.graphql.provider.dxm.config;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.graphql.provider.dxm.instrumentation.QueryCostInstrumentation;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
@@ -48,6 +49,7 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private static final String REQUEST_NODE_LIMIT = "graphql.fields.node.requestLimit";
     private static final String MAX_QUERY_COMPLEXITY = "graphql.query.maxComplexity";
     private static final String MAX_QUERY_DEPTH = "graphql.query.maxDepth";
+    private static final String MAX_EXPANDED_FIELDS = "graphql.query.maxExpandedFields";
     private static final String MUTATION_BATCH_LIMIT = "graphql.mutation.batch.limit";
     private static final String REQUEST_OPERATION_LIMIT = "graphql.request.operationLimit";
     public static final String INTROSPECTION_CHECK_ENABLED = "introspectionCheckEnabled";
@@ -57,6 +59,20 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private static final String DEFAULT_CONFIG_PID = FACTORY_PID + "~default";
 
     private static final int DEFAULT_NODE_LIMIT = 5000;
+
+    /**
+     * The keys of the subscription endpoint bounds, each with its code default.
+     */
+    private static final Map<String, Integer> WEBSOCKET_LIMITS;
+
+    static {
+        Map<String, Integer> limits = new HashMap<>();
+        limits.put(WebSocketLimits.INIT_TIMEOUT, WebSocketLimits.DEFAULT_INIT_TIMEOUT_SECONDS);
+        limits.put(WebSocketLimits.MAX_CONNECTIONS, WebSocketLimits.DEFAULT_MAX_CONNECTIONS);
+        limits.put(WebSocketLimits.MAX_CONNECTIONS_PER_USER, WebSocketLimits.DEFAULT_MAX_CONNECTIONS_PER_USER);
+        limits.put(WebSocketLimits.MAX_SUBSCRIPTIONS_PER_CONNECTION, WebSocketLimits.DEFAULT_MAX_SUBSCRIPTIONS_PER_CONNECTION);
+        WEBSOCKET_LIMITS = Collections.unmodifiableMap(limits);
+    }
 
     private final Map<String, List<String>> keysByPid = new ConcurrentHashMap<>();
     private final Map<String, String> annotationPermissions = new ConcurrentHashMap<>();
@@ -73,13 +89,16 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
     private final Map<String, Integer> requestNodeLimitByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> maxQueryComplexityByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> maxQueryDepthByPid = new ConcurrentHashMap<>();
+    private final Map<String, Integer> maxExpandedFieldsByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> mutationBatchLimitByPid = new ConcurrentHashMap<>();
     private final Map<String, Integer> requestOperationLimitByPid = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, Integer>> webSocketLimitsByPid = new ConcurrentHashMap<>();
 
     private volatile int nodeLimit = DEFAULT_NODE_LIMIT;
     private volatile int requestNodeLimit = PaginationHelper.DEFAULT_REQUEST_NODE_LIMIT;
     private volatile int maxQueryComplexity = 0;
     private volatile int maxQueryDepth = 0;
+    private volatile int maxExpandedFields = QueryCostInstrumentation.DEFAULT_MAX_EXPANDED_FIELDS;
     private volatile int mutationBatchLimit = GraphQLLimits.DEFAULT_MUTATION_BATCH_LIMIT;
     private volatile int requestOperationLimit = RequestOperationLimitPreProcessor.DEFAULT_OPERATION_LIMIT;
     // Secure by default: the introspection permission check is on unless a configuration explicitly disables it.
@@ -110,8 +129,10 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         Integer newRequestNodeLimit = null;
         Integer newMaxQueryComplexity = null;
         Integer newMaxQueryDepth = null;
+        Integer newMaxExpandedFields = null;
         Integer newMutationBatchLimit = null;
         Integer newRequestOperationLimit = null;
+        Map<String, Integer> newWebSocketLimits = parseWebSocketLimits(pid, properties, isDefaultConfig);
         Boolean newIntrospectionCheck = null;
 
         Enumeration<String> keys = properties.keys();
@@ -160,6 +181,12 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
                 } else {
                     warnGatedPropertyIgnored(key, pid);
                 }
+            } else if (key.equals(MAX_EXPANDED_FIELDS)) {
+                if (isDefaultConfig) {
+                    newMaxExpandedFields = parseNonNegativeLimit(key, value, "Max expanded fields");
+                } else {
+                    warnGatedPropertyIgnored(key, pid);
+                }
             } else if (key.equals(MUTATION_BATCH_LIMIT)) {
                 if (isDefaultConfig) {
                     newMutationBatchLimit = parseNonNegativeLimit(key, value, "Mutation batch limit");
@@ -202,12 +229,16 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         if (newMaxQueryDepth != null) {
             maxQueryDepthByPid.put(pid, newMaxQueryDepth);
         }
+        if (newMaxExpandedFields != null) {
+            maxExpandedFieldsByPid.put(pid, newMaxExpandedFields);
+        }
         if (newMutationBatchLimit != null) {
             mutationBatchLimitByPid.put(pid, newMutationBatchLimit);
         }
         if (newRequestOperationLimit != null) {
             requestOperationLimitByPid.put(pid, newRequestOperationLimit);
         }
+        webSocketLimitsByPid.put(pid, newWebSocketLimits);
         if (newIntrospectionCheck != null) {
             introspectionCheckByPid.put(pid, newIntrospectionCheck);
         }
@@ -239,8 +270,10 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         requestNodeLimitByPid.remove(pid);
         maxQueryComplexityByPid.remove(pid);
         maxQueryDepthByPid.remove(pid);
+        maxExpandedFieldsByPid.remove(pid);
         mutationBatchLimitByPid.remove(pid);
         requestOperationLimitByPid.remove(pid);
+        webSocketLimitsByPid.remove(pid);
     }
 
     /**
@@ -268,6 +301,8 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
         }
         maxQueryComplexity = firstValueOrDefault(maxQueryComplexityByPid, 0);
         maxQueryDepth = firstValueOrDefault(maxQueryDepthByPid, 0);
+        maxExpandedFields = firstValueOrDefault(maxExpandedFieldsByPid,
+                QueryCostInstrumentation.DEFAULT_MAX_EXPANDED_FIELDS);
 
         int newMutationBatchLimit = firstValueOrDefault(mutationBatchLimitByPid, GraphQLLimits.DEFAULT_MUTATION_BATCH_LIMIT);
         if (newMutationBatchLimit != mutationBatchLimit) {
@@ -282,7 +317,39 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
             RequestOperationLimitPreProcessor.updateOperationLimit(requestOperationLimit);
         }
 
+        WebSocketLimits.update(webSocketLimit(WebSocketLimits.INIT_TIMEOUT), webSocketLimit(WebSocketLimits.MAX_CONNECTIONS),
+                webSocketLimit(WebSocketLimits.MAX_CONNECTIONS_PER_USER),
+                webSocketLimit(WebSocketLimits.MAX_SUBSCRIPTIONS_PER_CONNECTION));
+
         rebuildPermissions();
+    }
+
+    /**
+     * Reads the bounds of the subscription endpoint that a configuration sets. Only the default configuration sets
+     * them, like the other limits.
+     */
+    private static Map<String, Integer> parseWebSocketLimits(String pid, Dictionary<String, ?> properties, boolean isDefaultConfig)
+            throws ConfigurationException {
+        Map<String, Integer> limits = new HashMap<>();
+        for (String key : WEBSOCKET_LIMITS.keySet()) {
+            Object value = properties.get(key);
+            if (value != null && isDefaultConfig) {
+                limits.put(key, parseNonNegativeLimit(key, (String) value, key));
+            } else if (value != null) {
+                warnGatedPropertyIgnored(key, pid);
+            }
+        }
+        return limits;
+    }
+
+    private int webSocketLimit(String key) {
+        Map<String, Integer> valuesByPid = new HashMap<>();
+        webSocketLimitsByPid.forEach((pid, limits) -> {
+            if (limits.containsKey(key)) {
+                valuesByPid.put(pid, limits.get(key));
+            }
+        });
+        return firstValueOrDefault(valuesByPid, WEBSOCKET_LIMITS.get(key));
     }
 
     private static int firstValueOrDefault(Map<String, Integer> valuesByPid, int defaultValue) {
@@ -401,6 +468,14 @@ public class DXGraphQLConfig implements ManagedServiceFactory {
      */
     public int getMaxQueryDepth() {
         return maxQueryDepth;
+    }
+
+    /**
+     * @return the number of fields one operation may execute once every fragment is expanded at each place it is
+     *         spread, or 0 when the guard is disabled
+     */
+    public int getMaxExpandedFields() {
+        return maxExpandedFields;
     }
 
     /**

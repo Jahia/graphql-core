@@ -228,7 +228,10 @@ public class DXGraphQLProvider implements
             relay.addConnectionType(entry.getKey(), (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(entry.getValue(), container));
         }
 
-        extensionsProviders.add(this);
+        // Keeps the accepted providers only: the static reference activates a new instance when the bound providers change
+        extensionsProviders = new ExtensionFieldCollisionGuard(graphQLObjectInfoRetriever, methodSearchAlgorithm,
+                fieldSearchAlgorithm, Collections.singletonList(GqlJcrNodeImpl.class)).acceptedProviders(
+                ExtensionFieldCollisionGuard.prioritized(this, extensionsProviders, ExtensionFieldCollisionGuard::bundleSymbolicName));
 
         registerSchema();
     }
