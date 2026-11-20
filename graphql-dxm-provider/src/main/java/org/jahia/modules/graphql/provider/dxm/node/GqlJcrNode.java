@@ -46,8 +46,8 @@ public interface GqlJcrNode {
     JCRNodeWrapper getNode();
 
     /**
-     * Answers once per node, so that a query reading a field of every property of this node evaluates the
-     * permission a single time.
+     * This default evaluates the permission on each call. An implementation may keep the answer, as
+     * {@link GqlJcrNodeImpl} does, so that a query reading a field of every property of a node evaluates it once.
      *
      * @return whether the current session may read a decrypted value of a property of this node
      */

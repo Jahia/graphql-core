@@ -26,7 +26,7 @@ def grantViewEncryptedValue() {
             "/roles/system-administrator/root-access"
     ]
 
-    def addValue = (JCRPropertyWrapper property, String value) -> {
+    def addValue = { JCRPropertyWrapper property, String value ->
         if (property.getValues().find { it.getString() == value }) {
             return false
         }

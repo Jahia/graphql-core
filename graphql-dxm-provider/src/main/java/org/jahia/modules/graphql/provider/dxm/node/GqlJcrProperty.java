@@ -205,11 +205,11 @@ public class GqlJcrProperty {
     }
 
     /**
-     * @return The decrypted value of the JCR encrypted property as a String in case the property is single-valued, null otherwise
+     * @return The decrypted value of the JCR encrypted property as a String in case the property is single-valued and the current user holds the viewEncryptedValue permission on its node, null otherwise
      */
     @GraphQLField
     @GraphQLName("decryptedValue")
-    @GraphQLDescription("The decrypted value of the JCR encrypted property as a String in case the property is single-valued, null otherwise")
+    @GraphQLDescription("The decrypted value of the JCR encrypted property as a String in case the property is single-valued and the current user holds the viewEncryptedValue permission on its node, null otherwise")
     public String getDecryptedValue() throws RepositoryException {
         try {
             if (property.isMultiple() || !node.canViewEncryptedValue()) {
@@ -275,11 +275,11 @@ public class GqlJcrProperty {
     }
 
     /**
-     * @return The decrypted value of the JCR encrypted property as a String in case the property is single-valued, null otherwise
+     * @return The decrypted values of the JCR encrypted property as Strings in case the property is multiple-valued and the current user holds the viewEncryptedValue permission on its node, an empty list otherwise
      */
     @GraphQLField
     @GraphQLName("decryptedValues")
-    @GraphQLDescription("The decrypted values of the JCR encrypted property as a Strings in case the property is multiple-valued, null otherwise")
+    @GraphQLDescription("The decrypted values of the JCR encrypted property as Strings in case the property is multiple-valued and the current user holds the viewEncryptedValue permission on its node, an empty list otherwise")
     public List<String> getDecryptedValues() throws RepositoryException {
         try {
             if (!property.isMultiple() || !node.canViewEncryptedValue()) {
