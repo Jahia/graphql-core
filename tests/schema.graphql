@@ -2578,9 +2578,9 @@ type JCRProperty {
         "The choicelist renderer name to be used"
         renderer: String
     ): [String]
-    "The decrypted value of the JCR encrypted property as a String in case the property is single-valued, null otherwise"
+    "The decrypted value of the JCR encrypted property as a String in case the property is single-valued and the current user holds the viewEncryptedValue permission on its node, null otherwise"
     decryptedValue: String
-    "The decrypted values of the JCR encrypted property as a Strings in case the property is multiple-valued, null otherwise"
+    "The decrypted values of the JCR encrypted property as Strings in case the property is multiple-valued and the current user holds the viewEncryptedValue permission on its node, an empty list otherwise"
     decryptedValues: [String]
     "Returns the property definition that applies to this property."
     definition: JCRPropertyDefinition
