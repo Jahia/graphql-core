@@ -304,12 +304,10 @@ public class GqlJcrProperty {
      * The permission is evaluated on the repository root, and not on the node of the property: one key decrypts
      * every value, so a grant on a single node would reach any encrypted value its holder can copy there. The root
      * is read in the default workspace, where a role on the root is granted: that grant is not published to live.
+     * The session is the one of the current user, because the node may have been read through another session.
      */
     private boolean canViewEncryptedValue() throws RepositoryException {
-        JCRSessionWrapper session = node.getNode().getSession();
-        if (!Constants.EDIT_WORKSPACE.equals(session.getWorkspace().getName())) {
-            session = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
-        }
+        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
         return session.getRootNode().hasPermission(PermissionHelper.VIEW_ENCRYPTED_VALUE);
     }
 

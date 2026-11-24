@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,17 +18,24 @@ import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
+import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRValueWrapper;
-import org.jahia.services.content.JCRWorkspaceWrapper;
 import org.jahia.utils.EncryptionUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 /**
  * Covers the two fields that read a decrypted value: which session receives one, and on which node the
  * permission behind it is evaluated.
  */
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(JCRSessionFactory.class)
+@PowerMockIgnore({"com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "org.w3c.*", "com.sun.org.apache.xalan.*", "javax.crypto.*"})
 public class GqlJcrPropertyTest {
 
     private static final String PLAINTEXT = "the-value-of-a-password-property";
@@ -39,14 +47,14 @@ public class GqlJcrPropertyTest {
     @Before
     public void createNode() throws RepositoryException {
         rootNode = mock(JCRNodeWrapper.class);
-        JCRWorkspaceWrapper workspace = mock(JCRWorkspaceWrapper.class);
-        when(workspace.getName()).thenReturn(Constants.EDIT_WORKSPACE);
         JCRSessionWrapper session = mock(JCRSessionWrapper.class);
-        when(session.getWorkspace()).thenReturn(workspace);
         when(session.getRootNode()).thenReturn(rootNode);
+        JCRSessionFactory factory = mock(JCRSessionFactory.class);
+        when(factory.getCurrentUserSession(Constants.EDIT_WORKSPACE)).thenReturn(session);
+        mockStatic(JCRSessionFactory.class);
+        when(JCRSessionFactory.getInstance()).thenReturn(factory);
         jcrNode = mock(JCRNodeWrapper.class);
         when(jcrNode.getPrimaryNodeTypeName()).thenReturn("jnt:content");
-        when(jcrNode.getSession()).thenReturn(session);
         node = new GqlJcrNodeImpl(jcrNode);
     }
 
@@ -94,6 +102,22 @@ public class GqlJcrPropertyTest {
 
         assertNull(new GqlJcrProperty(singleValued(), node).getDecryptedValue());
         verify(jcrNode, never()).hasPermission(PermissionHelper.VIEW_ENCRYPTED_VALUE);
+    }
+
+    /**
+     * A module may return a node that it read through a system session: the permission of that session does not
+     * count, only the permission of the current user does.
+     */
+    @Test
+    public void theSessionThatLoadedTheNodeDoesNotGrantTheDecryptedValue() throws RepositoryException {
+        JCRNodeWrapper systemRoot = mock(JCRNodeWrapper.class);
+        when(systemRoot.hasPermission(PermissionHelper.VIEW_ENCRYPTED_VALUE)).thenReturn(true);
+        JCRSessionWrapper systemSession = mock(JCRSessionWrapper.class);
+        when(systemSession.getRootNode()).thenReturn(systemRoot);
+        when(jcrNode.getSession()).thenReturn(systemSession);
+        allow(false);
+
+        assertNull(new GqlJcrProperty(singleValued(), node).getDecryptedValue());
     }
 
     @Test
