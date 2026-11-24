@@ -1,5 +1,4 @@
 import org.jahia.services.content.JCRCallback
-import org.jahia.services.content.JCRPropertyWrapper
 import org.jahia.services.content.JCRSessionWrapper
 import org.jahia.services.content.JCRTemplate
 
@@ -26,14 +25,6 @@ def grantViewEncryptedValue() {
             "/roles/system-administrator/root-access"
     ]
 
-    def addValue = { JCRPropertyWrapper property, String value ->
-        if (property.getValues().find { it.getString() == value }) {
-            return false
-        }
-        property.addValue(value)
-        return true
-    }
-
     JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback<Integer>() {
         Integer doInJCR(JCRSessionWrapper session) throws RepositoryException {
             def granted = []
@@ -43,12 +34,9 @@ def grantViewEncryptedValue() {
                     return
                 }
                 def role = session.getNode(path)
-                if (role.hasProperty("j:permissionNames")) {
-                    if (addValue(role.getProperty("j:permissionNames"), permission)) {
-                        granted.add(path)
-                    }
-                } else {
-                    role.setProperty("j:permissionNames", [permission] as String[])
+                def names = role.hasProperty("j:permissionNames") ? role.getProperty("j:permissionNames").getValues()*.getString() : []
+                if (!names.contains(permission)) {
+                    role.setProperty("j:permissionNames", (names + permission) as String[])
                     granted.add(path)
                 }
             }
