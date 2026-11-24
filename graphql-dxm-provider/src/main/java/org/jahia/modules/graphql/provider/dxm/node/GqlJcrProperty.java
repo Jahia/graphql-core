@@ -21,6 +21,7 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.api.Constants;
 import org.jahia.bin.Render;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.render.RenderRequestAttributeInput;
@@ -30,6 +31,7 @@ import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -300,10 +302,15 @@ public class GqlJcrProperty {
 
     /**
      * The permission is evaluated on the repository root, and not on the node of the property: one key decrypts
-     * every value, so a grant on a single node would reach any encrypted value its holder can copy there.
+     * every value, so a grant on a single node would reach any encrypted value its holder can copy there. The root
+     * is read in the default workspace, where a role on the root is granted: that grant is not published to live.
      */
     private boolean canViewEncryptedValue() throws RepositoryException {
-        return node.getNode().getSession().getRootNode().hasPermission(PermissionHelper.VIEW_ENCRYPTED_VALUE);
+        JCRSessionWrapper session = node.getNode().getSession();
+        if (!Constants.EDIT_WORKSPACE.equals(session.getWorkspace().getName())) {
+            session = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
+        }
+        return session.getRootNode().hasPermission(PermissionHelper.VIEW_ENCRYPTED_VALUE);
     }
 
     /**

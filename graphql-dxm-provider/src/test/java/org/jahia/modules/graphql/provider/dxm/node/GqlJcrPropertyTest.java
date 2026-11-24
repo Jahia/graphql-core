@@ -13,11 +13,13 @@ import java.util.List;
 
 import javax.jcr.RepositoryException;
 
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRValueWrapper;
+import org.jahia.services.content.JCRWorkspaceWrapper;
 import org.jahia.utils.EncryptionUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,7 +39,10 @@ public class GqlJcrPropertyTest {
     @Before
     public void createNode() throws RepositoryException {
         rootNode = mock(JCRNodeWrapper.class);
+        JCRWorkspaceWrapper workspace = mock(JCRWorkspaceWrapper.class);
+        when(workspace.getName()).thenReturn(Constants.EDIT_WORKSPACE);
         JCRSessionWrapper session = mock(JCRSessionWrapper.class);
+        when(session.getWorkspace()).thenReturn(workspace);
         when(session.getRootNode()).thenReturn(rootNode);
         jcrNode = mock(JCRNodeWrapper.class);
         when(jcrNode.getPrimaryNodeTypeName()).thenReturn("jnt:content");
@@ -89,6 +94,32 @@ public class GqlJcrPropertyTest {
 
         assertNull(new GqlJcrProperty(singleValued(), node).getDecryptedValue());
         verify(jcrNode, never()).hasPermission(PermissionHelper.VIEW_ENCRYPTED_VALUE);
+    }
+
+    @Test
+    public void aValueThatDoesNotDecryptReadsAsNull() throws RepositoryException {
+        allow(true);
+        JCRValueWrapper value = mock(JCRValueWrapper.class);
+        when(value.getString()).thenReturn("not an encrypted value");
+        JCRPropertyWrapper property = mock(JCRPropertyWrapper.class);
+        when(property.isMultiple()).thenReturn(false);
+        when(property.getValue()).thenReturn(value);
+
+        assertNull(new GqlJcrProperty(property, node).getDecryptedValue());
+    }
+
+    @Test
+    public void aValueThatDoesNotDecryptEmptiesTheValues() throws RepositoryException {
+        allow(true);
+        JCRValueWrapper decrypts = encrypted();
+        JCRValueWrapper value = mock(JCRValueWrapper.class);
+        when(value.getString()).thenReturn("not an encrypted value");
+        JCRValueWrapper[] values = new JCRValueWrapper[] { decrypts, value };
+        JCRPropertyWrapper property = mock(JCRPropertyWrapper.class);
+        when(property.isMultiple()).thenReturn(true);
+        when(property.getValues()).thenReturn(values);
+
+        assertTrue(new GqlJcrProperty(property, node).getDecryptedValues().isEmpty());
     }
 
     private void allow(boolean allowed) {

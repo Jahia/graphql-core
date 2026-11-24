@@ -1,5 +1,5 @@
 import gql from 'graphql-tag';
-import {addNode, createSite, createUser, deleteSite, deleteUser, grantRoles} from '@jahia/cypress';
+import {addNode, createSite, createUser, deleteSite, deleteUser, grantRoles, publishAndWaitJobEnding} from '@jahia/cypress';
 
 const SITE_NAME = 'decryptedValueSite';
 const SITE_PATH = `/sites/${SITE_NAME}`;
@@ -7,6 +7,7 @@ const TEST_NODE = 'decryptedValueTestList';
 const TEST_NODE_PATH = `${SITE_PATH}/contents/${TEST_NODE}`;
 const TEST_ROLE = 'decryptedValueTestRole';
 const PLAIN_VALUE = 'decrypted value test';
+const PLAIN_VALUES = ['first decrypted value', 'second decrypted value'];
 
 type TestUser = {username: string, password: string};
 const user = (username: string): TestUser => ({username, password: `${username}Pwd1!`});
@@ -19,16 +20,24 @@ const SERVER_ADMIN = user('decryptServerAdmin');
 const SYSTEM_ADMIN = user('decryptSystemAdmin');
 const USERS = [EDITOR, SITE_ADMIN, NODE_GRANT, ROOT_GRANT, SERVER_ADMIN, SYSTEM_ADMIN];
 
-const readTitle = gql`
+type Workspace = 'EDIT' | 'LIVE';
+type Decrypted = {value: string, values: string[]};
+
+// Reads the single-valued jcr:title and the multi-valued j:keywords, both stored encrypted
+const readFields = (workspace: Workspace) => gql`
     query {
         currentUser {
             name
         }
-        jcr {
+        jcr(workspace: ${workspace}) {
             nodeByPath(path: "${TEST_NODE_PATH}") {
-                property(name: "jcr:title", language: "en") {
+                title: property(name: "jcr:title", language: "en") {
                     value
                     decryptedValue
+                }
+                keywords: property(name: "j:keywords") {
+                    values
+                    decryptedValues
                 }
             }
         }
@@ -55,14 +64,24 @@ const removeLeftover = (path: string) => cy.apolloClient().apollo({
     errorPolicy: 'all'
 });
 
-// Reads the title as the given user, and checks that the query ran as that user
-const readTitleAs = (testUser: TestUser) => cy.apolloClient(testUser).apollo({query: readTitle}).then(result => {
+// Reads both fields as the given user in the given workspace, and checks that the query ran as that user
+const readAs = (testUser: TestUser, workspace: Workspace) => cy.apolloClient(testUser).apollo({query: readFields(workspace)}).then(result => {
     expect(result.graphQLErrors, JSON.stringify(result.graphQLErrors)).to.be.undefined;
     expect(result.data.currentUser.name).to.equal(testUser.username);
-    const property = result.data.jcr.nodeByPath.property;
-    expect(property.value, 'the user reads the node').to.not.be.null;
-    return property.decryptedValue;
+    const node = result.data.jcr.nodeByPath;
+    expect(node.title.value, 'the user reads the node').to.not.be.null;
+    return {value: node.title.decryptedValue, values: node.keywords.decryptedValues} as Decrypted;
 });
+
+const expectNothing = (decrypted: Decrypted) => {
+    expect(decrypted.value).to.be.null;
+    expect(decrypted.values).to.be.empty;
+};
+
+const expectPlain = (decrypted: Decrypted) => {
+    expect(decrypted.value).to.equal(PLAIN_VALUE);
+    expect(decrypted.values).to.deep.equal(PLAIN_VALUES);
+};
 
 describe('Read the decrypted value of an encrypted property', () => {
     before('create an encrypted property, a role and the users', () => {
@@ -77,8 +96,12 @@ describe('Read the decrypted value of an encrypted property', () => {
                 mutation {
                     jcr {
                         mutateNode(pathOrId: "${TEST_NODE_PATH}") {
-                            mutateProperty(name: "jcr:title") {
+                            addMixins(mixins: ["jmix:keywords"])
+                            title: mutateProperty(name: "jcr:title") {
                                 setValue(language: "en", value: "${PLAIN_VALUE}", option: ENCRYPTED)
+                            }
+                            keywords: mutateProperty(name: "j:keywords") {
+                                setValues(values: ${JSON.stringify(PLAIN_VALUES)}, option: ENCRYPTED)
                             }
                         }
                     }
@@ -111,6 +134,7 @@ describe('Read the decrypted value of an encrypted property', () => {
         grantRoles('/', [TEST_ROLE], ROOT_GRANT.username, 'USER');
         grantRoles('/', ['server-administrator'], SERVER_ADMIN.username, 'USER');
         grantRoles('/', ['system-administrator'], SYSTEM_ADMIN.username, 'USER');
+        publishAndWaitJobEnding(SITE_PATH);
     });
 
     after('remove the test data', () => {
@@ -119,41 +143,48 @@ describe('Read the decrypted value of an encrypted property', () => {
         removeLeftover(`/roles/${TEST_ROLE}`);
     });
 
-    it('stores the value encrypted', () => {
-        cy.apolloClient().apollo({query: readTitle}).should(result => {
-            const property = result.data.jcr.nodeByPath.property;
-            expect(property.value).to.not.equal(PLAIN_VALUE);
+    it('stores the values encrypted', () => {
+        cy.apolloClient().apollo({query: readFields('EDIT')}).should(result => {
+            const node = result.data.jcr.nodeByPath;
+            expect(node.title.value).to.not.equal(PLAIN_VALUE);
+            expect(node.keywords.values).to.not.include(PLAIN_VALUES[0]);
         });
     });
 
-    it('returns the decrypted value to root', () => {
-        cy.apolloClient().apollo({query: readTitle}).should(result => {
-            expect(result.data.jcr.nodeByPath.property.decryptedValue).to.equal(PLAIN_VALUE);
+    it('returns the decrypted values to root', () => {
+        cy.apolloClient().apollo({query: readFields('EDIT')}).should(result => {
+            const node = result.data.jcr.nodeByPath;
+            expect(node.title.decryptedValue).to.equal(PLAIN_VALUE);
+            expect(node.keywords.decryptedValues).to.deep.equal(PLAIN_VALUES);
         });
     });
 
-    it('returns null to an editor of the site', () => {
-        readTitleAs(EDITOR).should('be.null');
-    });
+    (['EDIT', 'LIVE'] as Workspace[]).forEach(workspace => {
+        describe(`in the ${workspace} workspace`, () => {
+            it('returns nothing to an editor of the site', () => {
+                readAs(EDITOR, workspace).then(expectNothing);
+            });
 
-    it('returns null to an administrator of the site', () => {
-        readTitleAs(SITE_ADMIN).should('be.null');
-    });
+            it('returns nothing to an administrator of the site', () => {
+                readAs(SITE_ADMIN, workspace).then(expectNothing);
+            });
 
-    it('returns null to a user granted the permission on the node only', () => {
-        readTitleAs(NODE_GRANT).should('be.null');
-    });
+            it('returns nothing to a user granted the permission on the node only', () => {
+                readAs(NODE_GRANT, workspace).then(expectNothing);
+            });
 
-    it('returns the decrypted value to a user granted the permission on the repository root', () => {
-        readTitleAs(ROOT_GRANT).should('equal', PLAIN_VALUE);
-    });
+            it('returns the decrypted values to a user granted the permission on the repository root', () => {
+                readAs(ROOT_GRANT, workspace).then(expectPlain);
+            });
 
-    it('returns the decrypted value to a server administrator', () => {
-        readTitleAs(SERVER_ADMIN).should('equal', PLAIN_VALUE);
-    });
+            it('returns the decrypted values to a server administrator', () => {
+                readAs(SERVER_ADMIN, workspace).then(expectPlain);
+            });
 
-    it('returns the decrypted value to a system administrator', () => {
-        readTitleAs(SYSTEM_ADMIN).should('equal', PLAIN_VALUE);
+            it('returns the decrypted values to a system administrator', () => {
+                readAs(SYSTEM_ADMIN, workspace).then(expectPlain);
+            });
+        });
     });
 
     ['/roles/server-administrator', '/roles/system-administrator', '/roles/system-administrator/root-access'].forEach(rolePath => {
