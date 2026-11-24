@@ -198,24 +198,9 @@ public final class JcrVersionSessions {
 
     private String open(int rootFieldCount, Object workspace, Object versionAt, Object versionOperation,
                         HttpServletRequest request) {
-        if (rootFieldCount != 1) {
-            return "A query that reads a version selects the jcr field alone at its root";
-        }
-        if (versionAt != null && versionOperation != null) {
-            return "A query reads a version with versionAt or with versionOperation, not with both";
-        }
-        if (workspace != null && NodeQueryExtensions.Workspace.fromName(workspace.toString()) != NodeQueryExtensions.Workspace.EDIT) {
-            return "A query reads a version in the EDIT workspace only";
-        }
-        if (api == null) {
-            return "Reading a version needs Jahia 8.2.4 or later";
-        }
-        if (request == null) {
-            return "Reading a version needs an HTTP request";
-        }
-        JahiaUser user = api.getCurrentUser();
-        if (JahiaUserManagerService.isGuest(user)) {
-            return "A guest cannot read a version";
+        String refusal = refusalOfRequest(rootFieldCount, workspace, versionAt, versionOperation, request);
+        if (refusal != null) {
+            return refusal;
         }
         Object selector;
         if (versionAt != null) {
@@ -247,6 +232,30 @@ public final class JcrVersionSessions {
         }
         request.setAttribute(REQUEST_ATTRIBUTE, Boolean.TRUE);
         carriedVersion.set(selector);
+        return null;
+    }
+
+    private String refusalOfRequest(int rootFieldCount, Object workspace, Object versionAt, Object versionOperation,
+                                    HttpServletRequest request) {
+        if (rootFieldCount != 1) {
+            return "A query that reads a version selects the jcr field alone at its root";
+        }
+        if (versionAt != null && versionOperation != null) {
+            return "A query reads a version with versionAt or with versionOperation, not with both";
+        }
+        if (workspace != null && NodeQueryExtensions.Workspace.fromName(workspace.toString()) != NodeQueryExtensions.Workspace.EDIT) {
+            return "A query reads a version in the EDIT workspace only";
+        }
+        if (api == null) {
+            return "Reading a version needs Jahia 8.2.4 or later";
+        }
+        if (request == null) {
+            return "Reading a version needs an HTTP request";
+        }
+        JahiaUser user = api.getCurrentUser();
+        if (JahiaUserManagerService.isGuest(user)) {
+            return "A guest cannot read a version";
+        }
         return null;
     }
 

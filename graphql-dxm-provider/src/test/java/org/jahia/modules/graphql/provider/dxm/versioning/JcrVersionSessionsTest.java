@@ -7,6 +7,7 @@ import graphql.language.Document;
 import graphql.language.FragmentDefinition;
 import graphql.language.OperationDefinition;
 import graphql.parser.Parser;
+import graphql.parser.ParserEnvironment;
 import graphql.parser.ParserOptions;
 import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -336,7 +337,8 @@ public class JcrVersionSessionsTest {
     }
 
     private void begin(String query, Map<String, Object> variables) {
-        Document document = new Parser().parseDocument(query, ParserOptions.newParserOptions().maxTokens(100000).build());
+        Document document = Parser.parse(ParserEnvironment.newParserEnvironment().document(query)
+                .parserOptions(ParserOptions.newParserOptions().maxTokens(100000).build()).build());
         OperationDefinition operation = null;
         Map<String, FragmentDefinition> fragments = new HashMap<>();
         for (Definition<?> definition : document.getDefinitions()) {

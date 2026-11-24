@@ -121,10 +121,7 @@ public class RenderNodeExtensions {
                                            @GraphQLName("mainResourcePath") @GraphQLDescription("Main resource path") String mainResourcePath,
                                            @GraphQLName("isEditMode") @GraphQLDescription("Is edit mode") Boolean isEditMode,
                                            @GraphQLName("requestAttributes") @GraphQLDescription("Additional request attributes to be included in request. Array of name value pairs: [{name:\"templateSet\", value:\"true\"}]") Collection<RenderRequestAttributeInput> requestAttributes, DataFetchingEnvironment environment) {
-        // An edit from the controls of an edit-mode render writes the current content, so a version renders without them.
-        if (Boolean.TRUE.equals(isEditMode) && isInVersionSession()) {
-            throw new GqlJcrWrongInputException("A version renders without edit mode");
-        }
+        refuseEditModeInVersion(isEditMode);
         try {
             RenderService renderService = (RenderService) SpringContextSingleton.getBean("RenderService");
 
@@ -213,6 +210,13 @@ public class RenderNodeExtensions {
             return new RenderedNode(res, renderContext);
         } catch (Exception e) {
             throw new DataFetchingException(e);
+        }
+    }
+
+    private void refuseEditModeInVersion(Boolean isEditMode) {
+        // An edit from the controls of an edit-mode render writes the current content, so a version renders without them.
+        if (Boolean.TRUE.equals(isEditMode) && isInVersionSession()) {
+            throw new GqlJcrWrongInputException("A version renders without edit mode");
         }
     }
 
