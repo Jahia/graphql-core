@@ -19,6 +19,7 @@ import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.kickstart.execution.config.InstrumentationProvider;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
+import org.jahia.modules.graphql.provider.dxm.versioning.VersionSessionInstrumentation;
 import org.jahia.modules.graphql.provider.dxm.config.GraphQLLimits;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
 import org.osgi.service.component.annotations.*;

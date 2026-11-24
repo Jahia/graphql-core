@@ -26,6 +26,7 @@ import graphql.schema.DataFetchingEnvironment;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.versioning.JcrVersionSessions;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 
 import java.util.function.Supplier;
@@ -104,9 +105,9 @@ public class NodeQueryExtensions {
     public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; "
             + "either EDIT, LIVE, or null to use EDIT by default") @GraphQLDefaultValue(value = Workspace.DefaultWorkspaceSupplier.class) Workspace workspace,
                                      @GraphQLName(JcrVersionSessions.VERSION_AT) @GraphQLDescription("Reads the EDIT workspace as it was at this date, "
-            + "in milliseconds since the epoch. Each node shows its last version at or before this date, and a node with no version shows live. "
-            + "The content-versioning module and Jahia 8.2.4 supply the versions. The query is read-only, it selects the jcr field alone, "
-            + "and it is the only operation of its request.") Long versionAt,
+            + "in milliseconds since the epoch. Each node shows its last version at or before this date, and a node with no version "
+            + "shows its current content in the EDIT workspace. The content-versioning module and Jahia 8.2.4 supply the versions. "
+            + "The query is read-only, it selects the jcr field alone, and no other operation follows it in its request.") Long versionAt,
                                      @GraphQLName(JcrVersionSessions.VERSION_OPERATION) @GraphQLDescription("Reads the EDIT workspace as one operation "
             + "of the content-versioning module left it, by the UUID of the operation. An operation that no version you can read carries "
             + "fails the query. The rules of versionAt apply, and the two arguments exclude each other.") String versionOperation,

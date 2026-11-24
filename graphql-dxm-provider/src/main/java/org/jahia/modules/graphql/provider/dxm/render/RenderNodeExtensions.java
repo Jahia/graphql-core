@@ -21,7 +21,7 @@ import org.jahia.bin.Render;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
-import org.jahia.modules.graphql.provider.dxm.node.JcrVersionSessions;
+import org.jahia.modules.graphql.provider.dxm.versioning.JcrVersionSessions;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;

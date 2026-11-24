@@ -29,6 +29,7 @@ import graphql.schema.*;
 import org.jahia.bin.filters.jcr.JcrSessionFilter;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.node.*;
+import org.jahia.modules.graphql.provider.dxm.versioning.JcrVersionSessions;
 import org.jahia.modules.graphql.provider.dxm.relay.DXConnection;
 import org.jahia.modules.graphql.provider.dxm.relay.DXRelay;
 import org.jahia.modules.graphql.provider.dxm.sdl.SDLConstants;
@@ -194,13 +195,16 @@ public class DXGraphQLProvider implements
             pool.execute(() -> {
                 JCRSessionFactory.getInstance().setCurrentUser(user);
                 permissionService.setCurrentScopes(scopes);
-                JcrVersionSessions.getInstance().resumeVersion(version);
                 try {
+                    JcrVersionSessions.getInstance().resumeVersion(version);
                     command.run();
                 } finally {
-                    JcrVersionSessions.getInstance().resumeVersion(null);
-                    JcrSessionFilter.endRequest();
-                    permissionService.resetScopes();
+                    try {
+                        JcrSessionFilter.endRequest();
+                        permissionService.resetScopes();
+                    } finally {
+                        JcrVersionSessions.getInstance().resumeVersion(null);
+                    }
                 }
             });
         };

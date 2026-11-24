@@ -1,4 +1,4 @@
-package org.jahia.modules.graphql.provider.dxm.node;
+package org.jahia.modules.graphql.provider.dxm.versioning;
 
 import graphql.GraphQLContext;
 import graphql.execution.AbortExecutionException;
@@ -7,22 +7,21 @@ import graphql.language.Document;
 import graphql.language.FragmentDefinition;
 import graphql.language.OperationDefinition;
 import graphql.parser.Parser;
+import graphql.parser.ParserOptions;
+import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
 import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.JCRWorkspaceWrapper;
 import org.jahia.services.usermanager.JahiaUser;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.jcr.RepositoryException;
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -92,6 +91,23 @@ public class JcrVersionSessionsTest {
     }
 
     @Test
+    public void versionAtReadsAStringLiteral() {
+        // The Long scalar of the schema accepts a string literal.
+        begin("{ jcr(versionAt: \"1000\") { workspace } }", Collections.emptyMap());
+
+        assertTrue(versionSessions.isOpened(context));
+        assertEquals("at:" + Instant.ofEpochMilli(1000L), api.selector);
+    }
+
+    @Test
+    public void versionAtThatIsNotANumberFails() {
+        begin("{ jcr(versionAt: \"yesterday\") { workspace } }", Collections.emptyMap());
+
+        assertRefused("versionAt is not a date in milliseconds since the epoch: yesterday");
+        assertNull(api.selector);
+    }
+
+    @Test
     public void nullVersionAtOpensNoVersion() {
         begin("query Q($at: Long) { jcr(versionAt: $at) { workspace } other }", Collections.singletonMap("at", null));
 
@@ -110,7 +126,7 @@ public class JcrVersionSessionsTest {
     }
 
     @Test
-    public void unknownOperationFailsAndClearsTheVersion() {
+    public void unknownOperationFailsClearsTheVersionAndLetsTheNextOperationRun() {
         api.canShow = false;
 
         begin("{ jcr(versionOperation: \"" + OPERATION_ID + "\") { workspace } }", Collections.emptyMap());
@@ -118,6 +134,11 @@ public class JcrVersionSessionsTest {
         assertRefused("No version that you can read carries the operation " + OPERATION_ID);
         assertNull(api.selector);
         assertNull(versionSessions.currentVersion());
+
+        context = GraphQLContext.newContext().build();
+        begin("{ jcr { workspace } }", Collections.emptyMap());
+
+        versionSessions.checkOperation(context);
     }
 
     @Test
@@ -173,6 +194,20 @@ public class JcrVersionSessionsTest {
         assertTrue(versionSessions.isOpened(context));
     }
 
+    @Test(timeout = 5000)
+    public void aNestOfFragmentSpreadsIsReadOnce() {
+        // Each fragment spreads the next one twice, so an expansion of every spread would make 2^40 calls.
+        StringBuilder document = new StringBuilder("query { jcr(versionAt: 1) { workspace } ...F0 }");
+        for (int i = 0; i < 40; i++) {
+            document.append(" fragment F").append(i).append(" on Query { ...F").append(i + 1).append(" ...F").append(i + 1).append(" }");
+        }
+        document.append(" fragment F40 on Query { __typename }");
+
+        begin(document.toString(), Collections.emptyMap());
+
+        assertRefused("A query that reads a version selects the jcr field alone at its root");
+    }
+
     @Test
     public void jahiaWithoutVersionSessionsFails() {
         versionSessions = new JcrVersionSessions(null);
@@ -212,37 +247,6 @@ public class JcrVersionSessionsTest {
     }
 
     @Test
-    public void openEditSessionOfAFilterLetsTheVersionOpen() throws RepositoryException {
-        // The security filter opens this session before GraphQL runs, and core closes it when the version is set.
-        api.sessions.add(session("default", "editor", true, false));
-
-        begin("{ jcr(versionAt: 1) { workspace } }", Collections.emptyMap());
-
-        assertTrue(versionSessions.isOpened(context));
-    }
-
-    @Test
-    public void editSessionWithUnsavedChangesFails() throws RepositoryException {
-        api.sessions.add(session("default", "editor", true, true));
-
-        begin("{ jcr(versionAt: 1) { workspace } }", Collections.emptyMap());
-
-        assertRefused("This request has unsaved changes in the EDIT workspace, so it cannot read a version");
-        assertNull(api.selector);
-    }
-
-    @Test
-    public void unsavedChangesOutsideTheEditSessionsOfTheUserLetTheVersionOpen() throws RepositoryException {
-        api.sessions.add(session("live", "editor", true, true));
-        api.sessions.add(session("default", "editor", false, true));
-        api.sessions.add(session("default", "someone-else", true, true));
-
-        begin("{ jcr(versionAt: 1) { workspace } }", Collections.emptyMap());
-
-        assertTrue(versionSessions.isOpened(context));
-    }
-
-    @Test
     public void queryInsideARenderFails() {
         api.rendering = true;
 
@@ -250,6 +254,17 @@ public class JcrVersionSessionsTest {
 
         assertRefused("A query that runs inside a render cannot read a version");
         assertNull(api.selector);
+    }
+
+    @Test
+    public void aFailureOfCoreRefusesTheVersionAndClearsIt() {
+        api.failOnCheck = true;
+
+        begin("{ jcr(versionOperation: \"" + OPERATION_ID + "\") { workspace } }", Collections.emptyMap());
+
+        assertRefused("The version of this query could not open");
+        assertNull(api.selector);
+        assertNull(versionSessions.currentVersion());
     }
 
     @Test
@@ -278,6 +293,17 @@ public class JcrVersionSessionsTest {
     }
 
     @Test
+    public void aVersionThatTheEndOfTheRequestClearedIsNotCarried() {
+        begin("{ jcr(versionAt: 1) { workspace } }", Collections.emptyMap());
+        assertEquals(api.selector, versionSessions.currentVersion());
+
+        // The end of the request clears the version in core, and no operation starts on the thread after it.
+        api.selector = null;
+
+        assertNull(versionSessions.currentVersion());
+    }
+
+    @Test
     public void mutationOpensNoVersion() {
         begin("mutation { jcr(versionAt: 1) { workspace } }", Collections.emptyMap());
 
@@ -298,8 +324,19 @@ public class JcrVersionSessionsTest {
         assertNull(versionSessions.currentVersion());
     }
 
+    @Test
+    public void isVersionSessionAsksCore() {
+        JCRSessionWrapper versionSession = mock(JCRSessionWrapper.class);
+        JCRSessionWrapper plainSession = mock(JCRSessionWrapper.class);
+        api.versionSessions.add(versionSession);
+
+        assertTrue(versionSessions.isVersionSession(versionSession));
+        assertFalse(versionSessions.isVersionSession(plainSession));
+        assertFalse(new JcrVersionSessions(null).isVersionSession(versionSession));
+    }
+
     private void begin(String query, Map<String, Object> variables) {
-        Document document = new Parser().parseDocument(query);
+        Document document = new Parser().parseDocument(query, ParserOptions.newParserOptions().maxTokens(100000).build());
         OperationDefinition operation = null;
         Map<String, FragmentDefinition> fragments = new HashMap<>();
         for (Definition<?> definition : document.getDefinitions()) {
@@ -338,25 +375,13 @@ public class JcrVersionSessionsTest {
         return user;
     }
 
-    private static JCRSessionWrapper session(String workspace, String username, boolean live, boolean unsaved)
-            throws RepositoryException {
-        JCRWorkspaceWrapper workspaceWrapper = mock(JCRWorkspaceWrapper.class);
-        when(workspaceWrapper.getName()).thenReturn(workspace);
-        JCRSessionWrapper session = mock(JCRSessionWrapper.class);
-        when(session.getWorkspace()).thenReturn(workspaceWrapper);
-        when(session.isLive()).thenReturn(live);
-        when(session.hasPendingChanges()).thenReturn(unsaved);
-        JahiaUser user = user(username);
-        when(session.getUser()).thenReturn(user);
-        return session;
-    }
-
     /** A fake of the version sessions of core, which records the version of the thread. */
     private static final class FakeVersionApi implements JcrVersionSessions.VersionApi {
 
-        private final List<JCRSessionWrapper> sessions = new ArrayList<>();
+        private final Set<JCRSessionWrapper> versionSessions = new HashSet<>();
         private Object selector;
         private boolean canShow = true;
+        private boolean failOnCheck;
         private boolean requested;
         private boolean rendering;
         private int checks;
@@ -380,17 +405,21 @@ public class JcrVersionSessionsTest {
         @Override
         public boolean canShowVersion(Object selector) {
             checks++;
+            if (failOnCheck) {
+                throw new IllegalStateException("core failed");
+            }
             return canShow;
         }
 
         @Override
         public boolean isVersionSessionRequested() {
-            return requested;
+            // Another caller set a version, or this class did.
+            return requested || selector != null;
         }
 
         @Override
         public boolean isVersionSession(JCRSessionWrapper session) {
-            return false;
+            return versionSessions.contains(session);
         }
 
         @Override
@@ -401,11 +430,6 @@ public class JcrVersionSessionsTest {
         @Override
         public JahiaUser getCurrentUser() {
             return user;
-        }
-
-        @Override
-        public Collection<JCRSessionWrapper> getOpenUserSessions() {
-            return sessions;
         }
     }
 }

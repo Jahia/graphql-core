@@ -26,6 +26,7 @@ import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.LocaleUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
+import org.jahia.modules.graphql.provider.dxm.versioning.JcrVersionSessions;
 import org.jahia.modules.graphql.provider.dxm.GqlConstraintHandler;
 import org.jahia.modules.graphql.provider.dxm.JahiaDataFetchingExceptionHandler;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;

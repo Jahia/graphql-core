@@ -104,6 +104,10 @@ extends type Query {
  jcr(
    # The name of the workspace to fetch the node from; either 'edit', 'live', or null to use 'edit' by default
    workspace: Workspace
+   # Reads the EDIT workspace at this date, in milliseconds since the epoch (Jahia 8.2.4 and content-versioning)
+   versionAt: Long
+   # Reads the EDIT workspace as one operation of content-versioning left it, by the UUID of the operation
+   versionOperation: String
  ): JCRQuery
 }
 ```

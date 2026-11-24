@@ -1,4 +1,4 @@
-package org.jahia.modules.graphql.provider.dxm.node;
+package org.jahia.modules.graphql.provider.dxm.versioning;
 
 import graphql.GraphQLContext;
 import graphql.execution.AbortExecutionException;
@@ -15,7 +15,7 @@ import graphql.language.SelectionSet;
 import graphql.language.StringValue;
 import graphql.language.Value;
 import graphql.language.VariableReference;
-import org.jahia.api.Constants;
+import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.usermanager.JahiaUser;
@@ -23,16 +23,15 @@ import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.RepositoryException;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -42,27 +41,25 @@ import java.util.UUID;
  *
  * <p>Core sets the version of a session when the session opens, and every field of a request reads through the same
  * current user sessions. The version therefore applies to the whole operation, and it is set when the operation starts.
- * A filter of the request, such as the security filter, may have opened a {@code default} session before: core closes
- * it when the version is set, so that the next lookup opens a version session. Five rules follow:
+ * A filter of the request, such as the security filter, may have opened a {@code default} session before. Core moves
+ * that session aside when the version is set, and the next lookup opens a version session. Four rules follow:
  * <ul>
  * <li>The query selects the {@code jcr} field alone at its root.</li>
- * <li>A {@code default} session with unsaved changes refuses the version, because closing it would lose them.</li>
- * <li>A query that runs inside a render cannot read a version, because the render still reads the sessions that core
- * would close.</li>
- * <li>A request that opened a version runs no other operation after it, because core keeps a current user session open
- * until the end of the request.</li>
+ * <li>A query that runs inside a render cannot read a version, because the render still reads its own sessions.</li>
+ * <li>No other operation follows a version in its request, because core keeps the version sessions until the end of
+ * the request.</li>
  * <li>A field that runs on another thread, such as a field annotated {@code @GraphQLAsync}, gets the version through
  * {@link #currentVersion()} and {@link #resumeVersion(Object)}.</li>
  * </ul>
  *
- * <p>graphql-core builds against Jahia 8.2.0, so this class reaches the API of the version sessions by reflection, and
- * the bundle imports {@code org.jahia.api.versioning} as optional. On an older Jahia, a query that asks for a version
- * fails.
+ * <p>graphql-core builds against Jahia 8.2.0. This class therefore reaches the API of the version sessions by
+ * reflection, and the bundle imports {@code org.jahia.api.versioning} as optional. On an older Jahia, a query that asks
+ * for a version fails.
  */
 public final class JcrVersionSessions {
 
-    static final String VERSION_AT = "versionAt";
-    static final String VERSION_OPERATION = "versionOperation";
+    public static final String VERSION_AT = "versionAt";
+    public static final String VERSION_OPERATION = "versionOperation";
 
     private static final Logger logger = LoggerFactory.getLogger(JcrVersionSessions.class);
 
@@ -87,8 +84,8 @@ public final class JcrVersionSessions {
     }
 
     /**
-     * Opens the version sessions of an operation that asks for a version, when it starts and before any session opens.
-     * An operation that cannot read its version gets an error from {@link #checkOperation(GraphQLContext)}.
+     * Opens the version sessions of an operation that asks for a version, when it starts. An operation that cannot read
+     * its version gets an error from {@link #checkOperation(GraphQLContext)}.
      *
      * @param operation the operation that starts
      * @param fragments the fragments of the document, by name
@@ -107,13 +104,13 @@ public final class JcrVersionSessions {
             return;
         }
         List<Field> rootFields = new ArrayList<>();
-        collectFields(operation.getSelectionSet(), fragments, rootFields);
+        collectFields(operation.getSelectionSet(), fragments, new HashSet<>(), rootFields);
         for (Field field : rootFields) {
             if ("jcr".equals(field.getName())) {
                 Object versionAt = argument(field, VERSION_AT, variables);
                 Object versionOperation = argument(field, VERSION_OPERATION, variables);
                 if (versionAt != null || versionOperation != null) {
-                    String error = open(rootFields.size(), argument(field, "workspace", variables), versionAt,
+                    String error = openOrRefuse(rootFields.size(), argument(field, "workspace", variables), versionAt,
                             versionOperation, request);
                     if (error != null) {
                         context.put(ERROR_KEY, error);
@@ -144,7 +141,7 @@ public final class JcrVersionSessions {
      * @param context the GraphQL context of the operation
      * @return {@code true} when {@link #beginOperation} opened the version sessions of the operation
      */
-    boolean isOpened(GraphQLContext context) {
+    public boolean isOpened(GraphQLContext context) {
         return Boolean.TRUE.equals(context.get(OPENED_KEY));
     }
 
@@ -157,12 +154,14 @@ public final class JcrVersionSessions {
     }
 
     /**
-     * Returns the version that the operation on this thread reads, so that another thread can read it too.
+     * Returns the version that the operation on this thread reads, so that another thread can read it too. A version
+     * that the end of an earlier request cleared in core is not returned.
      *
      * @return the version, or {@code null} when the operation reads none
      */
     public Object currentVersion() {
-        return carriedVersion.get();
+        Object version = carriedVersion.get();
+        return version != null && api != null && api.isVersionSessionRequested() ? version : null;
     }
 
     /**
@@ -181,6 +180,18 @@ public final class JcrVersionSessions {
             carriedVersion.set(version);
         } else {
             carriedVersion.remove();
+        }
+    }
+
+    private String openOrRefuse(int rootFieldCount, Object workspace, Object versionAt, Object versionOperation,
+                                HttpServletRequest request) {
+        try {
+            return open(rootFieldCount, workspace, versionAt, versionOperation, request);
+        } catch (RuntimeException e) {
+            logger.warn("The version of a GraphQL query could not open", e);
+            api.setCurrentVersionSelector(null);
+            carriedVersion.remove();
+            return "The version of this query could not open";
         }
     }
 
@@ -207,7 +218,11 @@ public final class JcrVersionSessions {
         }
         Object selector;
         if (versionAt != null) {
-            selector = api.atInstant(Instant.ofEpochMilli(((Number) versionAt).longValue()));
+            Long epochMillis = toLong(versionAt);
+            if (epochMillis == null) {
+                return "versionAt is not a date in milliseconds since the epoch: " + versionAt;
+            }
+            selector = api.atInstant(Instant.ofEpochMilli(epochMillis));
         } else {
             try {
                 selector = api.atOperation(UUID.fromString(versionOperation.toString()));
@@ -218,50 +233,47 @@ public final class JcrVersionSessions {
         if (api.isVersionSessionRequested()) {
             return "This request already shows a version";
         }
-        // Core closes the sessions of the render, which still reads their nodes.
+        // Core moves aside the sessions of the render, which still reads their nodes as they were.
         if (api.isRendering()) {
             return "A query that runs inside a render cannot read a version";
         }
-        // Core closes each open session of the EDIT workspace, so that the next lookup opens a version session.
-        for (JCRSessionWrapper session : api.getOpenUserSessions()) {
-            if (session.isLive() && Constants.EDIT_WORKSPACE.equals(session.getWorkspace().getName())
-                    && user.getUsername().equals(session.getUser().getUsername())
-                    && !api.isVersionSession(session) && hasPendingChanges(session)) {
-                return "This request has unsaved changes in the EDIT workspace, so it cannot read a version";
-            }
-        }
         api.setCurrentVersionSelector(selector);
-        request.setAttribute(REQUEST_ATTRIBUTE, Boolean.TRUE);
-        carriedVersion.set(selector);
         // After the version sessions open, so that a session that the check opens is one of them.
-        // A date needs no check, because a node with no version at a date shows live by contract.
+        // A date needs no check, because a node with no version at a date shows its current content.
         if (versionOperation != null && !api.canShowVersion(selector)) {
             api.setCurrentVersionSelector(null);
-            carriedVersion.remove();
             return "No version that you can read carries the operation " + versionOperation;
         }
+        request.setAttribute(REQUEST_ATTRIBUTE, Boolean.TRUE);
+        carriedVersion.set(selector);
         return null;
     }
 
-    private static boolean hasPendingChanges(JCRSessionWrapper session) {
+    private static Long toLong(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
         try {
-            return session.hasPendingChanges();
-        } catch (RepositoryException e) {
-            // A session whose state cannot be read counts as changed, so that no change is lost.
-            return true;
+            // The Long scalar of the schema also accepts a string literal.
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 
-    private static void collectFields(SelectionSet selectionSet, Map<String, FragmentDefinition> fragments, List<Field> fields) {
+    private static void collectFields(SelectionSet selectionSet, Map<String, FragmentDefinition> fragments,
+                                      Set<String> spreadFragments, List<Field> fields) {
         for (Selection<?> selection : selectionSet.getSelections()) {
             if (selection instanceof Field) {
                 fields.add((Field) selection);
             } else if (selection instanceof InlineFragment) {
-                collectFields(((InlineFragment) selection).getSelectionSet(), fragments, fields);
+                collectFields(((InlineFragment) selection).getSelectionSet(), fragments, spreadFragments, fields);
             } else if (selection instanceof FragmentSpread) {
-                FragmentDefinition fragment = fragments.get(((FragmentSpread) selection).getName());
-                if (fragment != null) {
-                    collectFields(fragment.getSelectionSet(), fragments, fields);
+                // Each fragment counts once, as for graphql-java, so a nest of spreads stays linear.
+                String name = ((FragmentSpread) selection).getName();
+                FragmentDefinition fragment = fragments.get(name);
+                if (fragment != null && spreadFragments.add(name)) {
+                    collectFields(fragment.getSelectionSet(), fragments, spreadFragments, fields);
                 }
             }
         }
@@ -281,8 +293,7 @@ public final class JcrVersionSessions {
             return variables.get(((VariableReference) value).getName());
         }
         if (value instanceof IntValue) {
-            BigInteger number = ((IntValue) value).getValue();
-            return number.longValue();
+            return ((IntValue) value).getValue().longValue();
         }
         if (value instanceof StringValue) {
             return ((StringValue) value).getValue();
@@ -314,8 +325,6 @@ public final class JcrVersionSessions {
         boolean isRendering();
 
         JahiaUser getCurrentUser();
-
-        Collection<JCRSessionWrapper> getOpenUserSessions();
     }
 
     /**
@@ -392,11 +401,6 @@ public final class JcrVersionSessions {
         @Override
         public JahiaUser getCurrentUser() {
             return JCRSessionFactory.getInstance().getCurrentUser();
-        }
-
-        @Override
-        public Collection<JCRSessionWrapper> getOpenUserSessions() {
-            return JCRSessionFactory.getInstance().getAllOpenUserSessions();
         }
 
         private static Object invoke(Method method, Object target, Object... arguments) {
