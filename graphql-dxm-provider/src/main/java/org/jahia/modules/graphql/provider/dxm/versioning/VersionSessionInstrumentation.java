@@ -11,8 +11,8 @@ import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 
 /**
  * Opens the version sessions of a query that reads a version, through {@link JcrVersionSessions}. It runs before
- * {@link org.jahia.modules.graphql.provider.dxm.instrumentation.JCRInstrumentation}, whose introspection check opens the first session of the operation, and it aborts an
- * operation that cannot read its version.
+ * {@link org.jahia.modules.graphql.provider.dxm.instrumentation.JCRInstrumentation}, whose introspection check opens
+ * the first session of the operation. It aborts an operation that cannot read its version.
  */
 public class VersionSessionInstrumentation extends SimplePerformantInstrumentation {
 

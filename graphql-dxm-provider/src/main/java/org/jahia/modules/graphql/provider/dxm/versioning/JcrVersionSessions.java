@@ -45,9 +45,10 @@ import java.util.UUID;
  * that session aside when the version is set, and the next lookup opens a version session. Four rules follow:
  * <ul>
  * <li>The query selects the {@code jcr} field alone at its root.</li>
- * <li>A query that runs inside a render cannot read a version, because the render still reads its own sessions.</li>
- * <li>No other operation follows a version in its request, because core keeps the version sessions until the end of
- * the request.</li>
+ * <li>A query that runs inside a render cannot read a version, because the rest of the render would mix its current
+ * nodes with the nodes of the version.</li>
+ * <li>No other operation follows a version in its request, because the version stays set, and its sessions stay
+ * open, until the end of the request.</li>
  * <li>A field that runs on another thread, such as a field annotated {@code @GraphQLAsync}, gets the version through
  * {@link #currentVersion()} and {@link #resumeVersion(Object)}.</li>
  * </ul>
@@ -233,7 +234,7 @@ public final class JcrVersionSessions {
         if (api.isVersionSessionRequested()) {
             return "This request already shows a version";
         }
-        // Core moves aside the sessions of the render, which still reads their nodes as they were.
+        // The render keeps its current nodes, while its later lookups would read the version.
         if (api.isRendering()) {
             return "A query that runs inside a render cannot read a version";
         }

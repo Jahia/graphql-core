@@ -26,8 +26,8 @@ import graphql.schema.DataFetchingEnvironment;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.versioning.JcrVersionSessions;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
+import org.jahia.modules.graphql.provider.dxm.versioning.JcrVersionSessions;
 
 import java.util.function.Supplier;
 

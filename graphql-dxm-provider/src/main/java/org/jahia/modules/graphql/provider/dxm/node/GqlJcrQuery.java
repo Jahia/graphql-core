@@ -26,7 +26,6 @@ import graphql.schema.DataFetchingEnvironment;
 import org.apache.commons.lang.LocaleUtils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
-import org.jahia.modules.graphql.provider.dxm.versioning.JcrVersionSessions;
 import org.jahia.modules.graphql.provider.dxm.GqlConstraintHandler;
 import org.jahia.modules.graphql.provider.dxm.JahiaDataFetchingExceptionHandler;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldFiltersInput;
@@ -34,6 +33,7 @@ import org.jahia.modules.graphql.provider.dxm.predicate.FieldGroupingInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.versioning.JcrVersionSessions;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -325,7 +325,7 @@ public class GqlJcrQuery {
     }
 
     private JCRSessionWrapper checkVersion(JCRSessionWrapper session) {
-        // A plain session here would show live content as the version.
+        // A plain session here would show the current content of the EDIT workspace as the version.
         if (version && !JcrVersionSessions.getInstance().isVersionSession(session)) {
             throw new DataFetchingException("The session of this query does not show the version that the query asks for");
         }
