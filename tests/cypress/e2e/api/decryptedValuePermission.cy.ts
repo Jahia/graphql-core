@@ -1,15 +1,29 @@
 import gql from 'graphql-tag';
-import {addNode, createUser, deleteNode, deleteUser, grantRoles} from '@jahia/cypress';
+import {addNode, createSite, createUser, deleteSite, deleteUser, grantRoles} from '@jahia/cypress';
 
+const SITE_NAME = 'decryptedValueSite';
+const SITE_PATH = `/sites/${SITE_NAME}`;
 const TEST_NODE = 'decryptedValueTestList';
-const TEST_NODE_PATH = `/${TEST_NODE}`;
+const TEST_NODE_PATH = `${SITE_PATH}/contents/${TEST_NODE}`;
 const TEST_ROLE = 'decryptedValueTestRole';
 const PLAIN_VALUE = 'decrypted value test';
-const NO_PERM_USER = {username: 'decryptNoPermUser', password: 'decryptNoPermPwd1!'};
-const PERM_USER = {username: 'decryptPermUser', password: 'decryptPermPwd1!'};
+
+type TestUser = {username: string, password: string};
+const user = (username: string): TestUser => ({username, password: `${username}Pwd1!`});
+
+const EDITOR = user('decryptEditor');
+const SITE_ADMIN = user('decryptSiteAdmin');
+const NODE_GRANT = user('decryptNodeGrant');
+const ROOT_GRANT = user('decryptRootGrant');
+const SERVER_ADMIN = user('decryptServerAdmin');
+const SYSTEM_ADMIN = user('decryptSystemAdmin');
+const USERS = [EDITOR, SITE_ADMIN, NODE_GRANT, ROOT_GRANT, SERVER_ADMIN, SYSTEM_ADMIN];
 
 const readTitle = gql`
     query {
+        currentUser {
+            name
+        }
         jcr {
             nodeByPath(path: "${TEST_NODE_PATH}") {
                 property(name: "jcr:title", language: "en") {
@@ -41,14 +55,23 @@ const removeLeftover = (path: string) => cy.apolloClient().apollo({
     errorPolicy: 'all'
 });
 
-describe('Read the decrypted value of an encrypted property', () => {
-    before('create an encrypted property, a role and two users', () => {
-        removeLeftover(TEST_NODE_PATH);
-        removeLeftover(`/roles/${TEST_ROLE}`);
-        deleteUser(NO_PERM_USER.username);
-        deleteUser(PERM_USER.username);
+// Reads the title as the given user, and checks that the query ran as that user
+const readTitleAs = (testUser: TestUser) => cy.apolloClient(testUser).apollo({query: readTitle}).then(result => {
+    expect(result.graphQLErrors, JSON.stringify(result.graphQLErrors)).to.be.undefined;
+    expect(result.data.currentUser.name).to.equal(testUser.username);
+    const property = result.data.jcr.nodeByPath.property;
+    expect(property.value, 'the user reads the node').to.not.be.null;
+    return property.decryptedValue;
+});
 
-        addNode({parentPathOrId: '/', name: TEST_NODE, primaryNodeType: 'jnt:contentList'});
+describe('Read the decrypted value of an encrypted property', () => {
+    before('create an encrypted property, a role and the users', () => {
+        deleteSite(SITE_NAME);
+        removeLeftover(`/roles/${TEST_ROLE}`);
+        USERS.forEach(testUser => deleteUser(testUser.username));
+
+        createSite(SITE_NAME);
+        addNode({parentPathOrId: `${SITE_PATH}/contents`, name: TEST_NODE, primaryNodeType: 'jnt:contentList'});
         cy.apolloClient().apollo({
             mutation: gql`
                 mutation {
@@ -63,7 +86,7 @@ describe('Read the decrypted value of an encrypted property', () => {
             `
         });
 
-        // A role that adds the new permission alone, so the two users differ by that permission only
+        // A role that adds the new permission alone, so that users differ by where it is granted
         addNode({parentPathOrId: '/roles', name: TEST_ROLE, primaryNodeType: 'jnt:role'});
         cy.apolloClient().apollo({
             mutation: gql`
@@ -79,17 +102,21 @@ describe('Read the decrypted value of an encrypted property', () => {
             `
         });
 
-        createUser(NO_PERM_USER.username, NO_PERM_USER.password);
-        createUser(PERM_USER.username, PERM_USER.password);
-        grantRoles(TEST_NODE_PATH, ['editor'], NO_PERM_USER.username, 'USER');
-        grantRoles(TEST_NODE_PATH, ['editor', TEST_ROLE], PERM_USER.username, 'USER');
+        USERS.forEach(testUser => createUser(testUser.username, testUser.password));
+        grantRoles(SITE_PATH, ['editor'], EDITOR.username, 'USER');
+        grantRoles(SITE_PATH, ['site-administrator'], SITE_ADMIN.username, 'USER');
+        grantRoles(SITE_PATH, ['editor'], NODE_GRANT.username, 'USER');
+        grantRoles(TEST_NODE_PATH, [TEST_ROLE], NODE_GRANT.username, 'USER');
+        grantRoles(SITE_PATH, ['editor'], ROOT_GRANT.username, 'USER');
+        grantRoles('/', [TEST_ROLE], ROOT_GRANT.username, 'USER');
+        grantRoles('/', ['server-administrator'], SERVER_ADMIN.username, 'USER');
+        grantRoles('/', ['system-administrator'], SYSTEM_ADMIN.username, 'USER');
     });
 
     after('remove the test data', () => {
-        deleteUser(NO_PERM_USER.username);
-        deleteUser(PERM_USER.username);
-        deleteNode(TEST_NODE_PATH);
-        deleteNode(`/roles/${TEST_ROLE}`);
+        USERS.forEach(testUser => deleteUser(testUser.username));
+        deleteSite(SITE_NAME);
+        removeLeftover(`/roles/${TEST_ROLE}`);
     });
 
     it('stores the value encrypted', () => {
@@ -105,20 +132,28 @@ describe('Read the decrypted value of an encrypted property', () => {
         });
     });
 
-    it('returns null to an editor without the permission', () => {
-        cy.apolloClient(NO_PERM_USER).apollo({query: readTitle}).should(result => {
-            expect(result.graphQLErrors, JSON.stringify(result.graphQLErrors)).to.be.undefined;
-            const property = result.data.jcr.nodeByPath.property;
-            expect(property.value, 'the editor reads the node').to.not.be.null;
-            expect(property.decryptedValue).to.be.null;
-        });
+    it('returns null to an editor of the site', () => {
+        readTitleAs(EDITOR).should('be.null');
     });
 
-    it('returns the decrypted value to a user granted the permission on the node', () => {
-        cy.apolloClient(PERM_USER).apollo({query: readTitle}).should(result => {
-            expect(result.graphQLErrors, JSON.stringify(result.graphQLErrors)).to.be.undefined;
-            expect(result.data.jcr.nodeByPath.property.decryptedValue).to.equal(PLAIN_VALUE);
-        });
+    it('returns null to an administrator of the site', () => {
+        readTitleAs(SITE_ADMIN).should('be.null');
+    });
+
+    it('returns null to a user granted the permission on the node only', () => {
+        readTitleAs(NODE_GRANT).should('be.null');
+    });
+
+    it('returns the decrypted value to a user granted the permission on the repository root', () => {
+        readTitleAs(ROOT_GRANT).should('equal', PLAIN_VALUE);
+    });
+
+    it('returns the decrypted value to a server administrator', () => {
+        readTitleAs(SERVER_ADMIN).should('equal', PLAIN_VALUE);
+    });
+
+    it('returns the decrypted value to a system administrator', () => {
+        readTitleAs(SYSTEM_ADMIN).should('equal', PLAIN_VALUE);
     });
 
     ['/roles/server-administrator', '/roles/system-administrator', '/roles/system-administrator/root-access'].forEach(rolePath => {
