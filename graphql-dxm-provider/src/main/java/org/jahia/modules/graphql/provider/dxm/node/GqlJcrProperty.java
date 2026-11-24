@@ -24,6 +24,7 @@ import graphql.schema.DataFetchingEnvironment;
 import org.jahia.bin.Render;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.render.RenderRequestAttributeInput;
+import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -205,14 +206,14 @@ public class GqlJcrProperty {
     }
 
     /**
-     * @return The decrypted value of the JCR encrypted property as a String in case the property is single-valued and the current user holds the viewEncryptedValue permission on its node, null otherwise
+     * @return The decrypted value of the JCR encrypted property as a String in case the property is single-valued and the current user holds the viewEncryptedValue permission on the repository root, null otherwise
      */
     @GraphQLField
     @GraphQLName("decryptedValue")
-    @GraphQLDescription("The decrypted value of the JCR encrypted property as a String in case the property is single-valued and the current user holds the viewEncryptedValue permission on its node, null otherwise")
+    @GraphQLDescription("The decrypted value of the JCR encrypted property as a String in case the property is single-valued and the current user holds the viewEncryptedValue permission on the repository root, null otherwise")
     public String getDecryptedValue() throws RepositoryException {
         try {
-            if (property.isMultiple() || !node.canViewEncryptedValue()) {
+            if (property.isMultiple() || !canViewEncryptedValue()) {
                 return null;
             }
 
@@ -275,14 +276,14 @@ public class GqlJcrProperty {
     }
 
     /**
-     * @return The decrypted values of the JCR encrypted property as Strings in case the property is multiple-valued and the current user holds the viewEncryptedValue permission on its node, an empty list otherwise
+     * @return The decrypted values of the JCR encrypted property as Strings in case the property is multiple-valued and the current user holds the viewEncryptedValue permission on the repository root, an empty list otherwise
      */
     @GraphQLField
     @GraphQLName("decryptedValues")
-    @GraphQLDescription("The decrypted values of the JCR encrypted property as Strings in case the property is multiple-valued and the current user holds the viewEncryptedValue permission on its node, an empty list otherwise")
+    @GraphQLDescription("The decrypted values of the JCR encrypted property as Strings in case the property is multiple-valued and the current user holds the viewEncryptedValue permission on the repository root, an empty list otherwise")
     public List<String> getDecryptedValues() throws RepositoryException {
         try {
-            if (!property.isMultiple() || !node.canViewEncryptedValue()) {
+            if (!property.isMultiple() || !canViewEncryptedValue()) {
                 return Collections.emptyList();
             }
 
@@ -295,6 +296,14 @@ public class GqlJcrProperty {
             logger.debug("A value of the property at {} was not decrypted", pathForLogging(), e);
             return Collections.emptyList();
         }
+    }
+
+    /**
+     * The permission is evaluated on the repository root, and not on the node of the property: one key decrypts
+     * every value, so a grant on a single node would reach any encrypted value its holder can copy there.
+     */
+    private boolean canViewEncryptedValue() throws RepositoryException {
+        return node.getNode().getSession().getRootNode().hasPermission(PermissionHelper.VIEW_ENCRYPTED_VALUE);
     }
 
     /**

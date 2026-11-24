@@ -34,16 +34,6 @@ public class PermissionHelper {
     private PermissionHelper() {
     }
 
-    /**
-     * The answer is scoped to the node that holds the property.
-     *
-     * @param node the node holding the property
-     * @return whether the current session may read a decrypted value of a property of that node
-     */
-    public static boolean canViewEncryptedValue(JCRNodeWrapper node) {
-        return node != null && node.hasPermission(VIEW_ENCRYPTED_VALUE);
-    }
-
     public static boolean hasPermission(JCRNodeWrapper node, DataFetchingEnvironment environment) {
         // Apply the permission check on the WebSocket subscription path consistently with HTTP.
         // On WebSocket the GraphQL context carries a javax.websocket.Session rather than an
