@@ -190,12 +190,15 @@ public class DXGraphQLProvider implements
         executor = command -> {
             JahiaUser user = JCRSessionFactory.getInstance().getCurrentUser();
             Collection<ScopeDefinition> scopes = permissionService.getCurrentScopes();
+            Object version = JcrVersionSessions.getInstance().currentVersion();
             pool.execute(() -> {
                 JCRSessionFactory.getInstance().setCurrentUser(user);
                 permissionService.setCurrentScopes(scopes);
+                JcrVersionSessions.getInstance().resumeVersion(version);
                 try {
                     command.run();
                 } finally {
+                    JcrVersionSessions.getInstance().resumeVersion(null);
                     JcrSessionFilter.endRequest();
                     permissionService.resetScopes();
                 }

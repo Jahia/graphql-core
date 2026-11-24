@@ -3797,6 +3797,10 @@ type Query {
     jcontent: GqlJContent
     "JCR Queries"
     jcr(
+        "Reads the EDIT workspace as it was at this date, in milliseconds since the epoch. Each node shows its last version at or before this date, and a node with no version shows live. The content-versioning module and Jahia 8.2.4 supply the versions. The query is read-only, it selects the jcr field alone, and it is the only operation of its request."
+        versionAt: Long,
+        "Reads the EDIT workspace as one operation of the content-versioning module left it, by the UUID of the operation. An operation that no version you can read carries fails the query. The rules of versionAt apply, and the two arguments exclude each other."
+        versionOperation: String,
         "The name of the workspace to fetch the node from; either EDIT, LIVE, or null to use EDIT by default"
         workspace: Workspace = EDIT
     ): JCRQuery!

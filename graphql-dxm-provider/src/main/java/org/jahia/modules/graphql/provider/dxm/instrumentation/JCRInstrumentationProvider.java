@@ -75,6 +75,8 @@ public class JCRInstrumentationProvider implements InstrumentationProvider {
                     maxMutationBatchSize, maxNodesPerRequest));
         }
 
+        // Before JCRInstrumentation, whose introspection check opens the first JCR session of the operation.
+        instns.add(new VersionSessionInstrumentation());
         instns.add(new JCRInstrumentation(dxGraphQLConfig));
         instns.addAll(instrumentations.stream()
                 .sorted(Comparator.comparingInt(JahiaInstrumentation::getPriority))

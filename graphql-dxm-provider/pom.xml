@@ -127,6 +127,7 @@
             org.apache.taglibs.unstandard,
             org.apache.tika;version="[1.27,4)",
             org.jahia.api,
+            org.jahia.api.versioning;version="[8.2.4,9)";resolution:=optional,
             org.jahia.bin,
             org.jahia.bin.filters.jcr,
             org.jahia.data.templates,

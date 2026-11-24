@@ -20,6 +20,8 @@ import graphql.schema.DataFetchingEnvironment;
 import org.jahia.bin.Render;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrNode;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
+import org.jahia.modules.graphql.provider.dxm.node.JcrVersionSessions;
 import org.jahia.modules.graphql.provider.dxm.node.NodeHelper;
 import org.jahia.modules.graphql.provider.dxm.node.SpecializedTypesHandler;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
@@ -119,6 +121,10 @@ public class RenderNodeExtensions {
                                            @GraphQLName("mainResourcePath") @GraphQLDescription("Main resource path") String mainResourcePath,
                                            @GraphQLName("isEditMode") @GraphQLDescription("Is edit mode") Boolean isEditMode,
                                            @GraphQLName("requestAttributes") @GraphQLDescription("Additional request attributes to be included in request. Array of name value pairs: [{name:\"templateSet\", value:\"true\"}]") Collection<RenderRequestAttributeInput> requestAttributes, DataFetchingEnvironment environment) {
+        // An edit from the controls of an edit-mode render writes the live content, so a version renders without them.
+        if (Boolean.TRUE.equals(isEditMode) && isInVersionSession()) {
+            throw new GqlJcrWrongInputException("A version renders without edit mode");
+        }
         try {
             RenderService renderService = (RenderService) SpringContextSingleton.getBean("RenderService");
 
@@ -206,6 +212,14 @@ public class RenderNodeExtensions {
             }
             return new RenderedNode(res, renderContext);
         } catch (Exception e) {
+            throw new DataFetchingException(e);
+        }
+    }
+
+    private boolean isInVersionSession() {
+        try {
+            return JcrVersionSessions.getInstance().isVersionSession(node.getNode().getSession());
+        } catch (RepositoryException e) {
             throw new DataFetchingException(e);
         }
     }
