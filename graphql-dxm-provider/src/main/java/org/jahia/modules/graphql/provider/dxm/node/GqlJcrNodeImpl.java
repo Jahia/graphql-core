@@ -253,13 +253,20 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
     static void keepTranslatedProperties(List<GqlJcrProperty> properties, String language) {
         String translationPath = "/j:translation_" + language + "/";
-        properties.removeIf(p -> !isInTranslation(p, translationPath)
-                && properties.stream().anyMatch(p2 -> p.getName().equals(p2.getName()) && isInTranslation(p2, translationPath)));
+        Set<GqlJcrProperty> translated = new HashSet<>();
+        Set<String> translatedNames = new HashSet<>();
+        for (GqlJcrProperty property : properties) {
+            if (isInTranslation(property, translationPath)) {
+                translated.add(property);
+                translatedNames.add(property.getName());
+            }
+        }
+        properties.removeIf(p -> !translated.contains(p) && translatedNames.contains(p.getName()));
     }
 
     private static boolean isInTranslation(GqlJcrProperty property, String translationPath) {
         try {
-            // A property of a version session has no raw JCR property.
+            // A property of a version session has no raw JCR property. A node of a version lists each name once.
             Property realProperty = property.getProperty().getRealProperty();
             return realProperty != null && realProperty.getPath().contains(translationPath);
         } catch (RepositoryException e) {
