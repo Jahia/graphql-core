@@ -252,11 +252,11 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
     }
 
     static void keepTranslatedProperties(List<GqlJcrProperty> properties, String language) throws RepositoryException {
-        String translationPath = "/j:translation_" + language + "/";
+        String translationSegment = "/j:translation_" + language + "/";
         Set<GqlJcrProperty> translated = new HashSet<>();
         Set<String> translatedNames = new HashSet<>();
         for (GqlJcrProperty property : properties) {
-            if (isInTranslation(property, translationPath)) {
+            if (isInTranslation(property, translationSegment)) {
                 translated.add(property);
                 translatedNames.add(property.getName());
             }
@@ -264,10 +264,10 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
         properties.removeIf(p -> !translated.contains(p) && translatedNames.contains(p.getName()));
     }
 
-    private static boolean isInTranslation(GqlJcrProperty property, String translationPath) throws RepositoryException {
+    private static boolean isInTranslation(GqlJcrProperty property, String translationSegment) throws RepositoryException {
         // A property of a version session has no raw JCR property. A node of a version lists each name once.
         Property realProperty = property.getProperty().getRealProperty();
-        return realProperty != null && realProperty.getPath().contains(translationPath);
+        return realProperty != null && realProperty.getPath().contains(translationSegment);
     }
 
     @Override
