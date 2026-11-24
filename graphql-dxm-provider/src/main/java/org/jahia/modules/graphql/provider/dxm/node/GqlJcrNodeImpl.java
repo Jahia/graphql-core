@@ -243,26 +243,28 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
             // There could be a case when a property exists directly on the node and in translation child, we keep translated property only
             if (language != null) {
-                String translationPath = "/j:translation_" + language + "/";
-                properties.removeIf(p -> {
-                    try {
-                        return !p.getProperty().getRealProperty().getPath().contains(translationPath)
-                                && properties.stream().anyMatch(p2 -> {
-                            try {
-                                return p.getName().equals(p2.getName()) && p2.getProperty().getRealProperty().getPath().contains(translationPath);
-                            } catch (RepositoryException e) {
-                                throw new RuntimeException(e);
-                            }
-                        });
-                    } catch (RepositoryException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                keepTranslatedProperties(properties, language);
             }
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
         return FilterHelper.filterList(properties, fieldFilter, environment);
+    }
+
+    static void keepTranslatedProperties(List<GqlJcrProperty> properties, String language) {
+        String translationPath = "/j:translation_" + language + "/";
+        properties.removeIf(p -> !isInTranslation(p, translationPath)
+                && properties.stream().anyMatch(p2 -> p.getName().equals(p2.getName()) && isInTranslation(p2, translationPath)));
+    }
+
+    private static boolean isInTranslation(GqlJcrProperty property, String translationPath) {
+        try {
+            // A property of a version session has no raw JCR property.
+            Property realProperty = property.getProperty().getRealProperty();
+            return realProperty != null && realProperty.getPath().contains(translationPath);
+        } catch (RepositoryException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
