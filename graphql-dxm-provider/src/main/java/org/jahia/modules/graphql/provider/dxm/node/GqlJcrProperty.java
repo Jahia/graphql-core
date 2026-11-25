@@ -21,14 +21,17 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.schema.DataFetchingEnvironment;
+import org.jahia.api.Constants;
 import org.jahia.bin.Render;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.render.RenderRequestAttributeInput;
+import org.jahia.modules.graphql.provider.dxm.security.PermissionHelper;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -42,6 +45,8 @@ import org.jahia.settings.SettingsBean;
 import org.jahia.utils.EncryptionUtils;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
@@ -60,6 +65,8 @@ import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport.
 @GraphQLName("JCRProperty")
 @GraphQLDescription("GraphQL representation of a JCR property.")
 public class GqlJcrProperty {
+    private static final Logger logger = LoggerFactory.getLogger(GqlJcrProperty.class);
+
     private JCRPropertyWrapper property;
     private GqlJcrNode node;
 
@@ -201,19 +208,20 @@ public class GqlJcrProperty {
     }
 
     /**
-     * @return The decrypted value of the JCR encrypted property as a String in case the property is single-valued, null otherwise
+     * @return The decrypted value of the JCR encrypted property as a String in case the property is single-valued and the current user holds the viewEncryptedValue permission on the repository root, null otherwise
      */
     @GraphQLField
     @GraphQLName("decryptedValue")
-    @GraphQLDescription("The decrypted value of the JCR encrypted property as a String in case the property is single-valued, null otherwise")
+    @GraphQLDescription("The decrypted value of the JCR encrypted property as a String in case the property is single-valued and the current user holds the viewEncryptedValue permission on the repository root, null otherwise")
     public String getDecryptedValue() throws RepositoryException {
         try {
-            if (property.isMultiple()) {
+            if (property.isMultiple() || !canViewEncryptedValue()) {
                 return null;
             }
 
             return EncryptionUtils.passwordBaseDecrypt(property.getValue().getString());
         } catch (EncryptionOperationNotPossibleException e) {
+            logger.debug("The value of the property at {} was not decrypted", pathForLogging(), e);
             return null;
         }
     }
@@ -270,14 +278,14 @@ public class GqlJcrProperty {
     }
 
     /**
-     * @return The decrypted value of the JCR encrypted property as a String in case the property is single-valued, null otherwise
+     * @return The decrypted values of the JCR encrypted property as Strings in case the property is multiple-valued and the current user holds the viewEncryptedValue permission on the repository root, an empty list otherwise
      */
     @GraphQLField
     @GraphQLName("decryptedValues")
-    @GraphQLDescription("The decrypted values of the JCR encrypted property as a Strings in case the property is multiple-valued, null otherwise")
+    @GraphQLDescription("The decrypted values of the JCR encrypted property as Strings in case the property is multiple-valued and the current user holds the viewEncryptedValue permission on the repository root, an empty list otherwise")
     public List<String> getDecryptedValues() throws RepositoryException {
         try {
-            if (!property.isMultiple()) {
+            if (!property.isMultiple() || !canViewEncryptedValue()) {
                 return Collections.emptyList();
             }
 
@@ -287,7 +295,31 @@ public class GqlJcrProperty {
             }
             return result;
         } catch (EncryptionOperationNotPossibleException e) {
+            logger.debug("A value of the property at {} was not decrypted", pathForLogging(), e);
             return Collections.emptyList();
+        }
+    }
+
+    /**
+     * The permission is evaluated on the repository root, and not on the node of the property: one key decrypts
+     * every value, so a grant on a single node would reach any encrypted value its holder can copy there. The root
+     * is read in the default workspace, where a role on the root is granted: that grant is not published to live.
+     * The session is the one of the current user, because the node may have been read through another session.
+     */
+    private boolean canViewEncryptedValue() throws RepositoryException {
+        JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
+        return session.getRootNode().hasPermission(PermissionHelper.VIEW_ENCRYPTED_VALUE);
+    }
+
+    /**
+     * The path of the property, for a log line. A repository failure while reading the path must not replace
+     * the failure the caller is already reporting, so this answers with a placeholder instead.
+     */
+    private String pathForLogging() {
+        try {
+            return property.getPath();
+        } catch (RepositoryException e) {
+            return "an unknown path";
         }
     }
 

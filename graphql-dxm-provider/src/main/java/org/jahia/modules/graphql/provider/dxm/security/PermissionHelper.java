@@ -28,6 +28,9 @@ import javax.websocket.Session;
 
 public class PermissionHelper {
 
+    /** The permission a session needs to read a decrypted value. */
+    public static final String VIEW_ENCRYPTED_VALUE = "viewEncryptedValue";
+
     private PermissionHelper() {
     }
 
