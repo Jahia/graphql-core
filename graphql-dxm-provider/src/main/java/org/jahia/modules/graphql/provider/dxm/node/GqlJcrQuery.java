@@ -33,6 +33,7 @@ import org.jahia.modules.graphql.provider.dxm.predicate.FieldGroupingInput;
 import org.jahia.modules.graphql.provider.dxm.predicate.FieldSorterInput;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedData;
 import org.jahia.modules.graphql.provider.dxm.relay.DXPaginatedDataConnectionFetcher;
+import org.jahia.modules.graphql.provider.dxm.versioning.JcrVersionSessions;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -66,9 +67,19 @@ import static org.jahia.modules.graphql.provider.dxm.node.GqlJcrQuery.QueryLangu
 public class GqlJcrQuery {
 
     private NodeQueryExtensions.Workspace workspace;
+    private final boolean version;
 
     public GqlJcrQuery(NodeQueryExtensions.Workspace workspace) {
+        this(workspace, false);
+    }
+
+    /**
+     * @param workspace the workspace of the query
+     * @param version   {@code true} when the query reads a version, so that every session it reads is a version session
+     */
+    GqlJcrQuery(NodeQueryExtensions.Workspace workspace, boolean version) {
         this.workspace = workspace;
+        this.version = version;
     }
 
     /**
@@ -302,7 +313,7 @@ public class GqlJcrQuery {
     }
 
     private JCRSessionWrapper getSession() throws RepositoryException {
-        return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue());
+        return checkVersion(JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue()));
     }
 
     private JCRSessionWrapper getSession(String language) throws RepositoryException {
@@ -310,7 +321,15 @@ public class GqlJcrQuery {
             return getSession();
         }
         Locale locale = LocaleUtils.toLocale(language);
-        return JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue(), locale);
+        return checkVersion(JCRSessionFactory.getInstance().getCurrentUserSession(workspace.getValue(), locale));
+    }
+
+    private JCRSessionWrapper checkVersion(JCRSessionWrapper session) {
+        // A plain session here would show the current content of the EDIT workspace as the version.
+        if (version && !JcrVersionSessions.getInstance().isVersionSession(session)) {
+            throw new DataFetchingException("The session of this query does not show the version that the query asks for");
+        }
+        return session;
     }
 
     public static class QueryLanguageDefaultValue implements Supplier<Object> {

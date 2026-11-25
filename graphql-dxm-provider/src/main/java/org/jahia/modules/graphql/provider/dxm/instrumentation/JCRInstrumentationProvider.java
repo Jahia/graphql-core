@@ -21,6 +21,7 @@ import graphql.kickstart.execution.config.InstrumentationProvider;
 import org.jahia.modules.graphql.provider.dxm.config.DXGraphQLConfig;
 import org.jahia.modules.graphql.provider.dxm.config.GraphQLLimits;
 import org.jahia.modules.graphql.provider.dxm.relay.PaginationHelper;
+import org.jahia.modules.graphql.provider.dxm.versioning.VersionSessionInstrumentation;
 import org.osgi.service.component.annotations.*;
 
 import java.util.ArrayList;
@@ -75,6 +76,8 @@ public class JCRInstrumentationProvider implements InstrumentationProvider {
                     maxMutationBatchSize, maxNodesPerRequest));
         }
 
+        // Before JCRInstrumentation, whose introspection check opens the first JCR session of the operation.
+        instns.add(new VersionSessionInstrumentation());
         instns.add(new JCRInstrumentation(dxGraphQLConfig));
         instns.addAll(instrumentations.stream()
                 .sorted(Comparator.comparingInt(JahiaInstrumentation::getPriority))

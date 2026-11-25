@@ -25,7 +25,9 @@ import graphql.language.OperationDefinition;
 import graphql.schema.DataFetchingEnvironment;
 import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.util.ContextUtil;
+import org.jahia.modules.graphql.provider.dxm.versioning.JcrVersionSessions;
 
 import java.util.function.Supplier;
 
@@ -101,8 +103,35 @@ public class NodeQueryExtensions {
     @GraphQLNonNull
     @GraphQLDescription("JCR Queries")
     public static GqlJcrQuery getJcr(@GraphQLName("workspace") @GraphQLDescription("The name of the workspace to fetch the node from; "
-            + "either EDIT, LIVE, or null to use EDIT by default") @GraphQLDefaultValue(value = Workspace.DefaultWorkspaceSupplier.class) Workspace workspace, DataFetchingEnvironment environment) {
+            + "either EDIT, LIVE, or null to use EDIT by default") @GraphQLDefaultValue(value = Workspace.DefaultWorkspaceSupplier.class) Workspace workspace,
+                                     @GraphQLName(JcrVersionSessions.VERSION_AT) @GraphQLDescription("Reads the EDIT workspace as it was at this date, "
+            + "in milliseconds since the epoch. Each node shows its last version at or before this date, and a node with no version "
+            + "shows its current content in the EDIT workspace. A version records its date in microseconds, so this date in milliseconds "
+            + "can miss a version made within the same millisecond. Use versionOperation to read the state that one operation left. "
+            + "The content-versioning module and Jahia 8.2.4 supply the versions. "
+            + "The query is read-only, it selects the jcr field alone, and no other operation follows it in its request.") Long versionAt,
+                                     @GraphQLName(JcrVersionSessions.VERSION_OPERATION) @GraphQLDescription("Reads the EDIT workspace as one operation "
+            + "of the content-versioning module left it, by the UUID of the operation. An operation that no version you can read carries "
+            + "fails the query. The rules of versionAt apply, and the two arguments exclude each other.") String versionOperation,
+                                     DataFetchingEnvironment environment) {
         ContextUtil.setJcrLiveOperationHeaderIfNeeded(workspace, OperationDefinition.Operation.QUERY, environment.getGraphQlContext());
-        return new GqlJcrQuery(workspace);
+        if (versionAt == null && versionOperation == null) {
+            return new GqlJcrQuery(workspace);
+        }
+        if (!JcrVersionSessions.getInstance().isOpened(environment.getGraphQlContext())) {
+            throw new DataFetchingException("The version sessions of this query are not open");
+        }
+        return new GqlJcrQuery(workspace, true);
+    }
+
+    /**
+     * Root for all JCR queries, without a version. The schema exposes the method with the version arguments.
+     *
+     * @param workspace   the JCR workspace name for the query
+     * @param environment the environment of the field
+     * @return the root query object
+     */
+    public static GqlJcrQuery getJcr(Workspace workspace, DataFetchingEnvironment environment) {
+        return getJcr(workspace, null, null, environment);
     }
 }

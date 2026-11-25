@@ -37,6 +37,7 @@ import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.ListDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.fetchers.ObjectDataFetcher;
 import org.jahia.modules.graphql.provider.dxm.sdl.parsing.SDLSchemaService;
 import org.jahia.modules.graphql.provider.dxm.security.JahiaGraphQLFieldRetriever;
+import org.jahia.modules.graphql.provider.dxm.versioning.JcrVersionSessions;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.securityfilter.PermissionService;
 import org.jahia.services.securityfilter.ScopeDefinition;
@@ -190,14 +191,20 @@ public class DXGraphQLProvider implements
         executor = command -> {
             JahiaUser user = JCRSessionFactory.getInstance().getCurrentUser();
             Collection<ScopeDefinition> scopes = permissionService.getCurrentScopes();
+            Object version = JcrVersionSessions.getInstance().currentVersion();
             pool.execute(() -> {
                 JCRSessionFactory.getInstance().setCurrentUser(user);
                 permissionService.setCurrentScopes(scopes);
                 try {
+                    JcrVersionSessions.getInstance().resumeVersion(version);
                     command.run();
                 } finally {
-                    JcrSessionFilter.endRequest();
-                    permissionService.resetScopes();
+                    try {
+                        JcrSessionFilter.endRequest();
+                        permissionService.resetScopes();
+                    } finally {
+                        JcrVersionSessions.getInstance().resumeVersion(null);
+                    }
                 }
             });
         };
