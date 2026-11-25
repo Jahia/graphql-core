@@ -106,7 +106,9 @@ public class NodeQueryExtensions {
             + "either EDIT, LIVE, or null to use EDIT by default") @GraphQLDefaultValue(value = Workspace.DefaultWorkspaceSupplier.class) Workspace workspace,
                                      @GraphQLName(JcrVersionSessions.VERSION_AT) @GraphQLDescription("Reads the EDIT workspace as it was at this date, "
             + "in milliseconds since the epoch. Each node shows its last version at or before this date, and a node with no version "
-            + "shows its current content in the EDIT workspace. The content-versioning module and Jahia 8.2.4 supply the versions. "
+            + "shows its current content in the EDIT workspace. A version records its date in microseconds, so this date in milliseconds "
+            + "can miss a version made within the same millisecond. Use versionOperation to read the state that one operation left. "
+            + "The content-versioning module and Jahia 8.2.4 supply the versions. "
             + "The query is read-only, it selects the jcr field alone, and no other operation follows it in its request.") Long versionAt,
                                      @GraphQLName(JcrVersionSessions.VERSION_OPERATION) @GraphQLDescription("Reads the EDIT workspace as one operation "
             + "of the content-versioning module left it, by the UUID of the operation. An operation that no version you can read carries "

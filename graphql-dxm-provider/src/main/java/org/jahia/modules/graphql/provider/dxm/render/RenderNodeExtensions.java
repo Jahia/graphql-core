@@ -119,7 +119,7 @@ public class RenderNodeExtensions {
                                            @GraphQLName("contextConfiguration") @GraphQLDescription("Rendering context configuration. Possible values include 'module', 'gwt', 'page'. Default is 'module'.") String contextConfiguration,
                                            @GraphQLName("language") @GraphQLDescription("Language") String language,
                                            @GraphQLName("mainResourcePath") @GraphQLDescription("Main resource path") String mainResourcePath,
-                                           @GraphQLName("isEditMode") @GraphQLDescription("Is edit mode") Boolean isEditMode,
+                                           @GraphQLName("isEditMode") @GraphQLDescription("Is edit mode. A node read at a version renders without edit mode, so true fails for it.") Boolean isEditMode,
                                            @GraphQLName("requestAttributes") @GraphQLDescription("Additional request attributes to be included in request. Array of name value pairs: [{name:\"templateSet\", value:\"true\"}]") Collection<RenderRequestAttributeInput> requestAttributes, DataFetchingEnvironment environment) {
         refuseEditModeInVersion(isEditMode);
         try {
