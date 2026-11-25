@@ -3797,6 +3797,8 @@ type Query {
     jcontent: GqlJContent
     "JCR Queries"
     jcr(
+        "Reads the EDIT workspace with the values of a form that you have not saved. The node of the form shows these values, and every other node shows its current content. The query writes nothing and takes no lock, so it reads a node that another user locks. A value follows the rules of setPropertiesBatch, and a binary value fails the query. Jahia 8.2.4 supplies these values. The rules of versionAt apply, and this argument excludes versionAt and versionOperation."
+        unsavedValues: InputJCRUnsavedValues,
         "Reads the EDIT workspace as it was at this date, in milliseconds since the epoch. Each node shows its last version at or before this date, and a node with no version shows its current content in the EDIT workspace. A version records its date in microseconds, so this date in milliseconds can miss a version made within the same millisecond. Use versionOperation to read the state that one operation left. The content-versioning module and Jahia 8.2.4 supply the versions. The query is read-only, it selects the jcr field alone, and no other operation follows it in its request."
         versionAt: Long,
         "Reads the EDIT workspace as one operation of the content-versioning module left it, by the UUID of the operation. An operation that no version you can read carries fails the query. The rules of versionAt apply, and the two arguments exclude each other."
@@ -5015,6 +5017,20 @@ input InputJCRProperty {
     value: String
     "The values to set (for multivalued properties)"
     values: [String]
+}
+
+"The values of a form that the user has not saved, for one node"
+input InputJCRUnsavedValues {
+    "The mixins that the form adds"
+    mixinsToAdd: [String]
+    "The mixins that the form removes"
+    mixinsToDelete: [String]
+    "The path or the UUID of the node of the form"
+    node: String!
+    "The properties that the form sets, as setPropertiesBatch takes them"
+    properties: [InputJCRProperty]
+    "The properties that the form removes, as deletePropertiesBatch takes them"
+    propertiesToDelete: [InputJCRDeletedProperty]
 }
 
 "Node properties selection"

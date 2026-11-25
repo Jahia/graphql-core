@@ -9,18 +9,29 @@ import graphql.language.OperationDefinition;
 import graphql.parser.Parser;
 import graphql.parser.ParserEnvironment;
 import graphql.parser.ParserOptions;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrPropertyType;
 import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.usermanager.JahiaUser;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.jcr.ItemNotFoundException;
+import javax.jcr.PropertyType;
+import javax.jcr.RepositoryException;
+import javax.jcr.Value;
+import javax.jcr.ValueFactory;
+import javax.jcr.ValueFormatException;
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -31,8 +42,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +56,7 @@ import static org.mockito.Mockito.when;
 public class JcrVersionSessionsTest {
 
     private static final String OPERATION_ID = "0b1f7d6c-2f7e-4b8e-9a3c-5d2e1f0a9b8c";
+    private static final String NODE_ID = "5a1c3f4e-8d2b-4c6a-9e7f-1b2d3c4e5f6a";
 
     private FakeVersionApi api;
     private JcrVersionSessions versionSessions;
@@ -50,9 +64,10 @@ public class JcrVersionSessionsTest {
     private GraphQLContext context;
 
     @Before
-    public void setUp() {
+    public void setUp() throws RepositoryException {
         api = new FakeVersionApi();
         api.user = user("editor");
+        api.editSession = editSession();
         versionSessions = new JcrVersionSessions(api);
         request = request();
         context = GraphQLContext.newContext().build();
@@ -336,6 +351,147 @@ public class JcrVersionSessionsTest {
         assertFalse(new JcrVersionSessions(null).isVersionSession(versionSession));
     }
 
+    @Test
+    public void unsavedValuesOpenTheValuesOfTheFormFromAVariable() throws RepositoryException {
+        Map<String, Object> values = new HashMap<>();
+        values.put("node", NODE_ID);
+        values.put("properties", Arrays.asList(
+                property("text", "en", null, "typed", null),
+                property("j:keywords", "en", GqlJcrPropertyType.STRING, null, Arrays.asList("one", "two"))));
+        values.put("propertiesToDelete", Collections.singletonList(deleted("jcr:title", "fr")));
+        values.put("mixinsToAdd", Collections.singletonList("jmix:keywords"));
+        values.put("mixinsToDelete", Collections.singletonList("jmix:description"));
+
+        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
+                Collections.singletonMap("values", values));
+
+        assertTrue(versionSessions.isOpened(context));
+        assertEquals("unsaved:" + NODE_ID, api.selector);
+        assertEquals(api.selector, versionSessions.currentVersion());
+        assertEquals("core shows unsaved values without a check", 0, api.checks);
+        UnsavedValuesRequest request = api.unsavedValues;
+        assertEquals(3, request.changes.size());
+        assertChange(request.changes.get(0), "text", Locale.ENGLISH, PropertyType.STRING, false, Collections.singletonList("typed"));
+        assertChange(request.changes.get(1), "j:keywords", Locale.ENGLISH, PropertyType.STRING, true, Arrays.asList("one", "two"));
+        assertChange(request.changes.get(2), "jcr:title", Locale.FRENCH, PropertyType.UNDEFINED, false, null);
+        assertEquals(Collections.singletonList("jmix:keywords"), request.mixinsToAdd);
+        assertEquals(Collections.singletonList("jmix:description"), request.mixinsToDelete);
+        versionSessions.checkOperation(context);
+    }
+
+    @Test
+    public void unsavedValuesReadALiteralThatNamesTheNodeByItsPath() throws RepositoryException {
+        begin("{ jcr(unsavedValues: {node: \"/sites/a/text\", properties: [{name: \"count\", type: LONG, value: \"3\"}]}) { workspace } }",
+                Collections.emptyMap());
+
+        assertTrue(versionSessions.isOpened(context));
+        assertEquals("unsaved:" + NODE_ID, api.selector);
+        assertChange(api.unsavedValues.changes.get(0), "count", null, PropertyType.LONG, false, Collections.singletonList("3"));
+    }
+
+    @Test
+    public void unsavedValuesWithAVersionFail() {
+        begin("{ jcr(versionAt: 1000, unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } }", Collections.emptyMap());
+
+        assertRefused("A query reads unsavedValues without versionAt and without versionOperation");
+        assertNull(api.selector);
+    }
+
+    @Test
+    public void unsavedValuesOfANodeThatDoesNotExistFail() {
+        begin("{ jcr(unsavedValues: {node: \"missing\"}) { workspace } }", Collections.emptyMap());
+
+        assertRefused("The node of unsavedValues does not exist: missing");
+        assertNull(api.selector);
+    }
+
+    @Test
+    public void aBinaryUnsavedValueFails() {
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: [{name: \"data\", type: BINARY, value: \"x\"}]}) { workspace } }",
+                Collections.emptyMap());
+
+        assertRefused("unsavedValues takes no binary value: data");
+        assertNull(api.selector);
+    }
+
+    @Test
+    public void anUnsavedValueThatItsTypeRefusesFails() {
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: [{name: \"count\", type: LONG, value: \"three\"}]}) { workspace } }",
+                Collections.emptyMap());
+
+        assertRefused("unsavedValues has a value that is not a Long: count");
+        assertNull(api.selector);
+    }
+
+    @Test
+    public void unsavedValuesInTheLiveWorkspaceFail() {
+        begin("{ jcr(workspace: LIVE, unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } }", Collections.emptyMap());
+
+        assertRefused("A query reads a version in the EDIT workspace only");
+    }
+
+    @Test
+    public void unsavedValuesOnAJahiaWithoutThemFailAndAVersionStillOpens() {
+        api.unsavedValuesSupported = false;
+
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } }", Collections.emptyMap());
+
+        assertRefused("Reading unsaved values needs a Jahia that supports them");
+        assertNull(api.selector);
+        context = GraphQLContext.newContext().build();
+        request = request();
+        begin("{ jcr(versionAt: 1000) { workspace } }", Collections.emptyMap());
+        assertTrue(versionSessions.isOpened(context));
+    }
+
+    private static Map<String, Object> property(String name, String language, Object type, String value, List<String> values) {
+        Map<String, Object> property = new HashMap<>();
+        property.put("name", name);
+        property.put("language", language);
+        property.put("type", type);
+        property.put("value", value);
+        property.put("values", values);
+        return property;
+    }
+
+    private static Map<String, Object> deleted(String name, String language) {
+        Map<String, Object> property = new HashMap<>();
+        property.put("name", name);
+        property.put("language", language);
+        return property;
+    }
+
+    private static void assertChange(UnsavedValuesRequest.PropertyChange change, String name, Locale language, int type,
+                                     boolean multiple, List<String> values) {
+        assertEquals(name, change.name);
+        assertEquals(language, change.language);
+        assertEquals(type, change.type);
+        assertEquals(multiple, change.multiple);
+        assertEquals(values, change.values);
+    }
+
+    /** A plain session that knows one node, by its identifier and by its path, and whose values take their string. */
+    private static JCRSessionWrapper editSession() throws RepositoryException {
+        JCRSessionWrapper session = mock(JCRSessionWrapper.class);
+        JCRNodeWrapper node = mock(JCRNodeWrapper.class);
+        when(node.getIdentifier()).thenReturn(NODE_ID);
+        when(session.getNodeByIdentifier(anyString())).thenThrow(new ItemNotFoundException());
+        doReturn(node).when(session).getNodeByIdentifier(NODE_ID);
+        doReturn(node).when(session).getNode("/sites/a/text");
+        ValueFactory valueFactory = mock(ValueFactory.class);
+        when(valueFactory.createValue(anyString(), anyInt())).thenAnswer(invocation -> {
+            String string = invocation.getArgument(0);
+            if (invocation.<Integer>getArgument(1) == PropertyType.LONG && !string.matches("\\d+")) {
+                throw new ValueFormatException("not a long");
+            }
+            Value value = mock(Value.class);
+            when(value.getString()).thenReturn(string);
+            return value;
+        });
+        when(session.getValueFactory()).thenReturn(valueFactory);
+        return session;
+    }
+
     private void begin(String query, Map<String, Object> variables) {
         Document document = Parser.parse(ParserEnvironment.newParserEnvironment().document(query)
                 .parserOptions(ParserOptions.newParserOptions().maxTokens(100000).build()).build());
@@ -388,6 +544,9 @@ public class JcrVersionSessionsTest {
         private boolean rendering;
         private int checks;
         private JahiaUser user;
+        private boolean unsavedValuesSupported = true;
+        private UnsavedValuesRequest unsavedValues;
+        private JCRSessionWrapper editSession;
 
         @Override
         public Object atInstant(Instant instant) {
@@ -397,6 +556,22 @@ public class JcrVersionSessionsTest {
         @Override
         public Object atOperation(UUID operationId) {
             return "op:" + operationId;
+        }
+
+        @Override
+        public boolean supportsUnsavedValues() {
+            return unsavedValuesSupported;
+        }
+
+        @Override
+        public Object withUnsavedValues(UnsavedValuesRequest values) {
+            unsavedValues = values;
+            return "unsaved:" + values.nodeIdentifier;
+        }
+
+        @Override
+        public JCRSessionWrapper getEditSession() {
+            return editSession;
         }
 
         @Override

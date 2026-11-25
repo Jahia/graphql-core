@@ -113,9 +113,14 @@ public class NodeQueryExtensions {
                                      @GraphQLName(JcrVersionSessions.VERSION_OPERATION) @GraphQLDescription("Reads the EDIT workspace as one operation "
             + "of the content-versioning module left it, by the UUID of the operation. An operation that no version you can read carries "
             + "fails the query. The rules of versionAt apply, and the two arguments exclude each other.") String versionOperation,
+                                     @GraphQLName(JcrVersionSessions.UNSAVED_VALUES) @GraphQLDescription("Reads the EDIT workspace with the values of a form "
+            + "that you have not saved. The node of the form shows these values, and every other node shows its current content. "
+            + "The query writes nothing and takes no lock, so it reads a node that another user locks. A value follows the rules of "
+            + "setPropertiesBatch, and a binary value fails the query. Jahia 8.2.4 supplies these values. The rules of versionAt apply, "
+            + "and this argument excludes versionAt and versionOperation.") GqlJcrUnsavedValuesInput unsavedValues,
                                      DataFetchingEnvironment environment) {
         ContextUtil.setJcrLiveOperationHeaderIfNeeded(workspace, OperationDefinition.Operation.QUERY, environment.getGraphQlContext());
-        if (versionAt == null && versionOperation == null) {
+        if (versionAt == null && versionOperation == null && unsavedValues == null) {
             return new GqlJcrQuery(workspace);
         }
         if (!JcrVersionSessions.getInstance().isOpened(environment.getGraphQlContext())) {
@@ -125,13 +130,14 @@ public class NodeQueryExtensions {
     }
 
     /**
-     * Root for all JCR queries, without a version. The schema exposes the method with the version arguments.
+     * Root for all JCR queries, without a version. The schema exposes the method with the version arguments and the
+     * unsaved values.
      *
      * @param workspace   the JCR workspace name for the query
      * @param environment the environment of the field
      * @return the root query object
      */
     public static GqlJcrQuery getJcr(Workspace workspace, DataFetchingEnvironment environment) {
-        return getJcr(workspace, null, null, environment);
+        return getJcr(workspace, null, null, null, environment);
     }
 }
