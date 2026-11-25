@@ -243,26 +243,31 @@ public class GqlJcrNodeImpl implements GqlJcrNode {
 
             // There could be a case when a property exists directly on the node and in translation child, we keep translated property only
             if (language != null) {
-                String translationPath = "/j:translation_" + language + "/";
-                properties.removeIf(p -> {
-                    try {
-                        return !p.getProperty().getRealProperty().getPath().contains(translationPath)
-                                && properties.stream().anyMatch(p2 -> {
-                            try {
-                                return p.getName().equals(p2.getName()) && p2.getProperty().getRealProperty().getPath().contains(translationPath);
-                            } catch (RepositoryException e) {
-                                throw new RuntimeException(e);
-                            }
-                        });
-                    } catch (RepositoryException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                keepTranslatedProperties(properties, language);
             }
         } catch (RepositoryException e) {
             throw new RuntimeException(e);
         }
         return FilterHelper.filterList(properties, fieldFilter, environment);
+    }
+
+    static void keepTranslatedProperties(List<GqlJcrProperty> properties, String language) throws RepositoryException {
+        String translationSegment = "/j:translation_" + language + "/";
+        Set<GqlJcrProperty> translated = new HashSet<>();
+        Set<String> translatedNames = new HashSet<>();
+        for (GqlJcrProperty property : properties) {
+            if (isInTranslation(property, translationSegment)) {
+                translated.add(property);
+                translatedNames.add(property.getName());
+            }
+        }
+        properties.removeIf(p -> !translated.contains(p) && translatedNames.contains(p.getName()));
+    }
+
+    private static boolean isInTranslation(GqlJcrProperty property, String translationSegment) throws RepositoryException {
+        // A property of a version session has no raw JCR property. A node of a version lists each name once.
+        Property realProperty = property.getProperty().getRealProperty();
+        return realProperty != null && realProperty.getPath().contains(translationSegment);
     }
 
     @Override
