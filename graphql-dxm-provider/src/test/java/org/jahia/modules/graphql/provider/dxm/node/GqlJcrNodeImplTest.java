@@ -10,12 +10,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Covers how {@code properties(language:)} keeps one property for each name.
+ * Covers how {@code keepTranslatedProperties} keeps the translated property when the node carries a property of the
+ * same name.
  */
 public class GqlJcrNodeImplTest {
 
@@ -40,9 +40,7 @@ public class GqlJcrNodeImplTest {
 
         GqlJcrNodeImpl.keepTranslatedProperties(properties, "en");
 
-        assertEquals(2, properties.size());
-        assertSame(text, properties.get(0));
-        assertSame(title, properties.get(1));
+        assertEquals(Arrays.asList(text, title), properties);
     }
 
     private static GqlJcrProperty property(String name, String realPath) throws RepositoryException {
