@@ -485,6 +485,14 @@ public class JcrVersionSessionsTest {
     }
 
     @Test
+    public void aNodeUnderModulesFails() {
+        begin("{ jcr(unsavedValues: {node: \"/modules/a/1.0/templates/t\"}) { workspace } }", Collections.emptyMap());
+
+        assertRefused("unsavedValues shows no node under /modules or /jcr:system: /modules/a/1.0/templates/t");
+        assertNull(api.selector);
+    }
+
+    @Test
     public void anEmptyNodeFails() {
         begin("{ jcr(unsavedValues: {node: \"\"}) { workspace } }", Collections.emptyMap());
 
@@ -607,6 +615,9 @@ public class JcrVersionSessionsTest {
         JCRSessionWrapper session = mock(JCRSessionWrapper.class);
         JCRNodeWrapper node = mock(JCRNodeWrapper.class);
         when(node.getIdentifier()).thenReturn(NODE_ID);
+        when(node.getPath()).thenReturn("/sites/a/text");
+        JCRNodeWrapper template = mock(JCRNodeWrapper.class);
+        when(template.getPath()).thenReturn("/modules/a/1.0/templates/t");
         JCRNodeWrapper target = mock(JCRNodeWrapper.class);
         when(target.getIdentifier()).thenReturn(TARGET_ID);
         when(session.getNodeByIdentifier(anyString())).thenThrow(new ItemNotFoundException());
@@ -614,6 +625,7 @@ public class JcrVersionSessionsTest {
         doReturn(node).when(session).getNodeByIdentifier(NODE_ID);
         doReturn(node).when(session).getNode("/sites/a/text");
         doReturn(target).when(session).getNode("/sites/a/target");
+        doReturn(template).when(session).getNode("/modules/a/1.0/templates/t");
         ValueFactory valueFactory = mock(ValueFactory.class);
         when(valueFactory.createValue(anyString(), anyInt())).thenAnswer(invocation -> {
             String string = invocation.getArgument(0);

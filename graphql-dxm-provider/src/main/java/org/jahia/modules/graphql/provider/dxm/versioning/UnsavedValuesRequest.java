@@ -103,7 +103,13 @@ final class UnsavedValuesRequest {
         if (count > MAX_VALUES) {
             throw new Refusal("unsavedValues carries more than " + MAX_VALUES + " values");
         }
-        String nodeIdentifier = node(session, node.toString()).getIdentifier();
+        JCRNodeWrapper formNode = node(session, node.toString());
+        String path = formNode.getPath();
+        // Core shows these nodes as they are stored: the templates under /modules feed caches that every user shares.
+        if (path.startsWith("/jcr:system") || path.equals("/modules") || path.startsWith("/modules/")) {
+            throw new Refusal("unsavedValues shows no node under /modules or /jcr:system: " + path);
+        }
+        String nodeIdentifier = formNode.getIdentifier();
         List<PropertyChange> changes = new ArrayList<>();
         for (Map<?, ?> property : properties) {
             PropertyChange change = set(property, session);

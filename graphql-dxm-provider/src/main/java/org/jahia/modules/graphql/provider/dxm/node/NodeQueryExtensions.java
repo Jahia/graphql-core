@@ -116,7 +116,7 @@ public class NodeQueryExtensions {
                                      @GraphQLName(JcrVersionSessions.UNSAVED_VALUES) @GraphQLDescription("Reads the EDIT workspace with the values of a form "
             + "that you have not saved. The node of the form shows these values, and every other node shows its current content. "
             + "The query writes nothing and takes no lock, so it reads a node that another user locks. A value follows the rules of "
-            + "setPropertiesBatch, and a binary value or more than 1000 values fail the query. It needs Jahia 8.2.4 or later. The rules of versionAt apply, "
+            + "setPropertiesBatch, and a binary value, more than 1000 values or a node under /modules fail the query. It needs Jahia 8.2.4 or later. The rules of versionAt apply, "
             + "and this argument excludes versionAt and versionOperation.") GqlJcrUnsavedValuesInput unsavedValues,
                                      DataFetchingEnvironment environment) {
         ContextUtil.setJcrLiveOperationHeaderIfNeeded(workspace, OperationDefinition.Operation.QUERY, environment.getGraphQlContext());
