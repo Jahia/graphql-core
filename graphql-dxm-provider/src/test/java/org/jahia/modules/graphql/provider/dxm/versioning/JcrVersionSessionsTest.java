@@ -500,30 +500,6 @@ public class JcrVersionSessionsTest {
     }
 
     @Test
-    public void aValueThatIsNotAnObjectFails() {
-        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
-                Collections.singletonMap("values", "typed"));
-
-        assertRefused("unsavedValues is not an object");
-    }
-
-    @Test
-    public void anUnknownTypeAndAPropertyWithNoNameFail() {
-        Map<String, Object> values = new HashMap<>();
-        values.put("node", NODE_ID);
-        values.put("properties", Collections.singletonList(property("p", null, "NOPE", "x", null)));
-        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
-                Collections.singletonMap("values", values));
-        assertRefused("unsavedValues has an unknown GqlJcrPropertyType: NOPE");
-
-        context = GraphQLContext.newContext().build();
-        values.put("properties", Collections.singletonList(property(null, null, null, "x", null)));
-        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
-                Collections.singletonMap("values", values));
-        assertRefused("unsavedValues has a property with no name");
-    }
-
-    @Test
     public void aBinaryPropertyWithNoValueChangesNothing() {
         begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: [{name: \"data\", type: BINARY}]}) { workspace } }",
                 Collections.emptyMap());

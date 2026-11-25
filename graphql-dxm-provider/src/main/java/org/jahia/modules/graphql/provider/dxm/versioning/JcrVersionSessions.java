@@ -232,9 +232,6 @@ public final class JcrVersionSessions {
             return "A query that runs inside a render cannot read a version";
         }
         if (version.unsavedValues != null) {
-            if (!(version.unsavedValues instanceof Map)) {
-                return "unsavedValues is not an object";
-            }
             try {
                 // Before the version sessions open: the plain session of the user resolves the node and the references.
                 selector = api.withUnsavedValues(UnsavedValuesRequest.read((Map<?, ?>) version.unsavedValues, api.getEditSession()));

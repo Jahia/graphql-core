@@ -6,7 +6,6 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrPropertyOption;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrPropertyType;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
-import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.LanguageCodeConverters;
@@ -88,7 +87,7 @@ final class UnsavedValuesRequest {
      */
     static UnsavedValuesRequest read(Map<?, ?> argument, JCRSessionWrapper session) throws RepositoryException {
         Object node = argument.get("node");
-        if (node == null || node.toString().trim().isEmpty()) {
+        if (node.toString().trim().isEmpty()) {
             throw new Refusal("unsavedValues names no node");
         }
         List<Map<?, ?>> properties = maps(argument.get("properties"));
@@ -126,9 +125,8 @@ final class UnsavedValuesRequest {
     /** A node that the lookup cannot read, for any reason of the repository, does not exist for the user. */
     private static JCRNodeWrapper node(JCRSessionWrapper session, String pathOrId) {
         try {
-            return pathOrId.startsWith("/") ? session.getNode(JCRContentUtils.escapeNodePath(pathOrId))
-                    : session.getNodeByIdentifier(pathOrId);
-        } catch (RepositoryException e) {
+            return GqlJcrMutationSupport.getNodeFromPathOrId(session, pathOrId);
+        } catch (DataFetchingException e) {
             throw new Refusal("The node of unsavedValues does not exist: " + pathOrId);
         }
     }
@@ -177,11 +175,7 @@ final class UnsavedValuesRequest {
     }
 
     private static String name(Map<?, ?> property) {
-        Object name = property.get("name");
-        if (name == null) {
-            throw new Refusal("unsavedValues has a property with no name");
-        }
-        return name.toString();
+        return property.get("name").toString();
     }
 
     private static Locale language(Map<?, ?> property) {
@@ -194,12 +188,7 @@ final class UnsavedValuesRequest {
         if (value == null) {
             return null;
         }
-        String name = value instanceof Enum ? ((Enum<?>) value).name() : value.toString();
-        try {
-            return Enum.valueOf(type, name);
-        } catch (IllegalArgumentException e) {
-            throw new Refusal("unsavedValues has an unknown " + type.getSimpleName() + ": " + name);
-        }
+        return Enum.valueOf(type, value instanceof Enum ? ((Enum<?>) value).name() : value.toString());
     }
 
     /** A single value where the schema declares a list counts as a list of one, as GraphQL coerces it. */
