@@ -3,4 +3,4 @@
 graphql-core: minor
 ---
 
-Added the `unsavedValues` argument to the `jcr` query root, to read a node with the unsaved values of a form.
+Added `jcr(unsavedValues:)`, which reads a node with the unsaved values of a form, on Jahia 8.2.4 or later.

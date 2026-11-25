@@ -274,7 +274,7 @@ public final class JcrVersionSessions {
             return "Reading a version needs Jahia 8.2.4 or later";
         }
         if (version.unsavedValues != null && !api.supportsUnsavedValues()) {
-            return "Reading unsaved values needs Jahia 8.2.4 or later";
+            return "Reading unsaved values needs the UnsavedValues API of the core, which this Jahia lacks";
         }
         if (request == null) {
             return "Reading a version needs an HTTP request";

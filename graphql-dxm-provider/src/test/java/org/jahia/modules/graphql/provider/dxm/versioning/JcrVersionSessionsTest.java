@@ -441,7 +441,7 @@ public class JcrVersionSessionsTest {
 
         begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } }", Collections.emptyMap());
 
-        assertRefused("Reading unsaved values needs Jahia 8.2.4 or later");
+        assertRefused("Reading unsaved values needs the UnsavedValues API of the core, which this Jahia lacks");
         assertNull(api.selector);
         context = GraphQLContext.newContext().build();
         request = request();
