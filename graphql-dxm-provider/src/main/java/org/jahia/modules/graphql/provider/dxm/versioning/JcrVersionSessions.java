@@ -238,7 +238,7 @@ public final class JcrVersionSessions {
             try {
                 // Before the version sessions open: the plain session of the user resolves the node and the references.
                 selector = api.withUnsavedValues(UnsavedValuesRequest.read((Map<?, ?>) version.unsavedValues, api.getEditSession()));
-            } catch (IllegalArgumentException e) {
+            } catch (UnsavedValuesRequest.Refusal e) {
                 return e.getMessage();
             } catch (RepositoryException e) {
                 throw new IllegalStateException(e);
@@ -274,7 +274,7 @@ public final class JcrVersionSessions {
             return "Reading a version needs Jahia 8.2.4 or later";
         }
         if (version.unsavedValues != null && !api.supportsUnsavedValues()) {
-            return "Reading unsaved values needs a Jahia that supports them";
+            return "Reading unsaved values needs Jahia 8.2.4 or later";
         }
         if (request == null) {
             return "Reading a version needs an HTTP request";

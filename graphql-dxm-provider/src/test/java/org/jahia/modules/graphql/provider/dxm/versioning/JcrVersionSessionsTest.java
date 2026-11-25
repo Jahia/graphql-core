@@ -19,6 +19,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import javax.jcr.ItemNotFoundException;
+import javax.jcr.Node;
+import javax.jcr.PathNotFoundException;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
@@ -26,6 +28,7 @@ import javax.jcr.ValueFactory;
 import javax.jcr.ValueFormatException;
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,6 +45,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -57,6 +61,7 @@ public class JcrVersionSessionsTest {
 
     private static final String OPERATION_ID = "0b1f7d6c-2f7e-4b8e-9a3c-5d2e1f0a9b8c";
     private static final String NODE_ID = "5a1c3f4e-8d2b-4c6a-9e7f-1b2d3c4e5f6a";
+    private static final String TARGET_ID = "6b2d4f5a-9e3c-4d7b-8f1a-2c3e4d5f6a7b";
 
     private FakeVersionApi api;
     private JcrVersionSessions versionSessions;
@@ -357,7 +362,7 @@ public class JcrVersionSessionsTest {
         values.put("node", NODE_ID);
         values.put("properties", Arrays.asList(
                 property("text", "en", null, "typed", null),
-                property("j:keywords", "en", GqlJcrPropertyType.STRING, null, Arrays.asList("one", "two"))));
+                property("j:counts", "en", GqlJcrPropertyType.LONG, null, Arrays.asList("1", "2"))));
         values.put("propertiesToDelete", Collections.singletonList(deleted("jcr:title", "fr")));
         values.put("mixinsToAdd", Collections.singletonList("jmix:keywords"));
         values.put("mixinsToDelete", Collections.singletonList("jmix:description"));
@@ -372,7 +377,7 @@ public class JcrVersionSessionsTest {
         UnsavedValuesRequest request = api.unsavedValues;
         assertEquals(3, request.changes.size());
         assertChange(request.changes.get(0), "text", Locale.ENGLISH, PropertyType.STRING, false, Collections.singletonList("typed"));
-        assertChange(request.changes.get(1), "j:keywords", Locale.ENGLISH, PropertyType.STRING, true, Arrays.asList("one", "two"));
+        assertChange(request.changes.get(1), "j:counts", Locale.ENGLISH, PropertyType.LONG, true, Arrays.asList("1", "2"));
         assertChange(request.changes.get(2), "jcr:title", Locale.FRENCH, PropertyType.UNDEFINED, false, null);
         assertEquals(Collections.singletonList("jmix:keywords"), request.mixinsToAdd);
         assertEquals(Collections.singletonList("jmix:description"), request.mixinsToDelete);
@@ -436,12 +441,139 @@ public class JcrVersionSessionsTest {
 
         begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } }", Collections.emptyMap());
 
-        assertRefused("Reading unsaved values needs a Jahia that supports them");
+        assertRefused("Reading unsaved values needs Jahia 8.2.4 or later");
         assertNull(api.selector);
         context = GraphQLContext.newContext().build();
         request = request();
         begin("{ jcr(versionAt: 1000) { workspace } }", Collections.emptyMap());
         assertTrue(versionSessions.isOpened(context));
+    }
+
+    @Test
+    public void aLiteralReadsASingleValueAsAListOfOne() {
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: {name: \"j:keywords\", values: \"one\"}, "
+                + "mixinsToAdd: \"jmix:keywords\"}) { workspace } }", Collections.emptyMap());
+
+        assertTrue(versionSessions.isOpened(context));
+        assertChange(api.unsavedValues.changes.get(0), "j:keywords", null, PropertyType.STRING, true, Collections.singletonList("one"));
+        assertEquals(Collections.singletonList("jmix:keywords"), api.unsavedValues.mixinsToAdd);
+    }
+
+    @Test
+    public void aReferenceTakesTheIdentifierOfItsTarget() {
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: [{name: \"r\", type: REFERENCE, value: \"/sites/a/target\"}, "
+                + "{name: \"w\", type: WEAKREFERENCE, value: \"/sites/a/target\"}]}) { workspace } }", Collections.emptyMap());
+
+        assertChange(api.unsavedValues.changes.get(0), "r", null, PropertyType.REFERENCE, false, Collections.singletonList(TARGET_ID));
+        assertChange(api.unsavedValues.changes.get(1), "w", null, PropertyType.WEAKREFERENCE, false, Collections.singletonList(TARGET_ID));
+    }
+
+    @Test
+    public void aReferenceToANodeThatDoesNotExistFails() {
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: [{name: \"r\", type: REFERENCE, value: \"/sites/a/gone\"}]}) "
+                + "{ workspace } }", Collections.emptyMap());
+
+        assertRefused("unsavedValues has a reference to a node that does not exist: r");
+    }
+
+    @Test
+    public void anEmptyReferenceFails() {
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: [{name: \"r\", type: REFERENCE, value: \"\"}]}) { workspace } }",
+                Collections.emptyMap());
+
+        assertRefused("unsavedValues has an empty reference: r");
+    }
+
+    @Test
+    public void anEmptyNodeFails() {
+        begin("{ jcr(unsavedValues: {node: \"\"}) { workspace } }", Collections.emptyMap());
+
+        assertRefused("unsavedValues names no node");
+    }
+
+    @Test
+    public void aValueThatIsNotAnObjectFails() {
+        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
+                Collections.singletonMap("values", "typed"));
+
+        assertRefused("unsavedValues is not an object");
+    }
+
+    @Test
+    public void anUnknownTypeAndAPropertyWithNoNameFail() {
+        Map<String, Object> values = new HashMap<>();
+        values.put("node", NODE_ID);
+        values.put("properties", Collections.singletonList(property("p", null, "NOPE", "x", null)));
+        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
+                Collections.singletonMap("values", values));
+        assertRefused("unsavedValues has an unknown GqlJcrPropertyType: NOPE");
+
+        context = GraphQLContext.newContext().build();
+        values.put("properties", Collections.singletonList(property(null, null, null, "x", null)));
+        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
+                Collections.singletonMap("values", values));
+        assertRefused("unsavedValues has a property with no name");
+    }
+
+    @Test
+    public void aBinaryPropertyWithNoValueChangesNothing() {
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: [{name: \"data\", type: BINARY}]}) { workspace } }",
+                Collections.emptyMap());
+
+        assertTrue(versionSessions.isOpened(context));
+        assertTrue(api.unsavedValues.changes.isEmpty());
+    }
+
+    @Test
+    public void tooManyValuesFailBeforeAnyConversion() {
+        List<String> many = new ArrayList<>();
+        for (int i = 0; i <= UnsavedValuesRequest.MAX_VALUES; i++) {
+            many.add("x");
+        }
+        Map<String, Object> values = new HashMap<>();
+        values.put("node", "/sites/a/gone");
+        values.put("properties", Collections.singletonList(property("p", null, null, null, many)));
+        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
+                Collections.singletonMap("values", values));
+
+        assertRefused("unsavedValues carries more than " + UnsavedValuesRequest.MAX_VALUES + " values");
+    }
+
+    @Test
+    public void unsavedValuesAsAGuestFail() {
+        api.user = user("guest");
+
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } }", Collections.emptyMap());
+
+        assertRefused("A guest cannot read a version");
+        assertNull(api.selector);
+    }
+
+    @Test
+    public void unsavedValuesBesideAnotherRootFieldFail() {
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } currentUser { name } }", Collections.emptyMap());
+
+        assertRefused("A query that reads a version selects the jcr field alone at its root");
+    }
+
+    @Test
+    public void unsavedValuesWithAVersionOperationFail() {
+        begin("{ jcr(versionOperation: \"" + OPERATION_ID + "\", unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } }",
+                Collections.emptyMap());
+
+        assertRefused("A query reads unsavedValues without versionAt and without versionOperation");
+        assertEquals("no check of an operation runs", 0, api.checks);
+    }
+
+    @Test
+    public void anOperationAfterUnsavedValuesInTheSameRequestFails() {
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } }", Collections.emptyMap());
+        assertTrue(versionSessions.isOpened(context));
+
+        context = GraphQLContext.newContext().build();
+        begin("{ jcr { workspace } }", Collections.emptyMap());
+
+        assertRefused("A request that read a version runs no other operation after it");
     }
 
     private static Map<String, Object> property(String name, String language, Object type, String value, List<String> values) {
@@ -475,9 +607,13 @@ public class JcrVersionSessionsTest {
         JCRSessionWrapper session = mock(JCRSessionWrapper.class);
         JCRNodeWrapper node = mock(JCRNodeWrapper.class);
         when(node.getIdentifier()).thenReturn(NODE_ID);
+        JCRNodeWrapper target = mock(JCRNodeWrapper.class);
+        when(target.getIdentifier()).thenReturn(TARGET_ID);
         when(session.getNodeByIdentifier(anyString())).thenThrow(new ItemNotFoundException());
+        when(session.getNode(anyString())).thenThrow(new PathNotFoundException());
         doReturn(node).when(session).getNodeByIdentifier(NODE_ID);
         doReturn(node).when(session).getNode("/sites/a/text");
+        doReturn(target).when(session).getNode("/sites/a/target");
         ValueFactory valueFactory = mock(ValueFactory.class);
         when(valueFactory.createValue(anyString(), anyInt())).thenAnswer(invocation -> {
             String string = invocation.getArgument(0);
@@ -488,8 +624,18 @@ public class JcrVersionSessionsTest {
             when(value.getString()).thenReturn(string);
             return value;
         });
+        when(valueFactory.createValue(any(Node.class))).thenAnswer(invocation -> identifierValue(invocation.getArgument(0)));
+        when(valueFactory.createValue(any(Node.class), anyBoolean())).thenAnswer(invocation -> identifierValue(invocation.getArgument(0)));
         when(session.getValueFactory()).thenReturn(valueFactory);
         return session;
+    }
+
+    /** The value of a reference, whose string is the identifier of its target. */
+    private static Value identifierValue(Node target) throws RepositoryException {
+        Value value = mock(Value.class);
+        String identifier = target.getIdentifier();
+        when(value.getString()).thenReturn(identifier);
+        return value;
     }
 
     private void begin(String query, Map<String, Object> variables) {

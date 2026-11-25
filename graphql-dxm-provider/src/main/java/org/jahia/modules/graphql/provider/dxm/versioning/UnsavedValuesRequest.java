@@ -11,8 +11,6 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.LanguageCodeConverters;
 
-import javax.jcr.ItemNotFoundException;
-import javax.jcr.PathNotFoundException;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.ValueFormatException;
@@ -30,6 +28,21 @@ import java.util.Map;
  * reference takes the identifier of its target. A binary value is refused.
  */
 final class UnsavedValuesRequest {
+
+    /**
+     * The most values that one argument carries: the values of the properties that it sets, the properties that it
+     * removes and the mixins that it changes. A value can cost an encryption or a lookup before the query starts.
+     */
+    static final int MAX_VALUES = 1000;
+
+    /** A refusal of the argument, whose message the query returns. */
+    static final class Refusal extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        Refusal(String message) {
+            super(message);
+        }
+    }
 
     /** A property that the form sets, or removes when its values are {@code null}. */
     static final class PropertyChange {
@@ -64,58 +77,73 @@ final class UnsavedValuesRequest {
     /**
      * Reads the argument. The sets come before the removals, as the save of a form applies them.
      *
-     * @param argument the value of the argument: a map of its fields, as GraphQL coerces an input object
+     * @param argument the value of the argument, a map of its fields. A variable gives the map that GraphQL coerces, with
+     *                 each enum as its Java constant. A literal of the query gives the map that {@link JcrVersionSessions}
+     *                 builds, with each enum as its name and a single value where the schema declares a list.
      * @param session  a plain session of the {@code default} workspace, which resolves the node and the references
      * @return the request
-     * @throws IllegalArgumentException when the argument names no readable node, or carries a value that its type refuses
-     * @throws RepositoryException      when the repository fails
+     * @throws Refusal             when the argument names no readable node, carries too many values, or carries a value
+     *                             that its type refuses
+     * @throws RepositoryException when the repository fails
      */
     static UnsavedValuesRequest read(Map<?, ?> argument, JCRSessionWrapper session) throws RepositoryException {
         Object node = argument.get("node");
-        if (node == null) {
-            throw new IllegalArgumentException("unsavedValues names no node");
+        if (node == null || node.toString().trim().isEmpty()) {
+            throw new Refusal("unsavedValues names no node");
+        }
+        List<Map<?, ?>> properties = maps(argument.get("properties"));
+        List<Map<?, ?>> propertiesToDelete = maps(argument.get("propertiesToDelete"));
+        List<String> mixinsToAdd = strings(argument.get("mixinsToAdd"));
+        List<String> mixinsToDelete = strings(argument.get("mixinsToDelete"));
+        // Counted before any conversion, so that a large argument costs no encryption and no lookup.
+        int count = propertiesToDelete.size() + mixinsToAdd.size() + mixinsToDelete.size();
+        for (Map<?, ?> property : properties) {
+            count += Math.max(1, strings(property.get("values")).size());
+        }
+        if (count > MAX_VALUES) {
+            throw new Refusal("unsavedValues carries more than " + MAX_VALUES + " values");
         }
         String nodeIdentifier = node(session, node.toString()).getIdentifier();
         List<PropertyChange> changes = new ArrayList<>();
-        for (Map<?, ?> property : maps(argument.get("properties"))) {
+        for (Map<?, ?> property : properties) {
             PropertyChange change = set(property, session);
             if (change != null) {
                 changes.add(change);
             }
         }
-        for (Map<?, ?> property : maps(argument.get("propertiesToDelete"))) {
+        for (Map<?, ?> property : propertiesToDelete) {
             changes.add(new PropertyChange(name(property), language(property), PropertyType.UNDEFINED, false, null));
         }
-        return new UnsavedValuesRequest(nodeIdentifier, changes, strings(argument.get("mixinsToAdd")),
-                strings(argument.get("mixinsToDelete")));
+        return new UnsavedValuesRequest(nodeIdentifier, changes, mixinsToAdd, mixinsToDelete);
     }
 
-    private static JCRNodeWrapper node(JCRSessionWrapper session, String pathOrId) throws RepositoryException {
+    /** A node that the lookup cannot read, for any reason of the repository, does not exist for the user. */
+    private static JCRNodeWrapper node(JCRSessionWrapper session, String pathOrId) {
         try {
             return pathOrId.startsWith("/") ? session.getNode(JCRContentUtils.escapeNodePath(pathOrId))
                     : session.getNodeByIdentifier(pathOrId);
-        } catch (PathNotFoundException | ItemNotFoundException e) {
-            throw new IllegalArgumentException("The node of unsavedValues does not exist: " + pathOrId);
+        } catch (RepositoryException e) {
+            throw new Refusal("The node of unsavedValues does not exist: " + pathOrId);
         }
     }
 
     /** A property with neither a value nor values changes nothing, as for {@code setPropertiesBatch}. */
     private static PropertyChange set(Map<?, ?> property, JCRSessionWrapper session) throws RepositoryException {
         String name = name(property);
+        Object value = property.get("value");
+        Object values = property.get("values");
+        if (value == null && values == null) {
+            return null;
+        }
         GqlJcrPropertyType type = enumValue(GqlJcrPropertyType.class, property.get("type"));
         int jcrType = type != null ? type.getValue() : PropertyType.STRING;
         if (jcrType == PropertyType.BINARY) {
-            throw new IllegalArgumentException("unsavedValues takes no binary value: " + name);
+            throw new Refusal("unsavedValues takes no binary value: " + name);
         }
         GqlJcrPropertyOption option = enumValue(GqlJcrPropertyOption.class, property.get("option"));
-        Object value = property.get("value");
-        Object values = property.get("values");
         if (value != null) {
             return new PropertyChange(name, language(property), jcrType, false,
                     Collections.singletonList(convert(name, jcrType, option, value.toString(), session)));
-        }
-        if (values == null) {
-            return null;
         }
         List<String> converted = new ArrayList<>();
         for (String one : strings(values)) {
@@ -126,24 +154,26 @@ final class UnsavedValuesRequest {
 
     private static String convert(String name, int type, GqlJcrPropertyOption option, String value, JCRSessionWrapper session)
             throws RepositoryException {
+        if ((type == PropertyType.REFERENCE || type == PropertyType.WEAKREFERENCE) && value.isEmpty()) {
+            throw new Refusal("unsavedValues has an empty reference: " + name);
+        }
         try {
             return GqlJcrMutationSupport.getValue(type, option, value, session, null).getString();
         } catch (ValueFormatException | GqlJcrWrongInputException e) {
-            throw new IllegalArgumentException("unsavedValues has a value that is not a " + PropertyType.nameFromValue(type)
-                    + ": " + name);
+            throw new Refusal("unsavedValues has a value that is not a " + PropertyType.nameFromValue(type) + ": " + name);
         } catch (FileUploadBase.FileSizeLimitExceededException | IOException e) {
             // Only a binary value reads a stream, and the read refuses a binary before it converts.
             throw new IllegalStateException(e);
         } catch (DataFetchingException e) {
             // The target of a reference, which the session cannot read.
-            throw new IllegalArgumentException("unsavedValues has a reference to a node that does not exist: " + name);
+            throw new Refusal("unsavedValues has a reference to a node that does not exist: " + name);
         }
     }
 
     private static String name(Map<?, ?> property) {
         Object name = property.get("name");
         if (name == null) {
-            throw new IllegalArgumentException("unsavedValues has a property with no name");
+            throw new Refusal("unsavedValues has a property with no name");
         }
         return name.toString();
     }
@@ -162,29 +192,33 @@ final class UnsavedValuesRequest {
         try {
             return Enum.valueOf(type, name);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("unsavedValues has an unknown " + type.getSimpleName() + ": " + name);
+            throw new Refusal("unsavedValues has an unknown " + type.getSimpleName() + ": " + name);
         }
     }
 
-    private static List<Map<?, ?>> maps(Object list) {
+    /** A single value where the schema declares a list counts as a list of one, as GraphQL coerces it. */
+    private static List<?> list(Object value) {
+        if (value == null) {
+            return Collections.emptyList();
+        }
+        return value instanceof Collection ? new ArrayList<>((Collection<?>) value) : Collections.singletonList(value);
+    }
+
+    private static List<Map<?, ?>> maps(Object value) {
         List<Map<?, ?>> maps = new ArrayList<>();
-        if (list instanceof Collection) {
-            for (Object item : (Collection<?>) list) {
-                if (item instanceof Map) {
-                    maps.add((Map<?, ?>) item);
-                }
+        for (Object item : list(value)) {
+            if (item instanceof Map) {
+                maps.add((Map<?, ?>) item);
             }
         }
         return maps;
     }
 
-    private static List<String> strings(Object list) {
+    private static List<String> strings(Object value) {
         List<String> strings = new ArrayList<>();
-        if (list instanceof Collection) {
-            for (Object item : (Collection<?>) list) {
-                if (item != null) {
-                    strings.add(item.toString());
-                }
+        for (Object item : list(value)) {
+            if (item != null) {
+                strings.add(item.toString());
             }
         }
         return strings;

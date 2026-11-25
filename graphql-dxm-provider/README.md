@@ -109,7 +109,7 @@ extends type Query {
    versionAt: Long
    # Reads the EDIT workspace as one operation of content-versioning left it, by the UUID of the operation
    versionOperation: String
-   # Reads the EDIT workspace with the values of a form that you have not saved, on the node of the form (Jahia 8.2.4)
+   # Reads the EDIT workspace with the values of a form that you have not saved, on the node of the form (Jahia 8.2.4 or later)
    unsavedValues: InputJCRUnsavedValues
  ): JCRQuery
 }
