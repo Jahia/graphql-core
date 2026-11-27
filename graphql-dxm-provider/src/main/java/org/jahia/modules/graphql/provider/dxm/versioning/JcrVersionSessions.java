@@ -262,8 +262,9 @@ public final class JcrVersionSessions {
     }
 
     private String refusalOfRequest(int rootFieldCount, Object workspace, Version version, HttpServletRequest request) {
+        String read = version.unsavedValues != null ? "unsaved values" : "a version";
         if (rootFieldCount != 1) {
-            return "A query that reads a version selects the jcr field alone at its root";
+            return "A query that reads " + read + " selects the jcr field alone at its root";
         }
         if (version.at != null && version.operation != null) {
             return "A query reads a version with versionAt or with versionOperation, not with both";
@@ -272,20 +273,20 @@ public final class JcrVersionSessions {
             return "A query reads unsavedValues without versionAt and without versionOperation";
         }
         if (workspace != null && NodeQueryExtensions.Workspace.fromName(workspace.toString()) != NodeQueryExtensions.Workspace.EDIT) {
-            return "A query reads a version in the EDIT workspace only";
+            return "A query reads " + read + " in the EDIT workspace only";
         }
         if (api == null) {
-            return "Reading a version needs Jahia 8.2.4 or later";
+            return "Reading " + read + " needs Jahia 8.2.4 or later";
         }
         if (version.unsavedValues != null && !api.supportsUnsavedValues()) {
             return "Reading unsaved values needs the UnsavedValues API of the core, which this Jahia lacks";
         }
         if (request == null) {
-            return "Reading a version needs an HTTP request";
+            return "Reading " + read + " needs an HTTP request";
         }
         JahiaUser user = api.getCurrentUser();
         if (JahiaUserManagerService.isGuest(user)) {
-            return "A guest cannot read a version";
+            return "A guest cannot read " + read;
         }
         return null;
     }

@@ -42,6 +42,7 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -434,7 +435,7 @@ public class JcrVersionSessionsTest {
     public void unsavedValuesInTheLiveWorkspaceFail() {
         begin("{ jcr(workspace: LIVE, unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } }", Collections.emptyMap());
 
-        assertRefused("A query reads a version in the EDIT workspace only");
+        assertRefused("A query reads unsaved values in the EDIT workspace only");
     }
 
     @Test
@@ -611,7 +612,7 @@ public class JcrVersionSessionsTest {
             begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
                     Collections.singletonMap("values", values));
 
-            assertRefused("unsavedValues has an empty item in a list");
+            assertRefused("unsavedValues has an empty item in " + list);
             assertNull(list, api.selector);
         }
     }
@@ -625,6 +626,49 @@ public class JcrVersionSessionsTest {
     }
 
     @Test
+    public void asManyPropertiesToDeleteAndMixinsAsTheLimitOpen() {
+        List<Map<String, Object>> deleted = new ArrayList<>();
+        for (int i = 0; i < 400; i++) {
+            deleted.add(deleted("p" + i, null));
+        }
+        Map<String, Object> values = new HashMap<>();
+        values.put("node", NODE_ID);
+        values.put("propertiesToDelete", deleted);
+        values.put("mixinsToAdd", strings("jmix:a", 400));
+        values.put("mixinsToDelete", strings("jmix:d", UnsavedValuesRequest.MAX_ITEMS - 800));
+        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
+                Collections.singletonMap("values", values));
+
+        assertTrue(versionSessions.isOpened(context));
+    }
+
+    @Test
+    public void aReferencePathToATemplateFailsByTheRealPath() {
+        begin("{ jcr(unsavedValues: {node: \"/sites/a/ref@/t\"}) { workspace } }", Collections.emptyMap());
+
+        assertRefused("unsavedValues shows no node under /modules or /jcr:system: /modules/a/1.0/templates/t");
+        assertNull(api.selector);
+    }
+
+    @Test
+    public void aTranslationNodeFails() {
+        begin("{ jcr(unsavedValues: {node: \"/sites/a/text/j:translation_en\"}) { workspace } }", Collections.emptyMap());
+
+        assertRefused("unsavedValues shows no translation node, and the values of a language go to the node: "
+                + "/sites/a/text/j:translation_en");
+        assertNull(api.selector);
+    }
+
+    @Test
+    public void aRepositoryFailureOfAReferenceTargetIsNoMissingTarget() throws RepositoryException {
+        doThrow(new RepositoryException("the mount is down")).when(api.editSession).getNode("/sites/a/mounted");
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: [{name: \"ref\", type: REFERENCE, value: \"/sites/a/mounted\"}]}) "
+                + "{ workspace } }", Collections.emptyMap());
+
+        assertRefused("The version of this query could not open");
+    }
+
+    @Test
     public void anEmptyItemInAListFails() {
         Map<String, Object> values = new HashMap<>();
         values.put("node", NODE_ID);
@@ -632,7 +676,7 @@ public class JcrVersionSessionsTest {
         begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
                 Collections.singletonMap("values", values));
 
-        assertRefused("unsavedValues has an empty item in a list");
+        assertRefused("unsavedValues has an empty item in mixinsToAdd");
         assertNull(api.selector);
     }
 
@@ -656,7 +700,7 @@ public class JcrVersionSessionsTest {
         Object selector = JcrVersionSessions.ReflectiveVersionApi.UnsavedValuesApi
                 .load(RecordingSelector.class, RecordingValues.class.getName()).selector(api.unsavedValues);
 
-        assertEquals("selector", selector);
+        assertSame(RecordingValues.lastBuilt, selector);
         assertEquals(Arrays.asList("builder " + api.unsavedValues.nodeIdentifier, "set text en " + PropertyType.STRING + " false [typed]",
                 "remove old null", "remove mixin jmix:d", "add mixin jmix:a", "build"), RecordingValues.CALLS);
     }
@@ -677,6 +721,12 @@ public class JcrVersionSessionsTest {
     }
 
     @Test
+    public void aCoreWithNoUnsavedValuesClassReadsNoUnsavedValues() {
+        assertNull(JcrVersionSessions.ReflectiveVersionApi.UnsavedValuesApi
+                .load(RecordingSelector.class, "org.jahia.api.versioning.NoSuchUnsavedValues"));
+    }
+
+    @Test
     public void aCoreWhoseUnsavedValuesLackAMethodReadsNoUnsavedValues() {
         assertNull(JcrVersionSessions.ReflectiveVersionApi.UnsavedValuesApi
                 .load(RecordingSelector.class, ValuesWithoutBuilder.class.getName()));
@@ -685,6 +735,7 @@ public class JcrVersionSessionsTest {
     /** Stands for the UnsavedValues of core, and records each call of its builder. */
     public static final class RecordingValues {
         static final List<String> CALLS = new ArrayList<>();
+        static RecordingValues lastBuilt;
 
         public static Builder builder(String nodeIdentifier) {
             CALLS.add("builder " + nodeIdentifier);
@@ -714,12 +765,13 @@ public class JcrVersionSessionsTest {
 
             public RecordingValues build() {
                 CALLS.add("build");
-                return new RecordingValues();
+                lastBuilt = new RecordingValues();
+                return lastBuilt;
             }
         }
     }
 
-    /** Stands for the UnsavedValues of core, whose builder refuses every mixin as core refuses an unknown one. */
+    /** Stands for the UnsavedValues of core, whose builder refuses each mixin that it adds or removes, as core refuses an unknown one. */
     public static final class RefusingValues {
         public static Builder builder(String nodeIdentifier) {
             return new Builder();
@@ -739,7 +791,7 @@ public class JcrVersionSessionsTest {
             }
 
             public Builder removeMixin(String mixin) {
-                return this;
+                throw new IllegalArgumentException("no mixin " + mixin);
             }
 
             public RefusingValues build() {
@@ -748,14 +800,14 @@ public class JcrVersionSessionsTest {
         }
     }
 
-    /** Stands for the SessionVersionSelector of core. */
+    /** Stands for the SessionVersionSelector of core, whose selector is the values themselves. */
     public static final class RecordingSelector {
         public static Object withUnsavedValues(RecordingValues values) {
-            return "selector";
+            return values;
         }
 
         public static Object withUnsavedValues(RefusingValues values) {
-            return "selector";
+            return values;
         }
     }
 
@@ -778,7 +830,7 @@ public class JcrVersionSessionsTest {
 
         begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } }", Collections.emptyMap());
 
-        assertRefused("A guest cannot read a version");
+        assertRefused("A guest cannot read unsaved values");
         assertNull(api.selector);
     }
 
@@ -786,7 +838,7 @@ public class JcrVersionSessionsTest {
     public void unsavedValuesBesideAnotherRootFieldFail() {
         begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } currentUser { name } }", Collections.emptyMap());
 
-        assertRefused("A query that reads a version selects the jcr field alone at its root");
+        assertRefused("A query that reads unsaved values selects the jcr field alone at its root");
     }
 
     @Test
@@ -853,6 +905,15 @@ public class JcrVersionSessionsTest {
         when(versionStorage.getPath()).thenReturn("/jcr:system/jcr:versionStorage");
         JCRNodeWrapper target = mock(JCRNodeWrapper.class);
         when(target.getIdentifier()).thenReturn(TARGET_ID);
+        JCRNodeWrapper reference = mock(JCRNodeWrapper.class);
+        when(reference.getPath()).thenReturn("/sites/a/ref@/t");
+        when(reference.getRealNode()).thenReturn(template);
+        JCRNodeWrapper translation = mock(JCRNodeWrapper.class);
+        when(translation.getPath()).thenReturn("/sites/a/text/j:translation_en");
+        when(translation.isNodeType("jnt:translation")).thenReturn(true);
+        for (JCRNodeWrapper real : Arrays.asList(node, template, modules, versionStorage, target, translation)) {
+            when(real.getRealNode()).thenReturn(real);
+        }
         when(session.getNodeByIdentifier(anyString())).thenThrow(new ItemNotFoundException());
         when(session.getNode(anyString())).thenThrow(new PathNotFoundException());
         doReturn(node).when(session).getNodeByIdentifier(NODE_ID);
@@ -860,6 +921,8 @@ public class JcrVersionSessionsTest {
         doReturn(target).when(session).getNode("/sites/a/target");
         doReturn(template).when(session).getNode("/modules/a/1.0/templates/t");
         doReturn(template).when(session).getNodeByIdentifier(TEMPLATE_ID);
+        doReturn(reference).when(session).getNode("/sites/a/ref@/t");
+        doReturn(translation).when(session).getNode("/sites/a/text/j:translation_en");
         doReturn(modules).when(session).getNode("/modules");
         doReturn(versionStorage).when(session).getNode("/jcr:system/jcr:versionStorage");
         ValueFactory valueFactory = mock(ValueFactory.class);

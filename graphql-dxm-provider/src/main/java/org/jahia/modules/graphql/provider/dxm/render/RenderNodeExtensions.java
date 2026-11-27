@@ -216,7 +216,7 @@ public class RenderNodeExtensions {
     private void refuseEditModeInVersion(Boolean isEditMode) {
         // An edit from the controls of an edit-mode render writes the current content, so a version renders without them.
         if (Boolean.TRUE.equals(isEditMode) && isInVersionSession()) {
-            throw new GqlJcrWrongInputException("A version renders without edit mode");
+            throw new GqlJcrWrongInputException("A version, or a node with unsaved values, renders without edit mode");
         }
     }
 

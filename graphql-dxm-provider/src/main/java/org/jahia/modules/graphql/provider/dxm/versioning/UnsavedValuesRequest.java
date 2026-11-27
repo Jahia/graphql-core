@@ -1,6 +1,7 @@
 package org.jahia.modules.graphql.provider.dxm.versioning;
 
 import org.apache.commons.fileupload.FileUploadBase;
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrMutationSupport;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrPropertyOption;
@@ -95,33 +96,40 @@ final class UnsavedValuesRequest {
      *                 builds, with each enum as its name and a single value where the schema declares a list.
      * @param session  a plain session of the {@code default} workspace, which resolves the node and the references
      * @return the request
-     * @throws Refusal             when the argument names no readable node, the node {@code /modules}, a node under it
-     *                             or a node under {@code /jcr:system}, carries too many items or an empty item, or
-     *                             carries a value that its type or its option refuses
-     * @throws RepositoryException when the repository fails
+     * @throws Refusal               when the argument names no readable node, the node {@code /modules}, a node under
+     *                               it, a node under {@code /jcr:system} or a translation node, carries too many items,
+     *                               an empty item or a binary value, or carries a value that its type or its option
+     *                               refuses
+     * @throws DataFetchingException when the lookup of the node or of the target of a reference fails, and the node is
+     *                               not missing
+     * @throws RepositoryException   when the repository fails while a value converts
      */
     static UnsavedValuesRequest read(Map<?, ?> argument, JCRSessionWrapper session) throws RepositoryException {
         Object node = argument.get("node");
         if (node.toString().trim().isEmpty()) {
             throw new Refusal("unsavedValues names no node");
         }
-        List<Map<?, ?>> properties = maps(argument.get("properties"));
-        List<Map<?, ?>> propertiesToDelete = maps(argument.get("propertiesToDelete"));
-        List<String> mixinsToAdd = strings(argument.get("mixinsToAdd"));
-        List<String> mixinsToDelete = strings(argument.get("mixinsToDelete"));
+        List<Map<?, ?>> properties = maps("properties", argument.get("properties"));
+        List<Map<?, ?>> propertiesToDelete = maps("propertiesToDelete", argument.get("propertiesToDelete"));
+        List<String> mixinsToAdd = strings("mixinsToAdd", argument.get("mixinsToAdd"));
+        List<String> mixinsToDelete = strings("mixinsToDelete", argument.get("mixinsToDelete"));
         // Counted before any conversion, so that a large argument costs no encryption and no lookup.
         int count = propertiesToDelete.size() + mixinsToAdd.size() + mixinsToDelete.size();
         for (Map<?, ?> property : properties) {
-            count += Math.max(1, strings(property.get("values")).size());
+            count += Math.max(1, strings("the values of " + property.get("name"), property.get("values")).size());
         }
         if (count > MAX_ITEMS) {
             throw new Refusal("unsavedValues carries more than " + MAX_ITEMS + " items");
         }
         JCRNodeWrapper formNode = node(session, node.toString());
-        String path = formNode.getPath();
+        // The path of the real node, as core reads it: a reference path such as ref@/t names its target by another path.
+        String path = formNode.getRealNode().getPath();
         // Core shows these nodes as they are stored: the templates under /modules feed caches that every user shares.
         if (path.startsWith("/jcr:system") || path.equals("/modules") || path.startsWith("/modules/")) {
             throw new Refusal("unsavedValues shows no node under /modules or /jcr:system: " + path);
+        }
+        if (formNode.isNodeType(Constants.JAHIANT_TRANSLATION)) {
+            throw new Refusal("unsavedValues shows no translation node, and the values of a language go to the node: " + path);
         }
         String nodeIdentifier = formNode.getIdentifier();
         List<PropertyChange> changes = new ArrayList<>();
@@ -172,7 +180,7 @@ final class UnsavedValuesRequest {
             return PropertyChange.single(name, language(property), jcrType, convert(name, jcrType, option, value.toString(), session));
         }
         List<String> converted = new ArrayList<>();
-        for (String one : strings(values)) {
+        for (String one : strings("the values of " + name, values)) {
             converted.add(convert(name, jcrType, option, one, session));
         }
         return PropertyChange.multiple(name, language(property), jcrType, converted);
@@ -230,22 +238,22 @@ final class UnsavedValuesRequest {
         return value instanceof Collection ? new ArrayList<>((Collection<?>) value) : Collections.singletonList(value);
     }
 
-    private static List<Map<?, ?>> maps(Object value) {
+    private static List<Map<?, ?>> maps(String list, Object value) {
         List<Map<?, ?>> maps = new ArrayList<>();
         for (Object item : list(value)) {
             if (!(item instanceof Map)) {
-                throw new Refusal("unsavedValues has an empty item in a list");
+                throw new Refusal("unsavedValues has an empty item in " + list);
             }
             maps.add((Map<?, ?>) item);
         }
         return maps;
     }
 
-    private static List<String> strings(Object value) {
+    private static List<String> strings(String list, Object value) {
         List<String> strings = new ArrayList<>();
         for (Object item : list(value)) {
             if (item == null) {
-                throw new Refusal("unsavedValues has an empty item in a list");
+                throw new Refusal("unsavedValues has an empty item in " + list);
             }
             strings.add(item.toString());
         }
