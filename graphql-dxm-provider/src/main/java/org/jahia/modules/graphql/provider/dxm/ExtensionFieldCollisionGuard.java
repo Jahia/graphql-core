@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 /**
  * Refuses an extensions provider when one of its type extensions adds a field that a type already has.
  * graphql-java-annotations fails the whole schema on such a duplicate field.
+ * Leaves out a class that cannot be read, and keeps the other classes of its provider.
  * The field names and the type relations follow OutputObjectBuilder and InterfaceBuilder of graphql-java-annotations.
  * A guard checks one list of providers: DXGraphQLProvider creates a new guard at each activation.
  */
@@ -48,6 +50,7 @@ class ExtensionFieldCollisionGuard {
     private final Map<Class<?>, Set<String>> declaredFieldNames = new HashMap<>();
     private final Map<Class<?>, Map<String, String>> fieldOwners = new HashMap<>();
     private final Set<Class<?>> objectTypes = new LinkedHashSet<>();
+    private final Set<Class<?>> leftOutClasses = new HashSet<>();
 
     /**
      * @param coreObjectTypes the object types that implement an interface type and that no provider declares as a specialized type
@@ -114,12 +117,26 @@ class ExtensionFieldCollisionGuard {
     }
 
     /**
+     * @return the type extensions and the specialized types that acceptedProviders could not read, and that must not be registered
+     */
+    Set<Class<?>> leftOutClasses() {
+        return Collections.unmodifiableSet(leftOutClasses);
+    }
+
+    /**
      * Logs why the extensions of a provider are not registered.
      *
      * @param cause the error that stopped the check, or null
      */
     void refused(String providerName, String reason, Throwable cause) {
         logger.error("The GraphQL extensions of {} are not registered: {}", providerName, reason, cause);
+    }
+
+    /**
+     * Logs why one class of a provider is not registered.
+     */
+    void leftOut(String providerName, Class<?> type, Throwable cause) {
+        logger.error("The class {} of {} is not registered: it cannot be read", type.getName(), providerName, cause);
     }
 
     // Two providers of one bundle can return the same class, which graphql-java-annotations registers once
@@ -134,35 +151,60 @@ class ExtensionFieldCollisionGuard {
     }
 
     /**
+     * Removes from both collections each class that cannot be read.
+     *
      * @return the reason of the first duplicate field, or null when every field of the provider is new
      */
     private String check(String providerName, Collection<Class<?>> extensions, Collection<Class<?>> specializedTypes,
                          List<Map.Entry<Class<?>, String>> claims) {
-        String collision = claimFields(providerName, extensions, claims);
-        if (collision != null) {
-            return collision;
+        for (Iterator<Class<?>> iterator = extensions.iterator(); iterator.hasNext(); ) {
+            Class<?> extension = iterator.next();
+            List<Map.Entry<Class<?>, String>> extensionClaims = new ArrayList<>();
+            try {
+                String collision = claimFields(providerName, extension, extensionClaims);
+                claims.addAll(extensionClaims);
+                if (collision != null) {
+                    return collision;
+                }
+            } catch (RuntimeException | LinkageError e) {
+                release(extensionClaims);
+                iterator.remove();
+                leaveOut(providerName, extension, e);
+            }
         }
-        for (Class<?> specializedType : specializedTypes) {
-            String duplicate = objectTypes.contains(specializedType) ? null : duplicateField(specializedType);
-            if (duplicate != null) {
-                return duplicate;
+        for (Iterator<Class<?>> iterator = specializedTypes.iterator(); iterator.hasNext(); ) {
+            Class<?> specializedType = iterator.next();
+            try {
+                String duplicate = objectTypes.contains(specializedType) ? null : duplicateField(specializedType);
+                if (duplicate != null) {
+                    return duplicate;
+                }
+            } catch (RuntimeException | LinkageError e) {
+                iterator.remove();
+                leaveOut(providerName, specializedType, e);
             }
         }
         return null;
     }
 
-    private String claimFields(String providerName, Collection<Class<?>> extensions, List<Map.Entry<Class<?>, String>> claims) {
-        for (Class<?> extension : extensions) {
-            Class<?> type = extension.getAnnotation(GraphQLTypeExtension.class).value();
-            for (String field : objectFieldNames(extension)) {
-                String owner = ownerOf(type, field);
-                if (owner != null) {
-                    return String.format("its class %s adds the field %s.%s, which %s already declares",
-                            extension.getName(), objectInfoRetriever.getTypeName(type), field, owner);
-                }
-                fieldOwners.computeIfAbsent(type, t -> new HashMap<>()).put(field, providerName);
-                claims.add(new AbstractMap.SimpleEntry<>(type, field));
+    private void leaveOut(String providerName, Class<?> type, Throwable cause) {
+        leftOutClasses.add(type);
+        leftOut(providerName, type, cause);
+    }
+
+    /**
+     * @param claims receives each field that the extension claims, also when the method throws
+     */
+    private String claimFields(String providerName, Class<?> extension, List<Map.Entry<Class<?>, String>> claims) {
+        Class<?> type = extension.getAnnotation(GraphQLTypeExtension.class).value();
+        for (String field : objectFieldNames(extension)) {
+            String owner = ownerOf(type, field);
+            if (owner != null) {
+                return String.format("its class %s adds the field %s.%s, which %s already declares",
+                        extension.getName(), objectInfoRetriever.getTypeName(type), field, owner);
             }
+            fieldOwners.computeIfAbsent(type, t -> new HashMap<>()).put(field, providerName);
+            claims.add(new AbstractMap.SimpleEntry<>(type, field));
         }
         return null;
     }

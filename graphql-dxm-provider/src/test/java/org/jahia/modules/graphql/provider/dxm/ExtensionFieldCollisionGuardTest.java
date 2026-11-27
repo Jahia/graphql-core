@@ -27,6 +27,8 @@ import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
@@ -166,23 +168,30 @@ public class ExtensionFieldCollisionGuardTest {
     }
 
     @Test
-    public void providerThatFailsAfterAClaimReleasesTheFieldItClaimed() {
-        GraphQLObjectInfoRetriever failingRetriever = new GraphQLObjectInfoRetriever() {
-            @Override
-            @SuppressWarnings("rawtypes")
-            public List<Method> getOrderedMethods(Class type) {
-                if (type == UnloadableExtension.class) {
-                    throw new NoClassDefFoundError("a class that UnloadableExtension uses");
-                }
-                return super.getOrderedMethods(type);
-            }
-        };
-        ExtensionFieldCollisionGuard failingGuard = new ExtensionFieldCollisionGuard(failingRetriever,
-                new BreadthFirstSearch(failingRetriever), new ParentalSearch(failingRetriever), emptyList());
-        DXGraphQLExtensionsProvider failing = provider(EchoExtension.class, UnloadableExtension.class);
+    public void extensionThatCannotBeReadIsLeftOutAndItsProviderKeepsItsOtherExtensions() {
+        ExtensionFieldCollisionGuard failingGuard = guardThatCannotRead(UnloadableExtension.class);
+        DXGraphQLExtensionsProvider provider = provider(UnloadableExtension.class, EchoExtension.class);
         DXGraphQLExtensionsProvider next = provider(OtherEchoExtension.class);
 
-        assertEquals(singletonList(next), failingGuard.acceptedProviders(asList(failing, next)));
+        assertEquals(singletonList(provider), failingGuard.acceptedProviders(asList(provider, next)));
+        assertEquals(singleton(UnloadableExtension.class), failingGuard.leftOutClasses());
+    }
+
+    @Test
+    public void specializedTypeThatCannotBeReadIsLeftOutAndItsProviderIsKept() {
+        ExtensionFieldCollisionGuard failingGuard = guardThatCannotRead(StubSite.class);
+        DXGraphQLExtensionsProvider provider = specializedTypesProvider(StubSite.class);
+        DXGraphQLExtensionsProvider next = provider(SiteKeyExtension.class);
+
+        assertEquals(asList(provider, next), failingGuard.acceptedProviders(asList(provider, next)));
+        assertEquals(singleton(StubSite.class), failingGuard.leftOutClasses());
+    }
+
+    @Test
+    public void guardThatReadsEveryClassLeavesNoneOut() {
+        guard.acceptedProviders(asList(provider(PingExtension.class), provider(OtherPingExtension.class)));
+
+        assertEquals(emptySet(), guard.leftOutClasses());
     }
 
     @Test
@@ -271,6 +280,21 @@ public class ExtensionFieldCollisionGuardTest {
     private ExtensionFieldCollisionGuard guard(Collection<Class<?>> coreObjectTypes) {
         return new ExtensionFieldCollisionGuard(objectInfoRetriever, new BreadthFirstSearch(objectInfoRetriever),
                 new ParentalSearch(objectInfoRetriever), coreObjectTypes);
+    }
+
+    private static ExtensionFieldCollisionGuard guardThatCannotRead(Class<?> unreadable) {
+        GraphQLObjectInfoRetriever failingRetriever = new GraphQLObjectInfoRetriever() {
+            @Override
+            @SuppressWarnings("rawtypes")
+            public List<Method> getOrderedMethods(Class type) {
+                if (type == unreadable) {
+                    throw new NoClassDefFoundError("a class that " + unreadable.getSimpleName() + " uses");
+                }
+                return super.getOrderedMethods(type);
+            }
+        };
+        return new ExtensionFieldCollisionGuard(failingRetriever, new BreadthFirstSearch(failingRetriever),
+                new ParentalSearch(failingRetriever), emptyList());
     }
 
     private void assertGuardMatchesLibrary(Collection<Class<?>> coreObjectTypes, Class<?>... extensions) {
