@@ -50,12 +50,13 @@ public class BundleScanner {
                     if (subpath.endsWith(".class")) {
                         if (!subpath.contains("$")) {
                             try {
-                                Class<?> c = Class.forName(subpath.substring(0, subpath.length() - 6).replace('/', '.'), true, classLoader);
+                                // No initialization: a static initializer must not run, or fail, during a scan
+                                Class<?> c = Class.forName(subpath.substring(0, subpath.length() - 6).replace('/', '.'), false, classLoader);
                                 if (c.isAnnotationPresent(annotation)) {
                                     classes.add((Class<? extends T>) c);
                                 }
-                            } catch (ClassNotFoundException | NoClassDefFoundError e) {
-                                logger.warn("Cannot load class " + subpath);
+                            } catch (ClassNotFoundException | LinkageError e) {
+                                logger.warn("Cannot load class {}: {}", subpath, e.toString());
                             }
                         }
                     } else {

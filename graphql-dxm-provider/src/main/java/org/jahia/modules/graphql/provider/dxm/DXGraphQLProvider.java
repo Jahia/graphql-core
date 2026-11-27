@@ -82,6 +82,7 @@ public class DXGraphQLProvider implements
     private static Map<String, URL> sdlResources = new ConcurrentHashMap<>();
 
     private Collection<DXGraphQLExtensionsProvider> extensionsProviders = new HashSet<>();
+    private Set<Class<?>> leftOutClasses = Collections.emptySet();
 
 
     private GraphQLObjectType queryType;
@@ -236,9 +237,11 @@ public class DXGraphQLProvider implements
         }
 
         // Keeps the accepted providers only: the static reference activates a new instance when the bound providers change
-        extensionsProviders = new ExtensionFieldCollisionGuard(graphQLObjectInfoRetriever, methodSearchAlgorithm,
-                fieldSearchAlgorithm, Collections.singletonList(GqlJcrNodeImpl.class)).acceptedProviders(
+        ExtensionFieldCollisionGuard collisionGuard = new ExtensionFieldCollisionGuard(graphQLObjectInfoRetriever, methodSearchAlgorithm,
+                fieldSearchAlgorithm, Collections.singletonList(GqlJcrNodeImpl.class));
+        extensionsProviders = collisionGuard.acceptedProviders(
                 ExtensionFieldCollisionGuard.prioritized(this, extensionsProviders, ExtensionFieldCollisionGuard::bundleSymbolicName));
+        leftOutClasses = collisionGuard.leftOutClasses();
 
         registerSchema();
     }
@@ -260,7 +263,7 @@ public class DXGraphQLProvider implements
             try {
                 sdlSchemaService.addExtensions(extensionsProvider);
                 for (Class<?> aClass : extensionsProvider.getExtensions()) {
-                    if (aClass.isAnnotationPresent(GraphQLTypeExtension.class)) {
+                    if (isTypeExtensionToRegister(aClass)) {
                         extensionsHandler.registerTypeExtension(aClass, container);
                         if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
                             logger.debug("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
@@ -271,7 +274,9 @@ public class DXGraphQLProvider implements
                 }
                 for (Class<? extends GqlJcrNode> aClass : extensionsProvider.getSpecializedTypes()) {
                     SpecializedType annotation = aClass.getAnnotation(SpecializedType.class);
-                    if (annotation != null) {
+                    if (leftOutClasses.contains(aClass)) {
+                        logger.debug("Skipped specialized type {}", aClass);
+                    } else if (annotation != null) {
                         specializedTypesHandler.addType(annotation.value(), aClass);
                     } else {
                         logger.error("No annotation found on class " + aClass);
@@ -290,7 +295,7 @@ public class DXGraphQLProvider implements
         transformCodeRegistryWithSDLDefaultFetcherFactory();
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             for (Class<?> aClass : extensionsProvider.getExtensions()) {
-                if (aClass.isAnnotationPresent(GraphQLTypeExtension.class)) {
+                if (isTypeExtensionToRegister(aClass)) {
                     extensionsHandler.registerTypeExtension(aClass, container);
                     logger.debug("Registered type extension {}", aClass);
                 }
@@ -303,6 +308,10 @@ public class DXGraphQLProvider implements
         specializedTypesHandler.initializeTypes();
 
         PropertyDataFetcher.clearReflectionCache();
+    }
+
+    private boolean isTypeExtensionToRegister(Class<?> aClass) {
+        return aClass.isAnnotationPresent(GraphQLTypeExtension.class) && !leftOutClasses.contains(aClass);
     }
 
     @Deactivate
