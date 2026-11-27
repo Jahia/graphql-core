@@ -62,6 +62,7 @@ public class JcrVersionSessionsTest {
     private static final String OPERATION_ID = "0b1f7d6c-2f7e-4b8e-9a3c-5d2e1f0a9b8c";
     private static final String NODE_ID = "5a1c3f4e-8d2b-4c6a-9e7f-1b2d3c4e5f6a";
     private static final String TARGET_ID = "6b2d4f5a-9e3c-4d7b-8f1a-2c3e4d5f6a7b";
+    private static final String TEMPLATE_ID = "7c3e5a6b-af4d-4e8c-9a2b-3d4f5e6a7b8c";
 
     private FakeVersionApi api;
     private JcrVersionSessions versionSessions;
@@ -485,11 +486,31 @@ public class JcrVersionSessionsTest {
     }
 
     @Test
-    public void aNodeUnderModulesFails() {
-        begin("{ jcr(unsavedValues: {node: \"/modules/a/1.0/templates/t\"}) { workspace } }", Collections.emptyMap());
+    public void aNodeUnderModulesFailsByItsResolvedPath() {
+        // The identifier carries no path, so only a check of the node that it resolves to refuses it.
+        begin("{ jcr(unsavedValues: {node: \"" + TEMPLATE_ID + "\"}) { workspace } }", Collections.emptyMap());
 
         assertRefused("unsavedValues shows no node under /modules or /jcr:system: /modules/a/1.0/templates/t");
         assertNull(api.selector);
+    }
+
+    @Test
+    public void theModulesNodeAndANodeUnderJcrSystemFail() {
+        begin("{ jcr(unsavedValues: {node: \"/modules\"}) { workspace } }", Collections.emptyMap());
+        assertRefused("unsavedValues shows no node under /modules or /jcr:system: /modules");
+
+        context = GraphQLContext.newContext().build();
+        begin("{ jcr(unsavedValues: {node: \"/jcr:system/jcr:versionStorage\"}) { workspace } }", Collections.emptyMap());
+        assertRefused("unsavedValues shows no node under /modules or /jcr:system: /jcr:system/jcr:versionStorage");
+        assertNull(api.selector);
+    }
+
+    @Test
+    public void aDateThatTheNotZonedOptionCannotReadFails() {
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: [{name: \"d\", option: NOT_ZONED_DATE, value: \"x\"}]}) { workspace } }",
+                Collections.emptyMap());
+
+        assertRefused("unsavedValues has a date that the option NOT_ZONED_DATE cannot read: d");
     }
 
     @Test
@@ -586,7 +607,11 @@ public class JcrVersionSessionsTest {
         assertEquals(values, change.values);
     }
 
-    /** A plain session that knows one node, by its identifier and by its path, and whose values take their string. */
+    /**
+     * A plain session that knows the node of the form by its identifier and by its path, a reference target by its path,
+     * the node /modules, a template under it by its identifier and by its path, and a node under /jcr:system. Its values
+     * take their string.
+     */
     private static JCRSessionWrapper editSession() throws RepositoryException {
         JCRSessionWrapper session = mock(JCRSessionWrapper.class);
         JCRNodeWrapper node = mock(JCRNodeWrapper.class);
@@ -594,6 +619,10 @@ public class JcrVersionSessionsTest {
         when(node.getPath()).thenReturn("/sites/a/text");
         JCRNodeWrapper template = mock(JCRNodeWrapper.class);
         when(template.getPath()).thenReturn("/modules/a/1.0/templates/t");
+        JCRNodeWrapper modules = mock(JCRNodeWrapper.class);
+        when(modules.getPath()).thenReturn("/modules");
+        JCRNodeWrapper versionStorage = mock(JCRNodeWrapper.class);
+        when(versionStorage.getPath()).thenReturn("/jcr:system/jcr:versionStorage");
         JCRNodeWrapper target = mock(JCRNodeWrapper.class);
         when(target.getIdentifier()).thenReturn(TARGET_ID);
         when(session.getNodeByIdentifier(anyString())).thenThrow(new ItemNotFoundException());
@@ -602,6 +631,9 @@ public class JcrVersionSessionsTest {
         doReturn(node).when(session).getNode("/sites/a/text");
         doReturn(target).when(session).getNode("/sites/a/target");
         doReturn(template).when(session).getNode("/modules/a/1.0/templates/t");
+        doReturn(template).when(session).getNodeByIdentifier(TEMPLATE_ID);
+        doReturn(modules).when(session).getNode("/modules");
+        doReturn(versionStorage).when(session).getNode("/jcr:system/jcr:versionStorage");
         ValueFactory valueFactory = mock(ValueFactory.class);
         when(valueFactory.createValue(anyString(), anyInt())).thenAnswer(invocation -> {
             String string = invocation.getArgument(0);

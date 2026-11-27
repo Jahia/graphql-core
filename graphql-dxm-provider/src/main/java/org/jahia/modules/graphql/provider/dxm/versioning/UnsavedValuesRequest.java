@@ -163,8 +163,11 @@ final class UnsavedValuesRequest {
         }
         try {
             return GqlJcrMutationSupport.getValue(type, option, value, session, null).getString();
-        } catch (ValueFormatException | GqlJcrWrongInputException e) {
+        } catch (ValueFormatException e) {
             throw new Refusal("unsavedValues has a value that is not a " + PropertyType.nameFromValue(type) + ": " + name);
+        } catch (GqlJcrWrongInputException e) {
+            // Only the option NOT_ZONED_DATE parses the value before its type does.
+            throw new Refusal("unsavedValues has a date that the option NOT_ZONED_DATE cannot read: " + name);
         } catch (FileUploadBase.FileSizeLimitExceededException | IOException e) {
             // Only a binary value reads a stream, and the read refuses a binary before it converts.
             throw new IllegalStateException(e);
