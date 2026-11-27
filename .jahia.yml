@@ -1,0 +1,6 @@
+repository:
+  tests:
+    testrail-project: GraphQL Core module
+branch:
+  ci:
+    runner: self-hosted
