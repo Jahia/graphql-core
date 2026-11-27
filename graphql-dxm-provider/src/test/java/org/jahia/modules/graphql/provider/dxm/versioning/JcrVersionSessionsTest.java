@@ -510,7 +510,7 @@ public class JcrVersionSessionsTest {
         begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: [{name: \"d\", option: NOT_ZONED_DATE, value: \"x\"}]}) { workspace } }",
                 Collections.emptyMap());
 
-        assertRefused("unsavedValues has a date that the option NOT_ZONED_DATE cannot read: d");
+        assertRefused("unsavedValues has a date that the option NOT_ZONED_DATE cannot read, in the format yyyy-MM-dd'T'HH:mm:ss.SSS: d");
     }
 
     @Test
@@ -531,17 +531,53 @@ public class JcrVersionSessionsTest {
 
     @Test
     public void tooManyValuesFailBeforeAnyConversion() {
-        List<String> many = new ArrayList<>();
-        for (int i = 0; i <= UnsavedValuesRequest.MAX_VALUES; i++) {
-            many.add("x");
-        }
         Map<String, Object> values = new HashMap<>();
         values.put("node", "/sites/a/gone");
-        values.put("properties", Collections.singletonList(property("p", null, null, null, many)));
+        values.put("properties", Collections.singletonList(property("p", null, null, null, strings("x", UnsavedValuesRequest.MAX_ITEMS + 1))));
         begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
                 Collections.singletonMap("values", values));
 
-        assertRefused("unsavedValues carries more than " + UnsavedValuesRequest.MAX_VALUES + " values");
+        assertRefused("unsavedValues carries more than " + UnsavedValuesRequest.MAX_ITEMS + " items");
+    }
+
+    @Test
+    public void propertiesToDeleteAndMixinsCountAsItems() {
+        List<Map<String, Object>> deleted = new ArrayList<>();
+        for (int i = 0; i < 400; i++) {
+            Map<String, Object> property = new HashMap<>();
+            property.put("name", "p" + i);
+            property.put("language", "en");
+            deleted.add(property);
+        }
+        Map<String, Object> values = new HashMap<>();
+        values.put("node", "/sites/a/gone");
+        values.put("propertiesToDelete", deleted);
+        values.put("mixinsToAdd", strings("jmix:a", 400));
+        values.put("mixinsToDelete", strings("jmix:d", UnsavedValuesRequest.MAX_ITEMS - 800 + 1));
+        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
+                Collections.singletonMap("values", values));
+
+        assertRefused("unsavedValues carries more than " + UnsavedValuesRequest.MAX_ITEMS + " items");
+    }
+
+    @Test
+    public void asManyValuesAsTheLimitOpen() {
+        Map<String, Object> values = new HashMap<>();
+        values.put("node", NODE_ID);
+        values.put("properties", Collections.singletonList(property("p", null, null, null, strings("x", UnsavedValuesRequest.MAX_ITEMS))));
+        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
+                Collections.singletonMap("values", values));
+
+        assertTrue(versionSessions.isOpened(context));
+    }
+
+    /** As many strings as the count, each the prefix and its index. */
+    private static List<String> strings(String prefix, int count) {
+        List<String> strings = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            strings.add(prefix + i);
+        }
+        return strings;
     }
 
     @Test
@@ -609,8 +645,8 @@ public class JcrVersionSessionsTest {
 
     /**
      * A plain session that knows the node of the form by its identifier and by its path, a reference target by its path,
-     * the node /modules, a template under it by its identifier and by its path, and a node under /jcr:system. Its values
-     * take their string.
+     * the node /modules, a template under it by its identifier and by its path, and a node under /jcr:system. A value
+     * takes its string, a LONG refuses a string that is not digits, and a reference takes the identifier of its target.
      */
     private static JCRSessionWrapper editSession() throws RepositoryException {
         JCRSessionWrapper session = mock(JCRSessionWrapper.class);

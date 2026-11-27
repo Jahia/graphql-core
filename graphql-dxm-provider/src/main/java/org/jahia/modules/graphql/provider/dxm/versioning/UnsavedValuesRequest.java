@@ -29,10 +29,11 @@ import java.util.Map;
 final class UnsavedValuesRequest {
 
     /**
-     * The most values that one argument carries: the values of the properties that it sets, the properties that it
-     * removes and the mixins that it changes. A value can cost an encryption or a lookup before the query starts.
+     * The most items that one argument carries. Each value of a property that it sets is one item, and so is a property
+     * that it sets with no value, a property that it removes and a mixin that it changes. A value can cost an encryption
+     * or a lookup before the query starts.
      */
-    static final int MAX_VALUES = 1000;
+    static final int MAX_ITEMS = 1000;
 
     /** A refusal of the argument, whose message the query returns. */
     static final class Refusal extends RuntimeException {
@@ -81,8 +82,8 @@ final class UnsavedValuesRequest {
      *                 builds, with each enum as its name and a single value where the schema declares a list.
      * @param session  a plain session of the {@code default} workspace, which resolves the node and the references
      * @return the request
-     * @throws Refusal             when the argument names no readable node, carries too many values, or carries a value
-     *                             that its type refuses
+     * @throws Refusal             when the argument names no readable node, carries too many items, or carries a value
+     *                             that its type or its option refuses
      * @throws RepositoryException when the repository fails
      */
     static UnsavedValuesRequest read(Map<?, ?> argument, JCRSessionWrapper session) throws RepositoryException {
@@ -99,8 +100,8 @@ final class UnsavedValuesRequest {
         for (Map<?, ?> property : properties) {
             count += Math.max(1, strings(property.get("values")).size());
         }
-        if (count > MAX_VALUES) {
-            throw new Refusal("unsavedValues carries more than " + MAX_VALUES + " values");
+        if (count > MAX_ITEMS) {
+            throw new Refusal("unsavedValues carries more than " + MAX_ITEMS + " items");
         }
         JCRNodeWrapper formNode = node(session, node.toString());
         String path = formNode.getPath();
@@ -166,8 +167,11 @@ final class UnsavedValuesRequest {
         } catch (ValueFormatException e) {
             throw new Refusal("unsavedValues has a value that is not a " + PropertyType.nameFromValue(type) + ": " + name);
         } catch (GqlJcrWrongInputException e) {
-            // Only the option NOT_ZONED_DATE parses the value before its type does.
-            throw new Refusal("unsavedValues has a date that the option NOT_ZONED_DATE cannot read: " + name);
+            if (option != GqlJcrPropertyOption.NOT_ZONED_DATE) {
+                throw e;
+            }
+            throw new Refusal("unsavedValues has a date that the option NOT_ZONED_DATE cannot read, in the format "
+                    + GqlJcrMutationSupport.DEFAULT_DATE_FORMAT + ": " + name);
         } catch (FileUploadBase.FileSizeLimitExceededException | IOException e) {
             // Only a binary value reads a stream, and the read refuses a binary before it converts.
             throw new IllegalStateException(e);
