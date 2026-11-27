@@ -262,26 +262,8 @@ public class DXGraphQLProvider implements
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
             try {
                 sdlSchemaService.addExtensions(extensionsProvider);
-                for (Class<?> aClass : extensionsProvider.getExtensions()) {
-                    if (isTypeExtensionToRegister(aClass)) {
-                        extensionsHandler.registerTypeExtension(aClass, container);
-                        if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
-                            logger.debug("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
-                        } else {
-                            logger.debug("Registered type extension {}", aClass);
-                        }
-                    }
-                }
-                for (Class<? extends GqlJcrNode> aClass : extensionsProvider.getSpecializedTypes()) {
-                    SpecializedType annotation = aClass.getAnnotation(SpecializedType.class);
-                    if (leftOutClasses.contains(aClass)) {
-                        logger.debug("Skipped specialized type {}", aClass);
-                    } else if (annotation != null) {
-                        specializedTypesHandler.addType(annotation.value(), aClass);
-                    } else {
-                        logger.error("No annotation found on class " + aClass);
-                    }
-                }
+                registerTypeExtensions(extensionsProvider, extensionsHandler);
+                registerSpecializedTypes(extensionsProvider);
             } catch (Throwable e) {
                 logger.error("Unable to register extension for provider {} because {}", extensionsProvider.getClass().getName(),
                         (e.getCause() != null)?e.getCause().toString():"Cause is null");
@@ -294,12 +276,7 @@ public class DXGraphQLProvider implements
         subscriptionType = (GraphQLObjectType) graphQLAnnotations.getOutputTypeProcessor().getOutputTypeOrRef(Subscription.class, container);
         transformCodeRegistryWithSDLDefaultFetcherFactory();
         for (DXGraphQLExtensionsProvider extensionsProvider : extensionsProviders) {
-            for (Class<?> aClass : extensionsProvider.getExtensions()) {
-                if (isTypeExtensionToRegister(aClass)) {
-                    extensionsHandler.registerTypeExtension(aClass, container);
-                    logger.debug("Registered type extension {}", aClass);
-                }
-            }
+            registerTypeExtensions(extensionsProvider, extensionsHandler);
         }
 
         //Generate schema from user defined SDL
@@ -310,8 +287,30 @@ public class DXGraphQLProvider implements
         PropertyDataFetcher.clearReflectionCache();
     }
 
-    private boolean isTypeExtensionToRegister(Class<?> aClass) {
-        return aClass.isAnnotationPresent(GraphQLTypeExtension.class) && !leftOutClasses.contains(aClass);
+    private void registerTypeExtensions(DXGraphQLExtensionsProvider extensionsProvider, GraphQLExtensionsHandler extensionsHandler) {
+        for (Class<?> aClass : extensionsProvider.getExtensions()) {
+            if (aClass.isAnnotationPresent(GraphQLTypeExtension.class) && !leftOutClasses.contains(aClass)) {
+                extensionsHandler.registerTypeExtension(aClass, container);
+                if (aClass.isAnnotationPresent(GraphQLDescription.class)) {
+                    logger.debug("Registered type extension {}: {}", aClass, aClass.getAnnotation(GraphQLDescription.class).value());
+                } else {
+                    logger.debug("Registered type extension {}", aClass);
+                }
+            }
+        }
+    }
+
+    private void registerSpecializedTypes(DXGraphQLExtensionsProvider extensionsProvider) {
+        for (Class<? extends GqlJcrNode> aClass : extensionsProvider.getSpecializedTypes()) {
+            SpecializedType annotation = aClass.getAnnotation(SpecializedType.class);
+            if (leftOutClasses.contains(aClass)) {
+                logger.debug("Skipped specialized type {}", aClass);
+            } else if (annotation != null) {
+                specializedTypesHandler.addType(annotation.value(), aClass);
+            } else {
+                logger.error("No annotation found on class {}", aClass);
+            }
+        }
     }
 
     @Deactivate

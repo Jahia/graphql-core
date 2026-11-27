@@ -1,6 +1,5 @@
 package org.jahia.modules.graphql.provider.dxm;
 
-import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.apache.commons.io.IOUtils;
 import org.jahia.modules.graphql.provider.dxm.scanner.FailingInitializerExtension;
 import org.jahia.modules.graphql.provider.dxm.scanner.PlainExtension;

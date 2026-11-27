@@ -39,33 +39,33 @@ public class BundleScanner {
         return classes;
     }
 
-    @SuppressWarnings("unchecked")
     private static <T> void findClasses(String path, Class<? extends Annotation> annotation, List<Class<? extends T>> classes, ClassLoader classLoader) {
         try {
             Bundle bundle = (Bundle) PropertyUtils.getProperty(classLoader, "bundle");
             Enumeration<String> items = bundle.getEntryPaths(path);
-            if (items != null) {
-                while (items.hasMoreElements()) {
-                    String subpath = items.nextElement();
-                    if (subpath.endsWith(".class")) {
-                        if (!subpath.contains("$")) {
-                            try {
-                                // No initialization: a static initializer must not run, or fail, during a scan
-                                Class<?> c = Class.forName(subpath.substring(0, subpath.length() - 6).replace('/', '.'), false, classLoader);
-                                if (c.isAnnotationPresent(annotation)) {
-                                    classes.add((Class<? extends T>) c);
-                                }
-                            } catch (ClassNotFoundException | LinkageError e) {
-                                logger.warn("Cannot load class {}: {}", subpath, e.toString());
-                            }
-                        }
-                    } else {
-                        findClasses(subpath, annotation, classes, classLoader);
-                    }
+            while (items != null && items.hasMoreElements()) {
+                String subpath = items.nextElement();
+                if (!subpath.endsWith(".class")) {
+                    findClasses(subpath, annotation, classes, classLoader);
+                } else if (!subpath.contains("$")) {
+                    addClass(subpath, annotation, classes, classLoader);
                 }
             }
         } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
             logger.warn("Cannot scan classes from " + classLoader + " classpath", e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> void addClass(String subpath, Class<? extends Annotation> annotation, List<Class<? extends T>> classes, ClassLoader classLoader) {
+        try {
+            // No initialization: a static initializer must not run, or fail, during a scan
+            Class<?> c = Class.forName(subpath.substring(0, subpath.length() - 6).replace('/', '.'), false, classLoader);
+            if (c.isAnnotationPresent(annotation)) {
+                classes.add((Class<? extends T>) c);
+            }
+        } catch (ClassNotFoundException | LinkageError e) {
+            logger.warn("Cannot load class {}: {}", subpath, e.toString());
         }
     }
 }
