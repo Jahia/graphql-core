@@ -436,9 +436,11 @@ public final class JcrVersionSessions {
         static VersionApi load() {
             try {
                 return new ReflectiveVersionApi(Class.forName(SELECTOR_CLASS, false, JcrVersionSessions.class.getClassLoader()));
-            } catch (ClassNotFoundException | NoSuchMethodException | LinkageError e) {
-                logger.info("This Jahia has no version sessions, so a GraphQL query cannot read a version");
-                logger.debug("Version sessions not found", e);
+            } catch (ClassNotFoundException e) {
+                logger.info("This Jahia has no class {}, so a GraphQL query cannot read a version", SELECTOR_CLASS);
+                return null;
+            } catch (NoSuchMethodException | LinkageError e) {
+                logger.warn("The version sessions of this Jahia have another API, so a GraphQL query cannot read a version", e);
                 return null;
             }
         }
@@ -514,8 +516,8 @@ public final class JcrVersionSessions {
         }
 
         /**
-         * Builds a selector of unsaved values by reflection. A Jahia whose core has no {@code UnsavedValues} class has
-         * none, and still reads a version.
+         * Builds a selector of unsaved values by reflection. A Jahia whose core has no {@code UnsavedValues} class, or
+         * one of another API, has none, and still reads a version.
          */
         static final class UnsavedValuesApi {
 
@@ -543,7 +545,7 @@ public final class JcrVersionSessions {
                     return new UnsavedValuesApi(selectorClass,
                             Class.forName(valuesClassName, false, JcrVersionSessions.class.getClassLoader()));
                 } catch (ClassNotFoundException e) {
-                    logger.info("This Jahia has no unsaved values, so a GraphQL query cannot read them");
+                    logger.info("This Jahia has no class {}, so a GraphQL query cannot read unsaved values", valuesClassName);
                     return null;
                 } catch (NoSuchMethodException | LinkageError e) {
                     logger.warn("The unsaved values of this Jahia have another API, so a GraphQL query cannot read them", e);

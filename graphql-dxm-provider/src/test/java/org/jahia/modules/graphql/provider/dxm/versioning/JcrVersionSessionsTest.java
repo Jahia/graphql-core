@@ -50,6 +50,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -587,6 +588,43 @@ public class JcrVersionSessionsTest {
     }
 
     @Test
+    public void asManyPropertiesOfOneValueAsTheLimitOpen() {
+        List<Map<String, Object>> properties = new ArrayList<>();
+        for (int i = 0; i < UnsavedValuesRequest.MAX_ITEMS; i++) {
+            properties.add(property("p" + i, null, null, "x", null));
+        }
+        Map<String, Object> values = new HashMap<>();
+        values.put("node", NODE_ID);
+        values.put("properties", properties);
+        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
+                Collections.singletonMap("values", values));
+
+        assertTrue(versionSessions.isOpened(context));
+    }
+
+    @Test
+    public void anEmptyPropertyOrPropertyToDeleteFails() {
+        for (String list : Arrays.asList("properties", "propertiesToDelete")) {
+            Map<String, Object> values = new HashMap<>();
+            values.put("node", NODE_ID);
+            values.put(list, Collections.singletonList(null));
+            begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
+                    Collections.singletonMap("values", values));
+
+            assertRefused("unsavedValues has an empty item in a list");
+            assertNull(list, api.selector);
+        }
+    }
+
+    @Test
+    public void aRepositoryFailureOfTheLookupIsNoMissingNode() throws RepositoryException {
+        doThrow(new RepositoryException("the mount is down")).when(api.editSession).getNode("/sites/a/mounted");
+        begin("{ jcr(unsavedValues: {node: \"/sites/a/mounted\"}) { workspace } }", Collections.emptyMap());
+
+        assertRefused("The version of this query could not open");
+    }
+
+    @Test
     public void anEmptyItemInAListFails() {
         Map<String, Object> values = new HashMap<>();
         values.put("node", NODE_ID);
@@ -621,6 +659,21 @@ public class JcrVersionSessionsTest {
         assertEquals("selector", selector);
         assertEquals(Arrays.asList("builder " + api.unsavedValues.nodeIdentifier, "set text en " + PropertyType.STRING + " false [typed]",
                 "remove old null", "remove mixin jmix:d", "add mixin jmix:a", "build"), RecordingValues.CALLS);
+    }
+
+    @Test
+    public void aRefusalOfTheBuilderOfCoreReachesTheCallerAsItIs() {
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", mixinsToAdd: [\"jmix:typo\"]}) { workspace } }",
+                Collections.emptyMap());
+        JcrVersionSessions.ReflectiveVersionApi.UnsavedValuesApi refusing = JcrVersionSessions.ReflectiveVersionApi.UnsavedValuesApi
+                .load(RecordingSelector.class, RefusingValues.class.getName());
+
+        try {
+            refusing.selector(api.unsavedValues);
+            fail("the builder of core refuses the mixin");
+        } catch (IllegalArgumentException refusal) {
+            assertEquals("no mixin jmix:typo", refusal.getMessage());
+        }
     }
 
     @Test
@@ -666,9 +719,42 @@ public class JcrVersionSessionsTest {
         }
     }
 
+    /** Stands for the UnsavedValues of core, whose builder refuses every mixin as core refuses an unknown one. */
+    public static final class RefusingValues {
+        public static Builder builder(String nodeIdentifier) {
+            return new Builder();
+        }
+
+        public static final class Builder {
+            public Builder setProperty(String name, Locale language, int type, boolean multiple, List<String> values) {
+                return this;
+            }
+
+            public Builder removeProperty(String name, Locale language) {
+                return this;
+            }
+
+            public Builder addMixin(String mixin) {
+                throw new IllegalArgumentException("no mixin " + mixin);
+            }
+
+            public Builder removeMixin(String mixin) {
+                return this;
+            }
+
+            public RefusingValues build() {
+                return new RefusingValues();
+            }
+        }
+    }
+
     /** Stands for the SessionVersionSelector of core. */
     public static final class RecordingSelector {
         public static Object withUnsavedValues(RecordingValues values) {
+            return "selector";
+        }
+
+        public static Object withUnsavedValues(RefusingValues values) {
             return "selector";
         }
     }

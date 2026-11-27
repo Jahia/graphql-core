@@ -9,9 +9,9 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.LanguageCodeConverters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import javax.jcr.ItemNotFoundException;
+import javax.jcr.PathNotFoundException;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.ValueFormatException;
@@ -36,9 +36,6 @@ final class UnsavedValuesRequest {
      * or a lookup before the query starts.
      */
     static final int MAX_ITEMS = 1000;
-
-    private static final Logger logger = LoggerFactory.getLogger(UnsavedValuesRequest.class);
-
     /** A refusal of the argument, whose message the query returns. */
     static final class Refusal extends RuntimeException {
         private static final long serialVersionUID = 1L;
@@ -64,8 +61,12 @@ final class UnsavedValuesRequest {
             this.values = values;
         }
 
-        static PropertyChange set(String name, Locale language, int type, boolean multiple, List<String> values) {
-            return new PropertyChange(name, language, type, multiple, Collections.unmodifiableList(new ArrayList<>(values)));
+        static PropertyChange single(String name, Locale language, int type, String value) {
+            return new PropertyChange(name, language, type, false, Collections.singletonList(value));
+        }
+
+        static PropertyChange multiple(String name, Locale language, int type, List<String> values) {
+            return new PropertyChange(name, language, type, true, Collections.unmodifiableList(new ArrayList<>(values)));
         }
 
         static PropertyChange removal(String name, Locale language) {
@@ -94,9 +95,9 @@ final class UnsavedValuesRequest {
      *                 builds, with each enum as its name and a single value where the schema declares a list.
      * @param session  a plain session of the {@code default} workspace, which resolves the node and the references
      * @return the request
-     * @throws Refusal             when the argument names no readable node, a node under {@code /modules} or
-     *                             {@code /jcr:system}, carries too many items or an empty item, or carries a value that
-     *                             its type or its option refuses
+     * @throws Refusal             when the argument names no readable node, the node {@code /modules}, a node under it
+     *                             or a node under {@code /jcr:system}, carries too many items or an empty item, or
+     *                             carries a value that its type or its option refuses
      * @throws RepositoryException when the repository fails
      */
     static UnsavedValuesRequest read(Map<?, ?> argument, JCRSessionWrapper session) throws RepositoryException {
@@ -136,15 +137,21 @@ final class UnsavedValuesRequest {
         return new UnsavedValuesRequest(nodeIdentifier, changes, mixinsToAdd, mixinsToDelete);
     }
 
-    /** A node that the lookup cannot read, for any reason of the repository, does not exist for the user. */
+    /** A node that the user cannot read does not exist for the user, and any other failure of the repository goes on. */
     private static JCRNodeWrapper node(JCRSessionWrapper session, String pathOrId) {
         try {
             return GqlJcrMutationSupport.getNodeFromPathOrId(session, pathOrId);
         } catch (DataFetchingException e) {
-            // Core reports an invalid identifier as a plain RepositoryException, so no cause tells a missing node apart.
-            logger.debug("The node {} of unsavedValues could not be read: {}", pathOrId, e.getCause() != null ? e.getCause() : e);
+            if (!isNotFound(e)) {
+                throw e;
+            }
             throw new Refusal("The node of unsavedValues does not exist: " + pathOrId);
         }
+    }
+
+    /** Core turns each failed lookup of an identifier into an ItemNotFoundException, and warns for a failing provider. */
+    private static boolean isNotFound(DataFetchingException e) {
+        return e.getCause() instanceof PathNotFoundException || e.getCause() instanceof ItemNotFoundException;
     }
 
     /** A property with neither a value nor values changes nothing, as for {@code setPropertiesBatch}. */
@@ -162,14 +169,13 @@ final class UnsavedValuesRequest {
         }
         GqlJcrPropertyOption option = enumValue(GqlJcrPropertyOption.class, property.get("option"));
         if (value != null) {
-            return PropertyChange.set(name, language(property), jcrType, false,
-                    Collections.singletonList(convert(name, jcrType, option, value.toString(), session)));
+            return PropertyChange.single(name, language(property), jcrType, convert(name, jcrType, option, value.toString(), session));
         }
         List<String> converted = new ArrayList<>();
         for (String one : strings(values)) {
             converted.add(convert(name, jcrType, option, one, session));
         }
-        return PropertyChange.set(name, language(property), jcrType, true, converted);
+        return PropertyChange.multiple(name, language(property), jcrType, converted);
     }
 
     private static String convert(String name, int type, GqlJcrPropertyOption option, String value, JCRSessionWrapper session)
@@ -191,9 +197,10 @@ final class UnsavedValuesRequest {
             // Only a binary value reads a stream, and the read refuses a binary before it converts.
             throw new IllegalStateException(e);
         } catch (DataFetchingException e) {
+            if (!isNotFound(e)) {
+                throw e;
+            }
             // The target of a reference, which the session cannot read.
-            logger.debug("The target {} of the reference {} of unsavedValues could not be read: {}", value, name,
-                    e.getCause() != null ? e.getCause() : e);
             throw new Refusal("unsavedValues has a reference to a node that does not exist: " + name);
         }
     }
