@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
+import java.lang.annotation.AnnotationFormatError;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -64,8 +65,8 @@ public class BundleScanner {
             if (c.isAnnotationPresent(annotation)) {
                 classes.add((Class<? extends T>) c);
             }
-        } catch (ClassNotFoundException | LinkageError e) {
-            logger.warn("Cannot load class {}: {}", subpath, e.toString());
+        } catch (ClassNotFoundException | RuntimeException | LinkageError | AnnotationFormatError e) {
+            logger.warn("Cannot read class {}: {}", subpath, e.toString());
         }
     }
 }
