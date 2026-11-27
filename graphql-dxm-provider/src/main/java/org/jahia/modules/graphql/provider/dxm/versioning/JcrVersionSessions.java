@@ -106,8 +106,9 @@ public final class JcrVersionSessions {
     public void beginOperation(OperationDefinition operation, Map<String, FragmentDefinition> fragments,
                                Map<String, Object> variables, HttpServletRequest request, GraphQLContext context) {
         carriedVersion.remove();
-        if (request != null && request.getAttribute(REQUEST_ATTRIBUTE) != null) {
-            context.put(ERROR_KEY, "A request that read a version runs no other operation after it");
+        Object read = request != null ? request.getAttribute(REQUEST_ATTRIBUTE) : null;
+        if (read != null) {
+            context.put(ERROR_KEY, "A request that read " + read + " runs no other operation after it");
             return;
         }
         if (operation.getOperation() != OperationDefinition.Operation.QUERY) {
@@ -198,10 +199,11 @@ public final class JcrVersionSessions {
         try {
             return open(rootFieldCount, workspace, version, request);
         } catch (RuntimeException e) {
-            logger.warn("The version of a GraphQL query could not open", e);
+            String what = version.unsavedValues != null ? "unsaved values" : "version";
+            logger.warn("The {} of a GraphQL query could not open", what, e);
             api.setCurrentVersionSelector(null);
             carriedVersion.remove();
-            return "The version of this query could not open";
+            return "The " + what + " of this query could not open";
         }
     }
 
@@ -229,7 +231,7 @@ public final class JcrVersionSessions {
         }
         // The render keeps its current nodes, while its later lookups would read the version.
         if (api.isRendering()) {
-            return "A query that runs inside a render cannot read a version";
+            return "A query that runs inside a render cannot read " + readOf(version);
         }
         if (version.unsavedValues != null) {
             UnsavedValuesRequest values;
@@ -256,13 +258,18 @@ public final class JcrVersionSessions {
             api.setCurrentVersionSelector(null);
             return "No version that you can read carries the operation " + version.operation;
         }
-        request.setAttribute(REQUEST_ATTRIBUTE, Boolean.TRUE);
+        request.setAttribute(REQUEST_ATTRIBUTE, readOf(version));
         carriedVersion.set(selector);
         return null;
     }
 
+    /** What a query reads, as its refusals name it. */
+    private static String readOf(Version version) {
+        return version.unsavedValues != null ? "unsaved values" : "a version";
+    }
+
     private String refusalOfRequest(int rootFieldCount, Object workspace, Version version, HttpServletRequest request) {
-        String read = version.unsavedValues != null ? "unsaved values" : "a version";
+        String read = readOf(version);
         if (rootFieldCount != 1) {
             return "A query that reads " + read + " selects the jcr field alone at its root";
         }

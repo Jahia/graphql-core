@@ -102,7 +102,7 @@ final class UnsavedValuesRequest {
      *                               refuses
      * @throws DataFetchingException when the lookup of the node or of the target of a reference fails, and the node is
      *                               not missing
-     * @throws RepositoryException   when the repository fails while a value converts
+     * @throws RepositoryException   when the repository fails
      */
     static UnsavedValuesRequest read(Map<?, ?> argument, JCRSessionWrapper session) throws RepositoryException {
         Object node = argument.get("node");

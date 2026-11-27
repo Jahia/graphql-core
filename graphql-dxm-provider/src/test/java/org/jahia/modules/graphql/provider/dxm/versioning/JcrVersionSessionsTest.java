@@ -622,7 +622,7 @@ public class JcrVersionSessionsTest {
         doThrow(new RepositoryException("the mount is down")).when(api.editSession).getNode("/sites/a/mounted");
         begin("{ jcr(unsavedValues: {node: \"/sites/a/mounted\"}) { workspace } }", Collections.emptyMap());
 
-        assertRefused("The version of this query could not open");
+        assertRefused("The unsaved values of this query could not open");
     }
 
     @Test
@@ -665,7 +665,7 @@ public class JcrVersionSessionsTest {
         begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: [{name: \"ref\", type: REFERENCE, value: \"/sites/a/mounted\"}]}) "
                 + "{ workspace } }", Collections.emptyMap());
 
-        assertRefused("The version of this query could not open");
+        assertRefused("The unsaved values of this query could not open");
     }
 
     @Test
@@ -835,6 +835,15 @@ public class JcrVersionSessionsTest {
     }
 
     @Test
+    public void unsavedValuesInsideARenderFail() {
+        api.rendering = true;
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } }", Collections.emptyMap());
+
+        assertRefused("A query that runs inside a render cannot read unsaved values");
+        assertNull(api.selector);
+    }
+
+    @Test
     public void unsavedValuesBesideAnotherRootFieldFail() {
         begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\"}) { workspace } currentUser { name } }", Collections.emptyMap());
 
@@ -858,7 +867,7 @@ public class JcrVersionSessionsTest {
         context = GraphQLContext.newContext().build();
         begin("{ jcr { workspace } }", Collections.emptyMap());
 
-        assertRefused("A request that read a version runs no other operation after it");
+        assertRefused("A request that read unsaved values runs no other operation after it");
     }
 
     private static Map<String, Object> property(String name, String language, Object type, String value, List<String> values) {
