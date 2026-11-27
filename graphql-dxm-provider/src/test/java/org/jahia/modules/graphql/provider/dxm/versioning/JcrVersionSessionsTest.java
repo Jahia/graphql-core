@@ -571,6 +571,112 @@ public class JcrVersionSessionsTest {
         assertTrue(versionSessions.isOpened(context));
     }
 
+    @Test
+    public void aPropertyWithOneValueCountsAsOneItem() {
+        List<Map<String, Object>> properties = new ArrayList<>();
+        for (int i = 0; i <= UnsavedValuesRequest.MAX_ITEMS; i++) {
+            properties.add(property("p" + i, null, null, "x", null));
+        }
+        Map<String, Object> values = new HashMap<>();
+        values.put("node", "/sites/a/gone");
+        values.put("properties", properties);
+        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
+                Collections.singletonMap("values", values));
+
+        assertRefused("unsavedValues carries more than " + UnsavedValuesRequest.MAX_ITEMS + " items");
+    }
+
+    @Test
+    public void anEmptyItemInAListFails() {
+        Map<String, Object> values = new HashMap<>();
+        values.put("node", NODE_ID);
+        values.put("mixinsToAdd", Arrays.asList("jmix:a", null));
+        begin("query Q($values: InputJCRUnsavedValues) { jcr(unsavedValues: $values) { workspace } }",
+                Collections.singletonMap("values", values));
+
+        assertRefused("unsavedValues has an empty item in a list");
+        assertNull(api.selector);
+    }
+
+    @Test
+    public void aChangeThatCoreRefusesFailsWithTheReasonOfCore() {
+        api.coreRefusal = "The unsaved values of a form name no mixin of a deployed module: jmix:typo";
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", mixinsToAdd: [\"jmix:typo\"]}) { workspace } }",
+                Collections.emptyMap());
+
+        assertRefused("unsavedValues is refused: The unsaved values of a form name no mixin of a deployed module: jmix:typo");
+        assertNull(api.selector);
+    }
+
+    @Test
+    public void theBuilderOfCoreGetsTheRemovedMixinsBeforeTheAddedOnes() {
+        begin("{ jcr(unsavedValues: {node: \"" + NODE_ID + "\", properties: [{name: \"text\", language: \"en\", value: \"typed\"}],"
+                + " propertiesToDelete: [{name: \"old\"}], mixinsToAdd: [\"jmix:a\"], mixinsToDelete: [\"jmix:d\"]}) { workspace } }",
+                Collections.emptyMap());
+        RecordingValues.CALLS.clear();
+
+        Object selector = JcrVersionSessions.ReflectiveVersionApi.UnsavedValuesApi
+                .load(RecordingSelector.class, RecordingValues.class.getName()).selector(api.unsavedValues);
+
+        assertEquals("selector", selector);
+        assertEquals(Arrays.asList("builder " + api.unsavedValues.nodeIdentifier, "set text en " + PropertyType.STRING + " false [typed]",
+                "remove old null", "remove mixin jmix:d", "add mixin jmix:a", "build"), RecordingValues.CALLS);
+    }
+
+    @Test
+    public void aCoreWhoseUnsavedValuesLackAMethodReadsNoUnsavedValues() {
+        assertNull(JcrVersionSessions.ReflectiveVersionApi.UnsavedValuesApi
+                .load(RecordingSelector.class, ValuesWithoutBuilder.class.getName()));
+    }
+
+    /** Stands for the UnsavedValues of core, and records each call of its builder. */
+    public static final class RecordingValues {
+        static final List<String> CALLS = new ArrayList<>();
+
+        public static Builder builder(String nodeIdentifier) {
+            CALLS.add("builder " + nodeIdentifier);
+            return new Builder();
+        }
+
+        public static final class Builder {
+            public Builder setProperty(String name, Locale language, int type, boolean multiple, List<String> values) {
+                CALLS.add("set " + name + " " + language + " " + type + " " + multiple + " " + values);
+                return this;
+            }
+
+            public Builder removeProperty(String name, Locale language) {
+                CALLS.add("remove " + name + " " + language);
+                return this;
+            }
+
+            public Builder addMixin(String mixin) {
+                CALLS.add("add mixin " + mixin);
+                return this;
+            }
+
+            public Builder removeMixin(String mixin) {
+                CALLS.add("remove mixin " + mixin);
+                return this;
+            }
+
+            public RecordingValues build() {
+                CALLS.add("build");
+                return new RecordingValues();
+            }
+        }
+    }
+
+    /** Stands for the SessionVersionSelector of core. */
+    public static final class RecordingSelector {
+        public static Object withUnsavedValues(RecordingValues values) {
+            return "selector";
+        }
+    }
+
+    /** Stands for an UnsavedValues of core with no builder. */
+    public static final class ValuesWithoutBuilder {
+    }
+
     /** As many strings as the count, each the prefix and its index. */
     private static List<String> strings(String prefix, int count) {
         List<String> strings = new ArrayList<>();
@@ -749,6 +855,7 @@ public class JcrVersionSessionsTest {
         private boolean unsavedValuesSupported = true;
         private UnsavedValuesRequest unsavedValues;
         private JCRSessionWrapper editSession;
+        private String coreRefusal;
 
         @Override
         public Object atInstant(Instant instant) {
@@ -767,6 +874,9 @@ public class JcrVersionSessionsTest {
 
         @Override
         public Object withUnsavedValues(UnsavedValuesRequest values) {
+            if (coreRefusal != null) {
+                throw new IllegalArgumentException(coreRefusal);
+            }
             unsavedValues = values;
             return "unsaved:" + values.nodeIdentifier;
         }

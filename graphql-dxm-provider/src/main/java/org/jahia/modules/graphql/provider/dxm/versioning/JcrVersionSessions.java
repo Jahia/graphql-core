@@ -232,13 +232,20 @@ public final class JcrVersionSessions {
             return "A query that runs inside a render cannot read a version";
         }
         if (version.unsavedValues != null) {
+            UnsavedValuesRequest values;
             try {
                 // Before the version sessions open: the plain session of the user resolves the node and the references.
-                selector = api.withUnsavedValues(UnsavedValuesRequest.read((Map<?, ?>) version.unsavedValues, api.getEditSession()));
+                values = UnsavedValuesRequest.read((Map<?, ?>) version.unsavedValues, api.getEditSession());
             } catch (UnsavedValuesRequest.Refusal e) {
                 return e.getMessage();
             } catch (RepositoryException e) {
                 throw new IllegalStateException(e);
+            }
+            try {
+                selector = api.withUnsavedValues(values);
+            } catch (IllegalArgumentException e) {
+                // The builder of core refuses a mixin that no module defines, and a value that no save writes.
+                return "unsavedValues is refused: " + e.getMessage();
             }
         }
         api.setCurrentVersionSelector(selector);
@@ -354,7 +361,10 @@ public final class JcrVersionSessions {
         return null;
     }
 
-    /** The arguments of the jcr field that ask for a version, of which a query sends one. */
+    /**
+     * The arguments of the jcr field that ask for a version. The caller builds one when a query sends at least one of
+     * them, and the check of the request refuses a query that sends several.
+     */
     private static final class Version {
         private final Object at;
         private final Object operation;
@@ -398,7 +408,7 @@ public final class JcrVersionSessions {
     /**
      * Reaches the version sessions of Jahia 8.2.4 by reflection.
      */
-    private static final class ReflectiveVersionApi implements VersionApi {
+    static final class ReflectiveVersionApi implements VersionApi {
 
         private static final String SELECTOR_CLASS = "org.jahia.api.versioning.SessionVersionSelector";
         private static final String UNSAVED_VALUES_CLASS = "org.jahia.api.versioning.UnsavedValues";
@@ -420,7 +430,7 @@ public final class JcrVersionSessions {
             isVersionSessionRequested = JCRSessionFactory.class.getMethod("isVersionSessionRequested", String.class);
             isVersionSession = JCRSessionWrapper.class.getMethod("isVersionSession");
             getCurrentRenderMode = JCRSessionFactory.class.getMethod("getCurrentRenderMode");
-            unsavedValuesApi = UnsavedValuesApi.load(selectorClass);
+            unsavedValuesApi = UnsavedValuesApi.load(selectorClass, UNSAVED_VALUES_CLASS);
         }
 
         static VersionApi load() {
@@ -504,10 +514,10 @@ public final class JcrVersionSessions {
         }
 
         /**
-         * Builds a selector of unsaved values by reflection. A Jahia 8.2.4 that predates the unsaved values has none, and
-         * still reads a version.
+         * Builds a selector of unsaved values by reflection. A Jahia whose core has no {@code UnsavedValues} class has
+         * none, and still reads a version.
          */
-        private static final class UnsavedValuesApi {
+        static final class UnsavedValuesApi {
 
             private final Method builder;
             private final Method setProperty;
@@ -528,13 +538,15 @@ public final class JcrVersionSessions {
                 withUnsavedValues = selectorClass.getMethod("withUnsavedValues", valuesClass);
             }
 
-            static UnsavedValuesApi load(Class<?> selectorClass) {
+            static UnsavedValuesApi load(Class<?> selectorClass, String valuesClassName) {
                 try {
                     return new UnsavedValuesApi(selectorClass,
-                            Class.forName(UNSAVED_VALUES_CLASS, false, JcrVersionSessions.class.getClassLoader()));
-                } catch (ClassNotFoundException | NoSuchMethodException | LinkageError e) {
+                            Class.forName(valuesClassName, false, JcrVersionSessions.class.getClassLoader()));
+                } catch (ClassNotFoundException e) {
                     logger.info("This Jahia has no unsaved values, so a GraphQL query cannot read them");
-                    logger.debug("Unsaved values not found", e);
+                    return null;
+                } catch (NoSuchMethodException | LinkageError e) {
+                    logger.warn("The unsaved values of this Jahia have another API, so a GraphQL query cannot read them", e);
                     return null;
                 }
             }

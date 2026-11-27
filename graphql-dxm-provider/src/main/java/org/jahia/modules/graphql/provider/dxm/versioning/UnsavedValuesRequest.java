@@ -9,6 +9,8 @@ import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.LanguageCodeConverters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
@@ -35,6 +37,8 @@ final class UnsavedValuesRequest {
      */
     static final int MAX_ITEMS = 1000;
 
+    private static final Logger logger = LoggerFactory.getLogger(UnsavedValuesRequest.class);
+
     /** A refusal of the argument, whose message the query returns. */
     static final class Refusal extends RuntimeException {
         private static final long serialVersionUID = 1L;
@@ -52,12 +56,20 @@ final class UnsavedValuesRequest {
         final boolean multiple;
         final List<String> values;
 
-        PropertyChange(String name, Locale language, int type, boolean multiple, List<String> values) {
+        private PropertyChange(String name, Locale language, int type, boolean multiple, List<String> values) {
             this.name = name;
             this.language = language;
             this.type = type;
             this.multiple = multiple;
             this.values = values;
+        }
+
+        static PropertyChange set(String name, Locale language, int type, boolean multiple, List<String> values) {
+            return new PropertyChange(name, language, type, multiple, Collections.unmodifiableList(new ArrayList<>(values)));
+        }
+
+        static PropertyChange removal(String name, Locale language) {
+            return new PropertyChange(name, language, PropertyType.UNDEFINED, false, null);
         }
     }
 
@@ -69,9 +81,9 @@ final class UnsavedValuesRequest {
     private UnsavedValuesRequest(String nodeIdentifier, List<PropertyChange> changes, List<String> mixinsToAdd,
                                  List<String> mixinsToDelete) {
         this.nodeIdentifier = nodeIdentifier;
-        this.changes = changes;
-        this.mixinsToAdd = mixinsToAdd;
-        this.mixinsToDelete = mixinsToDelete;
+        this.changes = Collections.unmodifiableList(new ArrayList<>(changes));
+        this.mixinsToAdd = Collections.unmodifiableList(new ArrayList<>(mixinsToAdd));
+        this.mixinsToDelete = Collections.unmodifiableList(new ArrayList<>(mixinsToDelete));
     }
 
     /**
@@ -82,8 +94,9 @@ final class UnsavedValuesRequest {
      *                 builds, with each enum as its name and a single value where the schema declares a list.
      * @param session  a plain session of the {@code default} workspace, which resolves the node and the references
      * @return the request
-     * @throws Refusal             when the argument names no readable node, carries too many items, or carries a value
-     *                             that its type or its option refuses
+     * @throws Refusal             when the argument names no readable node, a node under {@code /modules} or
+     *                             {@code /jcr:system}, carries too many items or an empty item, or carries a value that
+     *                             its type or its option refuses
      * @throws RepositoryException when the repository fails
      */
     static UnsavedValuesRequest read(Map<?, ?> argument, JCRSessionWrapper session) throws RepositoryException {
@@ -118,7 +131,7 @@ final class UnsavedValuesRequest {
             }
         }
         for (Map<?, ?> property : propertiesToDelete) {
-            changes.add(new PropertyChange(name(property), language(property), PropertyType.UNDEFINED, false, null));
+            changes.add(PropertyChange.removal(name(property), language(property)));
         }
         return new UnsavedValuesRequest(nodeIdentifier, changes, mixinsToAdd, mixinsToDelete);
     }
@@ -128,6 +141,8 @@ final class UnsavedValuesRequest {
         try {
             return GqlJcrMutationSupport.getNodeFromPathOrId(session, pathOrId);
         } catch (DataFetchingException e) {
+            // Core reports an invalid identifier as a plain RepositoryException, so no cause tells a missing node apart.
+            logger.debug("The node {} of unsavedValues could not be read: {}", pathOrId, e.getCause() != null ? e.getCause() : e);
             throw new Refusal("The node of unsavedValues does not exist: " + pathOrId);
         }
     }
@@ -147,14 +162,14 @@ final class UnsavedValuesRequest {
         }
         GqlJcrPropertyOption option = enumValue(GqlJcrPropertyOption.class, property.get("option"));
         if (value != null) {
-            return new PropertyChange(name, language(property), jcrType, false,
+            return PropertyChange.set(name, language(property), jcrType, false,
                     Collections.singletonList(convert(name, jcrType, option, value.toString(), session)));
         }
         List<String> converted = new ArrayList<>();
         for (String one : strings(values)) {
             converted.add(convert(name, jcrType, option, one, session));
         }
-        return new PropertyChange(name, language(property), jcrType, true, converted);
+        return PropertyChange.set(name, language(property), jcrType, true, converted);
     }
 
     private static String convert(String name, int type, GqlJcrPropertyOption option, String value, JCRSessionWrapper session)
@@ -177,6 +192,8 @@ final class UnsavedValuesRequest {
             throw new IllegalStateException(e);
         } catch (DataFetchingException e) {
             // The target of a reference, which the session cannot read.
+            logger.debug("The target {} of the reference {} of unsavedValues could not be read: {}", value, name,
+                    e.getCause() != null ? e.getCause() : e);
             throw new Refusal("unsavedValues has a reference to a node that does not exist: " + name);
         }
     }
@@ -209,9 +226,10 @@ final class UnsavedValuesRequest {
     private static List<Map<?, ?>> maps(Object value) {
         List<Map<?, ?>> maps = new ArrayList<>();
         for (Object item : list(value)) {
-            if (item instanceof Map) {
-                maps.add((Map<?, ?>) item);
+            if (!(item instanceof Map)) {
+                throw new Refusal("unsavedValues has an empty item in a list");
             }
+            maps.add((Map<?, ?>) item);
         }
         return maps;
     }
@@ -219,9 +237,10 @@ final class UnsavedValuesRequest {
     private static List<String> strings(Object value) {
         List<String> strings = new ArrayList<>();
         for (Object item : list(value)) {
-            if (item != null) {
-                strings.add(item.toString());
+            if (item == null) {
+                throw new Refusal("unsavedValues has an empty item in a list");
             }
+            strings.add(item.toString());
         }
         return strings;
     }
