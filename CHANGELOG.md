@@ -1,5 +1,21 @@
 # graphql-core Changelog
 
+## 3.13.0
+
+* Fixed the GraphQL API of a module so that it no longer disappears when one class of the module fails to initialize. This affected the Content Editor of jContent 3.8 on Jahia versions below 8.2.4.
+
+* Added the `versionAt` and `versionOperation` arguments to the `jcr` query root, to read the EDIT workspace at a version.
+
+  A query that reads a version is read-only and selects the `jcr` field alone. It needs Jahia 8.2.4 or later and content versioning.
+
+* Fixed `properties(language:)`, which failed on a node shown at a version.
+
+* Changed the GraphQL API so that reading the decrypted value of a property requires the new "Read the decrypted value of an encrypted property" permission, granted on the repository root.
+
+  **Are you affected?** Yes, if an account other than a server administrator or a system administrator reads `decryptedValue` or `decryptedValues`, or edits content that has a password field in the content editor. Without the permission, `decryptedValue` returns `null` and `decryptedValues` returns an empty list. Such an account can still replace a stored password, but cannot read it, and saving such content in the content editor without typing the password again removes the stored password.
+
+  **What to do:** server administrators and system administrators receive the permission automatically. To let another account read decrypted values, grant it a role that carries the `viewEncryptedValue` permission on the repository root (`/`). A grant on a site or on a content node has no effect: one key decrypts every value on the server, so the permission always applies to the whole server.
+
 ## 3.12.0
 
 * Fixed the default GraphQL configuration file so Jahia no longer writes a corrupted character into it on a new install.
