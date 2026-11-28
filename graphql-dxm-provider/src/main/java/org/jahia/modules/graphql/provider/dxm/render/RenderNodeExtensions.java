@@ -119,7 +119,7 @@ public class RenderNodeExtensions {
                                            @GraphQLName("contextConfiguration") @GraphQLDescription("Rendering context configuration. Possible values include 'module', 'gwt', 'page'. Default is 'module'.") String contextConfiguration,
                                            @GraphQLName("language") @GraphQLDescription("Language") String language,
                                            @GraphQLName("mainResourcePath") @GraphQLDescription("Main resource path") String mainResourcePath,
-                                           @GraphQLName("isEditMode") @GraphQLDescription("Is edit mode. A node read at a version renders without edit mode, so true fails for it.") Boolean isEditMode,
+                                           @GraphQLName("isEditMode") @GraphQLDescription("Is edit mode. A node read at a version or with unsaved values renders without edit mode, so true fails for it.") Boolean isEditMode,
                                            @GraphQLName("requestAttributes") @GraphQLDescription("Additional request attributes to be included in request. Array of name value pairs: [{name:\"templateSet\", value:\"true\"}]") Collection<RenderRequestAttributeInput> requestAttributes, DataFetchingEnvironment environment) {
         refuseEditModeInVersion(isEditMode);
         try {
@@ -216,7 +216,7 @@ public class RenderNodeExtensions {
     private void refuseEditModeInVersion(Boolean isEditMode) {
         // An edit from the controls of an edit-mode render writes the current content, so a version renders without them.
         if (Boolean.TRUE.equals(isEditMode) && isInVersionSession()) {
-            throw new GqlJcrWrongInputException("A version renders without edit mode");
+            throw new GqlJcrWrongInputException("A version, or a node with unsaved values, renders without edit mode");
         }
     }
 

@@ -40,6 +40,6 @@ public class RenderNodeExtensionsTest {
         GqlJcrWrongInputException e = assertThrows(GqlJcrWrongInputException.class,
                 () -> extensions.getRenderedContent(null, null, null, null, null, true, null, null));
 
-        assertEquals("A version renders without edit mode", e.getMessage());
+        assertEquals("A version, or a node with unsaved values, renders without edit mode", e.getMessage());
     }
 }

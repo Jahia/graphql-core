@@ -3,18 +3,22 @@ package org.jahia.modules.graphql.provider.dxm.versioning;
 import graphql.GraphQLContext;
 import graphql.execution.AbortExecutionException;
 import graphql.language.Argument;
+import graphql.language.ArrayValue;
 import graphql.language.EnumValue;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.FragmentSpread;
 import graphql.language.InlineFragment;
 import graphql.language.IntValue;
+import graphql.language.ObjectField;
+import graphql.language.ObjectValue;
 import graphql.language.OperationDefinition;
 import graphql.language.Selection;
 import graphql.language.SelectionSet;
 import graphql.language.StringValue;
 import graphql.language.Value;
 import graphql.language.VariableReference;
+import org.jahia.api.Constants;
 import org.jahia.modules.graphql.provider.dxm.node.NodeQueryExtensions;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -23,21 +27,25 @@ import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.RepositoryException;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 /**
  * Opens the version sessions of a GraphQL query that reads a version with {@code jcr(versionAt:)} or
- * {@code jcr(versionOperation:)}. A version session shows each node of the {@code default} workspace at the state that
- * the content-versioning module supplies, and it refuses every write. Jahia 8.2.4 brings these sessions.
+ * {@code jcr(versionOperation:)}, or the unsaved values of a form with {@code jcr(unsavedValues:)}. A version session
+ * shows each node of the {@code default} workspace at the state that the content-versioning module supplies, or the node
+ * of a form with its unsaved values, and it refuses every write. Jahia 8.2.4 brings these sessions.
  *
  * <p>Core sets the version of a session when the session opens, and every field of a request reads through the same
  * current user sessions. The version therefore applies to the whole operation, and it is set when the operation starts.
@@ -61,6 +69,7 @@ public final class JcrVersionSessions {
 
     public static final String VERSION_AT = "versionAt";
     public static final String VERSION_OPERATION = "versionOperation";
+    public static final String UNSAVED_VALUES = "unsavedValues";
 
     private static final Logger logger = LoggerFactory.getLogger(JcrVersionSessions.class);
 
@@ -97,8 +106,9 @@ public final class JcrVersionSessions {
     public void beginOperation(OperationDefinition operation, Map<String, FragmentDefinition> fragments,
                                Map<String, Object> variables, HttpServletRequest request, GraphQLContext context) {
         carriedVersion.remove();
-        if (request != null && request.getAttribute(REQUEST_ATTRIBUTE) != null) {
-            context.put(ERROR_KEY, "A request that read a version runs no other operation after it");
+        Object read = request != null ? request.getAttribute(REQUEST_ATTRIBUTE) : null;
+        if (read != null) {
+            context.put(ERROR_KEY, "A request that read " + read + " runs no other operation after it");
             return;
         }
         if (operation.getOperation() != OperationDefinition.Operation.QUERY) {
@@ -110,9 +120,10 @@ public final class JcrVersionSessions {
             if ("jcr".equals(field.getName())) {
                 Object versionAt = argument(field, VERSION_AT, variables);
                 Object versionOperation = argument(field, VERSION_OPERATION, variables);
-                if (versionAt != null || versionOperation != null) {
-                    String error = openOrRefuse(rootFields.size(), argument(field, "workspace", variables), versionAt,
-                            versionOperation, request);
+                Object unsavedValues = argument(field, UNSAVED_VALUES, variables);
+                if (versionAt != null || versionOperation != null || unsavedValues != null) {
+                    String error = openOrRefuse(rootFields.size(), argument(field, "workspace", variables),
+                            new Version(versionAt, versionOperation, unsavedValues), request);
                     if (error != null) {
                         context.put(ERROR_KEY, error);
                     } else {
@@ -184,36 +195,35 @@ public final class JcrVersionSessions {
         }
     }
 
-    private String openOrRefuse(int rootFieldCount, Object workspace, Object versionAt, Object versionOperation,
-                                HttpServletRequest request) {
+    private String openOrRefuse(int rootFieldCount, Object workspace, Version version, HttpServletRequest request) {
         try {
-            return open(rootFieldCount, workspace, versionAt, versionOperation, request);
+            return open(rootFieldCount, workspace, version, request);
         } catch (RuntimeException e) {
-            logger.warn("The version of a GraphQL query could not open", e);
+            String what = version.unsavedValues != null ? "unsaved values" : "version";
+            logger.warn("The {} of a GraphQL query could not open", what, e);
             api.setCurrentVersionSelector(null);
             carriedVersion.remove();
-            return "The version of this query could not open";
+            return "The " + what + " of this query could not open";
         }
     }
 
-    private String open(int rootFieldCount, Object workspace, Object versionAt, Object versionOperation,
-                        HttpServletRequest request) {
-        String refusal = refusalOfRequest(rootFieldCount, workspace, versionAt, versionOperation, request);
+    private String open(int rootFieldCount, Object workspace, Version version, HttpServletRequest request) {
+        String refusal = refusalOfRequest(rootFieldCount, workspace, version, request);
         if (refusal != null) {
             return refusal;
         }
-        Object selector;
-        if (versionAt != null) {
-            Long epochMillis = toLong(versionAt);
+        Object selector = null;
+        if (version.at != null) {
+            Long epochMillis = toLong(version.at);
             if (epochMillis == null) {
-                return "versionAt is not a date in milliseconds since the epoch: " + versionAt;
+                return "versionAt is not a date in milliseconds since the epoch: " + version.at;
             }
             selector = api.atInstant(Instant.ofEpochMilli(epochMillis));
-        } else {
+        } else if (version.operation != null) {
             try {
-                selector = api.atOperation(UUID.fromString(versionOperation.toString()));
+                selector = api.atOperation(UUID.fromString(version.operation.toString()));
             } catch (IllegalArgumentException e) {
-                return "versionOperation is not a UUID: " + versionOperation;
+                return "versionOperation is not a UUID: " + version.operation;
             }
         }
         if (api.isVersionSessionRequested()) {
@@ -221,40 +231,69 @@ public final class JcrVersionSessions {
         }
         // The render keeps its current nodes, while its later lookups would read the version.
         if (api.isRendering()) {
-            return "A query that runs inside a render cannot read a version";
+            return "A query that runs inside a render cannot read " + readOf(version);
+        }
+        if (version.unsavedValues != null) {
+            UnsavedValuesRequest values;
+            try {
+                // Before the version sessions open: the plain session of the user resolves the node and the references.
+                values = UnsavedValuesRequest.read((Map<?, ?>) version.unsavedValues, api.getEditSession());
+            } catch (UnsavedValuesRequest.Refusal e) {
+                return e.getMessage();
+            } catch (RepositoryException e) {
+                throw new IllegalStateException(e);
+            }
+            try {
+                selector = api.withUnsavedValues(values);
+            } catch (IllegalArgumentException e) {
+                // The builder of core refuses a mixin that no module defines, and a value that no save writes.
+                return "unsavedValues is refused: " + e.getMessage();
+            }
         }
         api.setCurrentVersionSelector(selector);
         // After the version sessions open, so that a session that the check opens is one of them.
-        // A date needs no check, because a node with no version at a date shows its current content.
-        if (versionOperation != null && !api.canShowVersion(selector)) {
+        // A date needs no check, because a node with no version at a date shows its current content, and core shows
+        // unsaved values itself.
+        if (version.operation != null && !api.canShowVersion(selector)) {
             api.setCurrentVersionSelector(null);
-            return "No version that you can read carries the operation " + versionOperation;
+            return "No version that you can read carries the operation " + version.operation;
         }
-        request.setAttribute(REQUEST_ATTRIBUTE, Boolean.TRUE);
+        request.setAttribute(REQUEST_ATTRIBUTE, readOf(version));
         carriedVersion.set(selector);
         return null;
     }
 
-    private String refusalOfRequest(int rootFieldCount, Object workspace, Object versionAt, Object versionOperation,
-                                    HttpServletRequest request) {
+    /** What a query reads, as its refusals name it. */
+    private static String readOf(Version version) {
+        return version.unsavedValues != null ? "unsaved values" : "a version";
+    }
+
+    private String refusalOfRequest(int rootFieldCount, Object workspace, Version version, HttpServletRequest request) {
+        String read = readOf(version);
         if (rootFieldCount != 1) {
-            return "A query that reads a version selects the jcr field alone at its root";
+            return "A query that reads " + read + " selects the jcr field alone at its root";
         }
-        if (versionAt != null && versionOperation != null) {
+        if (version.at != null && version.operation != null) {
             return "A query reads a version with versionAt or with versionOperation, not with both";
         }
+        if (version.unsavedValues != null && (version.at != null || version.operation != null)) {
+            return "A query reads unsavedValues without versionAt and without versionOperation";
+        }
         if (workspace != null && NodeQueryExtensions.Workspace.fromName(workspace.toString()) != NodeQueryExtensions.Workspace.EDIT) {
-            return "A query reads a version in the EDIT workspace only";
+            return "A query reads " + read + " in the EDIT workspace only";
         }
         if (api == null) {
-            return "Reading a version needs Jahia 8.2.4 or later";
+            return "Reading " + read + " needs Jahia 8.2.4 or later";
+        }
+        if (version.unsavedValues != null && !api.supportsUnsavedValues()) {
+            return "Reading unsaved values needs the UnsavedValues API of the core, which this Jahia lacks";
         }
         if (request == null) {
-            return "Reading a version needs an HTTP request";
+            return "Reading " + read + " needs an HTTP request";
         }
         JahiaUser user = api.getCurrentUser();
         if (JahiaUserManagerService.isGuest(user)) {
-            return "A guest cannot read a version";
+            return "A guest cannot read " + read;
         }
         return null;
     }
@@ -311,8 +350,39 @@ public final class JcrVersionSessions {
         if (value instanceof EnumValue) {
             return ((EnumValue) value).getName();
         }
+        if (value instanceof ObjectValue) {
+            // The input object of unsavedValues, written in the query.
+            Map<String, Object> fields = new LinkedHashMap<>();
+            for (ObjectField objectField : ((ObjectValue) value).getObjectFields()) {
+                fields.put(objectField.getName(), value(objectField.getValue(), variables));
+            }
+            return fields;
+        }
+        if (value instanceof ArrayValue) {
+            List<Object> items = new ArrayList<>();
+            for (Value<?> item : ((ArrayValue) value).getValues()) {
+                items.add(value(item, variables));
+            }
+            return items;
+        }
         // NullValue, and a value that no version argument takes.
         return null;
+    }
+
+    /**
+     * The arguments of the jcr field that ask for a version. The caller builds one when a query sends at least one of
+     * them, and the check of the request refuses a query that sends several.
+     */
+    private static final class Version {
+        private final Object at;
+        private final Object operation;
+        private final Object unsavedValues;
+
+        private Version(Object at, Object operation, Object unsavedValues) {
+            this.at = at;
+            this.operation = operation;
+            this.unsavedValues = unsavedValues;
+        }
     }
 
     /**
@@ -323,6 +393,12 @@ public final class JcrVersionSessions {
         Object atInstant(Instant instant);
 
         Object atOperation(UUID operationId);
+
+        boolean supportsUnsavedValues();
+
+        Object withUnsavedValues(UnsavedValuesRequest values);
+
+        JCRSessionWrapper getEditSession() throws RepositoryException;
 
         void setCurrentVersionSelector(Object selector);
 
@@ -340,9 +416,10 @@ public final class JcrVersionSessions {
     /**
      * Reaches the version sessions of Jahia 8.2.4 by reflection.
      */
-    private static final class ReflectiveVersionApi implements VersionApi {
+    static final class ReflectiveVersionApi implements VersionApi {
 
         private static final String SELECTOR_CLASS = "org.jahia.api.versioning.SessionVersionSelector";
+        private static final String UNSAVED_VALUES_CLASS = "org.jahia.api.versioning.UnsavedValues";
 
         private final Method atInstant;
         private final Method atOperation;
@@ -351,6 +428,7 @@ public final class JcrVersionSessions {
         private final Method isVersionSessionRequested;
         private final Method isVersionSession;
         private final Method getCurrentRenderMode;
+        private final UnsavedValuesApi unsavedValuesApi;
 
         private ReflectiveVersionApi(Class<?> selectorClass) throws NoSuchMethodException {
             atInstant = selectorClass.getMethod("atInstant", Instant.class);
@@ -360,14 +438,17 @@ public final class JcrVersionSessions {
             isVersionSessionRequested = JCRSessionFactory.class.getMethod("isVersionSessionRequested", String.class);
             isVersionSession = JCRSessionWrapper.class.getMethod("isVersionSession");
             getCurrentRenderMode = JCRSessionFactory.class.getMethod("getCurrentRenderMode");
+            unsavedValuesApi = UnsavedValuesApi.load(selectorClass, UNSAVED_VALUES_CLASS);
         }
 
         static VersionApi load() {
             try {
                 return new ReflectiveVersionApi(Class.forName(SELECTOR_CLASS, false, JcrVersionSessions.class.getClassLoader()));
-            } catch (ClassNotFoundException | NoSuchMethodException | LinkageError e) {
-                logger.info("This Jahia has no version sessions, so a GraphQL query cannot read a version");
-                logger.debug("Version sessions not found", e);
+            } catch (ClassNotFoundException e) {
+                logger.info("This Jahia has no class {}, so a GraphQL query cannot read a version", SELECTOR_CLASS);
+                return null;
+            } catch (NoSuchMethodException | LinkageError e) {
+                logger.warn("The version sessions of this Jahia have another API, so a GraphQL query cannot read a version", e);
                 return null;
             }
         }
@@ -380,6 +461,21 @@ public final class JcrVersionSessions {
         @Override
         public Object atOperation(UUID operationId) {
             return invoke(atOperation, null, operationId);
+        }
+
+        @Override
+        public boolean supportsUnsavedValues() {
+            return unsavedValuesApi != null;
+        }
+
+        @Override
+        public Object withUnsavedValues(UnsavedValuesRequest values) {
+            return unsavedValuesApi.selector(values);
+        }
+
+        @Override
+        public JCRSessionWrapper getEditSession() throws RepositoryException {
+            return JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
         }
 
         @Override
@@ -424,6 +520,64 @@ public final class JcrVersionSessions {
                 throw new IllegalStateException(cause);
             } catch (IllegalAccessException e) {
                 throw new IllegalStateException(e);
+            }
+        }
+
+        /**
+         * Builds a selector of unsaved values by reflection. A Jahia whose core has no {@code UnsavedValues} class, or
+         * one of another API, has none, and still reads a version.
+         */
+        static final class UnsavedValuesApi {
+
+            private final Method builder;
+            private final Method setProperty;
+            private final Method removeProperty;
+            private final Method addMixin;
+            private final Method removeMixin;
+            private final Method build;
+            private final Method withUnsavedValues;
+
+            private UnsavedValuesApi(Class<?> selectorClass, Class<?> valuesClass) throws NoSuchMethodException {
+                builder = valuesClass.getMethod("builder", String.class);
+                Class<?> builderClass = builder.getReturnType();
+                setProperty = builderClass.getMethod("setProperty", String.class, Locale.class, int.class, boolean.class, List.class);
+                removeProperty = builderClass.getMethod("removeProperty", String.class, Locale.class);
+                addMixin = builderClass.getMethod("addMixin", String.class);
+                removeMixin = builderClass.getMethod("removeMixin", String.class);
+                build = builderClass.getMethod("build");
+                withUnsavedValues = selectorClass.getMethod("withUnsavedValues", valuesClass);
+            }
+
+            static UnsavedValuesApi load(Class<?> selectorClass, String valuesClassName) {
+                try {
+                    return new UnsavedValuesApi(selectorClass,
+                            Class.forName(valuesClassName, false, JcrVersionSessions.class.getClassLoader()));
+                } catch (ClassNotFoundException e) {
+                    logger.info("This Jahia has no class {}, so a GraphQL query cannot read unsaved values", valuesClassName);
+                    return null;
+                } catch (NoSuchMethodException | LinkageError e) {
+                    logger.warn("The unsaved values of this Jahia have another API, so a GraphQL query cannot read them", e);
+                    return null;
+                }
+            }
+
+            /** The mixins it removes come before the mixins it adds, as the save of a form switches them. */
+            Object selector(UnsavedValuesRequest values) {
+                Object valuesBuilder = invoke(builder, null, values.nodeIdentifier);
+                for (UnsavedValuesRequest.PropertyChange change : values.changes) {
+                    if (change.values != null) {
+                        invoke(setProperty, valuesBuilder, change.name, change.language, change.type, change.multiple, change.values);
+                    } else {
+                        invoke(removeProperty, valuesBuilder, change.name, change.language);
+                    }
+                }
+                for (String mixin : values.mixinsToDelete) {
+                    invoke(removeMixin, valuesBuilder, mixin);
+                }
+                for (String mixin : values.mixinsToAdd) {
+                    invoke(addMixin, valuesBuilder, mixin);
+                }
+                return invoke(withUnsavedValues, null, invoke(build, valuesBuilder));
             }
         }
     }
